@@ -467,7 +467,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 invoiceNumber: false // Errore per numero fattura duplicato
             },
             hasErrors: false, // Flag per indicare se la riga contiene errori
-            isValidating: {} // Oggetto per tracciare lo stato di validazione per ogni campo
+            isValidating: {}, // Oggetto per tracciare lo stato di validazione per ogni campo
+            isEditing: {} // Oggetto per tracciare quali campi sono in modifica
         };
         // Aggiungi getter per selectedClass
         Object.defineProperty(newRow, 'selectedClass', {
@@ -800,6 +801,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const field = cell.dataset.field;
         const rowIndex = parseInt(cell.dataset.rowIndex, 10);
         
+        // Imposta lo stato di modifica per questa cella
+        if (rowIndex >= 0 && rowIndex < this.rows.length) {
+            const row = this.rows[rowIndex];
+            if (!row.isEditing) {
+                row.isEditing = {};
+            }
+            row.isEditing[field] = true;
+            // Forza il rerender per mostrare il pulsante di conferma
+            this.rows = [...this.rows];
+        }
+        
         // Se la picklist è aperta per questa cella, aggiorna il filtro e le opzioni
         if (this.dropdownOpen && 
             this.dropdownOpen.field === field && 
@@ -818,6 +830,218 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         
         // La correzione automatica avverrà in handleCellBlur
+    }
+
+    /**
+     * Conferma il valore di una cella e forza la validazione e il rendering
+     */
+    async confirmCellValue(rowIndex, field) {
+        if (rowIndex < 0 || rowIndex >= this.rows.length) {
+            return;
+        }
+        
+        const cell = this.template.querySelector(
+            `td[data-field="${field}"][data-row-index="${rowIndex}"]`
+        );
+        
+        if (!cell) {
+            return;
+        }
+        
+        // Imposta il flag per prevenire il blur normale
+        this.isConfirmingValue = true;
+        
+        // Rimuovi classe per il bordo blu
+        cell.classList.remove('cell-focused');
+        
+        // Per invoiceNumber, prendi il valore dallo span interno, altrimenti dalla cella
+        const textElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value') 
+            ? cell.querySelector('.invoice-number-value') 
+            : cell;
+        const value = textElement.textContent.trim();
+
+        const updatedRows = [...this.rows];
+        const row = updatedRows[rowIndex];
+
+        // Gestione dei diversi tipi di campo (stessa logica di handleCellBlur)
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            // Validazione data
+            const dateValue = this.parseDate(value);
+            if (dateValue) {
+                row[field] = dateValue;
+                const formattedDate = this.formatDateForDisplay(dateValue);
+                cell.textContent = formattedDate;
+            } else {
+                row[field] = value;
+            }
+        } else if (field === 'isFree' || field === 'noInvoiceAvailable') {
+            // I checkbox sono gestiti separatamente
+            this.isConfirmingValue = false;
+            return;
+        } else if (field === 'numeroVisite' || field === 'totaleMinuti') {
+            // Validazione numeri interi
+            const numValue = this.parseInteger(value);
+            row[field] = numValue !== null ? numValue : value;
+        } else if (field === 'amount') {
+            // Validazione currency (rimuove simbolo €)
+            const currencyValue = this.parseCurrency(value);
+            row[field] = currencyValue !== null ? currencyValue : value;
+        } else {
+            // Sostituisci con il valore esatto dal dataset se disponibile
+            const exactValue = this.getExactValueFromDataset(field, value);
+            const initialValue = cell.dataset.initialValue !== undefined ? cell.dataset.initialValue : (row[field] || '');
+            const oldValueInRow = row[field];
+            const oldValueHadError = row.validationErrors && row.validationErrors[field] === true;
+            row[field] = exactValue;
+            
+            // Per il campo partner, imposta anche partnerId se trovato
+            if (field === 'partner' && exactValue) {
+                const partner = this.partners.find(
+                    p => p.Name && p.Name.toLowerCase() === exactValue.toLowerCase()
+                );
+                if (partner && partner.Id) {
+                    row.partnerId = partner.Id;
+                } else {
+                    const partnerOriginal = this.partners.find(
+                        p => p.Name && p.Name.toLowerCase() === value.trim().toLowerCase()
+                    );
+                    if (partnerOriginal && partnerOriginal.Id) {
+                        row.partnerId = partnerOriginal.Id;
+                    } else {
+                        row.partnerId = null;
+                    }
+                }
+            }
+            
+            // Verifica se il valore iniziale era errato (non nel dataset)
+            const wasInitialValueIncorrect = initialValue && !this.isValueInDataset(field, initialValue);
+            // Verifica se il nuovo valore è corretto (è nel dataset)
+            const isNewValueValid = this.isValueInDataset(field, exactValue);
+            
+            // Per numero fattura, traccia la modifica per correggere dopo la validazione
+            if (field === 'invoiceNumber' && initialValue && initialValue.trim().toLowerCase() !== value.trim().toLowerCase()) {
+                this.pendingInvoiceNumberCorrection = {
+                    oldValue: initialValue.trim().toLowerCase(),
+                    newValue: exactValue,
+                    rowIndex: rowIndex,
+                    invoiceDate: row.invoiceDate,
+                    medicalCenter: row.medicalCenter || ''
+                };
+            } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
+                this.hasValidation(field)) {
+                // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
+                const valueToFind = initialValue.trim().toLowerCase();
+                updatedRows.forEach((otherRow, otherIndex) => {
+                    if (otherIndex !== rowIndex && otherRow[field]) {
+                        const otherValue = String(otherRow[field]).trim().toLowerCase();
+                        const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
+                        if (otherValue === valueToFind && otherValueHasError) {
+                            otherRow[field] = exactValue;
+                            this.validateField(otherRow, field, exactValue);
+                        }
+                    }
+                });
+            }
+            
+            // Pulisci il valore iniziale dopo l'uso
+            delete cell.dataset.initialValue;
+        }
+
+        // Imposta lo spinner di validazione per questa cella
+        if (this.hasValidation(field)) {
+            this.setCellValidating(rowIndex, field, true);
+        }
+        
+        // Validazione campi specifici
+        this.validateField(row, field, row[field]);
+        
+        // Rimuovi lo spinner di validazione per questa cella (validazione sincrona completata)
+        if (this.hasValidation(field)) {
+            this.setCellValidating(rowIndex, field, false);
+        }
+        
+        // Aggiorna lo stato visivo della cella
+        this.updateCellValidationState(cell, row, field);
+        
+        // Aggiorna il contenuto della cella nel DOM se il valore è stato sostituito
+        const targetElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value')
+            ? cell.querySelector('.invoice-number-value')
+            : cell;
+        if (row[field] !== value && targetElement.textContent !== row[field]) {
+            targetElement.textContent = row[field] || '';
+        }
+
+        // Rimuovi lo stato di modifica
+        if (row.isEditing) {
+            row.isEditing[field] = false;
+        }
+
+        this.rows = updatedRows;
+        
+        // Aggiorna le celle corrette nel DOM dopo un breve delay
+        if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
+            field !== 'isFree' && field !== 'noInvoiceAvailable' &&
+            field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount') {
+            setTimeout(() => {
+                updatedRows.forEach((otherRow, otherIndex) => {
+                    if (otherIndex !== rowIndex) {
+                        const otherCell = this.template.querySelector(
+                            `td[data-field="${field}"][data-row-index="${otherIndex}"]`
+                        );
+                        if (otherCell) {
+                            const otherCellElement = field === 'invoiceNumber' && otherCell.querySelector('.invoice-number-value')
+                                ? otherCell.querySelector('.invoice-number-value')
+                                : otherCell;
+                            const currentDisplayValue = otherCellElement.textContent.trim();
+                            const correctValue = otherRow[field] || '';
+                            
+                            if (currentDisplayValue.toLowerCase() === value.trim().toLowerCase() && 
+                                currentDisplayValue !== correctValue) {
+                                otherCellElement.textContent = correctValue;
+                                this.updateCellValidationState(otherCell, otherRow, field);
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+        
+        // Verifica unicità numeri fattura se sono stati modificati campi rilevanti
+        if (field === 'invoiceNumber' || field === 'invoiceDate' || field === 'medicalCenter') {
+            this.setCellValidating(rowIndex, field, true);
+            setTimeout(async () => {
+                try {
+                    await this.checkInvoiceNumbersUniqueness();
+                } finally {
+                    this.setCellValidating(rowIndex, field, false);
+                }
+            }, 50);
+        }
+        
+        // Formatta le date dopo la modifica
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            setTimeout(() => {
+                this.formatDatesInTable();
+            }, 0);
+        }
+        
+        // Reset del flag dopo un breve delay
+        setTimeout(() => {
+            this.isConfirmingValue = false;
+        }, 100);
+    }
+
+    /**
+     * Gestisce il click sul pulsante di conferma
+     */
+    handleConfirmButtonClick(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        
+        const rowIndex = parseInt(event.currentTarget.dataset.rowIndex, 10);
+        const field = event.currentTarget.dataset.field;
+        
+        this.confirmCellValue(rowIndex, field);
     }
 
     async handleCellBlur(event) {
@@ -1018,6 +1242,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 setTimeout(() => {
                     this.formatDatesInTable();
                 }, 0);
+            }
+            
+            // Rimuovi lo stato di modifica quando si esce dalla cella
+            if (row.isEditing) {
+                row.isEditing[field] = false;
+                // Forza il rerender per nascondere il pulsante di conferma
+                this.rows = [...updatedRows];
             }
         }
     }

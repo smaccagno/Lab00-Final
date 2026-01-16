@@ -428,6 +428,17 @@
                                             onpaste={handlePaste}>
                                             {row.invoiceNumber}
                                         </span>
+                                        <template if:true={row.isEditing.invoiceNumber}>
+                                            <button 
+                                                type="button"
+                                                class="cell-confirm-button"
+                                                data-field="invoiceNumber"
+                                                data-row-index={rowIndex}
+                                                onclick={handleConfirmButtonClick}
+                                                title="Conferma valore">
+                                                <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                            </button>
+                                        </template>
                                         <template if:true={row.validationErrors.invoiceNumber}>
                                             <div class="invoice-number-error-message">
                                                 Numero fattura già presente a sistema, verificare
@@ -463,6 +474,17 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.medicalCenter}
+                                    <template if:true={row.isEditing.medicalCenter}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="medicalCenter"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.medicalCenter}>
                                         <button 
                                             type="button"
@@ -492,6 +514,17 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.noProfit}
+                                    <template if:true={row.isEditing.noProfit}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="noProfit"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.noProfit}>
                                         <button 
                                             type="button"
@@ -521,6 +554,17 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.noProfitCategory}
+                                    <template if:true={row.isEditing.noProfitCategory}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="noProfitCategory"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.noProfitCategory}>
                                         <button 
                                             type="button"
@@ -573,6 +617,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.tipoVisita}
+                                    <template if:true={row.isEditing.tipoVisita}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="tipoVisita"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.tipoVisita}>
                                         <button 
                                             type="button"
@@ -602,6 +657,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.beneficiaryType}
+                                    <template if:true={row.isEditing.beneficiaryType}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="beneficiaryType"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.beneficiaryType}>
                                         <button 
                                             type="button"
@@ -630,6 +696,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.numeroVisite}
+                                    <template if:true={row.isEditing.numeroVisite}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="numeroVisite"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.hasNumeroVisite}>
                                         <button 
                                             type="button"
@@ -651,6 +728,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.totaleMinuti}
+                                    <template if:true={row.isEditing.totaleMinuti}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="totaleMinuti"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.hasTotaleMinuti}>
                                         <button 
                                             type="button"
@@ -672,6 +760,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.amount}
+                                    <template if:true={row.isEditing.amount}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="amount"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.hasAmount}>
                                         <button 
                                             type="button"
@@ -716,6 +815,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.comune}
+                                    <template if:true={row.isEditing.comune}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="comune"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.comune}>
                                         <button 
                                             type="button"
@@ -745,6 +855,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.provincia}
+                                    <template if:true={row.isEditing.provincia}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="provincia"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.provincia}>
                                         <button 
                                             type="button"
@@ -774,6 +895,17 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.regione}
+                                    <template if:true={row.isEditing.regione}>
+                                        <button 
+                                            type="button"
+                                            class="cell-confirm-button"
+                                            data-field="regione"
+                                            data-row-index={rowIndex}
+                                            onclick={handleConfirmButtonClick}
+                                            title="Conferma valore">
+                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                        </button>
+                                    </template>
                                     <template if:true={row.regione}>
                                         <button 
                                             type="button"

@@ -412,6 +412,43 @@
 }
 
 /* Pulsante di cancellazione cella */
+.cell-confirm-button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background-color: #2e844a;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    padding: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell-confirm-button:hover {
+    background-color: #1f5a2e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cell-confirm-button:active {
+    background-color: #1a4d26;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell-confirm-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #2e844a;
+}
+
+.cell-confirm-button lightning-icon {
+    --slds-c-icon-color-foreground-default: #ffffff;
+}
+
 .cell-clear-button {
     position: absolute;
     top: 4px;
@@ -642,5 +679,5 @@
 
 /* Assicura che le celle con spinner abbiano spazio sufficiente */
 .editable-cell {
-    padding-right: 32px; /* Spazio per il pulsante di cancellazione e lo spinner */
+    padding-right: 32px; /* Spazio per il pulsante di cancellazione, conferma e lo spinner */
 }
