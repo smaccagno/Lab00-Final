@@ -875,7 +875,7 @@
                             <template for:each={organizedInvoices} for:item="invoiceGroup" for:index="invoiceIndex">
                                 <!-- Riga Fattura -->
                                 <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
-                                    <td data-label="">
+                                    <td data-label="" class="expand-cell">
                                         <div class="slds-grid slds-grid_vertical">
                                             <template if:true={invoiceGroup.visits.length}>
                                                 <div class="slds-col">
@@ -888,8 +888,8 @@
                                                             title="Collassa"
                                                             aria-label="Collassa">
                                                             <lightning-icon 
-                                                                icon-name="utility:chevron down"
-                                                                size="x-small"
+                                                                icon-name="utility:dash"
+                                                                size="small"
                                                                 alternative-text="Collassa">
                                                             </lightning-icon>
                                                             <span class="slds-assistive-text">Collassa</span>
@@ -904,8 +904,8 @@
                                                             title="Espandi"
                                                             aria-label="Espandi">
                                                             <lightning-icon 
-                                                                icon-name="utility:chevron right"
-                                                                size="x-small"
+                                                                icon-name="utility:add"
+                                                                size="small"
                                                                 alternative-text="Espandi">
                                                             </lightning-icon>
                                                             <span class="slds-assistive-text">Espandi</span>
