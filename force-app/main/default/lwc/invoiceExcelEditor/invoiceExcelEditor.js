@@ -1606,17 +1606,34 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (this.pendingInvoiceNumberCorrection) {
                 const correction = this.pendingInvoiceNumberCorrection;
                 
+                // Verifica se il programma è "Tempo Sospeso" per applicare controlli più restrittivi
+                const isTempoSospeso = this.selectedProgramName && 
+                    this.selectedProgramName.toLowerCase().includes('tempo sospeso');
+                
                 // Cerca tutte le righe con lo stesso valore errato originale che hanno un errore di duplicazione
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherRow.invoiceNumber) {
                         const otherValue = String(otherRow.invoiceNumber).trim().toLowerCase();
+                        const otherDate = otherRow.invoiceDate;
+                        const otherMedicalCenter = otherRow.medicalCenter || '';
                         const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors.invoiceNumber === true;
                         
-                        // Correggi tutte le celle con lo stesso numero fattura errato che hanno un errore di duplicazione
-                        // Non richiedere stessa data e stesso centro medico, solo stesso numero fattura errato
-                        if (otherValue === correction.oldValue && 
-                            otherValueHasError &&
-                            otherIndex !== correction.rowIndex) {
+                        // Per "Tempo Sospeso": correggi solo se stesso valore errato, stessa data E stesso centro medico E ha errore
+                        // Per gli altri programmi: correggi solo se stesso valore errato e ha errore
+                        let shouldCorrect = false;
+                        if (isTempoSospeso) {
+                            shouldCorrect = otherValue === correction.oldValue && 
+                                otherDate === correction.invoiceDate && 
+                                otherMedicalCenter.toLowerCase() === correction.medicalCenter.toLowerCase() &&
+                                otherValueHasError &&
+                                otherIndex !== correction.rowIndex;
+                        } else {
+                            shouldCorrect = otherValue === correction.oldValue && 
+                                otherValueHasError &&
+                                otherIndex !== correction.rowIndex;
+                        }
+                        
+                        if (shouldCorrect) {
                             // Correggi il valore
                             otherRow.invoiceNumber = correction.newValue;
                             // Aggiorna anche la validazione
@@ -1631,6 +1648,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Se non c'è una correzione pendente ma ci sono numeri fattura duplicati,
                 // cerca se una riga ha un numero fattura che è stato appena modificato e non è più duplicato
                 // e correggi tutte le altre righe con lo stesso numero fattura errato che hanno ancora un errore
+                
+                // Verifica se il programma è "Tempo Sospeso" per applicare controlli più restrittivi
+                const isTempoSospeso = this.selectedProgramName && 
+                    this.selectedProgramName.toLowerCase().includes('tempo sospeso');
+                
                 updatedRows.forEach((row, index) => {
                     const invoiceNumber = row.invoiceNumber ? String(row.invoiceNumber).trim().toLowerCase() : '';
                     const hasError = row.validationErrors && row.validationErrors.invoiceNumber === true;
@@ -1644,8 +1666,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 const otherValue = String(otherRow.invoiceNumber).trim().toLowerCase();
                                 const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors.invoiceNumber === true;
                                 
-                                // Se hanno lo stesso numero fattura e l'altra riga ha ancora un errore, correggi
-                                if (otherValue === invoiceNumber && otherValueHasError) {
+                                // Per "Tempo Sospeso": correggi solo se stesso numero fattura, stessa data E stesso centro medico
+                                // Per gli altri programmi: correggi solo se stesso numero fattura
+                                let shouldCorrect = false;
+                                if (isTempoSospeso) {
+                                    shouldCorrect = otherValue === invoiceNumber && 
+                                        otherRow.invoiceDate === row.invoiceDate && 
+                                        (otherRow.medicalCenter || '').toLowerCase() === (row.medicalCenter || '').toLowerCase() &&
+                                        otherValueHasError;
+                                } else {
+                                    shouldCorrect = otherValue === invoiceNumber && otherValueHasError;
+                                }
+                                
+                                if (shouldCorrect) {
                                     // Correggi il valore con quello della riga corretta
                                     otherRow.invoiceNumber = row.invoiceNumber;
                                     // Aggiorna anche la validazione
