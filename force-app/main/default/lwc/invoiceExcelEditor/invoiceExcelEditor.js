@@ -4121,8 +4121,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     partnerId: r.partnerId,
                     partnerIdType: typeof r.partnerId
                 })));
-                this.showOrganizedView = false; // Nascondi la vista organizzata quando mostri i risultati
-                this.showResults = true;
+                
+                // Aggiorna organizedInvoices con i risultati del salvataggio
+                this.updateOrganizedInvoicesWithSaveResults(this.saveResults);
+                
+                // Mantieni la vista organizzata visibile
+                this.showOrganizedView = true;
+                this.showResults = false;
                 
                 // Mostra un messaggio di riepilogo
                 const successCount = this.saveResults.filter(r => r.status === 'success').length;
@@ -4144,6 +4149,80 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.isSaving = false;
             this.showError('Errore durante il salvataggio: ' + (error.body?.message || error.message));
         }
+    }
+    
+    /**
+     * Aggiorna organizedInvoices con i risultati del salvataggio
+     */
+    updateOrganizedInvoicesWithSaveResults(saveResults) {
+        // Crea una mappa dei risultati usando invoiceNumber come chiave
+        const resultsMap = new Map();
+        saveResults.forEach(result => {
+            const invoiceNumber = result.invoiceNumber || '';
+            if (invoiceNumber) {
+                resultsMap.set(invoiceNumber, result);
+            }
+        });
+        
+        // Aggiorna ogni invoiceGroup con i risultati corrispondenti
+        this.organizedInvoices = this.organizedInvoices.map(invoiceGroup => {
+            const invoiceNumber = invoiceGroup.invoice.invoiceNumber;
+            const saveResult = resultsMap.get(invoiceNumber);
+            
+            if (saveResult) {
+                // Aggiorna lo stato della fattura
+                const updatedInvoice = {
+                    ...invoiceGroup.invoice,
+                    saveStatus: saveResult.isSuccess ? 'success' : 'error',
+                    saveStatusSuccess: saveResult.isSuccess === true, // Booleano per il template
+                    saveErrorMessage: saveResult.errorMessage || null,
+                    invoiceId: saveResult.invoiceId || null
+                };
+                
+                // Crea una mappa dei risultati delle visite usando un identificatore univoco
+                const visitResultsMap = new Map();
+                if (saveResult.visitDetails && Array.isArray(saveResult.visitDetails)) {
+                    saveResult.visitDetails.forEach(visitDetail => {
+                        // Usa una combinazione di campi per identificare la visita
+                        const visitKey = `${visitDetail.tipoVisita || ''}_${visitDetail.dataVisita || ''}_${visitDetail.comune || ''}_${visitDetail.numeroVisite || ''}`;
+                        visitResultsMap.set(visitKey, visitDetail);
+                    });
+                }
+                
+                // Aggiorna le visite con i loro stati
+                const updatedVisits = invoiceGroup.visits.map(visit => {
+                    // Crea una chiave simile per trovare il risultato corrispondente
+                    const visitKey = `${visit.tipoVisita || ''}_${visit.dataVisita || ''}_${visit.comune || ''}_${visit.numeroVisite || ''}`;
+                    const visitResult = visitResultsMap.get(visitKey);
+                    
+                    if (visitResult) {
+                        return {
+                            ...visit,
+                            saveStatus: visitResult.status === 'success' ? 'success' : 'error',
+                            saveStatusSuccess: visitResult.status === 'success', // Booleano per il template
+                            saveErrorMessage: visitResult.errorMessage || null,
+                            visitId: visitResult.visitId || null
+                        };
+                    }
+                    // Se non c'è un risultato specifico, eredita lo stato della fattura
+                    return {
+                        ...visit,
+                        saveStatus: saveResult.isSuccess ? 'success' : 'error',
+                        saveStatusSuccess: saveResult.isSuccess === true, // Booleano per il template
+                        saveErrorMessage: saveResult.visitError || saveResult.errorMessage || null
+                    };
+                });
+                
+                return {
+                    ...invoiceGroup,
+                    invoice: updatedInvoice,
+                    visits: updatedVisits
+                };
+            }
+            
+            // Se non c'è un risultato per questa fattura, mantieni lo stato originale
+            return invoiceGroup;
+        });
     }
     
     /**

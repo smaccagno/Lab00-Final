@@ -837,6 +837,9 @@
                                     <div class="slds-truncate" title="Numero Fattura">Numero Fattura</div>
                                 </th>
                                 <th scope="col">
+                                    <div class="slds-truncate" title="Stato Caricamento">Stato Caricamento</div>
+                                </th>
+                                <th scope="col">
                                     <div class="slds-truncate" title="Data Fattura">Data Fattura</div>
                                 </th>
                                 <th scope="col">
@@ -883,6 +886,21 @@
                                         </template>
                                         <template if:false={invoiceGroup.invoice.hasErrors}>
                                             <div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Stato Caricamento">
+                                        <template if:true={invoiceGroup.invoice.saveStatus}>
+                                            <template if:true={invoiceGroup.invoice.saveStatusSuccess}>
+                                                <div class="slds-truncate slds-text-color_success">Caricata correttamente</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.saveStatusSuccess}>
+                                                <div class="slds-truncate slds-text-color_error">
+                                                    Errore nel caricamento: {invoiceGroup.invoice.saveErrorMessage}
+                                                </div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.saveStatus}>
+                                            <div class="slds-truncate">-</div>
                                         </template>
                                     </td>
                                     <td data-label="Data Fattura">
@@ -1015,11 +1033,14 @@
                                 <template if:true={invoiceGroup.visits.length}>
                                     <template if:true={invoiceGroup.expanded}>
                                         <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="11" class="slds-p-around_none">
+                                            <td colspan="12" class="slds-p-around_none">
                                                 <div class="slds-m-around_small visits-content">
                                                     <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
                                                         <thead>
                                                             <tr class="slds-line-height_reset">
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Stato Caricamento</div>
+                                                                </th>
                                                                 <th scope="col" class="slds-text-body_small">
                                                                     <div class="slds-truncate">Tipo Visita</div>
                                                                 </th>
@@ -1052,6 +1073,21 @@
                                                         <tbody>
                                                             <template for:each={invoiceGroup.visits} for:item="visit">
                                                                 <tr key={visit.id} class="slds-text-body_small">
+                                                                    <td data-label="Stato Caricamento">
+                                                                        <template if:true={visit.saveStatus}>
+                                                                            <template if:true={visit.saveStatusSuccess}>
+                                                                                <div class="slds-truncate slds-text-color_success">Caricata correttamente</div>
+                                                                            </template>
+                                                                            <template if:false={visit.saveStatusSuccess}>
+                                                                                <div class="slds-truncate slds-text-color_error">
+                                                                                    Errore nel caricamento: {visit.saveErrorMessage}
+                                                                                </div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.saveStatus}>
+                                                                            <div class="slds-truncate">-</div>
+                                                                        </template>
+                                                                    </td>
                                                                     <td data-label="Tipo Visita">
                                                                         <template if:true={visit.hasErrors}>
                                                                             <template if:true={visit.errors.tipoVisita}>
