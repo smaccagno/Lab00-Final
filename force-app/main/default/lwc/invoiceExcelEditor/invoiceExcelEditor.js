@@ -1659,21 +1659,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 this.rows = [...updatedRows];
                 
                 // Aggiorna lo stato visivo delle celle (bordi rossi) durante lo spinner
+                // Usa un delay maggiore per permettere al DOM di aggiornarsi completamente
                 setTimeout(() => {
-                    cellsToCorrect.forEach(({ row, rowIndex }) => {
-                        const invoiceCell = this.template.querySelector(
-                            `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
-                        );
-                        if (invoiceCell) {
-                            this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
-                        }
-                    });
+                    // Forza un rerender completo della tabella
+                    this.rows = [...this.rows];
                     
-                    // Disattiva gli spinner dopo aver aggiornato i bordi
-                    cellsToCorrect.forEach(({ rowIndex }) => {
-                        this.setCellValidating(rowIndex, 'invoiceNumber', false);
-                    });
-                }, 100);
+                    // Aspetta che il DOM sia completamente aggiornato prima di aggiornare i bordi
+                    setTimeout(() => {
+                        cellsToCorrect.forEach(({ row, rowIndex }) => {
+                            const invoiceCell = this.template.querySelector(
+                                `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                            );
+                            if (invoiceCell) {
+                                this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                            }
+                        });
+                        
+                        // Forza un altro rerender per assicurarsi che i bordi siano aggiornati
+                        this.rows = [...this.rows];
+                        
+                        // Disattiva gli spinner dopo aver aggiornato i bordi
+                        setTimeout(() => {
+                            cellsToCorrect.forEach(({ rowIndex }) => {
+                                this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                            });
+                        }, 100);
+                    }, 200);
+                }, 300);
                 
                 // Pulisci la correzione pendente
                 this.pendingInvoiceNumberCorrection = null;
@@ -1739,21 +1751,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 this.rows = [...updatedRows];
                 
                 // Aggiorna lo stato visivo delle celle (bordi rossi) durante lo spinner
+                // Usa un delay maggiore per permettere al DOM di aggiornarsi completamente
                 setTimeout(() => {
-                    cellsToCorrectElse.forEach(({ row, rowIndex }) => {
-                        const invoiceCell = this.template.querySelector(
-                            `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
-                        );
-                        if (invoiceCell) {
-                            this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
-                        }
-                    });
+                    // Forza un rerender completo della tabella
+                    this.rows = [...this.rows];
                     
-                    // Disattiva gli spinner dopo aver aggiornato i bordi
-                    cellsToCorrectElse.forEach(({ rowIndex }) => {
-                        this.setCellValidating(rowIndex, 'invoiceNumber', false);
-                    });
-                }, 100);
+                    // Aspetta che il DOM sia completamente aggiornato prima di aggiornare i bordi
+                    setTimeout(() => {
+                        cellsToCorrectElse.forEach(({ row, rowIndex }) => {
+                            const invoiceCell = this.template.querySelector(
+                                `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                            );
+                            if (invoiceCell) {
+                                this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                            }
+                        });
+                        
+                        // Forza un altro rerender per assicurarsi che i bordi siano aggiornati
+                        this.rows = [...this.rows];
+                        
+                        // Disattiva gli spinner dopo aver aggiornato i bordi
+                        setTimeout(() => {
+                            cellsToCorrectElse.forEach(({ rowIndex }) => {
+                                this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                            });
+                        }, 100);
+                    }, 200);
+                }, 300);
             }
             
             this.rows = updatedRows;
