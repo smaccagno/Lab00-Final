@@ -1498,7 +1498,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
                 const valueToFind = initialValue.trim().toLowerCase();
                 updatedRows.forEach((otherRow, otherIndex) => {
-                    if (otherIndex !== rowIndex && otherRow[field]) {
+                    if (otherIndex !== rowIndex && otherRow[field] && 
+                        field !== 'comune' && field !== 'provincia' && field !== 'regione') {
                         const otherValue = String(otherRow[field]).trim().toLowerCase();
                         const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
                         if (otherValue === valueToFind && otherValueHasError) {
@@ -1717,7 +1718,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Usa initialValue (valore iniziale salvato durante il focus) per cercare le celle da correggere
                     const valueToFind = initialValue.trim().toLowerCase();
                     updatedRows.forEach((otherRow, otherIndex) => {
-                        if (otherIndex !== rowIndex && otherRow[field]) {
+                        if (otherIndex !== rowIndex && otherRow[field] && 
+                            field !== 'comune' && field !== 'provincia' && field !== 'regione') {
                             const otherValue = String(otherRow[field]).trim().toLowerCase();
                             // Correggi solo se il valore è errato (non nel dataset) e corrisponde al valore iniziale
                             const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
