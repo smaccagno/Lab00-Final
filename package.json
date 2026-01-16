@@ -13,7 +13,10 @@
     "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prepare": "husky || true",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "git:sync": "./scripts/git-sync.sh",
+    "deploy:dev": "sf project deploy start --target-org DEV",
+    "deploy:dev:sync": "sf project deploy start --target-org DEV && npm run git:sync"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^3.1.0",
