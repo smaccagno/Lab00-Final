@@ -324,14 +324,23 @@
                                 <td class="row-number-cell"
                                     data-row-index={rowIndex}
                                     onclick={selectRow}>
-                                    <template if:true={row.hasErrors}>
-                                        <div class="slds-text-color_error slds-text-body_small">
-                                            Questa riga contiene errori
-                                        </div>
-                                    </template>
-                                    <template if:false={row.hasErrors}>
-                                        {row.rowNumber}
-                                    </template>
+                                    <div class="row-number-container">
+                                        <template if:true={row.hasErrors}>
+                                            <span class="error-value">
+                                                {row.rowNumber}
+                                            </span>
+                                        </template>
+                                        <template if:false={row.hasErrors}>
+                                            <span>
+                                                {row.rowNumber}
+                                            </span>
+                                        </template>
+                                        <template if:true={row.hasErrors}>
+                                            <div class="invoice-number-error-message">
+                                                Questa riga contiene errori
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td class="editable-cell dropdown-cell" 
                                     data-field="partner"
