@@ -842,9 +842,34 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.invoiceNumberModalValue = row.invoiceNumber || '';
             this.rows = updatedRows;
             
-            // Focus sull'input dopo che il DOM è stato aggiornato
+            // Posiziona la box sopra la cella dopo che il DOM è stato aggiornato
             setTimeout(() => {
+                const cell = this.template.querySelector(`td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`);
+                const editBox = this.template.querySelector(`td[data-field="invoiceNumber"][data-row-index="${rowIndex}"] .invoice-number-edit-box`);
                 const input = this.template.querySelector(`td[data-field="invoiceNumber"][data-row-index="${rowIndex}"] .invoice-number-edit-input`);
+                
+                if (cell && editBox) {
+                    // Funzione per posizionare la box
+                    const positionEditBox = () => {
+                        const cellRect = cell.getBoundingClientRect();
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                        
+                        // Posiziona la box sopra la cella
+                        editBox.style.top = `${cellRect.top + scrollTop}px`;
+                        editBox.style.left = `${cellRect.left + scrollLeft}px`;
+                        editBox.style.width = `${Math.max(cellRect.width, 200)}px`;
+                    };
+                    
+                    // Posiziona inizialmente
+                    positionEditBox();
+                    
+                    // Aggiungi listener per scroll e resize (rimuovili quando si chiude il box)
+                    this._invoiceNumberEditBoxPositionHandler = positionEditBox;
+                    window.addEventListener('scroll', positionEditBox, true);
+                    window.addEventListener('resize', positionEditBox);
+                }
+                
                 if (input) {
                     input.focus();
                     // Posiziona il cursore alla fine del testo
@@ -861,6 +886,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (event) {
             event.stopPropagation();
             event.preventDefault();
+        }
+        
+        // Rimuovi i listener di scroll e resize
+        if (this._invoiceNumberEditBoxPositionHandler) {
+            window.removeEventListener('scroll', this._invoiceNumberEditBoxPositionHandler, true);
+            window.removeEventListener('resize', this._invoiceNumberEditBoxPositionHandler);
+            this._invoiceNumberEditBoxPositionHandler = null;
         }
         
         if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
@@ -896,6 +928,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 
                 // Aggiorna il valore nella riga
                 row.invoiceNumber = newValue;
+                
+                // Rimuovi i listener di scroll e resize
+                if (this._invoiceNumberEditBoxPositionHandler) {
+                    window.removeEventListener('scroll', this._invoiceNumberEditBoxPositionHandler, true);
+                    window.removeEventListener('resize', this._invoiceNumberEditBoxPositionHandler);
+                    this._invoiceNumberEditBoxPositionHandler = null;
+                }
                 
                 // Chiudi il box di editing prima di aggiornare
                 row.isEditingInvoiceNumber = false;
@@ -2092,9 +2131,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 cellsToCorrect.forEach(({ row, rowIndex }) => {
                     // Correggi il valore
                     row.invoiceNumber = correction.newValue;
-                    // Aggiorna anche la validazione (sincrono)
+                    // Aggiorna anche la validazione (sincrono) - rimuove l'errore immediatamente
                     this.validateField(row, 'invoiceNumber', correction.newValue);
+                    // Forza la rimozione dell'errore di validazione
+                    if (row.validationErrors) {
+                        row.validationErrors.invoiceNumber = false;
+                    }
+                    row.hasErrors = this.hasRowErrors(row);
                 });
+                
+                // Aggiorna anche la cella originale
+                const originalRow = updatedRows[correction.rowIndex];
+                if (originalRow.validationErrors) {
+                    originalRow.validationErrors.invoiceNumber = false;
+                }
+                originalRow.hasErrors = this.hasRowErrors(originalRow);
                 
                 // Aggiorna l'array rows per forzare il rerender con i nuovi valori
                 this.rows = [...updatedRows];
@@ -2113,6 +2164,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
                             );
                             if (invoiceCell) {
+                                // Rimuovi la classe invalid-cell
+                                invoiceCell.classList.remove('invalid-cell');
                                 this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
                             }
                         });
@@ -2122,7 +2175,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             `td[data-field="invoiceNumber"][data-row-index="${correction.rowIndex}"]`
                         );
                         if (originalCell) {
-                            const originalRow = updatedRows[correction.rowIndex];
+                            originalCell.classList.remove('invalid-cell');
                             this.updateCellValidationState(originalCell, originalRow, 'invoiceNumber');
                         }
                         
@@ -2196,8 +2249,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 cellsToCorrectElse.forEach(({ row, rowIndex, newValue }) => {
                     // Correggi il valore con quello della riga corretta
                     row.invoiceNumber = newValue;
-                    // Aggiorna anche la validazione (sincrono)
+                    // Aggiorna anche la validazione (sincrono) - rimuove l'errore immediatamente
                     this.validateField(row, 'invoiceNumber', newValue);
+                    // Forza la rimozione dell'errore di validazione
+                    if (row.validationErrors) {
+                        row.validationErrors.invoiceNumber = false;
+                    }
+                    row.hasErrors = this.hasRowErrors(row);
                 });
                 
                 // Aggiorna l'array rows per forzare il rerender con i nuovi valori
@@ -2216,6 +2274,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
                             );
                             if (invoiceCell) {
+                                // Rimuovi la classe invalid-cell
+                                invoiceCell.classList.remove('invalid-cell');
                                 this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
                             }
                         });

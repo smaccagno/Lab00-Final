@@ -699,17 +699,16 @@
 .invoice-number-edit-box {
     display: flex;
     align-items: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: fixed;
     gap: 4px;
-    z-index: 10;
+    z-index: 1000;
     background-color: white;
-    padding: 2px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #0070d2;
-    border-radius: 3px;
+    padding: 4px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #0070d2;
+    border-radius: 4px;
+    min-width: 200px;
+    max-width: 400px;
 }
 
 .invoice-number-edit-input {
