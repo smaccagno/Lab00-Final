@@ -95,6 +95,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                (this.rows.length === 1 && this.isRowEmpty(this.rows[0]));
     }
 
+    get hasSaveResults() {
+        if (!this.showOrganizedView || !this.organizedInvoices || this.organizedInvoices.length === 0) {
+            return false;
+        }
+        
+        // Verifica se almeno una fattura ha uno stato di salvataggio
+        return this.organizedInvoices.some(invoiceGroup => {
+            return invoiceGroup.invoice && invoiceGroup.invoice.saveStatus;
+        });
+    }
+
     get hasValidationErrors() {
         if (!this.showOrganizedView || !this.organizedInvoices || this.organizedInvoices.length === 0) {
             return false;
@@ -4497,6 +4508,47 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         setTimeout(() => {
             this.refreshValidationBordersInTable();
         }, 0);
+    }
+    
+    /**
+     * Resetta completamente la tabella per un nuovo caricamento
+     */
+    nuovoCaricamento() {
+        // Chiudi eventuali dropdown o date picker aperti
+        this.dropdownOpen = null;
+        this.datePickerOpen = null;
+        this.dropdownFilter = '';
+        this.dropdownFilteredOptions = [];
+        this.showConfirmButton = false;
+        this.isConfirmingValue = false;
+        
+        // Resetta la vista organizzata
+        this.showOrganizedView = false;
+        this.showResults = false;
+        this.organizedInvoices = [];
+        this.saveResults = [];
+        
+        // Resetta messaggi di errore/successo
+        this.hasError = false;
+        this.errorMessage = '';
+        this.hasSuccess = false;
+        this.successMessage = '';
+        
+        // Resetta lo stato di salvataggio
+        this.isSaving = false;
+        this.isValidating = false;
+        
+        // Resetta l'indice della riga selezionata
+        this.selectedRowIndex = -1;
+        
+        // Resetta il contatore delle righe
+        this.nextRowId = 1;
+        
+        // Svuota completamente l'array delle righe
+        this.rows = [];
+        
+        // Aggiungi una riga vuota iniziale
+        this.addRow();
     }
     
     /**

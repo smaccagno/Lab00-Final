@@ -818,6 +818,15 @@
                             icon-name="utility:back"
                             class="slds-m-left_small">
                         </lightning-button>
+                        <template if:true={hasSaveResults}>
+                            <lightning-button 
+                                label="Nuovo Caricamento" 
+                                onclick={nuovoCaricamento}
+                                variant="brand"
+                                icon-name="utility:add"
+                                class="slds-m-left_small">
+                            </lightning-button>
+                        </template>
                     </div>
                     <div class="slds-col slds-text-align_right">
                         <template if:true={hasValidationErrors}>
