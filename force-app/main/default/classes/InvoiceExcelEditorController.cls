@@ -12,6 +12,23 @@ public with sharing class InvoiceExcelEditorController {
             (String.isBlank(reg) ? '' : reg.trim().toLowerCase());
     }
     
+    private static String buildLocalitaString(String city, String province, String region) {
+        String localita = '';
+        if (String.isNotBlank(city)) {
+            localita = city;
+            if (String.isNotBlank(province)) {
+                localita += ' (' + province;
+                if (String.isNotBlank(region)) {
+                    localita += ', ' + region;
+                }
+                localita += ')';
+            } else if (String.isNotBlank(region)) {
+                localita += ' (' + region + ')';
+            }
+        }
+        return localita;
+    }
+    
     private static Id toIdSafe(Object obj) {
         if (obj == null) return null;
         String s = String.valueOf(obj);
@@ -678,14 +695,17 @@ public with sharing class InvoiceExcelEditorController {
                         InvoiceTriggerHandler.alignProgramsAsync(programsToAlignAfter);
                     }
                     
-                    // Query per ottenere i Name delle fatture create (dopo l'update per avere i valori aggiornati)
-                    Map<Id, String> invoiceIdToName = new Map<Id, String>();
+                    // Query per ottenere i dettagli completi delle fatture create (dopo l'update per avere i valori aggiornati)
+                    Map<Id, Invoice__c> invoiceDetailsMap = new Map<Id, Invoice__c>();
                     for (Invoice__c inv : [
-                        SELECT Id, Name 
+                        SELECT Id, Name, Invoice_Number__c, Date__c, Data_di_Competenza__c,
+                               Medical_Center__c, Account__c, Account__r.Name,
+                               Non_Profit_Signaling__c, NoProfit_Category__c,
+                               Prestazione_Gratuita__c, City__c, Province__c, Region__c
                         FROM Invoice__c 
                         WHERE Id IN :invoicesToInsert
                     ]) {
-                        invoiceIdToName.put(inv.Id, inv.Name);
+                        invoiceDetailsMap.put(inv.Id, inv);
                     }
                     
                     // Aggiorna i risultati con gli ID e i Name delle fatture create
@@ -702,9 +722,24 @@ public with sharing class InvoiceExcelEditorController {
                         if (inputRowIndex < invoiceResults.size() && invoiceIdx < invoicesToInsert.size()) {
                             Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
                             Id invoiceId = invoicesToInsert[invoiceIdx].Id;
+                            Invoice__c invoiceDetail = invoiceDetailsMap.get(invoiceId);
+                            
                             invoiceResult.put('invoiceId', invoiceId);
-                            invoiceResult.put('invoiceName', invoiceIdToName.get(invoiceId));
+                            invoiceResult.put('invoiceName', invoiceDetail != null ? invoiceDetail.Name : null);
                             invoiceResult.put('status', 'success');
+                            
+                            // Aggiungi tutti i dettagli della fattura
+                            if (invoiceDetail != null) {
+                                invoiceResult.put('invoiceNumber', invoiceDetail.Invoice_Number__c != null ? invoiceDetail.Invoice_Number__c : '');
+                                invoiceResult.put('invoiceDate', invoiceDetail.Date__c != null ? String.valueOf(invoiceDetail.Date__c) : '');
+                                invoiceResult.put('dataCompetenza', invoiceDetail.Data_di_Competenza__c != null ? String.valueOf(invoiceDetail.Data_di_Competenza__c) : '');
+                                invoiceResult.put('medicalCenter', invoiceDetail.Medical_Center__c != null ? invoiceDetail.Medical_Center__c : '');
+                                invoiceResult.put('partnerName', invoiceDetail.Account__r != null ? invoiceDetail.Account__r.Name : '');
+                                invoiceResult.put('enteNoProfit', invoiceDetail.Non_Profit_Signaling__c != null ? invoiceDetail.Non_Profit_Signaling__c : '');
+                                invoiceResult.put('noProfitCategory', invoiceDetail.NoProfit_Category__c != null ? invoiceDetail.NoProfit_Category__c : '');
+                                invoiceResult.put('prestazioneGratuita', invoiceDetail.Prestazione_Gratuita__c != null ? invoiceDetail.Prestazione_Gratuita__c : false);
+                                invoiceResult.put('localita', buildLocalitaString(invoiceDetail.City__c, invoiceDetail.Province__c, invoiceDetail.Region__c));
+                            }
                             
                             // Salva il partnerId se presente nella mappa o se già presente nel risultato
                             System.debug('partnerId già presente nel risultato: ' + invoiceResult.containsKey('partnerId'));

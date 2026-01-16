@@ -19,25 +19,40 @@
                         <thead>
                             <tr class="slds-line-height_reset">
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Fattura/Visita">Fattura/Visita</div>
+                                    <div class="slds-truncate" title="Codice Salesforce">Codice Salesforce</div>
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Numero Fattura">Numero Fattura</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Stato">Stato</div>
+                                    <div class="slds-truncate" title="Data Fattura">Data Fattura</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Errore Fattura">Errore Fattura</div>
+                                    <div class="slds-truncate" title="Data Competenza">Data Competenza</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Partner">Partner</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Centro Medico">Centro Medico</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Ente No Profit">Ente No Profit</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Categoria Ente">Categoria Ente</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Prestazione Gratuita">Prestazione Gratuita</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Località">Località</div>
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Visite Create">Visite Create</div>
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Visite Non Create">Visite Non Create</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Errore Visite">Errore Visite</div>
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Totale Quantità">Totale Quantità</div>
@@ -49,169 +64,96 @@
                                     <div class="slds-truncate" title="Totale Costo">Totale Costo</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Tipo Visita">Tipo Visita</div>
+                                    <div class="slds-truncate" title="Stato">Stato</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Beneficiario">Beneficiario</div>
+                                    <div class="slds-truncate" title="Errore Fattura">Errore Fattura</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Località">Località</div>
+                                    <div class="slds-truncate" title="Errore Visite">Errore Visite</div>
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             <template for:each={groupedSaveResults} for:item="result">
-                                <template if:true={result.isInvoice}>
-                                    <tr key={result.id} class="slds-line-height_reset invoice-row">
-                                        <td data-label="Fattura/Visita">
-                                            <div class="slds-grid slds-grid_vertical-align-center">
-                                                <template if:true={result.hasVisits}>
-                                                    <template if:true={result.expanded}>
-                                                        <button 
-                                                            type="button"
-                                                            class="slds-button slds-button_icon slds-button_icon-small slds-m-right_x-small"
-                                                            data-invoice-key={result.invoiceKey}
-                                                            onclick={toggleInvoiceExpansion}
-                                                            title="Collassa"
-                                                            aria-label="Collassa">
-                                                            <lightning-icon icon-name="utility:chevron down" size="x-small" alternative-text="Collassa"></lightning-icon>
-                                                            <span class="slds-assistive-text">Collassa</span>
-                                                        </button>
-                                                    </template>
-                                                    <template if:false={result.expanded}>
-                                                        <button 
-                                                            type="button"
-                                                            class="slds-button slds-button_icon slds-button_icon-small slds-m-right_x-small"
-                                                            data-invoice-key={result.invoiceKey}
-                                                            onclick={toggleInvoiceExpansion}
-                                                            title="Espandi"
-                                                            aria-label="Espandi">
-                                                            <lightning-icon icon-name="utility:chevron right" size="x-small" alternative-text="Espandi"></lightning-icon>
-                                                            <span class="slds-assistive-text">Espandi</span>
-                                                        </button>
-                                                    </template>
-                                                </template>
-                                                <template if:false={result.hasVisits}>
-                                                    <div class="slds-m-right_x-small" style="width: 24px;"></div>
-                                                </template>
-                                                <template if:true={result.invoiceId}>
-                                                    <a href="#" 
-                                                       data-invoice-id={result.invoiceId}
-                                                       onclick={openInvoiceRecord}
-                                                       class="slds-text-link slds-text-heading_small">
-                                                        <strong>{result.invoiceName}</strong>
-                                                    </a>
-                                                </template>
-                                                <template if:false={result.invoiceId}>
-                                                    <div class="slds-truncate slds-text-heading_small"><strong>-</strong></div>
-                                                </template>
-                                                <template if:true={result.hasVisitErrors}>
-                                                    <div class="slds-m-left_small slds-text-color_error slds-text-body_small">
-                                                        Ci sono errori da correggere nelle visite di questa fattura, espandi la sezione per verificare
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </td>
-                                        <td data-label="Numero Fattura">
-                                            <div class="slds-truncate">{result.invoiceNumber}</div>
-                                        </td>
-                                        <td data-label="Stato">
-                                            <template if:true={result.status}>
-                                                <template if:true={result.isSuccess}>
-                                                    <span class="slds-badge slds-badge_success">Successo</span>
-                                                </template>
-                                                <template if:false={result.isSuccess}>
-                                                    <span class="slds-badge slds-badge_error">Errore</span>
-                                                </template>
+                                <tr key={result.id} class="slds-line-height_reset invoice-row">
+                                    <td data-label="Codice Salesforce">
+                                        <template if:true={result.invoiceId}>
+                                            <a href="#" 
+                                               data-invoice-id={result.invoiceId}
+                                               onclick={openInvoiceRecord}
+                                               class="slds-text-link">
+                                                {result.invoiceName}
+                                            </a>
+                                        </template>
+                                        <template if:false={result.invoiceId}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Numero Fattura">
+                                        <div class="slds-truncate">{result.invoiceNumber}</div>
+                                    </td>
+                                    <td data-label="Data Fattura">
+                                        <div class="slds-truncate">{result.invoiceDate}</div>
+                                    </td>
+                                    <td data-label="Data Competenza">
+                                        <div class="slds-truncate">{result.dataCompetenza}</div>
+                                    </td>
+                                    <td data-label="Partner">
+                                        <div class="slds-truncate">{result.partnerName}</div>
+                                    </td>
+                                    <td data-label="Centro Medico">
+                                        <div class="slds-truncate">{result.medicalCenter}</div>
+                                    </td>
+                                    <td data-label="Ente No Profit">
+                                        <div class="slds-truncate">{result.enteNoProfit}</div>
+                                    </td>
+                                    <td data-label="Categoria Ente">
+                                        <div class="slds-truncate">{result.noProfitCategory}</div>
+                                    </td>
+                                    <td data-label="Prestazione Gratuita">
+                                        <template if:true={result.prestazioneGratuita}>
+                                            <span class="slds-badge slds-badge_success">Sì</span>
+                                        </template>
+                                        <template if:false={result.prestazioneGratuita}>
+                                            <span class="slds-badge">No</span>
+                                        </template>
+                                    </td>
+                                    <td data-label="Località">
+                                        <div class="slds-truncate">{result.localita}</div>
+                                    </td>
+                                    <td data-label="Visite Create">
+                                        <div class="slds-truncate">{result.visitsCreated}</div>
+                                    </td>
+                                    <td data-label="Visite Non Create">
+                                        <div class="slds-truncate">{result.visitsFailed}</div>
+                                    </td>
+                                    <td data-label="Totale Quantità">
+                                        <div class="slds-truncate">{result.totalQuantity}</div>
+                                    </td>
+                                    <td data-label="Totale Minuti Donati">
+                                        <div class="slds-truncate">{result.totalMinutes}</div>
+                                    </td>
+                                    <td data-label="Totale Costo">
+                                        <div class="slds-truncate">{result.totalCostFormatted}</div>
+                                    </td>
+                                    <td data-label="Stato">
+                                        <template if:true={result.status}>
+                                            <template if:true={result.isSuccess}>
+                                                <span class="slds-badge slds-badge_success">Successo</span>
                                             </template>
-                                        </td>
-                                        <td data-label="Errore Fattura">
-                                            <div class="slds-truncate slds-text-color_error">{result.errorMessage}</div>
-                                        </td>
-                                        <td data-label="Visite Create">
-                                            <div class="slds-truncate">{result.visitsCreated}</div>
-                                        </td>
-                                        <td data-label="Visite Non Create">
-                                            <div class="slds-truncate">{result.visitsFailed}</div>
-                                        </td>
-                                        <td data-label="Errore Visite">
-                                            <div class="slds-truncate slds-text-color_error">{result.visitError}</div>
-                                        </td>
-                                        <td data-label="Totale Quantità">
-                                            <div class="slds-truncate">{result.totalQuantity}</div>
-                                        </td>
-                                        <td data-label="Totale Minuti Donati">
-                                            <div class="slds-truncate">{result.totalMinutes}</div>
-                                        </td>
-                                        <td data-label="Totale Costo">
-                                            <div class="slds-truncate">{result.totalCostFormatted}</div>
-                                        </td>
-                                        <td data-label="Tipo Visita">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Beneficiario">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Località">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <template if:false={result.isInvoice}>
-                                    <tr key={result.id} class="slds-line-height_reset visit-row">
-                                        <td data-label="Fattura/Visita">
-                                            <div class="slds-truncate slds-p-left_large">
-                                                <template if:true={result.visitId}>
-                                                    <a href="#" 
-                                                       data-visit-id={result.visitId}
-                                                       onclick={openVisitRecord}
-                                                       class="slds-text-link">
-                                                        {result.visitName}
-                                                    </a>
-                                                </template>
-                                                <template if:false={result.visitId}>
-                                                    <div class="slds-truncate">-</div>
-                                                </template>
-                                            </div>
-                                        </td>
-                                        <td data-label="Numero Fattura">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Stato">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Errore Fattura">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Visite Create">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Visite Non Create">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Errore Visite">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Totale Quantità">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Totale Minuti Donati">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Totale Costo">
-                                            <div class="slds-truncate">-</div>
-                                        </td>
-                                        <td data-label="Tipo Visita">
-                                            <div class="slds-truncate">{result.visitType}</div>
-                                        </td>
-                                        <td data-label="Beneficiario">
-                                            <div class="slds-truncate">{result.beneficiaryType}</div>
-                                        </td>
-                                        <td data-label="Località">
-                                            <div class="slds-truncate">{result.localita}</div>
-                                        </td>
-                                    </tr>
-                                </template>
+                                            <template if:false={result.isSuccess}>
+                                                <span class="slds-badge slds-badge_error">Errore</span>
+                                            </template>
+                                        </template>
+                                    </td>
+                                    <td data-label="Errore Fattura">
+                                        <div class="slds-truncate slds-text-color_error">{result.errorMessage}</div>
+                                    </td>
+                                    <td data-label="Errore Visite">
+                                        <div class="slds-truncate slds-text-color_error">{result.visitError}</div>
+                                    </td>
+                                </tr>
                             </template>
                         </tbody>
                     </table>
@@ -1006,8 +948,7 @@
                                 <div class="slds-m-top_small">
                                     <button 
                                         type="button" 
-                                        class="slds-button slds-button_neutral visits-toggle-button" 
-                                        class:slds-text-color_error={invoiceGroup.hasVisitErrors}
+                                        class="slds-button slds-button_neutral visits-toggle-button"
                                         data-index={invoiceIndex}
                                         onclick={toggleVisitsAccordion}>
                                         <lightning-icon 

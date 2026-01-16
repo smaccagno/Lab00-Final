@@ -116,7 +116,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     /**
      * Raggruppa i risultati per fattura per mostrare una sola riga per fattura
-     * con le visite associate visivamente indentate
+     * con tutte le informazioni sulla riga principale
      */
     get groupedSaveResults() {
         if (!this.saveResults || this.saveResults.length === 0) {
@@ -130,19 +130,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const invoiceKey = result.invoiceId || `error-${result.rowNumber}`;
             
             if (!groupedByInvoice.has(invoiceKey)) {
-                // Inizializza lo stato di espansione se non esiste
-                if (this.expandedInvoices[invoiceKey] === undefined) {
-                    this.expandedInvoices[invoiceKey] = true; // Di default espanso
-                }
-                
-                // Crea la riga principale della fattura
+                // Crea la riga principale della fattura con tutti i dettagli
                 groupedByInvoice.set(invoiceKey, {
                     id: `invoice-${invoiceKey}`,
                     invoiceKey: invoiceKey,
                     isInvoice: true,
                     invoiceId: result.invoiceId,
                     invoiceName: result.invoiceName,
-                    invoiceNumber: result.invoiceNumber,
+                    invoiceNumber: result.invoiceNumber || '',
+                    invoiceDate: result.invoiceDate || '',
+                    dataCompetenza: result.dataCompetenza || '',
+                    medicalCenter: result.medicalCenter || '',
+                    partnerName: result.partnerName || '',
+                    enteNoProfit: result.enteNoProfit || '',
+                    noProfitCategory: result.noProfitCategory || '',
+                    prestazioneGratuita: result.prestazioneGratuita || false,
+                    localita: result.localita || '',
                     status: result.status,
                     isSuccess: result.isSuccess,
                     errorMessage: result.errorMessage,
@@ -152,13 +155,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     visitsCreated: 0,
                     visitsFailed: 0,
                     visitError: result.visitError,
-                    visits: [] // Dettagli delle visite
+                    visits: [] // Dettagli delle visite (per riferimento, non più mostrate come righe separate)
                 });
             }
             
             const invoiceGroup = groupedByInvoice.get(invoiceKey);
             
-            // Aggiungi i dettagli delle visite se presenti
+            // Aggiungi i dettagli delle visite se presenti (per riferimento)
             if (result.visitDetails && Array.isArray(result.visitDetails)) {
                 invoiceGroup.visits.push(...result.visitDetails);
             }
@@ -185,31 +188,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             invoiceGroup.hasVisitErrors = invoiceGroup.visitError && invoiceGroup.visitError.trim() !== '' || 
                                          (invoiceGroup.visitsFailed && invoiceGroup.visitsFailed > 0);
             
-            // Aggiungi lo stato di espansione (di default espanso se ci sono visite)
-            if (invoiceGroup.hasVisits) {
-                invoiceGroup.expanded = this.expandedInvoices[invoiceGroup.invoiceKey] !== false;
-            } else {
-                invoiceGroup.expanded = false;
-            }
-            
-            // Crea un array flat con la fattura e le visite (se espansa)
-            const flatArray = [invoiceGroup];
-            if (invoiceGroup.expanded && invoiceGroup.visits) {
-                invoiceGroup.visits.forEach(visit => {
-                    flatArray.push({
-                        id: `visit-${visit.id}`,
-                        isInvoice: false,
-                        visitId: visit.id,
-                        visitName: visit.name,
-                        visitType: visit.visitType || '',
-                        beneficiaryType: visit.beneficiaryType || '',
-                        localita: visit.localita || ''
-                    });
-                });
-            }
-            
-            return flatArray;
-        }).flat();
+            return invoiceGroup;
+        });
         
         return groupedArray;
     }
@@ -4093,6 +4073,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         invoiceId: invoiceResult.invoiceId || null,
                         invoiceName: invoiceResult.invoiceName || invoiceResult.invoiceId || null,
                         invoiceNumber: invoiceResult.invoiceNumber || '',
+                        invoiceDate: invoiceResult.invoiceDate || '',
+                        dataCompetenza: invoiceResult.dataCompetenza || '',
+                        medicalCenter: invoiceResult.medicalCenter || '',
+                        partnerName: invoiceResult.partnerName || '',
+                        enteNoProfit: invoiceResult.enteNoProfit || '',
+                        noProfitCategory: invoiceResult.noProfitCategory || '',
+                        prestazioneGratuita: invoiceResult.prestazioneGratuita || false,
+                        localita: invoiceResult.localita || '',
                         partnerId: invoiceResult.partnerId || null, // Salva partnerId per l'update massivo
                         status: status,
                         isSuccess: status === 'success',
