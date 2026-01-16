@@ -1658,12 +1658,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Aggiorna l'array rows per forzare il rerender con i nuovi valori
                 this.rows = [...updatedRows];
                 
-                // Disattiva gli spinner dopo un breve delay per permettere il rerender
+                // Aggiorna lo stato visivo delle celle (bordi rossi) durante lo spinner
                 setTimeout(() => {
+                    cellsToCorrect.forEach(({ row, rowIndex }) => {
+                        const invoiceCell = this.template.querySelector(
+                            `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                        );
+                        if (invoiceCell) {
+                            this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                        }
+                    });
+                    
+                    // Disattiva gli spinner dopo aver aggiornato i bordi
                     cellsToCorrect.forEach(({ rowIndex }) => {
                         this.setCellValidating(rowIndex, 'invoiceNumber', false);
                     });
-                }, 300);
+                }, 100);
                 
                 // Pulisci la correzione pendente
                 this.pendingInvoiceNumberCorrection = null;
@@ -1728,12 +1738,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Aggiorna l'array rows per forzare il rerender con i nuovi valori
                 this.rows = [...updatedRows];
                 
-                // Disattiva gli spinner dopo un breve delay per permettere il rerender
+                // Aggiorna lo stato visivo delle celle (bordi rossi) durante lo spinner
                 setTimeout(() => {
+                    cellsToCorrectElse.forEach(({ row, rowIndex }) => {
+                        const invoiceCell = this.template.querySelector(
+                            `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                        );
+                        if (invoiceCell) {
+                            this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                        }
+                    });
+                    
+                    // Disattiva gli spinner dopo aver aggiornato i bordi
                     cellsToCorrectElse.forEach(({ rowIndex }) => {
                         this.setCellValidating(rowIndex, 'invoiceNumber', false);
                     });
-                }, 300);
+                }, 100);
             }
             
             this.rows = updatedRows;
