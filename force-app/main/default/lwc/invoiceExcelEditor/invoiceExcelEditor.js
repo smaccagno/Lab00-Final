@@ -5441,38 +5441,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     invoiceName: saveResult.invoiceName || null
                 };
                 
-                // Crea una mappa dei risultati delle visite usando un identificatore univoco
-                // Nota: visitDetails contiene 'id', 'name', 'visitType', 'beneficiaryType', 'localita'
-                // Le visite organizzate hanno 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione'
-                const visitResultsMap = new Map();
-                const visitResultsByIndex = [];
-                if (saveResult.visitDetails && Array.isArray(saveResult.visitDetails)) {
-                    saveResult.visitDetails.forEach((visitDetail, index) => {
-                        // Normalizza i valori per il matching (trim e lowercase)
-                        const normalizedVisitType = (visitDetail.visitType || '').trim().toLowerCase();
-                        const normalizedBeneficiaryType = (visitDetail.beneficiaryType || '').trim().toLowerCase();
-                        const normalizedLocalita = (visitDetail.localita || '').trim().toLowerCase();
-                        
-                        // Usa l'indice come chiave di fallback
-                        visitResultsByIndex[index] = visitDetail;
-                        
-                        // Crea chiavi multiple per matching più flessibile
-                        const visitKeyFull = `${normalizedVisitType}_${normalizedBeneficiaryType}_${normalizedLocalita}`;
-                        visitResultsMap.set(visitKeyFull, visitDetail);
-                        
-                        // Aggiungi anche chiavi parziali per matching più flessibile
-                        if (normalizedVisitType && normalizedBeneficiaryType) {
-                            const visitKeyPartial = `${normalizedVisitType}_${normalizedBeneficiaryType}`;
-                            if (!visitResultsMap.has(visitKeyPartial)) {
-                                visitResultsMap.set(visitKeyPartial, visitDetail);
-                            }
-                        }
-                        
-                        // Aggiungi anche un mapping per indice per facilitare il matching
-                        visitResultsMap.set(`index_${index}`, visitDetail);
-                    });
-                }
-                
                 // Funzione helper per normalizzare una stringa
                 const normalizeString = (str) => (str || '').trim().toLowerCase();
                 
@@ -5496,8 +5464,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     return localita;
                 };
                 
+                // Crea un array delle visite disponibili dal backend (non ancora assegnate)
+                const availableVisitDetails = (saveResult.visitDetails || []).map(vd => ({
+                    ...vd,
+                    normalizedVisitType: normalizeString(vd.visitType),
+                    normalizedBeneficiaryType: normalizeString(vd.beneficiaryType),
+                    normalizedLocalita: normalizeString(vd.localita),
+                    assigned: false
+                }));
+                
                 // Traccia le visite già assegnate per evitare duplicati
                 const assignedVisitIds = new Set();
+                
+                // Se il numero di visite corrisponde esattamente, usa matching per indice come strategia principale
+                const useIndexMatching = invoiceGroup.visits.length === availableVisitDetails.length;
                 
                 // Aggiorna le visite con i loro stati
                 const updatedVisits = invoiceGroup.visits.map((visit, visitIndex) => {
@@ -5506,94 +5486,104 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     const normalizedBeneficiaryType = normalizeString(visit.beneficiaryType);
                     const normalizedLocalita = buildNormalizedLocalita(visit.comune, visit.provincia, visit.regione);
                     
-                    // Prova diverse strategie di matching
                     let visitResult = null;
                     
-                    // 1. Matching completo (tipoVisita + beneficiaryType + localita)
-                    const visitKeyFull = `${normalizedTipoVisita}_${normalizedBeneficiaryType}_${normalizedLocalita}`;
-                    const candidateFull = visitResultsMap.get(visitKeyFull);
-                    if (candidateFull && !assignedVisitIds.has(candidateFull.id)) {
-                        visitResult = candidateFull;
+                    // Strategia 1: Se il numero corrisponde, prova prima il matching per indice
+                    if (useIndexMatching && visitIndex < availableVisitDetails.length) {
+                        const candidateByIndex = availableVisitDetails[visitIndex];
+                        if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
+                            // Verifica anche che i valori corrispondano (per sicurezza)
+                            const matches = candidateByIndex.normalizedVisitType === normalizedTipoVisita &&
+                                          candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType &&
+                                          candidateByIndex.normalizedLocalita === normalizedLocalita;
+                            
+                            // Se corrisponde perfettamente o se almeno tipoVisita e beneficiaryType corrispondono
+                            if (matches || (candidateByIndex.normalizedVisitType === normalizedTipoVisita && 
+                                          candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType)) {
+                                visitResult = candidateByIndex;
+                            }
+                        }
                     }
                     
-                    // 2. Se non trova match completo, prova con tipoVisita + beneficiaryType + localita (ricerca manuale)
-                    if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType && normalizedLocalita) {
-                        for (const visitDetail of (saveResult.visitDetails || [])) {
-                            if (assignedVisitIds.has(visitDetail.id)) continue;
-                            const detailVisitType = normalizeString(visitDetail.visitType);
-                            const detailBeneficiaryType = normalizeString(visitDetail.beneficiaryType);
-                            const detailLocalita = normalizeString(visitDetail.localita);
-                            if (detailVisitType === normalizedTipoVisita && 
-                                detailBeneficiaryType === normalizedBeneficiaryType && 
-                                detailLocalita === normalizedLocalita) {
+                    // Strategia 2: Matching completo (tipoVisita + beneficiaryType + localita)
+                    if (!visitResult) {
+                        for (const visitDetail of availableVisitDetails) {
+                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                            
+                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType &&
+                                visitDetail.normalizedLocalita === normalizedLocalita) {
                                 visitResult = visitDetail;
                                 break;
                             }
                         }
                     }
                     
-                    // 3. Se non trova match, prova con l'indice (se disponibile e non già assegnato)
-                    if (!visitResult && visitIndex < visitResultsByIndex.length) {
-                        const candidateByIndex = visitResultsByIndex[visitIndex];
-                        if (candidateByIndex && !assignedVisitIds.has(candidateByIndex.id)) {
-                            visitResult = candidateByIndex;
-                        }
-                    }
-                    
-                    // 4. Se ancora non trova match, prova a cercare per tipoVisita + localita
-                    if (!visitResult && normalizedTipoVisita && normalizedLocalita) {
-                        for (const visitDetail of (saveResult.visitDetails || [])) {
-                            if (assignedVisitIds.has(visitDetail.id)) continue;
-                            const detailVisitType = normalizeString(visitDetail.visitType);
-                            const detailLocalita = normalizeString(visitDetail.localita);
-                            if (detailVisitType === normalizedTipoVisita && detailLocalita === normalizedLocalita) {
+                    // Strategia 3: Matching per tipoVisita + localita (se comune/provincia/regione sono disponibili)
+                    if (!visitResult && normalizedLocalita) {
+                        for (const visitDetail of availableVisitDetails) {
+                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                            
+                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                visitDetail.normalizedLocalita === normalizedLocalita) {
                                 visitResult = visitDetail;
                                 break;
                             }
                         }
                     }
                     
-                    // 5. Ultimo tentativo: cerca per tipoVisita + beneficiaryType
+                    // Strategia 4: Matching per tipoVisita + beneficiaryType
                     if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType) {
-                        for (const visitDetail of (saveResult.visitDetails || [])) {
-                            if (assignedVisitIds.has(visitDetail.id)) continue;
-                            const detailVisitType = normalizeString(visitDetail.visitType);
-                            const detailBeneficiaryType = normalizeString(visitDetail.beneficiaryType);
-                            if (detailVisitType === normalizedTipoVisita && detailBeneficiaryType === normalizedBeneficiaryType) {
+                        for (const visitDetail of availableVisitDetails) {
+                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                            
+                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType) {
                                 visitResult = visitDetail;
                                 break;
                             }
                         }
                     }
                     
-                    // 6. Se ancora non trova match e il numero di visite corrisponde, assegna per indice
-                    if (!visitResult && visitIndex < visitResultsByIndex.length && 
-                        invoiceGroup.visits.length === (saveResult.visitDetails || []).length) {
-                        const candidateByIndex = visitResultsByIndex[visitIndex];
-                        if (candidateByIndex && !assignedVisitIds.has(candidateByIndex.id)) {
+                    // Strategia 5: Se ancora non trovato e il numero corrisponde, usa l'indice come fallback
+                    if (!visitResult && useIndexMatching && visitIndex < availableVisitDetails.length) {
+                        const candidateByIndex = availableVisitDetails[visitIndex];
+                        if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
                             visitResult = candidateByIndex;
                         }
                     }
                     
-                    if (visitResult) {
-                        // Marca questa visita come assegnata
-                        if (visitResult.id) {
-                            assignedVisitIds.add(visitResult.id);
+                    // Strategia 6: Ultimo tentativo - prendi la prima visita disponibile non assegnata
+                    if (!visitResult) {
+                        for (const visitDetail of availableVisitDetails) {
+                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                            if (visitDetail.id) {
+                                visitResult = visitDetail;
+                                break;
+                            }
                         }
+                    }
+                    
+                    if (visitResult && visitResult.id) {
+                        // Marca questa visita come assegnata
+                        assignedVisitIds.add(visitResult.id);
+                        visitResult.assigned = true;
+                        
                         return {
                             ...visit,
-                            saveStatus: 'success', // Se è nei visitDetails, è stata creata con successo
+                            saveStatus: 'success',
                             saveStatusSuccess: true,
                             saveErrorMessage: null,
-                            visitId: visitResult.id || null,
+                            visitId: visitResult.id,
                             visitName: visitResult.name || null
                         };
                     }
+                    
                     // Se non c'è un risultato specifico, eredita lo stato della fattura
                     return {
                         ...visit,
                         saveStatus: saveResult.isSuccess ? 'success' : 'error',
-                        saveStatusSuccess: saveResult.isSuccess === true, // Booleano per il template
+                        saveStatusSuccess: saveResult.isSuccess === true,
                         saveErrorMessage: saveResult.visitError || saveResult.errorMessage || null
                     };
                 });
