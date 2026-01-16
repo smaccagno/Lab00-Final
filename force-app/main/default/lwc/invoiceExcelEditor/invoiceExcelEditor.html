@@ -417,28 +417,12 @@
                                 </td>
                                 <td class="editable-cell {row.validationErrors.invoiceNumber ? 'invalid-cell' : ''}" 
                                     data-field="invoiceNumber"
-                                    data-row-index={rowIndex}>
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellFocus}>
                                     <div class="invoice-number-container">
-                                        <span class="invoice-number-value"
-                                            contenteditable="true"
-                                            onblur={handleCellBlur}
-                                            onfocus={handleCellFocus}
-                                            oninput={handleCellInput}
-                                            onkeydown={handleKeyDown}
-                                            onpaste={handlePaste}>
+                                        <span class="invoice-number-value">
                                             {row.invoiceNumber}
                                         </span>
-                                        <template if:true={row.isEditing.invoiceNumber}>
-                                            <button 
-                                                type="button"
-                                                class="cell-confirm-button"
-                                                data-field="invoiceNumber"
-                                                data-row-index={rowIndex}
-                                                onclick={handleConfirmButtonClick}
-                                                title="Conferma valore">
-                                                <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
-                                            </button>
-                                        </template>
                                         <template if:true={row.validationErrors.invoiceNumber}>
                                             <div class="invoice-number-error-message">
                                                 Numero fattura già presente a sistema, verificare
@@ -1475,6 +1459,49 @@
                 </div>
             </div>
         </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    
+    <!-- Modal per editing Invoice Number -->
+    <template if:true={invoiceNumberModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open invoice-number-modal" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Modifica Numero Fattura</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="invoice-number-input">
+                            Numero Fattura
+                        </label>
+                        <div class="slds-form-element__control">
+                            <input 
+                                type="text" 
+                                id="invoice-number-input"
+                                class="slds-input invoice-number-modal-input" 
+                                value={invoiceNumberModalValue}
+                                oninput={handleInvoiceNumberModalInput}
+                                onkeydown={handleInvoiceNumberModalKeyDown}
+                                placeholder="Inserisci il numero fattura" />
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        variant="neutral" 
+                        label="Annulla" 
+                        onclick={closeInvoiceNumberModal}
+                        title="Annulla">
+                    </lightning-button>
+                    <lightning-button 
+                        variant="brand" 
+                        label="Conferma" 
+                        onclick={confirmInvoiceNumberModal}
+                        title="Conferma">
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
     

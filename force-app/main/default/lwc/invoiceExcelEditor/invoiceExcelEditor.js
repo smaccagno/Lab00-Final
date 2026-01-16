@@ -50,6 +50,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     skipNextConfirmClick = false; // Evita doppia esecuzione quando usiamo mousedown+click sul bottone
     // Stato calendario date
     datePickerOpen = null; // {rowIndex: number, field: string}
+    // Stato modal editing Invoice Number
+    @track invoiceNumberModalOpen = null; // {rowIndex: number} o null
+    invoiceNumberModalValue = ''; // Valore temporaneo nel modal
     // Stato selezione programma e partner
     @track showProgramSelection = false;
     @track showPartnerSelection = false;
@@ -375,6 +378,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (row.validationErrors) {
                 row.validationErrors.invoiceNumber = false;
             }
+            // Aggiorna anche il DOM della cella
+            setTimeout(() => {
+                const invoiceCell = this.template.querySelector(
+                    `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                );
+                if (invoiceCell) {
+                    const invoiceValueSpan = invoiceCell.querySelector('.invoice-number-value');
+                    if (invoiceValueSpan) {
+                        invoiceValueSpan.textContent = '';
+                    }
+                    this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                }
+            }, 0);
         } else if (field === 'isFree' || field === 'noInvoiceAvailable') {
             // Per i checkbox, imposta a false
             row[field] = false;
@@ -756,6 +772,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         const field = cell.dataset.field;
         
+        // Per Invoice Number, apri il modal di editing invece del contenteditable normale
+        if (field === 'invoiceNumber') {
+            event.preventDefault();
+            const rowIndex = parseInt(cell.dataset.rowIndex, 10);
+            if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                this.openInvoiceNumberModal(rowIndex);
+            }
+            return;
+        }
+        
         // Per le celle date, non fare focus normale ma apri il calendario
         if (this.isDateField(field)) {
             event.preventDefault();
@@ -783,6 +809,130 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (rowIndex >= 0 && rowIndex < this.rows.length) {
             const row = this.rows[rowIndex];
             cell.dataset.initialValue = row[field] || '';
+        }
+    }
+
+    /**
+     * Apre il modal di editing per Invoice Number
+     */
+    openInvoiceNumberModal(rowIndex) {
+        if (rowIndex >= 0 && rowIndex < this.rows.length) {
+            const row = this.rows[rowIndex];
+            this.invoiceNumberModalOpen = { rowIndex: rowIndex };
+            this.invoiceNumberModalValue = row.invoiceNumber || '';
+            
+            // Focus sull'input dopo che il DOM è stato aggiornato
+            setTimeout(() => {
+                const input = this.template.querySelector('.invoice-number-modal-input');
+                if (input) {
+                    input.focus();
+                    // Posiziona il cursore alla fine del testo
+                    input.setSelectionRange(input.value.length, input.value.length);
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Chiude il modal di editing per Invoice Number senza salvare
+     */
+    closeInvoiceNumberModal() {
+        this.invoiceNumberModalOpen = null;
+        this.invoiceNumberModalValue = '';
+    }
+
+    /**
+     * Conferma il valore nel modal e lo applica alla cella
+     */
+    async confirmInvoiceNumberModal() {
+        if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
+            const rowIndex = this.invoiceNumberModalOpen.rowIndex;
+            const newValue = this.invoiceNumberModalValue.trim();
+            
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                const oldValue = row.invoiceNumber || '';
+                
+                // Aggiorna il valore nella riga
+                row.invoiceNumber = newValue;
+                
+                // Aggiorna anche il DOM della cella
+                const invoiceCell = this.template.querySelector(
+                    `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
+                );
+                if (invoiceCell) {
+                    const invoiceValueSpan = invoiceCell.querySelector('.invoice-number-value');
+                    if (invoiceValueSpan) {
+                        invoiceValueSpan.textContent = newValue;
+                    }
+                }
+                
+                // Salva il valore iniziale per la correzione automatica
+                if (invoiceCell) {
+                    invoiceCell.dataset.initialValue = oldValue;
+                }
+                
+                // Imposta lo spinner di validazione
+                this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                
+                // Validazione campo
+                this.validateField(row, 'invoiceNumber', newValue);
+                
+                // Rimuovi lo spinner di validazione
+                this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                
+                // Aggiorna lo stato visivo della cella
+                if (invoiceCell) {
+                    this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                }
+                
+                // Per numero fattura, traccia la modifica per correggere dopo la validazione
+                if (oldValue && oldValue.trim().toLowerCase() !== newValue.trim().toLowerCase()) {
+                    this.pendingInvoiceNumberCorrection = {
+                        oldValue: oldValue.trim().toLowerCase(),
+                        newValue: newValue,
+                        rowIndex: rowIndex,
+                        invoiceDate: row.invoiceDate,
+                        medicalCenter: row.medicalCenter || ''
+                    };
+                }
+                
+                this.rows = updatedRows;
+                
+                // Verifica unicità numeri fattura
+                this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                setTimeout(async () => {
+                    try {
+                        await this.checkInvoiceNumbersUniqueness();
+                    } finally {
+                        this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                    }
+                }, 50);
+            }
+            
+            // Chiudi il modal
+            this.closeInvoiceNumberModal();
+        }
+    }
+
+    /**
+     * Gestisce l'input nel modal di Invoice Number
+     */
+    handleInvoiceNumberModalInput(event) {
+        this.invoiceNumberModalValue = event.target.value;
+    }
+
+    /**
+     * Gestisce il keydown nel modal di Invoice Number (Enter per confermare, Escape per chiudere)
+     */
+    handleInvoiceNumberModalKeyDown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.confirmInvoiceNumberModal();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closeInvoiceNumberModal();
         }
     }
     
@@ -2174,7 +2324,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }, 0);
             
-            this.rows = updatedRows;
+            // Forza il rerender aggiornando l'array rows con una nuova istanza
+            this.rows = updatedRows.map((r, idx) => ({ ...r }));
             
             // Verifica unicità dopo la modifica dei flag
             await this.checkInvoiceNumbersUniqueness();
