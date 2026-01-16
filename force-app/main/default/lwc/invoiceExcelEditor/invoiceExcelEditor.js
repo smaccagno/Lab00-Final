@@ -5465,11 +5465,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 };
                 
                 // Crea un array delle visite disponibili dal backend (non ancora assegnate)
-                const availableVisitDetails = (saveResult.visitDetails || []).map(vd => ({
+                // Aggiungi anche l'indice originale per il matching
+                const availableVisitDetails = (saveResult.visitDetails || []).map((vd, index) => ({
                     ...vd,
                     normalizedVisitType: normalizeString(vd.visitType),
                     normalizedBeneficiaryType: normalizeString(vd.beneficiaryType),
                     normalizedLocalita: normalizeString(vd.localita),
+                    originalIndex: index, // Indice originale nell'array restituito dal backend
                     assigned: false
                 }));
                 
@@ -5488,24 +5490,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     
                     let visitResult = null;
                     
-                    // Strategia 1: Se il numero corrisponde, prova prima il matching per indice
+                    // Strategia 1: Se il numero corrisponde esattamente, usa matching per indice (più affidabile)
                     if (useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
                         if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
-                            // Verifica anche che i valori corrispondano (per sicurezza)
-                            const matches = candidateByIndex.normalizedVisitType === normalizedTipoVisita &&
-                                          candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType &&
-                                          candidateByIndex.normalizedLocalita === normalizedLocalita;
+                            // Verifica che almeno tipoVisita e beneficiaryType corrispondano per sicurezza
+                            const basicMatch = candidateByIndex.normalizedVisitType === normalizedTipoVisita &&
+                                             candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType;
                             
-                            // Se corrisponde perfettamente o se almeno tipoVisita e beneficiaryType corrispondono
-                            if (matches || (candidateByIndex.normalizedVisitType === normalizedTipoVisita && 
-                                          candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType)) {
+                            // Se corrisponde perfettamente o almeno tipoVisita e beneficiaryType corrispondono
+                            if (basicMatch) {
                                 visitResult = candidateByIndex;
                             }
                         }
                     }
                     
-                    // Strategia 2: Matching completo (tipoVisita + beneficiaryType + localita)
+                    // Strategia 2: Matching completo (tipoVisita + beneficiaryType + localita) - più preciso
                     if (!visitResult) {
                         for (const visitDetail of availableVisitDetails) {
                             if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
@@ -5545,7 +5545,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                     }
                     
-                    // Strategia 5: Se ancora non trovato e il numero corrisponde, usa l'indice come fallback
+                    // Strategia 5: Se ancora non trovato e il numero corrisponde, usa l'indice come fallback assoluto
                     if (!visitResult && useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
                         if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
@@ -5764,8 +5764,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     regione: row.validationErrors && row.validationErrors.regione === true
                 };
                 
+                // Aggiungi un identificatore temporaneo basato sull'indice della riga per il matching
+                const visitIndex = invoiceMap.get(invoiceNumber).visits.length;
                 invoiceMap.get(invoiceNumber).visits.push({
-                    id: `visit-${invoiceNumber}-${invoiceMap.get(invoiceNumber).visits.length}`,
+                    id: `visit-${invoiceNumber}-${visitIndex}`,
+                    tempIndex: visitIndex, // Indice temporaneo per il matching
+                    rowIndex: row.rowNumber || rowIndex, // Indice della riga originale se disponibile
                     tipoVisita: row.tipoVisita || '',
                     beneficiaryType: row.beneficiaryType || '',
                     dataVisita: row.dataVisita ? this.formatDateForDisplay(row.dataVisita) : '',
