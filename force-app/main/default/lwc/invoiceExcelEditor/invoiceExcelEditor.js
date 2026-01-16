@@ -5445,42 +5445,141 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Nota: visitDetails contiene 'id', 'name', 'visitType', 'beneficiaryType', 'localita'
                 // Le visite organizzate hanno 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione'
                 const visitResultsMap = new Map();
+                const visitResultsByIndex = [];
                 if (saveResult.visitDetails && Array.isArray(saveResult.visitDetails)) {
                     saveResult.visitDetails.forEach((visitDetail, index) => {
-                        // Usa l'indice come chiave di fallback, ma prova anche con i campi
-                        const visitKey = `${visitDetail.visitType || ''}_${visitDetail.beneficiaryType || ''}_${visitDetail.localita || ''}`;
-                        visitResultsMap.set(visitKey, visitDetail);
+                        // Normalizza i valori per il matching (trim e lowercase)
+                        const normalizedVisitType = (visitDetail.visitType || '').trim().toLowerCase();
+                        const normalizedBeneficiaryType = (visitDetail.beneficiaryType || '').trim().toLowerCase();
+                        const normalizedLocalita = (visitDetail.localita || '').trim().toLowerCase();
+                        
+                        // Usa l'indice come chiave di fallback
+                        visitResultsByIndex[index] = visitDetail;
+                        
+                        // Crea chiavi multiple per matching più flessibile
+                        const visitKeyFull = `${normalizedVisitType}_${normalizedBeneficiaryType}_${normalizedLocalita}`;
+                        visitResultsMap.set(visitKeyFull, visitDetail);
+                        
+                        // Aggiungi anche chiavi parziali per matching più flessibile
+                        if (normalizedVisitType && normalizedBeneficiaryType) {
+                            const visitKeyPartial = `${normalizedVisitType}_${normalizedBeneficiaryType}`;
+                            if (!visitResultsMap.has(visitKeyPartial)) {
+                                visitResultsMap.set(visitKeyPartial, visitDetail);
+                            }
+                        }
+                        
                         // Aggiungi anche un mapping per indice per facilitare il matching
                         visitResultsMap.set(`index_${index}`, visitDetail);
                     });
                 }
                 
+                // Funzione helper per normalizzare una stringa
+                const normalizeString = (str) => (str || '').trim().toLowerCase();
+                
+                // Funzione helper per costruire localita normalizzata
+                const buildNormalizedLocalita = (comune, provincia, regione) => {
+                    let localita = normalizeString(comune);
+                    const prov = normalizeString(provincia);
+                    const reg = normalizeString(regione);
+                    
+                    if (prov) {
+                        localita += localita ? ` (${prov}` : prov;
+                        if (reg) {
+                            localita += `, ${reg}`;
+                        }
+                        if (localita.includes('(')) {
+                            localita += ')';
+                        }
+                    } else if (reg) {
+                        localita += localita ? ` (${reg})` : reg;
+                    }
+                    return localita;
+                };
+                
+                // Traccia le visite già assegnate per evitare duplicati
+                const assignedVisitIds = new Set();
+                
                 // Aggiorna le visite con i loro stati
                 const updatedVisits = invoiceGroup.visits.map((visit, visitIndex) => {
-                    // Prova a fare il matching usando i campi disponibili
-                    // Costruisci localita dalla visita organizzata per matching
-                    let visitLocalita = visit.comune || '';
-                    if (visit.provincia) {
-                        visitLocalita += visitLocalita ? ` (${visit.provincia}` : visit.provincia;
-                        if (visit.regione) {
-                            visitLocalita += `, ${visit.regione}`;
-                        }
-                        if (visitLocalita.includes('(')) {
-                            visitLocalita += ')';
-                        }
-                    } else if (visit.regione) {
-                        visitLocalita += visitLocalita ? ` (${visit.regione})` : visit.regione;
+                    // Normalizza i valori della visita organizzata
+                    const normalizedTipoVisita = normalizeString(visit.tipoVisita);
+                    const normalizedBeneficiaryType = normalizeString(visit.beneficiaryType);
+                    const normalizedLocalita = buildNormalizedLocalita(visit.comune, visit.provincia, visit.regione);
+                    
+                    // Prova diverse strategie di matching
+                    let visitResult = null;
+                    
+                    // 1. Matching completo (tipoVisita + beneficiaryType + localita)
+                    const visitKeyFull = `${normalizedTipoVisita}_${normalizedBeneficiaryType}_${normalizedLocalita}`;
+                    const candidateFull = visitResultsMap.get(visitKeyFull);
+                    if (candidateFull && !assignedVisitIds.has(candidateFull.id)) {
+                        visitResult = candidateFull;
                     }
                     
-                    const visitKey = `${visit.tipoVisita || ''}_${visit.beneficiaryType || ''}_${visitLocalita}`;
-                    let visitResult = visitResultsMap.get(visitKey);
+                    // 2. Se non trova match completo, prova con tipoVisita + beneficiaryType + localita (ricerca manuale)
+                    if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType && normalizedLocalita) {
+                        for (const visitDetail of (saveResult.visitDetails || [])) {
+                            if (assignedVisitIds.has(visitDetail.id)) continue;
+                            const detailVisitType = normalizeString(visitDetail.visitType);
+                            const detailBeneficiaryType = normalizeString(visitDetail.beneficiaryType);
+                            const detailLocalita = normalizeString(visitDetail.localita);
+                            if (detailVisitType === normalizedTipoVisita && 
+                                detailBeneficiaryType === normalizedBeneficiaryType && 
+                                detailLocalita === normalizedLocalita) {
+                                visitResult = visitDetail;
+                                break;
+                            }
+                        }
+                    }
                     
-                    // Se non trova match, prova con l'indice
-                    if (!visitResult && visitIndex < saveResult.visitDetails.length) {
-                        visitResult = visitResultsMap.get(`index_${visitIndex}`);
+                    // 3. Se non trova match, prova con l'indice (se disponibile e non già assegnato)
+                    if (!visitResult && visitIndex < visitResultsByIndex.length) {
+                        const candidateByIndex = visitResultsByIndex[visitIndex];
+                        if (candidateByIndex && !assignedVisitIds.has(candidateByIndex.id)) {
+                            visitResult = candidateByIndex;
+                        }
+                    }
+                    
+                    // 4. Se ancora non trova match, prova a cercare per tipoVisita + localita
+                    if (!visitResult && normalizedTipoVisita && normalizedLocalita) {
+                        for (const visitDetail of (saveResult.visitDetails || [])) {
+                            if (assignedVisitIds.has(visitDetail.id)) continue;
+                            const detailVisitType = normalizeString(visitDetail.visitType);
+                            const detailLocalita = normalizeString(visitDetail.localita);
+                            if (detailVisitType === normalizedTipoVisita && detailLocalita === normalizedLocalita) {
+                                visitResult = visitDetail;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 5. Ultimo tentativo: cerca per tipoVisita + beneficiaryType
+                    if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType) {
+                        for (const visitDetail of (saveResult.visitDetails || [])) {
+                            if (assignedVisitIds.has(visitDetail.id)) continue;
+                            const detailVisitType = normalizeString(visitDetail.visitType);
+                            const detailBeneficiaryType = normalizeString(visitDetail.beneficiaryType);
+                            if (detailVisitType === normalizedTipoVisita && detailBeneficiaryType === normalizedBeneficiaryType) {
+                                visitResult = visitDetail;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 6. Se ancora non trova match e il numero di visite corrisponde, assegna per indice
+                    if (!visitResult && visitIndex < visitResultsByIndex.length && 
+                        invoiceGroup.visits.length === (saveResult.visitDetails || []).length) {
+                        const candidateByIndex = visitResultsByIndex[visitIndex];
+                        if (candidateByIndex && !assignedVisitIds.has(candidateByIndex.id)) {
+                            visitResult = candidateByIndex;
+                        }
                     }
                     
                     if (visitResult) {
+                        // Marca questa visita come assegnata
+                        if (visitResult.id) {
+                            assignedVisitIds.add(visitResult.id);
+                        }
                         return {
                             ...visit,
                             saveStatus: 'success', // Se è nei visitDetails, è stata creata con successo
