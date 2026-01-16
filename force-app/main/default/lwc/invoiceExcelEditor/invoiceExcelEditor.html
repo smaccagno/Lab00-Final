@@ -420,7 +420,7 @@
                                     data-row-index={rowIndex}
                                     onclick={handleCellFocus}>
                                     <div class="invoice-number-container">
-                                        <template if:false={invoiceNumberModalOpen}>
+                                        <template if:false={row.isEditingInvoiceNumber}>
                                             <span class="invoice-number-value">
                                                 {row.invoiceNumber}
                                             </span>

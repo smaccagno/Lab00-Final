@@ -160,10 +160,10 @@
 }
 
 .invoice-number-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 32px;
     position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
     padding-right: 24px; /* Spazio per il pulsante di cancellazione */
 }
 
@@ -683,12 +683,33 @@
 }
 
 /* Box di editing inline per Invoice Number */
+.invoice-number-container {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+}
+
+.invoice-number-value {
+    display: inline-block;
+    width: 100%;
+    min-height: 20px;
+}
+
 .invoice-number-edit-box {
     display: flex;
     align-items: center;
-    width: 100%;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     gap: 4px;
+    z-index: 10;
+    background-color: white;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #0070d2;
+    border-radius: 3px;
 }
 
 .invoice-number-edit-input {
@@ -699,6 +720,7 @@
     border-radius: 3px;
     outline: none;
     min-width: 0;
+    max-width: calc(100% - 52px); /* Larghezza totale meno spazio per i due pulsanti */
 }
 
 .invoice-number-edit-input:focus {

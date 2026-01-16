@@ -775,12 +775,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Per Invoice Number, apri il box di editing invece del contenteditable normale
         if (field === 'invoiceNumber') {
+            const rowIndex = parseInt(cell.dataset.rowIndex, 10);
             // Se il box di editing è già aperto per questa cella, non fare nulla
-            if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex === parseInt(cell.dataset.rowIndex, 10)) {
+            if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex === rowIndex) {
                 return;
             }
+            // Chiudi eventuali altri box aperti prima di aprirne uno nuovo
+            if (this.invoiceNumberModalOpen) {
+                this.closeInvoiceNumberModal();
+            }
             event.preventDefault();
-            const rowIndex = parseInt(cell.dataset.rowIndex, 10);
             if (rowIndex >= 0 && rowIndex < this.rows.length) {
                 this.openInvoiceNumberModal(rowIndex);
             }
@@ -853,7 +857,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     /**
      * Chiude il box di editing per Invoice Number senza salvare
      */
-    closeInvoiceNumberModal() {
+    closeInvoiceNumberModal(event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        
         if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
             const rowIndex = this.invoiceNumberModalOpen.rowIndex;
             if (rowIndex < this.rows.length) {
@@ -870,7 +879,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     /**
      * Conferma il valore nel box di editing e lo applica alla cella
      */
-    async confirmInvoiceNumberModal() {
+    async confirmInvoiceNumberModal(event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        
         if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
             const rowIndex = this.invoiceNumberModalOpen.rowIndex;
             const newValue = this.invoiceNumberModalValue.trim();
@@ -882,6 +896,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 
                 // Aggiorna il valore nella riga
                 row.invoiceNumber = newValue;
+                
+                // Chiudi il box di editing prima di aggiornare
+                row.isEditingInvoiceNumber = false;
+                this.invoiceNumberModalOpen = null;
+                this.invoiceNumberModalValue = '';
+                
+                // Aggiorna l'array rows per forzare il rerender
+                this.rows = updatedRows;
                 
                 // Salva il valore iniziale per la correzione automatica
                 const invoiceCell = this.template.querySelector(
@@ -901,13 +923,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         medicalCenter: row.medicalCenter || ''
                     };
                 }
-                
-                // Chiudi il box di editing prima di aggiornare
-                row.isEditingInvoiceNumber = false;
-                this.closeInvoiceNumberModal();
-                
-                // Aggiorna l'array rows per forzare il rerender
-                this.rows = updatedRows;
                 
                 // Imposta lo spinner di validazione
                 this.setCellValidating(rowIndex, 'invoiceNumber', true);
@@ -951,10 +966,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     handleInvoiceNumberModalKeyDown(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            this.confirmInvoiceNumberModal();
+            event.stopPropagation();
+            this.confirmInvoiceNumberModal(event);
         } else if (event.key === 'Escape') {
             event.preventDefault();
-            this.closeInvoiceNumberModal();
+            event.stopPropagation();
+            this.closeInvoiceNumberModal(event);
         }
     }
 
