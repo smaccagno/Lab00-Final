@@ -1494,8 +1494,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     medicalCenter: row.medicalCenter || ''
                 };
             } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
-                this.hasValidation(field)) {
-                // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
+                this.hasValidation(field) && field !== 'comune' && field !== 'provincia' && field !== 'regione') {
+                // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
                 const valueToFind = initialValue.trim().toLowerCase();
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherIndex !== rowIndex && otherRow[field]) {
@@ -1545,9 +1545,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.rows = updatedRows;
         
         // Aggiorna le celle corrette nel DOM dopo un breve delay
+        // Escludi comune, provincia e regione dalla correzione automatica
         if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
             field !== 'isFree' && field !== 'noInvoiceAvailable' &&
-            field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount') {
+            field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
+            field !== 'comune' && field !== 'provincia' && field !== 'regione') {
             setTimeout(() => {
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherIndex !== rowIndex) {
@@ -1710,8 +1712,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         medicalCenter: row.medicalCenter || ''
                     };
                 } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
-                    this.hasValidation(field)) {
-                    // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
+                    this.hasValidation(field) && field !== 'comune' && field !== 'provincia' && field !== 'regione') {
+                    // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
                     // Usa initialValue (valore iniziale salvato durante il focus) per cercare le celle da correggere
                     const valueToFind = initialValue.trim().toLowerCase();
                     updatedRows.forEach((otherRow, otherIndex) => {
@@ -1760,9 +1762,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.rows = updatedRows;
             
             // Aggiorna le celle corrette nel DOM dopo un breve delay
+            // Escludi comune, provincia e regione dalla correzione automatica
             if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
                 field !== 'isFree' && field !== 'noInvoiceAvailable' &&
-                field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount') {
+                field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
+                field !== 'comune' && field !== 'provincia' && field !== 'regione') {
                 setTimeout(() => {
                     updatedRows.forEach((otherRow, otherIndex) => {
                         if (otherIndex !== rowIndex) {
