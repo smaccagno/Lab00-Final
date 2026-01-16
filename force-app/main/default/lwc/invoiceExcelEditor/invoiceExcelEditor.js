@@ -1526,6 +1526,30 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Validazione campi specifici
         this.validateField(row, field, row[field]);
         
+        // Se è stato modificato comune, provincia o regione, valida anche gli altri due campi correlati
+        if (field === 'comune') {
+            if (row.provincia) {
+                this.validateField(row, 'provincia', row.provincia);
+            }
+            if (row.regione) {
+                this.validateField(row, 'regione', row.regione);
+            }
+        } else if (field === 'provincia') {
+            if (row.comune) {
+                this.validateField(row, 'comune', row.comune);
+            }
+            if (row.regione) {
+                this.validateField(row, 'regione', row.regione);
+            }
+        } else if (field === 'regione') {
+            if (row.comune) {
+                this.validateField(row, 'comune', row.comune);
+            }
+            if (row.provincia) {
+                this.validateField(row, 'provincia', row.provincia);
+            }
+        }
+        
         // Rimuovi lo spinner di validazione per questa cella (validazione sincrona completata)
         if (this.hasValidation(field)) {
             this.setCellValidating(rowIndex, field, false);
@@ -1533,6 +1557,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Aggiorna lo stato visivo della cella
         this.updateCellValidationState(cell, row, field);
+        
+        // Se è stato modificato comune, provincia o regione, aggiorna anche lo stato visivo degli altri due campi correlati
+        if (field === 'comune' || field === 'provincia' || field === 'regione') {
+            setTimeout(() => {
+                const comuneCell = this.template.querySelector(`td[data-field="comune"][data-row-index="${rowIndex}"]`);
+                const provinciaCell = this.template.querySelector(`td[data-field="provincia"][data-row-index="${rowIndex}"]`);
+                const regioneCell = this.template.querySelector(`td[data-field="regione"][data-row-index="${rowIndex}"]`);
+                
+                if (comuneCell) {
+                    this.updateCellValidationState(comuneCell, row, 'comune');
+                }
+                if (provinciaCell) {
+                    this.updateCellValidationState(provinciaCell, row, 'provincia');
+                }
+                if (regioneCell) {
+                    this.updateCellValidationState(regioneCell, row, 'regione');
+                }
+            }, 50);
+        }
         
         // Aggiorna il contenuto della cella nel DOM se il valore è stato sostituito
         const targetElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value')
@@ -1753,6 +1796,30 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Validazione campi specifici
             this.validateField(row, field, row[field]);
             
+            // Se è stato modificato comune, provincia o regione, valida anche gli altri due campi correlati
+            if (field === 'comune') {
+                if (row.provincia) {
+                    this.validateField(row, 'provincia', row.provincia);
+                }
+                if (row.regione) {
+                    this.validateField(row, 'regione', row.regione);
+                }
+            } else if (field === 'provincia') {
+                if (row.comune) {
+                    this.validateField(row, 'comune', row.comune);
+                }
+                if (row.regione) {
+                    this.validateField(row, 'regione', row.regione);
+                }
+            } else if (field === 'regione') {
+                if (row.comune) {
+                    this.validateField(row, 'comune', row.comune);
+                }
+                if (row.provincia) {
+                    this.validateField(row, 'provincia', row.provincia);
+                }
+            }
+            
             // Rimuovi lo spinner di validazione per questa cella (validazione sincrona completata)
             if (this.hasValidation(field)) {
                 this.setCellValidating(rowIndex, field, false);
@@ -1760,6 +1827,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             
             // Aggiorna lo stato visivo della cella
             this.updateCellValidationState(cell, row, field);
+            
+            // Se è stato modificato comune, provincia o regione, aggiorna anche lo stato visivo degli altri due campi correlati
+            if (field === 'comune' || field === 'provincia' || field === 'regione') {
+                setTimeout(() => {
+                    const comuneCell = this.template.querySelector(`td[data-field="comune"][data-row-index="${rowIndex}"]`);
+                    const provinciaCell = this.template.querySelector(`td[data-field="provincia"][data-row-index="${rowIndex}"]`);
+                    const regioneCell = this.template.querySelector(`td[data-field="regione"][data-row-index="${rowIndex}"]`);
+                    
+                    if (comuneCell) {
+                        this.updateCellValidationState(comuneCell, row, 'comune');
+                    }
+                    if (provinciaCell) {
+                        this.updateCellValidationState(provinciaCell, row, 'provincia');
+                    }
+                    if (regioneCell) {
+                        this.updateCellValidationState(regioneCell, row, 'regione');
+                    }
+                }, 50);
+            }
             
             // Aggiorna il contenuto della cella nel DOM se il valore è stato sostituito
             const targetElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value')
@@ -3368,11 +3454,38 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.comune = false; // Vuoto è ok
                 } else {
                     // Verifica se il comune esiste nella lista
-                    const comuneValid = this.comuni.some(
+                    const comuneMatch = this.comuni.find(
                         c => c.Nome_Comune__c && 
                              c.Nome_Comune__c.toLowerCase().trim() === trimmedValue.toLowerCase()
                     );
-                    row.validationErrors.comune = !comuneValid;
+                    const comuneExists = !!comuneMatch;
+                    
+                    if (!comuneExists) {
+                        row.validationErrors.comune = true;
+                    } else {
+                        // Verifica coerenza con provincia e regione se presenti
+                        let isCoherent = true;
+                        
+                        if (comuneMatch) {
+                            // Verifica coerenza con provincia
+                            if (row.provincia && comuneMatch.Provincia__c) {
+                                const provinciaCoherent = comuneMatch.Provincia__c.trim().toLowerCase() === row.provincia.trim().toLowerCase();
+                                if (!provinciaCoherent) {
+                                    isCoherent = false;
+                                }
+                            }
+                            
+                            // Verifica coerenza con regione
+                            if (row.regione && comuneMatch.Regione__c) {
+                                const regioneCoherent = comuneMatch.Regione__c.trim().toLowerCase() === row.regione.trim().toLowerCase();
+                                if (!regioneCoherent) {
+                                    isCoherent = false;
+                                }
+                            }
+                        }
+                        
+                        row.validationErrors.comune = !isCoherent;
+                    }
                 }
                 break;
 
@@ -3381,8 +3494,45 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.provincia = false; // Vuoto è ok
                 } else {
                     // Verifica se la provincia esiste nella lista
-                    const provinciaValid = this.provinceSet.has(trimmedValue.toLowerCase());
-                    row.validationErrors.provincia = !provinciaValid;
+                    const provinciaExists = this.provinceSet.has(trimmedValue.toLowerCase());
+                    
+                    if (!provinciaExists) {
+                        row.validationErrors.provincia = true;
+                    } else {
+                        // Verifica coerenza con comune e regione se presenti
+                        let isCoherent = true;
+                        
+                        // Verifica coerenza con comune
+                        if (row.comune) {
+                            const comuneMatch = this.comuni.find(
+                                c => c.Nome_Comune__c && 
+                                     c.Nome_Comune__c.toLowerCase().trim() === row.comune.toLowerCase().trim()
+                            );
+                            if (comuneMatch && comuneMatch.Provincia__c) {
+                                const comuneCoherent = comuneMatch.Provincia__c.trim().toLowerCase() === trimmedValue.toLowerCase();
+                                if (!comuneCoherent) {
+                                    isCoherent = false;
+                                }
+                            }
+                        }
+                        
+                        // Verifica coerenza con regione
+                        if (row.regione) {
+                            const provinceInRegione = new Set();
+                            this.comuni.forEach(comune => {
+                                if (comune.Regione__c && 
+                                    comune.Regione__c.trim().toLowerCase() === row.regione.trim().toLowerCase() &&
+                                    comune.Provincia__c) {
+                                    provinceInRegione.add(comune.Provincia__c.trim().toLowerCase());
+                                }
+                            });
+                            if (!provinceInRegione.has(trimmedValue.toLowerCase())) {
+                                isCoherent = false;
+                            }
+                        }
+                        
+                        row.validationErrors.provincia = !isCoherent;
+                    }
                 }
                 break;
 
@@ -3391,8 +3541,45 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.regione = false; // Vuoto è ok
                 } else {
                     // Verifica se la regione esiste nella lista
-                    const regioneValid = this.regioniSet.has(trimmedValue.toLowerCase());
-                    row.validationErrors.regione = !regioneValid;
+                    const regioneExists = this.regioniSet.has(trimmedValue.toLowerCase());
+                    
+                    if (!regioneExists) {
+                        row.validationErrors.regione = true;
+                    } else {
+                        // Verifica coerenza con comune e provincia se presenti
+                        let isCoherent = true;
+                        
+                        // Verifica coerenza con comune
+                        if (row.comune) {
+                            const comuneMatch = this.comuni.find(
+                                c => c.Nome_Comune__c && 
+                                     c.Nome_Comune__c.toLowerCase().trim() === row.comune.toLowerCase().trim()
+                            );
+                            if (comuneMatch && comuneMatch.Regione__c) {
+                                const comuneCoherent = comuneMatch.Regione__c.trim().toLowerCase() === trimmedValue.toLowerCase();
+                                if (!comuneCoherent) {
+                                    isCoherent = false;
+                                }
+                            }
+                        }
+                        
+                        // Verifica coerenza con provincia
+                        if (row.provincia) {
+                            const provinceInRegione = new Set();
+                            this.comuni.forEach(comune => {
+                                if (comune.Regione__c && 
+                                    comune.Regione__c.trim().toLowerCase() === trimmedValue.toLowerCase() &&
+                                    comune.Provincia__c) {
+                                    provinceInRegione.add(comune.Provincia__c.trim().toLowerCase());
+                                }
+                            });
+                            if (!provinceInRegione.has(row.provincia.trim().toLowerCase())) {
+                                isCoherent = false;
+                            }
+                        }
+                        
+                        row.validationErrors.regione = !isCoherent;
+                    }
                 }
                 break;
 
@@ -4416,7 +4603,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     return;
                 }
                 
-                // Valida i campi
+                // Valida i campi (la validazione verificherà anche la coerenza)
                 this.validateField(row, 'regione', value);
                 if (row.provincia) {
                     this.validateField(row, 'provincia', row.provincia);
@@ -4443,10 +4630,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     return;
                 }
                 
-                // Valida i campi
+                // Valida i campi (la validazione verificherà anche la coerenza)
                 this.validateField(row, 'provincia', value);
                 if (row.comune) {
                     this.validateField(row, 'comune', row.comune);
+                }
+                if (row.regione) {
+                    this.validateField(row, 'regione', row.regione);
                 }
             }
             
@@ -4463,7 +4653,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 }
                 
-                // Valida i campi
+                // Valida i campi (la validazione verificherà anche la coerenza)
                 this.validateField(row, 'comune', value);
                 if (row.provincia) {
                     this.validateField(row, 'provincia', row.provincia);
@@ -4637,6 +4827,23 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             if ((cellElement.textContent || '') !== desired) {
                                 cellElement.textContent = desired;
                             }
+                        }
+                    }
+                    
+                    // Se è stato modificato comune, provincia o regione, aggiorna anche lo stato visivo degli altri due campi correlati
+                    if ((field === 'comune' || field === 'provincia' || field === 'regione') && otherIndex === rowIndex) {
+                        const comuneCell = this.template.querySelector(`td[data-field="comune"][data-row-index="${otherIndex}"]`);
+                        const provinciaCell = this.template.querySelector(`td[data-field="provincia"][data-row-index="${otherIndex}"]`);
+                        const regioneCell = this.template.querySelector(`td[data-field="regione"][data-row-index="${otherIndex}"]`);
+                        
+                        if (comuneCell) {
+                            this.updateCellValidationState(comuneCell, otherRow, 'comune');
+                        }
+                        if (provinciaCell) {
+                            this.updateCellValidationState(provinciaCell, otherRow, 'provincia');
+                        }
+                        if (regioneCell) {
+                            this.updateCellValidationState(regioneCell, otherRow, 'regione');
                         }
                     }
                     
