@@ -67,6 +67,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     // Stato salvataggio e risultati
     @track isSaving = false;
     @track isValidating = false; // Spinner durante le validazioni
+    @track validatingCells = {}; // Oggetto per tracciare le celle in validazione: { "rowIndex-field": true }
     @track showResults = false;
     @track saveResults = []; // Array di risultati per ogni fattura
     @track expandedInvoices = {}; // Oggetto per tracciare lo stato di espansione delle fatture
@@ -297,6 +298,43 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
+     * Verifica se una cella specifica è in validazione
+     */
+    isCellValidating(rowIndex, field) {
+        const key = `${rowIndex}-${field}`;
+        return this.validatingCells[key] === true;
+    }
+
+    /**
+     * Imposta lo stato di validazione per una cella
+     */
+    setCellValidating(rowIndex, field, isValidating) {
+        const key = `${rowIndex}-${field}`;
+        if (isValidating) {
+            this.validatingCells = { ...this.validatingCells, [key]: true };
+            // Aggiorna anche la proprietà isValidating sull'oggetto row
+            if (this.rows[rowIndex]) {
+                if (!this.rows[rowIndex].isValidating) {
+                    this.rows[rowIndex].isValidating = {};
+                }
+                this.rows[rowIndex].isValidating[field] = true;
+            }
+        } else {
+            const updated = { ...this.validatingCells };
+            delete updated[key];
+            this.validatingCells = updated;
+            // Rimuovi anche la proprietà isValidating dall'oggetto row
+            if (this.rows[rowIndex] && this.rows[rowIndex].isValidating) {
+                const rowValidating = { ...this.rows[rowIndex].isValidating };
+                delete rowValidating[field];
+                this.rows[rowIndex].isValidating = rowValidating;
+            }
+        }
+        // Forza il rerender aggiornando l'array rows
+        this.rows = [...this.rows];
+    }
+
+    /**
      * Verifica se una cella ha contenuto
      */
     hasCellContent(field, row) {
@@ -428,7 +466,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 noProfitCategory: false,
                 invoiceNumber: false // Errore per numero fattura duplicato
             },
-            hasErrors: false // Flag per indicare se la riga contiene errori
+            hasErrors: false, // Flag per indicare se la riga contiene errori
+            isValidating: {} // Oggetto per tracciare lo stato di validazione per ogni campo
         };
         // Aggiungi getter per selectedClass
         Object.defineProperty(newRow, 'selectedClass', {
@@ -904,8 +943,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 delete cell.dataset.initialValue;
             }
 
+            // Imposta lo spinner di validazione per questa cella
+            if (this.hasValidation(field)) {
+                this.setCellValidating(rowIndex, field, true);
+            }
+            
             // Validazione campi specifici
             this.validateField(row, field, row[field]);
+            
+            // Rimuovi lo spinner di validazione per questa cella (validazione sincrona completata)
+            if (this.hasValidation(field)) {
+                this.setCellValidating(rowIndex, field, false);
+            }
             
             // Aggiorna lo stato visivo della cella
             this.updateCellValidationState(cell, row, field);
@@ -952,8 +1001,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Verifica unicità numeri fattura se sono stati modificati campi rilevanti
             // Usa setTimeout per assicurarsi che il DOM sia aggiornato prima del controllo
             if (field === 'invoiceNumber' || field === 'invoiceDate' || field === 'medicalCenter') {
+                // Imposta lo spinner per la validazione asincrona
+                this.setCellValidating(rowIndex, field, true);
                 setTimeout(async () => {
-                    await this.checkInvoiceNumbersUniqueness();
+                    try {
+                        await this.checkInvoiceNumbersUniqueness();
+                    } finally {
+                        // Rimuovi lo spinner quando la validazione asincrona è completata
+                        this.setCellValidating(rowIndex, field, false);
+                    }
                 }, 50);
             }
             
@@ -1420,12 +1476,28 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
             
+            // Imposta lo spinner di validazione per questa cella
+            if (this.hasValidation(field)) {
+                this.setCellValidating(rowIndex, field, true);
+            }
+            
             // Validazione campi specifici
             this.validateField(updatedRows[rowIndex], field, updatedRows[rowIndex][field]);
             
+            // Rimuovi lo spinner di validazione per questa cella (validazione sincrona completata)
+            if (this.hasValidation(field)) {
+                this.setCellValidating(rowIndex, field, false);
+            }
+            
             // Se è stato modificato noProfit, valida anche noProfitCategory
             if (field === 'noProfit') {
+                if (this.hasValidation('noProfitCategory')) {
+                    this.setCellValidating(rowIndex, 'noProfitCategory', true);
+                }
                 this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory || '');
+                if (this.hasValidation('noProfitCategory')) {
+                    this.setCellValidating(rowIndex, 'noProfitCategory', false);
+                }
             }
             
             this.rows = updatedRows;

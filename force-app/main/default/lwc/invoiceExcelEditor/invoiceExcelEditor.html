@@ -363,6 +363,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.partner}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell date-cell" 
                                     data-field="invoiceDate"
@@ -436,6 +443,13 @@
                                                 title="Cancella contenuto">
                                             </button>
                                         </template>
+                                        <template if:true={row.isValidating.invoiceNumber}>
+                                            <lightning-spinner 
+                                                alternative-text="Validazione in corso"
+                                                size="xx-small"
+                                                class="cell-validation-spinner">
+                                            </lightning-spinner>
+                                        </template>
                                     </div>
                                 </td>
                                 <td class="editable-cell dropdown-cell {row.validationErrors.medicalCenter ? 'invalid-cell' : ''}" 
@@ -459,6 +473,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.medicalCenter}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell dropdown-cell {row.validationErrors.noProfit ? 'invalid-cell' : ''}" 
                                     data-field="noProfit"
@@ -481,6 +502,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.noProfit}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell dropdown-cell {row.validationErrors.noProfitCategory ? 'invalid-cell' : ''}" 
                                     data-field="noProfitCategory"
@@ -502,6 +530,13 @@
                                             onclick={clearCellContent}
                                             title="Cancella contenuto">
                                         </button>
+                                    </template>
+                                    <template if:true={row.isValidating.noProfitCategory}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
                                     </template>
                                 </td>
                                 <td class="editable-cell checkbox-cell" 
@@ -548,6 +583,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.tipoVisita}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell dropdown-cell" 
                                     data-field="beneficiaryType"
@@ -569,6 +611,13 @@
                                             onclick={clearCellContent}
                                             title="Cancella contenuto">
                                         </button>
+                                    </template>
+                                    <template if:true={row.isValidating.beneficiaryType}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
                                     </template>
                                 </td>
                                 <td class="editable-cell" 
@@ -677,6 +726,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.comune}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell dropdown-cell" 
                                     data-field="provincia"
@@ -699,6 +755,13 @@
                                             title="Cancella contenuto">
                                         </button>
                                     </template>
+                                    <template if:true={row.isValidating.provincia}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
+                                    </template>
                                 </td>
                                 <td class="editable-cell dropdown-cell" 
                                     data-field="regione"
@@ -720,6 +783,13 @@
                                             onclick={clearCellContent}
                                             title="Cancella contenuto">
                                         </button>
+                                    </template>
+                                    <template if:true={row.isValidating.regione}>
+                                        <lightning-spinner 
+                                            alternative-text="Validazione in corso"
+                                            size="xx-small"
+                                            class="cell-validation-spinner">
+                                        </lightning-spinner>
                                     </template>
                                 </td>
                             </tr>

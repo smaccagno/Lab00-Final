@@ -630,3 +630,17 @@
     border-radius: 4px;
     margin: 8px;
 }
+
+/* Spinner di validazione per le celle */
+.cell-validation-spinner {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Assicura che le celle con spinner abbiano spazio sufficiente */
+.editable-cell {
+    padding-right: 32px; /* Spazio per il pulsante di cancellazione e lo spinner */
+}
