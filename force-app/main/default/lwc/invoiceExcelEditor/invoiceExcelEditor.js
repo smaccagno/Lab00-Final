@@ -4567,10 +4567,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 });
             } else if (wasOldValueIncorrect && isNewValueValid && 
-                this.hasValidation(field)) {
+                this.hasValidation(field) && field !== 'comune' && field !== 'provincia' && field !== 'regione') {
+                // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
                 const valueToFind = oldValue.trim().toLowerCase();
                 
-                // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherIndex !== rowIndex && otherRow[field]) {
                         const otherValue = String(otherRow[field]).trim().toLowerCase();
@@ -4583,48 +4583,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             // Aggiorna anche la validazione
                             this.validateField(otherRow, field, value);
                             
-                            // Se è comune, aggiorna anche provincia e regione
-                            if (field === 'comune') {
-                                    const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
-                                    if (option) {
-                                        if (option.provincia) {
-                                            otherRow.provincia = option.provincia;
-                                            this.validateField(otherRow, 'provincia', option.provincia);
-                                        }
-                                        if (option.regione) {
-                                            otherRow.regione = option.regione;
-                                            this.validateField(otherRow, 'regione', option.regione);
-                                        }
-                                    }
+                            // Se è ente no profit, aggiorna anche la categoria
+                            if (field === 'noProfit') {
+                                const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
+                                if (option && option.category) {
+                                    otherRow.noProfitCategory = option.category;
+                                    this.validateField(otherRow, 'noProfitCategory', option.category);
                                 }
-                                
-                                // Se è ente no profit, aggiorna anche la categoria
-                                if (field === 'noProfit') {
-                                    const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
-                                    if (option && option.category) {
-                                        otherRow.noProfitCategory = option.category;
-                                        this.validateField(otherRow, 'noProfitCategory', option.category);
-                                    }
+                            }
+                            
+                            // Se è tipoVisita, salva anche l'ID
+                            if (field === 'tipoVisita') {
+                                const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
+                                if (option && option.id) {
+                                    otherRow.tipoVisitaId = option.id;
                                 }
-                                
-                                // Se è tipoVisita, salva anche l'ID
-                                if (field === 'tipoVisita') {
-                                    const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
-                                    if (option && option.id) {
-                                        otherRow.tipoVisitaId = option.id;
-                                    }
-                                }
-                                
-                                // Se è partner, salva anche l'ID
-                                if (field === 'partner') {
-                                    const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
-                                    if (option && option.id) {
-                                        otherRow.partnerId = option.id;
-                                    }
+                            }
+                            
+                            // Se è partner, salva anche l'ID
+                            if (field === 'partner') {
+                                const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
+                                if (option && option.id) {
+                                    otherRow.partnerId = option.id;
                                 }
                             }
                         }
-                    });
+                    }
+                });
             }
 
             this.rows = updatedRows;
