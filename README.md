@@ -1,6 +1,27 @@
-# Salesforce DX Project: Next Steps
+# Salesforce DX Project: Lab00
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+Progetto Salesforce per la gestione di fatture e visite mediche.
+
+## Sincronizzazione Git/GitHub
+
+Questo progetto è configurato per sincronizzare automaticamente le modifiche su Git e GitHub dopo ogni deploy su DEV.
+
+**Utilizzo rapido:**
+```bash
+# Deploy e sincronizzazione automatica
+npm run deploy:dev:sync
+
+# Solo sincronizzazione Git/GitHub
+npm run git:sync "Messaggio del commit"
+```
+
+Per maggiori dettagli, consulta [GIT_SYNC_README.md](./GIT_SYNC_README.md).
+
+---
+
+## Next Steps
+
+Now that you've created a Salesforce DX project, what's next? Here are some documentation resources to get you started.
 
 ## How Do You Plan to Deploy Your Changes?
 
