@@ -1610,6 +1610,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const isTempoSospeso = this.selectedProgramName && 
                     this.selectedProgramName.toLowerCase().includes('tempo sospeso');
                 
+                // Raccogli tutte le celle che devono essere corrette
+                const cellsToCorrect = [];
+                
                 // Cerca tutte le righe con lo stesso valore errato originale che hanno un errore di duplicazione
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherRow.invoiceNumber) {
@@ -1634,13 +1637,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                         
                         if (shouldCorrect) {
-                            // Correggi il valore
-                            otherRow.invoiceNumber = correction.newValue;
-                            // Aggiorna anche la validazione
-                            this.validateField(otherRow, 'invoiceNumber', correction.newValue);
+                            cellsToCorrect.push({ row: otherRow, rowIndex: otherIndex });
                         }
                     }
                 });
+                
+                // Attiva lo spinner per tutte le celle che verranno corrette
+                cellsToCorrect.forEach(({ rowIndex }) => {
+                    this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                });
+                
+                // Esegui la correzione per tutte le celle identificate
+                cellsToCorrect.forEach(({ row, rowIndex }) => {
+                    // Correggi il valore
+                    row.invoiceNumber = correction.newValue;
+                    // Aggiorna anche la validazione (sincrono)
+                    this.validateField(row, 'invoiceNumber', correction.newValue);
+                });
+                
+                // Aggiorna l'array rows per forzare il rerender con i nuovi valori
+                this.rows = [...updatedRows];
+                
+                // Disattiva gli spinner dopo un breve delay per permettere il rerender
+                setTimeout(() => {
+                    cellsToCorrect.forEach(({ rowIndex }) => {
+                        this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                    });
+                }, 300);
                 
                 // Pulisci la correzione pendente
                 this.pendingInvoiceNumberCorrection = null;
@@ -1652,6 +1675,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Verifica se il programma è "Tempo Sospeso" per applicare controlli più restrittivi
                 const isTempoSospeso = this.selectedProgramName && 
                     this.selectedProgramName.toLowerCase().includes('tempo sospeso');
+                
+                // Raccogli tutte le celle che devono essere corrette
+                const cellsToCorrectElse = [];
                 
                 updatedRows.forEach((row, index) => {
                     const invoiceNumber = row.invoiceNumber ? String(row.invoiceNumber).trim().toLowerCase() : '';
@@ -1679,15 +1705,35 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 }
                                 
                                 if (shouldCorrect) {
-                                    // Correggi il valore con quello della riga corretta
-                                    otherRow.invoiceNumber = row.invoiceNumber;
-                                    // Aggiorna anche la validazione
-                                    this.validateField(otherRow, 'invoiceNumber', row.invoiceNumber);
+                                    cellsToCorrectElse.push({ row: otherRow, rowIndex: otherIndex, newValue: row.invoiceNumber });
                                 }
                             }
                         });
                     }
                 });
+                
+                // Attiva lo spinner per tutte le celle che verranno corrette
+                cellsToCorrectElse.forEach(({ rowIndex }) => {
+                    this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                });
+                
+                // Esegui la correzione per tutte le celle identificate
+                cellsToCorrectElse.forEach(({ row, rowIndex, newValue }) => {
+                    // Correggi il valore con quello della riga corretta
+                    row.invoiceNumber = newValue;
+                    // Aggiorna anche la validazione (sincrono)
+                    this.validateField(row, 'invoiceNumber', newValue);
+                });
+                
+                // Aggiorna l'array rows per forzare il rerender con i nuovi valori
+                this.rows = [...updatedRows];
+                
+                // Disattiva gli spinner dopo un breve delay per permettere il rerender
+                setTimeout(() => {
+                    cellsToCorrectElse.forEach(({ rowIndex }) => {
+                        this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                    });
+                }, 300);
             }
             
             this.rows = updatedRows;
