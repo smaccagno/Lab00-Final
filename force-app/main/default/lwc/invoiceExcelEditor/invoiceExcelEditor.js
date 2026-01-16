@@ -4236,6 +4236,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         invoiceNumber: invoiceNumber,
                         invoiceDate: row.invoiceDate || '',
                         competenceDate: row.competenceDate || '',
+                        partner: row.partner || '',
                         medicalCenter: row.medicalCenter || '',
                         noProfit: row.noProfit || '',
                         noProfitCategory: row.noProfitCategory || '',
@@ -4279,6 +4280,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             if (row.competenceDate && !currentInvoice.invoice.competenceDate) {
                 currentInvoice.invoice.competenceDate = row.competenceDate;
+            }
+            if (row.partner && !currentInvoice.invoice.partner) {
+                currentInvoice.invoice.partner = row.partner;
             }
             if (row.medicalCenter && !currentInvoice.invoice.medicalCenter) {
                 currentInvoice.invoice.medicalCenter = row.medicalCenter;
@@ -4348,7 +4352,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 totalVisitsMinutes: totalMinutes,
                 totalVisitsMinutesFormatted: totalMinutes.toLocaleString('it-IT'),
                 expanded: false, // Per gestire l'accordion
-                hasVisitErrors: hasVisitErrors
+                hasVisitErrors: hasVisitErrors,
+                visitsRowKey: `visits-${invoiceGroup.invoice.invoiceNumber}` // ID univoco per la riga delle visite
             };
         });
         this.showOrganizedView = true;

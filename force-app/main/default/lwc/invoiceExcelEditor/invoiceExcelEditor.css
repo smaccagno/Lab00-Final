@@ -533,3 +533,19 @@
 .visit-row:hover td {
     background-color: #fafaf9 !important;
 }
+
+.visit-expand-row {
+    background-color: #ffffff;
+}
+
+.visit-expand-row td {
+    padding: 0 !important;
+    border-top: none !important;
+}
+
+.visit-expand-row .visits-content {
+    background-color: #fafaf9;
+    border: 1px solid #dddbda;
+    border-radius: 4px;
+    margin: 8px;
+}

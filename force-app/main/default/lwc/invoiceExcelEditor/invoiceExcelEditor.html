@@ -828,281 +828,336 @@
                     </div>
                 </div>
                 
-                <template for:each={organizedInvoices} for:item="invoiceGroup" for:index="invoiceIndex">
-                    <div key={invoiceGroup.invoice.invoiceNumber} class="slds-card slds-m-bottom_small invoice-group-card">
-                        <div class="slds-card__header slds-grid">
-                            <header class="slds-media slds-media_center slds-has-flexi-truncate">
-                                <div class="slds-media__figure">
-                                    <lightning-icon icon-name="standard:invoice" size="x-small"></lightning-icon>
-                                </div>
-                                <div class="slds-media__body">
-                                    <h2 class="slds-card__header-title">
-                                        <span class="slds-text-heading_small">Fattura: {invoiceGroup.invoice.invoiceNumber}</span>
-                                    </h2>
-                                </div>
-                            </header>
-                        </div>
-                        <div class="slds-card__body slds-card__body_inner slds-p-around_small">
-                            <!-- Dettagli Fattura Compatti -->
-                            <div class="slds-grid slds-grid_vertical slds-m-bottom_x-small">
-                                <div class="slds-col">
-                                    <div class="slds-grid slds-grid_align-spread slds-wrap">
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Data:</span> 
-                                                <template if:true={invoiceGroup.invoice.hasErrors}>
-                                                    <template if:true={invoiceGroup.invoice.errors.invoiceDate}>
-                                                        <span class="error-value">{invoiceGroup.invoice.invoiceDate}</span>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.invoice.errors.invoiceDate}>
-                                                        <span>{invoiceGroup.invoice.invoiceDate}</span>
-                                                    </template>
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.hasErrors}>
-                                                    <span>{invoiceGroup.invoice.invoiceDate}</span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Centro Medico:</span> 
-                                                <template if:true={invoiceGroup.invoice.hasErrors}>
-                                                    <template if:true={invoiceGroup.invoice.errors.medicalCenter}>
-                                                        <span class="error-value">{invoiceGroup.invoice.medicalCenter}</span>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.invoice.errors.medicalCenter}>
-                                                        <span>{invoiceGroup.invoice.medicalCenter}</span>
-                                                    </template>
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.hasErrors}>
-                                                    <span>{invoiceGroup.invoice.medicalCenter}</span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Ente:</span> 
-                                                <template if:true={invoiceGroup.invoice.hasErrors}>
-                                                    <template if:true={invoiceGroup.invoice.errors.noProfit}>
-                                                        <span class="error-value">{invoiceGroup.invoice.noProfit}</span>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.invoice.errors.noProfit}>
-                                                        <span>{invoiceGroup.invoice.noProfit}</span>
-                                                    </template>
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.hasErrors}>
-                                                    <span>{invoiceGroup.invoice.noProfit}</span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Categoria Ente:</span> 
-                                                <template if:true={invoiceGroup.invoice.hasErrors}>
-                                                    <template if:true={invoiceGroup.invoice.errors.noProfitCategory}>
-                                                        <span class="error-value">{invoiceGroup.invoice.noProfitCategory}</span>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.invoice.errors.noProfitCategory}>
-                                                        <span>{invoiceGroup.invoice.noProfitCategory}</span>
-                                                    </template>
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.hasErrors}>
-                                                    <span>{invoiceGroup.invoice.noProfitCategory}</span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Ammontare:</span> {invoiceGroup.invoice.amountFormatted}
-                                            </div>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                            <div class="slds-text-body_small">
-                                                <span class="slds-text-color_weak">Numero Fattura:</span> 
-                                                <template if:true={invoiceGroup.invoice.hasErrors}>
-                                                    <template if:true={invoiceGroup.invoice.errors.invoiceNumber}>
-                                                        <span class="error-value">{invoiceGroup.invoice.invoiceNumber}</span>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.invoice.errors.invoiceNumber}>
-                                                        <span>{invoiceGroup.invoice.invoiceNumber}</span>
-                                                    </template>
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.hasErrors}>
-                                                    <span>{invoiceGroup.invoice.invoiceNumber}</span>
-                                                </template>
-                                            </div>
-                                        </div>
+                <!-- Tabella con header e righe per fattura -->
+                <div class="slds-scrollable_x">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col" style="width: 40px;">
+                                    <div class="slds-truncate"></div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Numero Fattura">Numero Fattura</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Data Fattura">Data Fattura</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Data Competenza">Data Competenza</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Partner">Partner</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Centro Medico">Centro Medico</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Ente No Profit">Ente No Profit</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Categoria Ente">Categoria Ente</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Prestazione Gratuita">Prestazione Gratuita</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Fattura Non Disponibile">Fattura Non Disponibile</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Ammontare">Ammontare</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Totale Minuti">Totale Minuti</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={organizedInvoices} for:item="invoiceGroup" for:index="invoiceIndex">
+                                <!-- Riga Fattura -->
+                                <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
+                                    <td data-label="">
                                         <template if:true={invoiceGroup.visits.length}>
-                                            <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
-                                                <div class="slds-text-body_small">
-                                                    <span class="slds-text-color_weak">Tot. Minuti:</span> {invoiceGroup.totalVisitsMinutesFormatted}
-                                                </div>
-                                            </div>
+                                            <template if:true={invoiceGroup.expanded}>
+                                                <button 
+                                                    type="button"
+                                                    class="slds-button slds-button_icon slds-button_icon-small"
+                                                    data-index={invoiceIndex}
+                                                    onclick={toggleVisitsAccordion}
+                                                    title="Collassa"
+                                                    aria-label="Collassa">
+                                                    <lightning-icon 
+                                                        icon-name="utility:chevron down"
+                                                        size="x-small"
+                                                        alternative-text="Collassa">
+                                                    </lightning-icon>
+                                                    <span class="slds-assistive-text">Collassa</span>
+                                                </button>
+                                            </template>
+                                            <template if:false={invoiceGroup.expanded}>
+                                                <button 
+                                                    type="button"
+                                                    class="slds-button slds-button_icon slds-button_icon-small"
+                                                    data-index={invoiceIndex}
+                                                    onclick={toggleVisitsAccordion}
+                                                    title="Espandi"
+                                                    aria-label="Espandi">
+                                                    <lightning-icon 
+                                                        icon-name="utility:chevron right"
+                                                        size="x-small"
+                                                        alternative-text="Espandi">
+                                                    </lightning-icon>
+                                                    <span class="slds-assistive-text">Espandi</span>
+                                                </button>
+                                            </template>
                                         </template>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Visite Associate - Toggle Button -->
-                            <template if:true={invoiceGroup.visits.length}>
-                                <div class="slds-m-top_small">
-                                    <button 
-                                        type="button" 
-                                        class="slds-button slds-button_neutral visits-toggle-button"
-                                        data-index={invoiceIndex}
-                                        onclick={toggleVisitsAccordion}>
-                                        <lightning-icon 
-                                            icon-name="utility:chevronright" 
-                                            alternative-text="Espandi"
-                                            class="visits-toggle-icon"
-                                            class:visits-toggle-icon-expanded={invoiceGroup.expanded}
-                                            size="x-small">
-                                        </lightning-icon>
-                                        <span class="slds-text-body_small slds-m-left_x-small">
-                                            Visite Associate ({invoiceGroup.visits.length})
-                                        </span>
-                                    </button>
-                                    <template if:true={invoiceGroup.hasVisitErrors}>
-                                        <div class="slds-text-color_error slds-text-body_small slds-m-top_x-small">
-                                            Ci sono errori da correggere nelle visite di questa fattura, espandi la sezione per verificare
-                                        </div>
-                                    </template>
-                                    
-                                    <template if:true={invoiceGroup.expanded}>
-                                        <div class="slds-m-top_x-small visits-content">
-                                            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
-                                                <thead>
-                                                    <tr class="slds-line-height_reset">
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Tipo Visita</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Tipo Beneficiario</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Data Visita</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Comune</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Provincia</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Regione</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Numero Visite</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Totale Minuti</div>
-                                                        </th>
-                                                        <th scope="col" class="slds-text-body_small">
-                                                            <div class="slds-truncate">Ammontare</div>
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <template for:each={invoiceGroup.visits} for:item="visit">
-                                                        <tr key={visit.id} class="slds-text-body_small">
-                                                            <td data-label="Tipo Visita">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.tipoVisita}>
-                                                                        <div class="slds-truncate error-value">{visit.tipoVisita}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.tipoVisita}>
-                                                                        <div class="slds-truncate">{visit.tipoVisita}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.tipoVisita}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Tipo Beneficiario">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.beneficiaryType}>
-                                                                        <div class="slds-truncate error-value">{visit.beneficiaryType}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.beneficiaryType}>
-                                                                        <div class="slds-truncate">{visit.beneficiaryType}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.beneficiaryType}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Data Visita">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.dataVisita}>
-                                                                        <div class="slds-truncate error-value">{visit.dataVisita}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.dataVisita}>
-                                                                        <div class="slds-truncate">{visit.dataVisita}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.dataVisita}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Comune">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.comune}>
-                                                                        <div class="slds-truncate error-value">{visit.comune}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.comune}>
-                                                                        <div class="slds-truncate">{visit.comune}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.comune}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Provincia">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.provincia}>
-                                                                        <div class="slds-truncate error-value">{visit.provincia}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.provincia}>
-                                                                        <div class="slds-truncate">{visit.provincia}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.provincia}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Regione">
-                                                                <template if:true={visit.hasErrors}>
-                                                                    <template if:true={visit.errors.regione}>
-                                                                        <div class="slds-truncate error-value">{visit.regione}</div>
-                                                                    </template>
-                                                                    <template if:false={visit.errors.regione}>
-                                                                        <div class="slds-truncate">{visit.regione}</div>
-                                                                    </template>
-                                                                </template>
-                                                                <template if:false={visit.hasErrors}>
-                                                                    <div class="slds-truncate">{visit.regione}</div>
-                                                                </template>
-                                                            </td>
-                                                            <td data-label="Numero Visite">
-                                                                <div class="slds-truncate">{visit.numeroVisite}</div>
-                                                            </td>
-                                                            <td data-label="Totale Minuti">
-                                                                <div class="slds-truncate">{visit.totaleMinuti}</div>
-                                                            </td>
-                                                            <td data-label="Ammontare">
-                                                                <div class="slds-truncate">{visit.amountFormatted}</div>
-                                                            </td>
-                                                        </tr>
-                                                    </template>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </template>
-                                </div>
+                                        <template if:false={invoiceGroup.visits.length}>
+                                            <div style="width: 24px;"></div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Numero Fattura">
+                                        <template if:true={invoiceGroup.invoice.hasErrors}>
+                                            <template if:true={invoiceGroup.invoice.errors.invoiceNumber}>
+                                                <div class="slds-truncate error-value">{invoiceGroup.invoice.invoiceNumber}</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.errors.invoiceNumber}>
+                                                <div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.hasErrors}>
+                                            <div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Data Fattura">
+                                        <template if:true={invoiceGroup.invoice.hasErrors}>
+                                            <template if:true={invoiceGroup.invoice.errors.invoiceDate}>
+                                                <div class="slds-truncate error-value">{invoiceGroup.invoice.invoiceDate}</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.errors.invoiceDate}>
+                                                <div class="slds-truncate">{invoiceGroup.invoice.invoiceDate}</div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.hasErrors}>
+                                            <div class="slds-truncate">{invoiceGroup.invoice.invoiceDate}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Data Competenza">
+                                        <div class="slds-truncate">{invoiceGroup.invoice.competenceDate}</div>
+                                    </td>
+                                    <td data-label="Partner">
+                                        <div class="slds-truncate">{invoiceGroup.invoice.partner}</div>
+                                    </td>
+                                    <td data-label="Centro Medico">
+                                        <template if:true={invoiceGroup.invoice.hasErrors}>
+                                            <template if:true={invoiceGroup.invoice.errors.medicalCenter}>
+                                                <div class="slds-truncate error-value">{invoiceGroup.invoice.medicalCenter}</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.errors.medicalCenter}>
+                                                <div class="slds-truncate">{invoiceGroup.invoice.medicalCenter}</div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.hasErrors}>
+                                            <div class="slds-truncate">{invoiceGroup.invoice.medicalCenter}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Ente No Profit">
+                                        <template if:true={invoiceGroup.invoice.hasErrors}>
+                                            <template if:true={invoiceGroup.invoice.errors.noProfit}>
+                                                <div class="slds-truncate error-value">{invoiceGroup.invoice.noProfit}</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.errors.noProfit}>
+                                                <div class="slds-truncate">{invoiceGroup.invoice.noProfit}</div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.hasErrors}>
+                                            <div class="slds-truncate">{invoiceGroup.invoice.noProfit}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Categoria Ente">
+                                        <template if:true={invoiceGroup.invoice.hasErrors}>
+                                            <template if:true={invoiceGroup.invoice.errors.noProfitCategory}>
+                                                <div class="slds-truncate error-value">{invoiceGroup.invoice.noProfitCategory}</div>
+                                            </template>
+                                            <template if:false={invoiceGroup.invoice.errors.noProfitCategory}>
+                                                <div class="slds-truncate">{invoiceGroup.invoice.noProfitCategory}</div>
+                                            </template>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.hasErrors}>
+                                            <div class="slds-truncate">{invoiceGroup.invoice.noProfitCategory}</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Prestazione Gratuita">
+                                        <template if:true={invoiceGroup.invoice.isFree}>
+                                            <span class="slds-badge slds-badge_success">Sì</span>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.isFree}>
+                                            <span class="slds-badge">No</span>
+                                        </template>
+                                    </td>
+                                    <td data-label="Fattura Non Disponibile">
+                                        <template if:true={invoiceGroup.invoice.noInvoiceAvailable}>
+                                            <span class="slds-badge slds-badge_success">Sì</span>
+                                        </template>
+                                        <template if:false={invoiceGroup.invoice.noInvoiceAvailable}>
+                                            <span class="slds-badge">No</span>
+                                        </template>
+                                    </td>
+                                    <td data-label="Ammontare">
+                                        <div class="slds-truncate">{invoiceGroup.invoice.amountFormatted}</div>
+                                    </td>
+                                    <td data-label="Totale Minuti">
+                                        <div class="slds-truncate">{invoiceGroup.totalVisitsMinutesFormatted}</div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Riga Visite Espandibile -->
+                                <template if:true={invoiceGroup.visits.length}>
+                                    <tr key={invoiceGroup.visitsRowKey} class="slds-line-height_reset visit-expand-row">
+                                        <td colspan="12" class="slds-p-around_none">
+                                            <template if:true={invoiceGroup.expanded}>
+                                                <div class="slds-m-around_small visits-content">
+                                                    <div class="slds-text-heading_small slds-m-bottom_small">
+                                                        Visite Associate ({invoiceGroup.visits.length})
+                                                        <template if:true={invoiceGroup.hasVisitErrors}>
+                                                            <span class="slds-text-color_error slds-m-left_small slds-text-body_small">
+                                                                ⚠️ Ci sono errori da correggere nelle visite
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
+                                                        <thead>
+                                                            <tr class="slds-line-height_reset">
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Tipo Visita</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Tipo Beneficiario</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Data Visita</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Comune</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Provincia</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Regione</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Numero Visite</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Totale Minuti</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-text-body_small">
+                                                                    <div class="slds-truncate">Ammontare</div>
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <template for:each={invoiceGroup.visits} for:item="visit">
+                                                                <tr key={visit.id} class="slds-text-body_small">
+                                                                    <td data-label="Tipo Visita">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.tipoVisita}>
+                                                                                <div class="slds-truncate error-value">{visit.tipoVisita}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.tipoVisita}>
+                                                                                <div class="slds-truncate">{visit.tipoVisita}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.tipoVisita}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Tipo Beneficiario">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.beneficiaryType}>
+                                                                                <div class="slds-truncate error-value">{visit.beneficiaryType}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.beneficiaryType}>
+                                                                                <div class="slds-truncate">{visit.beneficiaryType}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.beneficiaryType}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Data Visita">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.dataVisita}>
+                                                                                <div class="slds-truncate error-value">{visit.dataVisita}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.dataVisita}>
+                                                                                <div class="slds-truncate">{visit.dataVisita}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.dataVisita}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Comune">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.comune}>
+                                                                                <div class="slds-truncate error-value">{visit.comune}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.comune}>
+                                                                                <div class="slds-truncate">{visit.comune}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.comune}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Provincia">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.provincia}>
+                                                                                <div class="slds-truncate error-value">{visit.provincia}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.provincia}>
+                                                                                <div class="slds-truncate">{visit.provincia}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.provincia}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Regione">
+                                                                        <template if:true={visit.hasErrors}>
+                                                                            <template if:true={visit.errors.regione}>
+                                                                                <div class="slds-truncate error-value">{visit.regione}</div>
+                                                                            </template>
+                                                                            <template if:false={visit.errors.regione}>
+                                                                                <div class="slds-truncate">{visit.regione}</div>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template if:false={visit.hasErrors}>
+                                                                            <div class="slds-truncate">{visit.regione}</div>
+                                                                        </template>
+                                                                    </td>
+                                                                    <td data-label="Numero Visite">
+                                                                        <div class="slds-truncate">{visit.numeroVisite}</div>
+                                                                    </td>
+                                                                    <td data-label="Totale Minuti">
+                                                                        <div class="slds-truncate">{visit.totaleMinuti}</div>
+                                                                    </td>
+                                                                    <td data-label="Ammontare">
+                                                                        <div class="slds-truncate">{visit.amountFormatted}</div>
+                                                                    </td>
+                                                                </tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
                             </template>
-                        </div>
-                    </div>
-                </template>
+                        </tbody>
+                    </table>
+                </div>
                 
                 <template if:true={organizedInvoices.length}>
                     <div class="slds-text-align_center slds-text-color_weak slds-m-top_medium">
