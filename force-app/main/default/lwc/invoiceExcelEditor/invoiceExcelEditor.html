@@ -420,23 +420,51 @@
                                     data-row-index={rowIndex}
                                     onclick={handleCellFocus}>
                                     <div class="invoice-number-container">
-                                        <span class="invoice-number-value">
-                                            {row.invoiceNumber}
-                                        </span>
-                                        <template if:true={row.validationErrors.invoiceNumber}>
-                                            <div class="invoice-number-error-message">
-                                                Numero fattura già presente a sistema, verificare
-                                            </div>
+                                        <template if:false={invoiceNumberModalOpen}>
+                                            <span class="invoice-number-value">
+                                                {row.invoiceNumber}
+                                            </span>
+                                            <template if:true={row.validationErrors.invoiceNumber}>
+                                                <div class="invoice-number-error-message">
+                                                    Numero fattura già presente a sistema, verificare
+                                                </div>
+                                            </template>
+                                            <template if:true={row.invoiceNumber}>
+                                                <button 
+                                                    type="button"
+                                                    class="cell-clear-button"
+                                                    data-field="invoiceNumber"
+                                                    data-row-index={rowIndex}
+                                                    onclick={clearCellContent}
+                                                    title="Cancella contenuto">
+                                                </button>
+                                            </template>
                                         </template>
-                                        <template if:true={row.invoiceNumber}>
-                                            <button 
-                                                type="button"
-                                                class="cell-clear-button"
-                                                data-field="invoiceNumber"
-                                                data-row-index={rowIndex}
-                                                onclick={clearCellContent}
-                                                title="Cancella contenuto">
-                                            </button>
+                                        <template if:true={row.isEditingInvoiceNumber}>
+                                            <div class="invoice-number-edit-box">
+                                                <input 
+                                                    type="text"
+                                                    class="invoice-number-edit-input"
+                                                    value={invoiceNumberModalValue}
+                                                    oninput={handleInvoiceNumberModalInput}
+                                                    onkeydown={handleInvoiceNumberModalKeyDown}
+                                                    onclick={handleInvoiceNumberEditBoxClick}
+                                                    placeholder="Inserisci il numero fattura" />
+                                                <button 
+                                                    type="button"
+                                                    class="invoice-number-confirm-button"
+                                                    onclick={confirmInvoiceNumberModal}
+                                                    title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    class="invoice-number-cancel-button"
+                                                    onclick={closeInvoiceNumberModal}
+                                                    title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
                                         </template>
                                         <template if:true={row.isValidating.invoiceNumber}>
                                             <lightning-spinner 
@@ -1460,51 +1488,6 @@
             </div>
         </div>
         <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
-    
-    <!-- Modal per editing Invoice Number -->
-    <template if:true={invoiceNumberModalOpen}>
-        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open invoice-number-modal" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header">
-                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Modifica Numero Fattura</h2>
-                </header>
-                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
-                    <div class="slds-form-element">
-                        <label class="slds-form-element__label" for="invoice-number-input">
-                            Numero Fattura
-                        </label>
-                        <div class="slds-form-element__control">
-                            <input 
-                                type="text" 
-                                id="invoice-number-input"
-                                class="slds-input invoice-number-modal-input" 
-                                value={invoiceNumberModalValue}
-                                oninput={handleInvoiceNumberModalInput}
-                                onkeydown={handleInvoiceNumberModalKeyDown}
-                                placeholder="Inserisci il numero fattura" />
-                        </div>
-                    </div>
-                </div>
-                <footer class="slds-modal__footer">
-                    <lightning-button 
-                        variant="neutral" 
-                        label="Annulla" 
-                        onclick={closeInvoiceNumberModal}
-                        title="Annulla">
-                    </lightning-button>
-                    <lightning-button 
-                        variant="brand" 
-                        label="Conferma" 
-                        onclick={confirmInvoiceNumberModal}
-                        title="Conferma">
-                    </lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
-    
     </template>
     
 </template>

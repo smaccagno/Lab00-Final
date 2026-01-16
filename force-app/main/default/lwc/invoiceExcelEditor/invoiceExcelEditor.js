@@ -484,7 +484,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             },
             hasErrors: false, // Flag per indicare se la riga contiene errori
             isValidating: {}, // Oggetto per tracciare lo stato di validazione per ogni campo
-            isEditing: {} // Oggetto per tracciare quali campi sono in modifica
+            isEditing: {}, // Oggetto per tracciare quali campi sono in modifica
+            isEditingInvoiceNumber: false // Flag per indicare se il box di editing per Invoice Number è aperto
         };
         // Aggiungi getter per selectedClass
         Object.defineProperty(newRow, 'selectedClass', {
@@ -772,8 +773,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         const field = cell.dataset.field;
         
-        // Per Invoice Number, apri il modal di editing invece del contenteditable normale
+        // Per Invoice Number, apri il box di editing invece del contenteditable normale
         if (field === 'invoiceNumber') {
+            // Se il box di editing è già aperto per questa cella, non fare nulla
+            if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex === parseInt(cell.dataset.rowIndex, 10)) {
+                return;
+            }
             event.preventDefault();
             const rowIndex = parseInt(cell.dataset.rowIndex, 10);
             if (rowIndex >= 0 && rowIndex < this.rows.length) {
@@ -813,17 +818,29 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
-     * Apre il modal di editing per Invoice Number
+     * Apre il box di editing inline per Invoice Number
      */
     openInvoiceNumberModal(rowIndex) {
         if (rowIndex >= 0 && rowIndex < this.rows.length) {
-            const row = this.rows[rowIndex];
+            const updatedRows = [...this.rows];
+            const row = updatedRows[rowIndex];
+            
+            // Chiudi eventuali altri box aperti
+            updatedRows.forEach((r, idx) => {
+                if (r.isEditingInvoiceNumber) {
+                    r.isEditingInvoiceNumber = false;
+                }
+            });
+            
+            // Apri il box per questa riga
+            row.isEditingInvoiceNumber = true;
             this.invoiceNumberModalOpen = { rowIndex: rowIndex };
             this.invoiceNumberModalValue = row.invoiceNumber || '';
+            this.rows = updatedRows;
             
             // Focus sull'input dopo che il DOM è stato aggiornato
             setTimeout(() => {
-                const input = this.template.querySelector('.invoice-number-modal-input');
+                const input = this.template.querySelector(`td[data-field="invoiceNumber"][data-row-index="${rowIndex}"] .invoice-number-edit-input`);
                 if (input) {
                     input.focus();
                     // Posiziona il cursore alla fine del testo
@@ -834,15 +851,24 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
-     * Chiude il modal di editing per Invoice Number senza salvare
+     * Chiude il box di editing per Invoice Number senza salvare
      */
     closeInvoiceNumberModal() {
+        if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
+            const rowIndex = this.invoiceNumberModalOpen.rowIndex;
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingInvoiceNumber = false;
+                this.rows = updatedRows;
+            }
+        }
         this.invoiceNumberModalOpen = null;
         this.invoiceNumberModalValue = '';
     }
 
     /**
-     * Conferma il valore nel modal e lo applica alla cella
+     * Conferma il valore nel box di editing e lo applica alla cella
      */
     async confirmInvoiceNumberModal() {
         if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
@@ -857,34 +883,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Aggiorna il valore nella riga
                 row.invoiceNumber = newValue;
                 
-                // Aggiorna anche il DOM della cella
+                // Salva il valore iniziale per la correzione automatica
                 const invoiceCell = this.template.querySelector(
                     `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
                 );
                 if (invoiceCell) {
-                    const invoiceValueSpan = invoiceCell.querySelector('.invoice-number-value');
-                    if (invoiceValueSpan) {
-                        invoiceValueSpan.textContent = newValue;
-                    }
-                }
-                
-                // Salva il valore iniziale per la correzione automatica
-                if (invoiceCell) {
                     invoiceCell.dataset.initialValue = oldValue;
-                }
-                
-                // Imposta lo spinner di validazione
-                this.setCellValidating(rowIndex, 'invoiceNumber', true);
-                
-                // Validazione campo
-                this.validateField(row, 'invoiceNumber', newValue);
-                
-                // Rimuovi lo spinner di validazione
-                this.setCellValidating(rowIndex, 'invoiceNumber', false);
-                
-                // Aggiorna lo stato visivo della cella
-                if (invoiceCell) {
-                    this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
                 }
                 
                 // Per numero fattura, traccia la modifica per correggere dopo la validazione
@@ -898,10 +902,28 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     };
                 }
                 
+                // Chiudi il box di editing prima di aggiornare
+                row.isEditingInvoiceNumber = false;
+                this.closeInvoiceNumberModal();
+                
+                // Aggiorna l'array rows per forzare il rerender
                 this.rows = updatedRows;
                 
-                // Verifica unicità numeri fattura
+                // Imposta lo spinner di validazione
                 this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                
+                // Validazione campo
+                this.validateField(row, 'invoiceNumber', newValue);
+                
+                // Aggiorna lo stato visivo della cella
+                if (invoiceCell) {
+                    this.updateCellValidationState(invoiceCell, row, 'invoiceNumber');
+                }
+                
+                // Forza un rerender per aggiornare la visualizzazione
+                this.rows = [...this.rows];
+                
+                // Verifica unicità numeri fattura (questo aggiornerà anche le altre celle duplicate)
                 setTimeout(async () => {
                     try {
                         await this.checkInvoiceNumbersUniqueness();
@@ -909,22 +931,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         this.setCellValidating(rowIndex, 'invoiceNumber', false);
                     }
                 }, 50);
+            } else {
+                // Chiudi il box di editing anche se c'è un errore
+                this.closeInvoiceNumberModal();
             }
-            
-            // Chiudi il modal
-            this.closeInvoiceNumberModal();
         }
     }
 
     /**
-     * Gestisce l'input nel modal di Invoice Number
+     * Gestisce l'input nel box di editing di Invoice Number
      */
     handleInvoiceNumberModalInput(event) {
         this.invoiceNumberModalValue = event.target.value;
     }
 
     /**
-     * Gestisce il keydown nel modal di Invoice Number (Enter per confermare, Escape per chiudere)
+     * Gestisce il keydown nel box di editing di Invoice Number (Enter per confermare, Escape per chiudere)
      */
     handleInvoiceNumberModalKeyDown(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
@@ -934,6 +956,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             event.preventDefault();
             this.closeInvoiceNumberModal();
         }
+    }
+
+    /**
+     * Gestisce il click sul box di editing per evitare che si apra di nuovo il modal
+     */
+    handleInvoiceNumberEditBoxClick(event) {
+        event.stopPropagation();
     }
     
     /**
@@ -1994,27 +2023,41 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Raccogli tutte le celle che devono essere corrette
                 const cellsToCorrect = [];
                 
+                // Ottieni la riga corretta per il nuovo valore
+                const correctedRow = updatedRows[correction.rowIndex];
+                const correctedValue = correctedRow.invoiceNumber;
+                const correctedDate = correctedRow.invoiceDate;
+                const correctedMedicalCenter = correctedRow.medicalCenter || '';
+                
                 // Cerca tutte le righe con lo stesso valore errato originale che hanno un errore di duplicazione
+                // OPPURE con lo stesso valore errato che hanno ancora un errore (anche se diverso dall'oldValue)
                 updatedRows.forEach((otherRow, otherIndex) => {
-                    if (otherRow.invoiceNumber) {
+                    if (otherRow.invoiceNumber && otherIndex !== correction.rowIndex) {
                         const otherValue = String(otherRow.invoiceNumber).trim().toLowerCase();
                         const otherDate = otherRow.invoiceDate;
                         const otherMedicalCenter = otherRow.medicalCenter || '';
                         const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors.invoiceNumber === true;
                         
-                        // Per "Tempo Sospeso": correggi solo se stesso valore errato, stessa data E stesso centro medico E ha errore
-                        // Per gli altri programmi: correggi solo se stesso valore errato e ha errore
+                        // Per "Tempo Sospeso": correggi se stesso valore errato originale, stessa data E stesso centro medico E ha errore
+                        // OPPURE se stesso valore errato corrente, stessa data E stesso centro medico E ha errore
+                        // Per gli altri programmi: correggi se stesso valore errato originale e ha errore
+                        // OPPURE se stesso valore errato corrente e ha errore
                         let shouldCorrect = false;
                         if (isTempoSospeso) {
-                            shouldCorrect = otherValue === correction.oldValue && 
-                                otherDate === correction.invoiceDate && 
-                                otherMedicalCenter.toLowerCase() === correction.medicalCenter.toLowerCase() &&
-                                otherValueHasError &&
-                                otherIndex !== correction.rowIndex;
+                            const sameOldValue = otherValue === correction.oldValue;
+                            const sameCurrentValue = otherValue === String(correctedValue).trim().toLowerCase();
+                            const sameDate = otherDate === correction.invoiceDate;
+                            const sameMedicalCenter = otherMedicalCenter.toLowerCase() === correction.medicalCenter.toLowerCase();
+                            
+                            shouldCorrect = otherValueHasError && 
+                                ((sameOldValue && sameDate && sameMedicalCenter) || 
+                                 (sameCurrentValue && otherDate === correctedDate && 
+                                  otherMedicalCenter.toLowerCase() === correctedMedicalCenter.toLowerCase()));
                         } else {
-                            shouldCorrect = otherValue === correction.oldValue && 
-                                otherValueHasError &&
-                                otherIndex !== correction.rowIndex;
+                            const sameOldValue = otherValue === correction.oldValue;
+                            const sameCurrentValue = otherValue === String(correctedValue).trim().toLowerCase();
+                            
+                            shouldCorrect = otherValueHasError && (sameOldValue || sameCurrentValue);
                         }
                         
                         if (shouldCorrect) {
@@ -2047,6 +2090,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     
                     // Aspetta che il DOM sia completamente aggiornato prima di aggiornare i bordi
                     setTimeout(() => {
+                        // Aggiorna lo stato visivo di tutte le celle corrette
                         cellsToCorrect.forEach(({ row, rowIndex }) => {
                             const invoiceCell = this.template.querySelector(
                                 `td[data-field="invoiceNumber"][data-row-index="${rowIndex}"]`
@@ -2056,6 +2100,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             }
                         });
                         
+                        // Aggiorna anche la cella originale che è stata corretta
+                        const originalCell = this.template.querySelector(
+                            `td[data-field="invoiceNumber"][data-row-index="${correction.rowIndex}"]`
+                        );
+                        if (originalCell) {
+                            const originalRow = updatedRows[correction.rowIndex];
+                            this.updateCellValidationState(originalCell, originalRow, 'invoiceNumber');
+                        }
+                        
                         // Forza un altro rerender per assicurarsi che i bordi siano aggiornati
                         this.rows = [...this.rows];
                         
@@ -2064,6 +2117,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             cellsToCorrect.forEach(({ rowIndex }) => {
                                 this.setCellValidating(rowIndex, 'invoiceNumber', false);
                             });
+                            // Disattiva anche lo spinner della cella originale se era attivo
+                            this.setCellValidating(correction.rowIndex, 'invoiceNumber', false);
                         }, 100);
                     }, 200);
                 }, 300);
