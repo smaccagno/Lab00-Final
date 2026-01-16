@@ -4248,7 +4248,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     },
                     visits: [],
                     totalVisitsAmount: 0,
-                    totalVisitsMinutes: 0
+                    totalVisitsMinutes: 0,
+                    totalVisitsNumber: 0
                 });
             }
             
@@ -4330,6 +4331,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     (invoiceMap.get(invoiceNumber).totalVisitsAmount || 0) + visitAmount;
                 invoiceMap.get(invoiceNumber).totalVisitsMinutes = 
                     (invoiceMap.get(invoiceNumber).totalVisitsMinutes || 0) + visitMinutes;
+                const visitNumber = row.numeroVisite ? parseInt(row.numeroVisite, 10) : 0;
+                invoiceMap.get(invoiceNumber).totalVisitsNumber = 
+                    (invoiceMap.get(invoiceNumber).totalVisitsNumber || 0) + visitNumber;
             }
         });
         
@@ -4337,6 +4341,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.organizedInvoices = Array.from(invoiceMap.values()).map(invoiceGroup => {
             const totalAmount = invoiceGroup.totalVisitsAmount || 0;
             const totalMinutes = invoiceGroup.totalVisitsMinutes || 0;
+            const totalNumber = invoiceGroup.totalVisitsNumber || 0;
             
             // Verifica se ci sono errori nelle visite
             const hasVisitErrors = invoiceGroup.visits && invoiceGroup.visits.some(visit => visit.hasErrors === true);
@@ -4351,6 +4356,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 totalVisitsAmountFormatted: this.formatCurrency(totalAmount),
                 totalVisitsMinutes: totalMinutes,
                 totalVisitsMinutesFormatted: totalMinutes.toLocaleString('it-IT'),
+                totalVisitsNumber: totalNumber,
+                totalVisitsNumberFormatted: totalNumber.toLocaleString('it-IT'),
                 expanded: false, // Per gestire l'accordion
                 hasVisitErrors: hasVisitErrors,
                 visitsRowKey: `visits-header-${invoiceGroup.invoice.invoiceNumber}`, // ID univoco per la riga header delle visite

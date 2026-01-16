@@ -866,6 +866,9 @@
                                 <th scope="col">
                                     <div class="slds-truncate" title="Totale Tempo Donato">Totale Tempo Donato</div>
                                 </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Totale Numero Visite">Totale Numero Visite</div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -965,12 +968,15 @@
                                     <td data-label="Totale Tempo Donato">
                                         <div class="slds-truncate">{invoiceGroup.totalVisitsMinutesFormatted}</div>
                                     </td>
+                                    <td data-label="Totale Numero Visite">
+                                        <div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div>
+                                    </td>
                                 </tr>
                                 
                                 <!-- Box Visite Associate (sempre visibile) -->
                                 <template if:true={invoiceGroup.visits.length}>
                                     <tr key={invoiceGroup.visitsRowKey} class="slds-line-height_reset visit-header-row">
-                                        <td colspan="11" class="slds-p-around_small">
+                                        <td colspan="12" class="slds-p-around_small">
                                             <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
                                                 <div class="slds-col slds-no-flex">
                                                     <template if:true={invoiceGroup.expanded}>
@@ -1021,7 +1027,7 @@
                                     <!-- Riga Visite Espandibile -->
                                     <template if:true={invoiceGroup.expanded}>
                                         <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="11" class="slds-p-around_none">
+                                            <td colspan="12" class="slds-p-around_none">
                                                 <div class="slds-m-around_small visits-content">
                                                     <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
                                                         <thead>
