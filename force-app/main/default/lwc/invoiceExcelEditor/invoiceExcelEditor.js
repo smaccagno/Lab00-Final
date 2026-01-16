@@ -1606,18 +1606,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (this.pendingInvoiceNumberCorrection) {
                 const correction = this.pendingInvoiceNumberCorrection;
                 
-                // Cerca tutte le righe con lo stesso valore errato originale
+                // Cerca tutte le righe con lo stesso valore errato originale che hanno un errore di duplicazione
                 updatedRows.forEach((otherRow, otherIndex) => {
                     if (otherRow.invoiceNumber) {
                         const otherValue = String(otherRow.invoiceNumber).trim().toLowerCase();
-                        const otherDate = otherRow.invoiceDate;
-                        const otherMedicalCenter = otherRow.medicalCenter || '';
                         const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors.invoiceNumber === true;
                         
-                        // Correggi solo se stesso valore errato, stessa data E stesso centro medico E ha errore
+                        // Correggi tutte le celle con lo stesso numero fattura errato che hanno un errore di duplicazione
+                        // Non richiedere stessa data e stesso centro medico, solo stesso numero fattura errato
                         if (otherValue === correction.oldValue && 
-                            otherDate === correction.invoiceDate && 
-                            otherMedicalCenter.toLowerCase() === correction.medicalCenter.toLowerCase() &&
                             otherValueHasError &&
                             otherIndex !== correction.rowIndex) {
                             // Correggi il valore
@@ -1630,6 +1627,34 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 
                 // Pulisci la correzione pendente
                 this.pendingInvoiceNumberCorrection = null;
+            } else {
+                // Se non c'è una correzione pendente ma ci sono numeri fattura duplicati,
+                // cerca se una riga ha un numero fattura che è stato appena modificato e non è più duplicato
+                // e correggi tutte le altre righe con lo stesso numero fattura errato che hanno ancora un errore
+                updatedRows.forEach((row, index) => {
+                    const invoiceNumber = row.invoiceNumber ? String(row.invoiceNumber).trim().toLowerCase() : '';
+                    const hasError = row.validationErrors && row.validationErrors.invoiceNumber === true;
+                    
+                    // Se questa riga non ha errori ma altre righe con lo stesso numero fattura hanno errori,
+                    // significa che questa riga è stata corretta e le altre devono essere corrette anche loro
+                    if (invoiceNumber && !hasError) {
+                        // Cerca tutte le altre righe con lo stesso numero fattura che hanno ancora un errore
+                        updatedRows.forEach((otherRow, otherIndex) => {
+                            if (otherIndex !== index && otherRow.invoiceNumber) {
+                                const otherValue = String(otherRow.invoiceNumber).trim().toLowerCase();
+                                const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors.invoiceNumber === true;
+                                
+                                // Se hanno lo stesso numero fattura e l'altra riga ha ancora un errore, correggi
+                                if (otherValue === invoiceNumber && otherValueHasError) {
+                                    // Correggi il valore con quello della riga corretta
+                                    otherRow.invoiceNumber = row.invoiceNumber;
+                                    // Aggiorna anche la validazione
+                                    this.validateField(otherRow, 'invoiceNumber', row.invoiceNumber);
+                                }
+                            }
+                        });
+                    }
+                });
             }
             
             this.rows = updatedRows;
