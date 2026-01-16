@@ -4096,57 +4096,55 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                     });
                 } else {
-                    // Per tutti gli altri campi validati
-                    updatedRows.forEach((otherRow, otherIndex) => {
-                        if (otherIndex !== rowIndex && otherRow[field]) {
-                            const otherValue = String(otherRow[field]).trim().toLowerCase();
-                            // Verifica se il valore è errato (non nel dataset o con errore di validazione)
-                            const isOtherValueIncorrect = !this.isValueInDataset(field, otherRow[field]) ||
-                                (otherRow.validationErrors && otherRow.validationErrors[field] === true);
-                            
-                            if (otherValue === valueToFind && isOtherValueIncorrect) {
-                                // Correggi il valore
-                                otherRow[field] = filterValue;
-                                // Rimuovi l'errore di validazione (considera corretto come se avessi premuto "Conferma Valore")
-                                // NON chiamare validateField perché il valore è stato confermato dall'utente
-                                if (field === 'comune') {
-                                    otherRow.comuneIsNew = true;
-                                    if (otherRow.validationErrors) {
-                                        otherRow.validationErrors.comune = false;
+                    // Per tutti gli altri campi validati (esclusi comune, provincia e regione)
+                    // Per comune, provincia e regione, NON fare correzione automatica delle altre celle
+                    if (field !== 'comune' && field !== 'provincia' && field !== 'regione') {
+                        updatedRows.forEach((otherRow, otherIndex) => {
+                            if (otherIndex !== rowIndex && otherRow[field]) {
+                                const otherValue = String(otherRow[field]).trim().toLowerCase();
+                                // Verifica se il valore è errato (non nel dataset o con errore di validazione)
+                                const isOtherValueIncorrect = !this.isValueInDataset(field, otherRow[field]) ||
+                                    (otherRow.validationErrors && otherRow.validationErrors[field] === true);
+                                
+                                if (otherValue === valueToFind && isOtherValueIncorrect) {
+                                    // Correggi il valore
+                                    otherRow[field] = filterValue;
+                                    // Rimuovi l'errore di validazione (considera corretto come se avessi premuto "Conferma Valore")
+                                    // NON chiamare validateField perché il valore è stato confermato dall'utente
+                                    if (field === 'medicalCenter') {
+                                        otherRow.medicalCenterIsNew = true;
+                                        if (otherRow.validationErrors) {
+                                            otherRow.validationErrors.medicalCenter = false;
+                                        }
+                                    } else if (field === 'noProfit') {
+                                        otherRow.noProfitIsNew = true;
+                                        if (otherRow.validationErrors) {
+                                            otherRow.validationErrors.noProfit = false;
+                                        }
+                                    } else if (field === 'noProfitCategory') {
+                                        const categoryExists = this.categoryOptions.some(
+                                            opt => opt.value && opt.value.toLowerCase() === filterValue.toLowerCase()
+                                        );
+                                        if (!categoryExists) {
+                                            otherRow.noProfitCategoryIsNew = true;
+                                        }
+                                        if (otherRow.validationErrors) {
+                                            otherRow.validationErrors.noProfitCategory = false;
+                                        }
+                                    } else {
+                                        // Per altri campi validati, rimuovi solo l'errore di validazione
+                                        if (otherRow.validationErrors && otherRow.validationErrors[field] !== undefined) {
+                                            otherRow.validationErrors[field] = false;
+                                        }
                                     }
-                                } else if (field === 'medicalCenter') {
-                                    otherRow.medicalCenterIsNew = true;
-                                    if (otherRow.validationErrors) {
-                                        otherRow.validationErrors.medicalCenter = false;
-                                    }
-                                } else if (field === 'noProfit') {
-                                    otherRow.noProfitIsNew = true;
-                                    if (otherRow.validationErrors) {
-                                        otherRow.validationErrors.noProfit = false;
-                                    }
-                                } else if (field === 'noProfitCategory') {
-                                    const categoryExists = this.categoryOptions.some(
-                                        opt => opt.value && opt.value.toLowerCase() === filterValue.toLowerCase()
-                                    );
-                                    if (!categoryExists) {
-                                        otherRow.noProfitCategoryIsNew = true;
-                                    }
-                                    if (otherRow.validationErrors) {
-                                        otherRow.validationErrors.noProfitCategory = false;
-                                    }
-                                } else {
-                                    // Per altri campi validati, rimuovi solo l'errore di validazione
-                                    if (otherRow.validationErrors && otherRow.validationErrors[field] !== undefined) {
-                                        otherRow.validationErrors[field] = false;
-                                    }
+                                    // Traccia questa cella come corretta
+                                    correctedRowIndices.push(otherIndex);
+                                    // NON chiamare validateField qui perché il valore è stato confermato dall'utente
+                                    // e deve essere considerato valido anche se non è nel dataset
                                 }
-                                // Traccia questa cella come corretta
-                                correctedRowIndices.push(otherIndex);
-                                // NON chiamare validateField qui perché il valore è stato confermato dall'utente
-                                // e deve essere considerato valido anche se non è nel dataset
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
 
@@ -4657,27 +4655,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                     }
                     
-                    // Aggiorna anche provincia e regione se comune è stato modificato
-                    if (field === 'comune') {
-                        const provinciaCell = this.template.querySelector(
-                            `td[data-field="provincia"][data-row-index="${otherIndex}"]`
-                        );
-                        const regioneCell = this.template.querySelector(
-                            `td[data-field="regione"][data-row-index="${otherIndex}"]`
-                        );
-                        if (provinciaCell) {
-                            this.updateCellValidationState(provinciaCell, otherRow, 'provincia');
-                            if (otherRow.provincia && provinciaCell.textContent !== otherRow.provincia) {
-                                provinciaCell.textContent = otherRow.provincia;
-                            }
-                        }
-                        if (regioneCell) {
-                            this.updateCellValidationState(regioneCell, otherRow, 'regione');
-                            if (otherRow.regione && regioneCell.textContent !== otherRow.regione) {
-                                regioneCell.textContent = otherRow.regione;
-                            }
-                        }
-                    }
+                    // NON aggiornare provincia e regione per altre righe quando comune viene modificato
+                    // La correzione automatica per comune, provincia e regione è disabilitata
                     
                     // Aggiorna anche categoria ente se ente no profit è stato modificato
                     if (field === 'noProfit') {
