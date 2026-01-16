@@ -855,12 +855,6 @@
                                     <div class="slds-truncate" title="Categoria Ente">Categoria Ente</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Prestazione Gratuita">Prestazione Gratuita</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Fattura Non Disponibile">Fattura Non Disponibile</div>
-                                </th>
-                                <th scope="col">
                                     <div class="slds-truncate" title="Ammontare">Ammontare</div>
                                 </th>
                                 <th scope="col">
@@ -949,22 +943,6 @@
                                             <div class="slds-truncate">{invoiceGroup.invoice.noProfitCategory}</div>
                                         </template>
                                     </td>
-                                    <td data-label="Prestazione Gratuita">
-                                        <template if:true={invoiceGroup.invoice.isFree}>
-                                            <span class="slds-badge slds-badge_success">Sì</span>
-                                        </template>
-                                        <template if:false={invoiceGroup.invoice.isFree}>
-                                            <span class="slds-badge">No</span>
-                                        </template>
-                                    </td>
-                                    <td data-label="Fattura Non Disponibile">
-                                        <template if:true={invoiceGroup.invoice.noInvoiceAvailable}>
-                                            <span class="slds-badge slds-badge_success">Sì</span>
-                                        </template>
-                                        <template if:false={invoiceGroup.invoice.noInvoiceAvailable}>
-                                            <span class="slds-badge">No</span>
-                                        </template>
-                                    </td>
                                     <td data-label="Ammontare">
                                         <div class="slds-truncate">{invoiceGroup.invoice.amountFormatted}</div>
                                     </td>
@@ -1012,12 +990,18 @@
                                                     </template>
                                                 </div>
                                                 <div class="slds-col">
-                                                    <span class="slds-text-heading_small">Visite Associate ({invoiceGroup.visits.length})</span>
-                                                    <template if:true={invoiceGroup.hasVisitErrors}>
-                                                        <span class="slds-text-color_error slds-m-left_small slds-text-body_small">
-                                                            ⚠️ Ci sono errori da correggere nelle visite
-                                                        </span>
-                                                    </template>
+                                                    <div class="slds-grid slds-grid_vertical">
+                                                        <div class="slds-col">
+                                                            <span class="slds-text-heading_small">Visite Associate ({invoiceGroup.visits.length})</span>
+                                                        </div>
+                                                        <template if:true={invoiceGroup.hasVisitErrors}>
+                                                            <div class="slds-col">
+                                                                <span class="slds-text-color_error slds-text-body_small">
+                                                                    ⚠️ Ci sono errori da correggere nelle visite
+                                                                </span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
@@ -1031,7 +1015,7 @@
                                 <template if:true={invoiceGroup.visits.length}>
                                     <template if:true={invoiceGroup.expanded}>
                                         <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="13" class="slds-p-around_none">
+                                            <td colspan="11" class="slds-p-around_none">
                                                 <div class="slds-m-around_small visits-content">
                                                     <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
                                                         <thead>
