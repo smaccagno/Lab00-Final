@@ -452,34 +452,43 @@
 
 /* Il pulsante viene mostrato/nascosto tramite template if:true nel HTML */
 
-/* Spinner durante il salvataggio */
+/* Spinner durante il salvataggio e validazione */
 .slds-modal {
     display: block;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 9001;
+    margin: 0;
+    padding: 0;
 }
 
 .slds-modal__container {
-    position: relative;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     max-width: 500px;
     width: 90%;
+    margin: 0;
 }
 
 .slds-backdrop {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 9000;
+    margin: 0;
+    padding: 0;
 }
 
 /* Tabella risultati */
