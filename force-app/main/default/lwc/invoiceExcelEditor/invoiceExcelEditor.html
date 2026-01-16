@@ -325,16 +325,9 @@
                                     data-row-index={rowIndex}
                                     onclick={selectRow}>
                                     <div class="row-number-container">
-                                        <template if:true={row.hasErrors}>
-                                            <span class="error-value">
-                                                {row.rowNumber}
-                                            </span>
-                                        </template>
-                                        <template if:false={row.hasErrors}>
-                                            <span>
-                                                {row.rowNumber}
-                                            </span>
-                                        </template>
+                                        <span>
+                                            {row.rowNumber}
+                                        </span>
                                         <template if:true={row.hasErrors}>
                                             <div class="invoice-number-error-message">
                                                 Questa riga contiene errori
