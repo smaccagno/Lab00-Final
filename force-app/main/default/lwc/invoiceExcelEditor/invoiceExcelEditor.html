@@ -891,7 +891,21 @@
                                     <td data-label="Stato Caricamento">
                                         <template if:true={invoiceGroup.invoice.saveStatus}>
                                             <template if:true={invoiceGroup.invoice.saveStatusSuccess}>
-                                                <div class="slds-truncate slds-text-color_success">Caricata correttamente</div>
+                                                <div class="slds-truncate">
+                                                    <span class="slds-text-color_success">Caricata correttamente</span>
+                                                    <template if:true={invoiceGroup.invoice.invoiceId}>
+                                                        <span class="slds-m-left_x-small">
+                                                            - 
+                                                            <a href="#" 
+                                                               class="slds-text-link"
+                                                               data-invoice-id={invoiceGroup.invoice.invoiceId}
+                                                               onclick={openInvoiceRecord}
+                                                               title={invoiceGroup.invoice.invoiceName}>
+                                                                {invoiceGroup.invoice.invoiceName}
+                                                            </a>
+                                                        </span>
+                                                    </template>
+                                                </div>
                                             </template>
                                             <template if:false={invoiceGroup.invoice.saveStatusSuccess}>
                                                 <div class="slds-truncate slds-text-color_error">
@@ -1076,7 +1090,21 @@
                                                                     <td data-label="Stato Caricamento">
                                                                         <template if:true={visit.saveStatus}>
                                                                             <template if:true={visit.saveStatusSuccess}>
-                                                                                <div class="slds-truncate slds-text-color_success">Caricata correttamente</div>
+                                                                                <div class="slds-truncate">
+                                                                                    <span class="slds-text-color_success">Caricata correttamente</span>
+                                                                                    <template if:true={visit.visitId}>
+                                                                                        <span class="slds-m-left_x-small">
+                                                                                            - 
+                                                                                            <a href="#" 
+                                                                                               class="slds-text-link"
+                                                                                               data-visit-id={visit.visitId}
+                                                                                               onclick={openVisitRecord}
+                                                                                               title={visit.visitName}>
+                                                                                                {visit.visitName}
+                                                                                            </a>
+                                                                                        </span>
+                                                                                    </template>
+                                                                                </div>
                                                                             </template>
                                                                             <template if:false={visit.saveStatusSuccess}>
                                                                                 <div class="slds-truncate slds-text-color_error">

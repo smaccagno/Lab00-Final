@@ -4176,32 +4176,57 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     saveStatus: saveResult.isSuccess ? 'success' : 'error',
                     saveStatusSuccess: saveResult.isSuccess === true, // Booleano per il template
                     saveErrorMessage: saveResult.errorMessage || null,
-                    invoiceId: saveResult.invoiceId || null
+                    invoiceId: saveResult.invoiceId || null,
+                    invoiceName: saveResult.invoiceName || null
                 };
                 
                 // Crea una mappa dei risultati delle visite usando un identificatore univoco
+                // Nota: visitDetails contiene 'id', 'name', 'visitType', 'beneficiaryType', 'localita'
+                // Le visite organizzate hanno 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione'
                 const visitResultsMap = new Map();
                 if (saveResult.visitDetails && Array.isArray(saveResult.visitDetails)) {
-                    saveResult.visitDetails.forEach(visitDetail => {
-                        // Usa una combinazione di campi per identificare la visita
-                        const visitKey = `${visitDetail.tipoVisita || ''}_${visitDetail.dataVisita || ''}_${visitDetail.comune || ''}_${visitDetail.numeroVisite || ''}`;
+                    saveResult.visitDetails.forEach((visitDetail, index) => {
+                        // Usa l'indice come chiave di fallback, ma prova anche con i campi
+                        const visitKey = `${visitDetail.visitType || ''}_${visitDetail.beneficiaryType || ''}_${visitDetail.localita || ''}`;
                         visitResultsMap.set(visitKey, visitDetail);
+                        // Aggiungi anche un mapping per indice per facilitare il matching
+                        visitResultsMap.set(`index_${index}`, visitDetail);
                     });
                 }
                 
                 // Aggiorna le visite con i loro stati
-                const updatedVisits = invoiceGroup.visits.map(visit => {
-                    // Crea una chiave simile per trovare il risultato corrispondente
-                    const visitKey = `${visit.tipoVisita || ''}_${visit.dataVisita || ''}_${visit.comune || ''}_${visit.numeroVisite || ''}`;
-                    const visitResult = visitResultsMap.get(visitKey);
+                const updatedVisits = invoiceGroup.visits.map((visit, visitIndex) => {
+                    // Prova a fare il matching usando i campi disponibili
+                    // Costruisci localita dalla visita organizzata per matching
+                    let visitLocalita = visit.comune || '';
+                    if (visit.provincia) {
+                        visitLocalita += visitLocalita ? ` (${visit.provincia}` : visit.provincia;
+                        if (visit.regione) {
+                            visitLocalita += `, ${visit.regione}`;
+                        }
+                        if (visitLocalita.includes('(')) {
+                            visitLocalita += ')';
+                        }
+                    } else if (visit.regione) {
+                        visitLocalita += visitLocalita ? ` (${visit.regione})` : visit.regione;
+                    }
+                    
+                    const visitKey = `${visit.tipoVisita || ''}_${visit.beneficiaryType || ''}_${visitLocalita}`;
+                    let visitResult = visitResultsMap.get(visitKey);
+                    
+                    // Se non trova match, prova con l'indice
+                    if (!visitResult && visitIndex < saveResult.visitDetails.length) {
+                        visitResult = visitResultsMap.get(`index_${visitIndex}`);
+                    }
                     
                     if (visitResult) {
                         return {
                             ...visit,
-                            saveStatus: visitResult.status === 'success' ? 'success' : 'error',
-                            saveStatusSuccess: visitResult.status === 'success', // Booleano per il template
-                            saveErrorMessage: visitResult.errorMessage || null,
-                            visitId: visitResult.visitId || null
+                            saveStatus: 'success', // Se è nei visitDetails, è stata creata con successo
+                            saveStatusSuccess: true,
+                            saveErrorMessage: null,
+                            visitId: visitResult.id || null,
+                            visitName: visitResult.name || null
                         };
                     }
                     // Se non c'è un risultato specifico, eredita lo stato della fattura
