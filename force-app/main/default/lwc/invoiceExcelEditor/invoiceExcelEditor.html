@@ -837,6 +837,9 @@
                                     <div class="slds-truncate"></div>
                                 </th>
                                 <th scope="col">
+                                    <div class="slds-truncate" title="Visite Associate">Visite Associate</div>
+                                </th>
+                                <th scope="col">
                                     <div class="slds-truncate" title="Numero Fattura">Numero Fattura</div>
                                 </th>
                                 <th scope="col">
@@ -876,54 +879,55 @@
                                 <!-- Riga Fattura -->
                                 <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
                                     <td data-label="" class="expand-cell">
-                                        <div class="slds-grid slds-grid_vertical">
-                                            <template if:true={invoiceGroup.visits.length}>
+                                        <template if:true={invoiceGroup.visits.length}>
+                                            <template if:true={invoiceGroup.expanded}>
+                                                <button 
+                                                    type="button"
+                                                    class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
+                                                    data-index={invoiceIndex}
+                                                    onclick={toggleVisitsAccordion}
+                                                    title="Collassa"
+                                                    aria-label="Collassa">
+                                                    <lightning-icon 
+                                                        icon-name="utility:dash"
+                                                        size="small"
+                                                        alternative-text="Collassa">
+                                                    </lightning-icon>
+                                                    <span class="slds-assistive-text">Collassa</span>
+                                                </button>
+                                            </template>
+                                            <template if:false={invoiceGroup.expanded}>
+                                                <button 
+                                                    type="button"
+                                                    class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
+                                                    data-index={invoiceIndex}
+                                                    onclick={toggleVisitsAccordion}
+                                                    title="Espandi"
+                                                    aria-label="Espandi">
+                                                    <lightning-icon 
+                                                        icon-name="utility:add"
+                                                        size="small"
+                                                        alternative-text="Espandi">
+                                                    </lightning-icon>
+                                                    <span class="slds-assistive-text">Espandi</span>
+                                                </button>
+                                            </template>
+                                        </template>
+                                    </td>
+                                    <td data-label="Visite Associate">
+                                        <template if:true={invoiceGroup.visits.length}>
+                                            <div class="slds-grid slds-grid_vertical-align-center">
                                                 <div class="slds-col">
-                                                    <template if:true={invoiceGroup.expanded}>
-                                                        <button 
-                                                            type="button"
-                                                            class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
-                                                            data-index={invoiceIndex}
-                                                            onclick={toggleVisitsAccordion}
-                                                            title="Collassa"
-                                                            aria-label="Collassa">
-                                                            <lightning-icon 
-                                                                icon-name="utility:dash"
-                                                                size="small"
-                                                                alternative-text="Collassa">
-                                                            </lightning-icon>
-                                                            <span class="slds-assistive-text">Collassa</span>
-                                                        </button>
-                                                    </template>
-                                                    <template if:false={invoiceGroup.expanded}>
-                                                        <button 
-                                                            type="button"
-                                                            class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
-                                                            data-index={invoiceIndex}
-                                                            onclick={toggleVisitsAccordion}
-                                                            title="Espandi"
-                                                            aria-label="Espandi">
-                                                            <lightning-icon 
-                                                                icon-name="utility:add"
-                                                                size="small"
-                                                                alternative-text="Espandi">
-                                                            </lightning-icon>
-                                                            <span class="slds-assistive-text">Espandi</span>
-                                                        </button>
+                                                    <span>Visite Associate ({invoiceGroup.visits.length})</span>
+                                                    <template if:true={invoiceGroup.hasVisitErrors}>
+                                                        <span class="slds-m-left_x-small slds-text-color_error">⚠️ Ci sono errori da correggere nelle visite</span>
                                                     </template>
                                                 </div>
-                                                <template if:true={invoiceGroup.hasVisitErrors}>
-                                                    <div class="slds-col slds-m-top_x-small">
-                                                        <div class="slds-text-color_error slds-text-body_small visit-error-message">
-                                                            Ci sono errori da correggere nelle visite associate
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </template>
-                                            <template if:false={invoiceGroup.visits.length}>
-                                                <div style="width: 24px;"></div>
-                                            </template>
-                                        </div>
+                                            </div>
+                                        </template>
+                                        <template if:false={invoiceGroup.visits.length}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
                                     </td>
                                     <td data-label="Numero Fattura">
                                         <template if:true={invoiceGroup.invoice.hasErrors}>
@@ -1023,7 +1027,7 @@
                                 <!-- Riga Visite Espandibile -->
                                 <template if:true={invoiceGroup.visits.length}>
                                     <tr key={invoiceGroup.visitsRowKey} class="slds-line-height_reset visit-expand-row">
-                                        <td colspan="12" class="slds-p-around_none">
+                                        <td colspan="13" class="slds-p-around_none">
                                             <template if:true={invoiceGroup.expanded}>
                                                 <div class="slds-m-around_small visits-content">
                                                     <div class="slds-text-heading_small slds-m-bottom_small">
