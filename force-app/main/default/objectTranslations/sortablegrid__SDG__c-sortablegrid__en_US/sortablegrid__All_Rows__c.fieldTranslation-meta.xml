@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Retrieve all rows - including archived and deleted records. Generally leave as false unless there&apos;s a specific need. --></help>
+    <label><!-- All Rows --></label>
+    <name>sortablegrid__All_Rows__c</name>
+</CustomFieldTranslation>

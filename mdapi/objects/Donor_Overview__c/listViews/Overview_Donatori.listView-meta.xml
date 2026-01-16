@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Overview_Donatori</fullName>
+    <columns>NAME</columns>
+    <columns>Account__c</columns>
+    <columns>Programma__c</columns>
+    <columns>Total_Donation_Amount_formula__c</columns>
+    <columns>Total_Donation_Number__c</columns>
+    <columns>Total_Invoice_Amount__c</columns>
+    <columns>Total_Visits_Done__c</columns>
+    <columns>Total_Minutes_of_Visits__c</columns>
+    <columns>Not_Invoiced_Amount__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>Donatori per Programma</label>
+</ListView>

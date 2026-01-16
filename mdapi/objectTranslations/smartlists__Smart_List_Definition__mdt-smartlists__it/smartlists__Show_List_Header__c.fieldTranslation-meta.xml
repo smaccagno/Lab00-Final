@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Show Table Header --></label>
+    <name>smartlists__Show_List_Header__c</name>
+</CustomFieldTranslation>

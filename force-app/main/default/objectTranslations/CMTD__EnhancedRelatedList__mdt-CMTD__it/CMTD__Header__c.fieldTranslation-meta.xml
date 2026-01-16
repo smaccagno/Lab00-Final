@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Used to display fields in the header section when using Tile display mode. --></help>
+    <label><!-- Header --></label>
+    <name>CMTD__Header__c</name>
+</CustomFieldTranslation>

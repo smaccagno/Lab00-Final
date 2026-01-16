@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Action Type --></label>
+    <name>sortablegrid__Action_Type__c</name>
+    <picklistValues>
+        <masterLabel>List</masterLabel>
+        <translation><!-- List --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>List Button</masterLabel>
+        <translation><!-- List Button --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>List Multi-Select</masterLabel>
+        <translation><!-- List Multi-Select --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Row</masterLabel>
+        <translation><!-- Row --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Row Button</masterLabel>
+        <translation><!-- Row Button --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

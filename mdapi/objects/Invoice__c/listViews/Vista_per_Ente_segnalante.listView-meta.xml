@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Vista_per_Ente_segnalante</fullName>
+    <columns>NAME</columns>
+    <columns>Medical_Center__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Non_Profit_Signaling__c</field>
+        <operation>equals</operation>
+        <value>Pippo</value>
+    </filters>
+    <label>Vista per Ente segnalante</label>
+</ListView>

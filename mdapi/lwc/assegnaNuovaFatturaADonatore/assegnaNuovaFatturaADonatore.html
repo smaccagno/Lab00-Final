@@ -1,0 +1,25 @@
+<template>
+    <template if:true={error}>
+        <div class="slds-text-color_error">Errore: {error}</div>
+    </template>
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
+    </template>
+    <template if:true={hasData}>
+        <div class="slds-text-body_regular slds-text-color_weak slds-m-bottom_small">
+            <p>Seleziona il donatore a cui vuoi assegnare la nuova fattura.</p>
+        </div>
+        <lightning-datatable
+            key-field="id"
+            data={donatoriData}
+            columns={columnsDonatori}
+            max-row-selection="1"
+            onrowselection={handleDonatoreRowSelection}>
+        </lightning-datatable>
+        <template if:true={selectedSorgenteName}>
+            <p class="slds-m-top_small">
+                Hai selezionato come donatore: <strong>{selectedSorgenteName}</strong>
+            </p>
+        </template>
+    </template>
+</template>

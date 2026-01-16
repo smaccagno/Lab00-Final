@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Stakeholder</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Stakeholders</value>
+    </caseValues>
+    <fieldSets>
+        <label><!-- Grande Donatore --></label>
+        <name>Company</name>
+    </fieldSets>
+    <fieldSets>
+        <label><!-- Partner --></label>
+        <name>Partner</name>
+    </fieldSets>
+    <fieldSets>
+        <label><!-- Piccolo Donatore --></label>
+        <name>PersonAccount</name>
+    </fieldSets>
+    <fieldSets>
+        <label><!-- Struttura --></label>
+        <name>Structure</name>
+    </fieldSets>
+    <gender>Masculine</gender>
+    <quickActions>
+        <label><!-- Aggiorna Donatore per Programma --></label>
+        <name>Aggiorna_Donatore_per_Programma</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Crea Nuovo Donatore --></label>
+        <name>Crea_Nuovo_Donatore</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Dettagli Donatore --></label>
+        <name>Dettagli_Donatore</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Update Overview --></label>
+        <name>Update_Overview</name>
+    </quickActions>
+    <recordTypes>
+        <label><!-- Grande Donatore --></label>
+        <name>Company</name>
+    </recordTypes>
+    <recordTypes>
+        <label><!-- Partner --></label>
+        <name>Partner</name>
+    </recordTypes>
+    <recordTypes>
+        <label><!-- Fornitore --></label>
+        <name>Structure</name>
+    </recordTypes>
+    <startsWith>Special</startsWith>
+    <webLinks>
+        <label><!-- Crea_Nuovo_Donatore --></label>
+        <name>Crea_Nuovo_Donatore</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- GoogleMaps --></label>
+        <name>GoogleMaps</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- GoogleNews --></label>
+        <name>GoogleNews</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- GoogleSearch --></label>
+        <name>GoogleSearch</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- HooversProfile --></label>
+        <name>HooversProfile</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- YahooMaps --></label>
+        <name>YahooMaps</name>
+    </webLinks>
+</CustomObjectTranslation>

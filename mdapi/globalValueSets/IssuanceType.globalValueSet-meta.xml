@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Emesso</fullName>
+        <default>true</default>
+        <label>Emesso</label>
+    </customValue>
+    <customValue>
+        <fullName>Non Emesso</fullName>
+        <default>false</default>
+        <label>Non Emesso</label>
+    </customValue>
+    <masterLabel>Tipologia Emissione</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

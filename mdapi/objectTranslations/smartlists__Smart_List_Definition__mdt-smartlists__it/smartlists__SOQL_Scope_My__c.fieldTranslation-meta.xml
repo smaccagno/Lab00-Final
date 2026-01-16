@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Returns records owned by the running user --></help>
+    <label><!-- Visibility Filter - My --></label>
+    <name>smartlists__SOQL_Scope_My__c</name>
+</CustomFieldTranslation>

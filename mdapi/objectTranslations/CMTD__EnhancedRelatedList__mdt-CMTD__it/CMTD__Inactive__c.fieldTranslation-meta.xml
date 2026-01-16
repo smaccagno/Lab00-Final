@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Flag to indicate if the CMT record is used. When this field is checked, the CMT record will be ignored and the field will not be displayed in the component. --></help>
+    <label><!-- Inactive --></label>
+    <name>CMTD__Inactive__c</name>
+</CustomFieldTranslation>

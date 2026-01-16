@@ -1,0 +1,14 @@
+.header-container {
+    text-align: center;
+    white-space: normal;
+}
+
+.main-text {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.sub-text {
+    font-size: 12px;
+    color: #888888;
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>Amount_Static__c</columns>
+    <columns>Amount__c</columns>
+    <columns>Payment__c</columns>
+    <columns>Status_Static__c</columns>
+    <columns>Status__c</columns>
+    <columns>Totali_Budget_Anno__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All</label>
+</ListView>

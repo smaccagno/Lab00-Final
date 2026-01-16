@@ -1,0 +1,101 @@
+<template>
+    <lightning-card title="Gestisci Visite">
+        <!-- Lista dei componenti figlio -->
+        <template for:each={tipoVisiteWithIndex} for:item="visita">
+            <div key={visita.id} class={visita.className}>
+                <c-tipo-visita
+                    data-id={visita.id}
+                    invoice-date={invoiceDate}
+                    gratuita={gratuita} 
+                    visita-data={visita.data}
+                    onupdatevisita={handleTipoVisitaChange} 
+                ></c-tipo-visita>
+
+                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center visita-footer">
+                    <div class="visita-label">
+                        Visita&nbsp;{visita.seq}
+                        <template if:true={visita.editing}>
+                            <span class="slds-badge slds-theme_warning slds-m-left_x-small">Modificata</span>
+                        </template>
+                        <template if:false={visita.editing}>
+                            <template if:true={visita.saved}>
+                                <span class="slds-badge slds-theme_success slds-m-left_x-small">Salvata</span>
+                            </template>
+                        </template>
+                    </div>
+                    <lightning-button
+                        label="Rimuovi Visita"
+                        variant="destructive-text"     
+                        icon-name="utility:delete"
+                        icon-position="right"
+                        onclick={removeTipoVisita}
+                        data-id={visita.id}>
+                    </lightning-button>
+                    <template if:true={visita.saved}>
+                        <template if:false={visita.editing}>
+                            <lightning-button
+                                class="slds-m-left_x-small"
+                                label="Modifica"
+                                variant="neutral"
+                                data-id={visita.id}
+                                onclick={handleEdit}>
+                            </lightning-button>
+                        </template>
+                        <template if:true={visita.editing}>
+                            <lightning-button
+                                class="slds-m-left_x-small"
+                                label="Annulla Modifiche"
+                                variant="destructive-text"
+                                data-id={visita.id}
+                                onclick={handleCancelEdit}>
+                            </lightning-button>
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <div class="button-container">
+            <template if:true={hasUnsaved}>
+                <span class="slds-badge slds-theme_warning">{unsavedCount} visite da salvare</span>
+            </template>
+            <lightning-button
+                label="Aggiungi Visita"
+                variant="brand"
+                onclick={addTipoVisita}>
+            </lightning-button>
+        
+            <!-- Pulsante Salva -->
+            <lightning-button
+                label="Salva Visite"
+                variant={saveButtonVariant}
+                onclick={createVisitaRecords}
+                class="save-button"
+            >
+                <template if:true={isSaving}>
+                    <lightning-spinner alternative-text="Salvataggio in corso"></lightning-spinner>
+                </template>
+            </lightning-button>
+
+
+                <lightning-button 
+                    label="Avanti" 
+                    variant="brand" 
+                    onclick={handleNext}
+                    disabled={isNextDisabled}>
+                </lightning-button>
+
+        </div>
+        
+
+        <!-- Messaggio di successo -->
+        <template if:true={isNextEnabled}>
+            <div class="success-message">Visite create e associate alla Fattura.</div>
+        </template>
+        <template if:false={isNextEnabled}>
+            <div class="slds-text-color_error slds-m-top_x-small">
+                Per proseguire, è necessario salvare le visite con successo.
+            </div>
+        </template>
+    </lightning-card>
+</template>

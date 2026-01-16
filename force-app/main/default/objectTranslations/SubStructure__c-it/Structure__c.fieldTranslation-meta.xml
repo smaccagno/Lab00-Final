@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Fornitore --></label>
+    <lookupFilter>
+        <errorMessage><!-- L&apos;Account deve essere di tipo Struttura --></errorMessage>
+    </lookupFilter>
+    <name>Structure__c</name>
+    <relationshipLabel><!-- SubStructures --></relationshipLabel>
+</CustomFieldTranslation>

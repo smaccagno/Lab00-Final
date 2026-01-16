@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Type --></label>
+    <name>smartlists__Type__c</name>
+    <picklistValues>
+        <masterLabel>List Action</masterLabel>
+        <translation><!-- List Action --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Row Action</masterLabel>
+        <translation><!-- Row Action --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

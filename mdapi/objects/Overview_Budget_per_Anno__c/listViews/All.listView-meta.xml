@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>Programma__c</columns>
+    <columns>Anno_Reportistica__c</columns>
+    <columns>Totale_Distribuito_NON_Pagato__c</columns>
+    <columns>Totale_Distribuito_Pagato__c</columns>
+    <columns>Totale_Ammontare_Fatture__c</columns>
+    <columns>Ammontare_Pagamenti_Fatti__c</columns>
+    <columns>Ammontare_Pagamenti_Da_Pagare__c</columns>
+    <columns>Numero_Distribuzioni__c</columns>
+    <columns>Numero_di_Fatture__c</columns>
+    <columns>Totale_Minuti_di_Visita__c</columns>
+    <columns>Totale_Numero_di_Visite__c</columns>
+    <columns>Budget__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>Tutto</label>
+</ListView>

@@ -1,0 +1,114 @@
+<template>
+    <lightning-card title="Distribuzione Donazione">
+        <!-- Error handling -->
+
+        <!-- Corpo principale -->
+        <template if:true={ready}>
+            <!-- Importo totale da distribuire -->
+            <div class="slds-m-bottom_medium slds-text-body_regular">
+                <span class="slds-text-title">Ammontare disponibile:&nbsp;</span>
+                <lightning-formatted-number
+                    value={currentAmount}
+                    format-style="currency"
+                    currency-code="EUR">
+                </lightning-formatted-number>
+            </div>
+
+            <!-- Righe dinamiche -->
+            <template for:each={rows} for:item="row" for:index="idx">
+                <div key={row.id} class="slds-grid slds-gutters slds-p-bottom_x-small">
+                    <!-- Budget -->
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-combobox
+                            label="Budget"
+                            placeholder="Seleziona budget"
+                            options={row.availableOptions}    
+                            value={row.designationId}
+                            data-index={idx}
+                            onchange={handleDesignationChange}>
+                        </lightning-combobox>
+                    </div>
+
+                    <!-- Percentuale -->
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-input
+                            type="number"
+                            label="Percentuale"
+                            step="0.01"
+                            value={row.percentage}
+                            data-index={idx}
+                            onchange={handlePercentChange}>
+                        </lightning-input>
+                    </div>
+
+                    <!-- Importo calcolato -->
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-input
+                            type="currency"
+                            label="Importo"
+                            value={row.amount}
+                            currency-code="EUR"
+                            disabled
+                            read-only>
+                        </lightning-input>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Pulsante aggiunta riga -->
+            <lightning-button
+                icon-name="utility:add"
+                label="Aggiungi riga"
+                variant="neutral"
+                onclick={addRow}>
+            </lightning-button>
+
+            <div class="slds-grid slds-gutters slds-m-top_medium">
+            <!-- Colonna vuota per allineare con la griglia delle righe -->
+            <div class="slds-col slds-size_4-of-12"></div>
+
+            <!-- Totale Percentuale -->
+            <div class="slds-col slds-size_4-of-12">
+                <label class="slds-form-element__label">Totale %</label>
+                <lightning-input
+                    type="number"
+                    value={totalPercentage}
+                    step="0.01"
+                    disabled>
+                </lightning-input>
+                <template if:true={percentError}>
+                    <p class="slds-text-color_error slds-text-body_small">
+                        La somma deve essere 100&nbsp;%
+                    </p>
+                </template>
+            </div>
+
+            <!-- Totale Importo -->
+            <div class="slds-col slds-size_4-of-12">
+                <label class="slds-form-element__label">Totale Importo</label>
+                <lightning-input
+                    type="currency"
+                    value={totalAmount}
+                    currency-code="EUR"
+                    disabled>
+                </lightning-input>
+                <template if:true={amountError}>
+                    <p class="slds-text-color_error slds-text-body_small">
+                        La somma deve essere uguale all’ammontare disponibile
+                    </p>
+                </template>
+            </div>
+        </div>
+            <!-- Bottone Prosegui: appare solo se isValid è true -->
+            <template if:true={isValid}>
+                <div class="slds-m-top_medium slds-text-align_right">
+                    <lightning-button
+                        variant="brand"
+                        label="Prosegui"
+                        onclick={handleNext}>
+                    </lightning-button>
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+</template>

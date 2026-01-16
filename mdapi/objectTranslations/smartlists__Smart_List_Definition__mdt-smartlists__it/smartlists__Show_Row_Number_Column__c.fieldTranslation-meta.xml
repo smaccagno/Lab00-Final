@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If checked, the row numbers are shown in the first column --></help>
+    <label><!-- Show Row Number Column --></label>
+    <name>smartlists__Show_Row_Number_Column__c</name>
+</CustomFieldTranslation>

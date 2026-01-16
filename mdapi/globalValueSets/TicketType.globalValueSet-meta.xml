@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Biglietto</fullName>
+        <default>false</default>
+        <label>Biglietto</label>
+    </customValue>
+    <customValue>
+        <fullName>Abbonamento</fullName>
+        <default>false</default>
+        <label>Abbonamento</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketIssuedToBePaidDiscount</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Emesso - Da pagare (a prezzo scontato)</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketNotIssuedDonated</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Non Emesso - Donato</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketNotIssuedToBePaidFull</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Non emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketNotIssuedToBePaidDiscount</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Non emesso - Da pagare (a prezzo scontato)</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionIssuedDonated</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Emesso - Donato</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketIssuedDonated</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Emesso - Donato</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionIssuedToBePaidDiscount</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Emesso - Da pagare (a prezzo scontato)</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionNotIssuedDonated</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Non Emesso - Donato</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionNotIssuedToBePaidFull</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Non emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionNotIssuedToBePaidDiscount</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Non emesso - Da pagare (a prezzo scontato)</label>
+    </customValue>
+    <customValue>
+        <fullName>Biglietti Multipli</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietti Multipli</label>
+    </customValue>
+    <customValue>
+        <fullName>SubscriptionIssuedToBePaidFull</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketIssuedToBePaidFull</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <masterLabel>Tipologia Biglietto</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

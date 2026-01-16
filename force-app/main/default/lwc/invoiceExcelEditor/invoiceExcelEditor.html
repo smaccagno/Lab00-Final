@@ -1,0 +1,1209 @@
+<template>
+    <!-- Tabella dei risultati del salvataggio (mostrata per prima quando presente) -->
+    <template if:true={showResults}>
+        <lightning-card title="Risultati Salvataggio Fatture" icon-name="standard:invoice">
+            <div class="slds-m-around_medium">
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                    <div class="slds-col">
+                        <lightning-button 
+                            label="Nuovo Inserimento" 
+                            onclick={startNewEntry}
+                            variant="brand"
+                            icon-name="utility:add">
+                        </lightning-button>
+                    </div>
+                </div>
+                
+                <div class="slds-scrollable_x">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Fattura/Visita">Fattura/Visita</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Numero Fattura">Numero Fattura</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Stato">Stato</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Errore Fattura">Errore Fattura</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Visite Create">Visite Create</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Visite Non Create">Visite Non Create</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Errore Visite">Errore Visite</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Totale Quantità">Totale Quantità</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Totale Minuti Donati">Totale Minuti Donati</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Totale Costo">Totale Costo</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Tipo Visita">Tipo Visita</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Beneficiario">Beneficiario</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Località">Località</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={groupedSaveResults} for:item="result">
+                                <template if:true={result.isInvoice}>
+                                    <tr key={result.id} class="slds-line-height_reset invoice-row">
+                                        <td data-label="Fattura/Visita">
+                                            <div class="slds-grid slds-grid_vertical-align-center">
+                                                <template if:true={result.hasVisits}>
+                                                    <template if:true={result.expanded}>
+                                                        <button 
+                                                            type="button"
+                                                            class="slds-button slds-button_icon slds-button_icon-small slds-m-right_x-small"
+                                                            data-invoice-key={result.invoiceKey}
+                                                            onclick={toggleInvoiceExpansion}
+                                                            title="Collassa"
+                                                            aria-label="Collassa">
+                                                            <lightning-icon icon-name="utility:chevron down" size="x-small" alternative-text="Collassa"></lightning-icon>
+                                                            <span class="slds-assistive-text">Collassa</span>
+                                                        </button>
+                                                    </template>
+                                                    <template if:false={result.expanded}>
+                                                        <button 
+                                                            type="button"
+                                                            class="slds-button slds-button_icon slds-button_icon-small slds-m-right_x-small"
+                                                            data-invoice-key={result.invoiceKey}
+                                                            onclick={toggleInvoiceExpansion}
+                                                            title="Espandi"
+                                                            aria-label="Espandi">
+                                                            <lightning-icon icon-name="utility:chevron right" size="x-small" alternative-text="Espandi"></lightning-icon>
+                                                            <span class="slds-assistive-text">Espandi</span>
+                                                        </button>
+                                                    </template>
+                                                </template>
+                                                <template if:false={result.hasVisits}>
+                                                    <div class="slds-m-right_x-small" style="width: 24px;"></div>
+                                                </template>
+                                                <template if:true={result.invoiceId}>
+                                                    <a href="#" 
+                                                       data-invoice-id={result.invoiceId}
+                                                       onclick={openInvoiceRecord}
+                                                       class="slds-text-link slds-text-heading_small">
+                                                        <strong>{result.invoiceName}</strong>
+                                                    </a>
+                                                </template>
+                                                <template if:false={result.invoiceId}>
+                                                    <div class="slds-truncate slds-text-heading_small"><strong>-</strong></div>
+                                                </template>
+                                                <template if:true={result.hasVisitErrors}>
+                                                    <div class="slds-m-left_small slds-text-color_error slds-text-body_small">
+                                                        Ci sono errori da correggere nelle visite di questa fattura, espandi la sezione per verificare
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td data-label="Numero Fattura">
+                                            <div class="slds-truncate">{result.invoiceNumber}</div>
+                                        </td>
+                                        <td data-label="Stato">
+                                            <template if:true={result.status}>
+                                                <template if:true={result.isSuccess}>
+                                                    <span class="slds-badge slds-badge_success">Successo</span>
+                                                </template>
+                                                <template if:false={result.isSuccess}>
+                                                    <span class="slds-badge slds-badge_error">Errore</span>
+                                                </template>
+                                            </template>
+                                        </td>
+                                        <td data-label="Errore Fattura">
+                                            <div class="slds-truncate slds-text-color_error">{result.errorMessage}</div>
+                                        </td>
+                                        <td data-label="Visite Create">
+                                            <div class="slds-truncate">{result.visitsCreated}</div>
+                                        </td>
+                                        <td data-label="Visite Non Create">
+                                            <div class="slds-truncate">{result.visitsFailed}</div>
+                                        </td>
+                                        <td data-label="Errore Visite">
+                                            <div class="slds-truncate slds-text-color_error">{result.visitError}</div>
+                                        </td>
+                                        <td data-label="Totale Quantità">
+                                            <div class="slds-truncate">{result.totalQuantity}</div>
+                                        </td>
+                                        <td data-label="Totale Minuti Donati">
+                                            <div class="slds-truncate">{result.totalMinutes}</div>
+                                        </td>
+                                        <td data-label="Totale Costo">
+                                            <div class="slds-truncate">{result.totalCostFormatted}</div>
+                                        </td>
+                                        <td data-label="Tipo Visita">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Beneficiario">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Località">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template if:false={result.isInvoice}>
+                                    <tr key={result.id} class="slds-line-height_reset visit-row">
+                                        <td data-label="Fattura/Visita">
+                                            <div class="slds-truncate slds-p-left_large">
+                                                <template if:true={result.visitId}>
+                                                    <a href="#" 
+                                                       data-visit-id={result.visitId}
+                                                       onclick={openVisitRecord}
+                                                       class="slds-text-link">
+                                                        {result.visitName}
+                                                    </a>
+                                                </template>
+                                                <template if:false={result.visitId}>
+                                                    <div class="slds-truncate">-</div>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td data-label="Numero Fattura">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Stato">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Errore Fattura">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Visite Create">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Visite Non Create">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Errore Visite">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Totale Quantità">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Totale Minuti Donati">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Totale Costo">
+                                            <div class="slds-truncate">-</div>
+                                        </td>
+                                        <td data-label="Tipo Visita">
+                                            <div class="slds-truncate">{result.visitType}</div>
+                                        </td>
+                                        <td data-label="Beneficiario">
+                                            <div class="slds-truncate">{result.beneficiaryType}</div>
+                                        </td>
+                                        <td data-label="Località">
+                                            <div class="slds-truncate">{result.localita}</div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </lightning-card>
+    </template>
+    
+    <!-- Sezione Programma e Budget (mostrata solo se serve selezionare qualcosa) -->
+    <template if:false={showResults}>
+    <template if:false={showOrganizedView}>
+        <template if:true={showConfigCard}>
+            <lightning-card title="Configurazione Programma e Budget" icon-name="standard:account">
+                <div class="slds-m-around_medium">
+                    <!-- Selezione Programma -->
+                    <template if:true={showProgramSelection}>
+                        <div class="slds-m-bottom_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Seleziona Programma</h3>
+                            <template if:true={isLoadingPrograms}>
+                                <lightning-spinner alternative-text="Caricamento programmi..." size="small"></lightning-spinner>
+                            </template>
+                            <template if:false={isLoadingPrograms}>
+                                <div class="slds-listbox slds-listbox_horizontal">
+                                    <template for:each={programs} for:item="program">
+                                        <div key={program.Id} class="slds-listbox__item slds-item slds-m-right_small">
+                                            <lightning-button 
+                                                label={program.Name}
+                                                data-program-id={program.Id}
+                                                data-program-name={program.Name}
+                                                onclick={handleProgramSelect}
+                                                variant={program.variant}
+                                                class="slds-button">
+                                            </lightning-button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    
+                    <!-- Selezione Partner -->
+                    <template if:true={showPartnerSelection}>
+                        <div class="slds-m-bottom_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Selezione Partner</h3>
+                            <template if:true={isLoadingBudgets}>
+                                <lightning-spinner alternative-text="Caricamento budget..." size="small"></lightning-spinner>
+                            </template>
+                            <template if:false={isLoadingBudgets}>
+                                <div class="slds-m-bottom_small">
+                                    <p class="slds-text-body_small">Se stai inserendo una fattura per conto di un partner, selezionalo qui sotto:</p>
+                                </div>
+                                <div class="slds-listbox slds-listbox_horizontal">
+                                    <template for:each={availableBudgets} for:item="budget">
+                                        <div key={budget.Id} class="slds-listbox__item slds-item slds-m-right_small">
+                                            <lightning-button 
+                                                label={budget.Name}
+                                                data-budget-id={budget.Id}
+                                                onclick={handlePartnerSelect}
+                                                variant={budget.variant}
+                                                class="slds-button">
+                                            </lightning-button>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="slds-m-top_small">
+                                    <lightning-button 
+                                        label="Nessun Partner (usa budget di default)"
+                                        onclick={cancelPartnerSelection}
+                                        variant="neutral">
+                                    </lightning-button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </lightning-card>
+        </template>
+    </template>
+    
+    <!-- Vista Tabella Originale -->
+    <template if:false={showOrganizedView}>
+    <lightning-card icon-name="standard:invoice">
+        <div class="slds-m-around_medium">
+            <!-- Istruzioni -->
+            <div class="slds-grid slds-grid_align-start slds-m-bottom_medium">
+                <div class="slds-col slds-text-align_center">
+                    <div class="slds-text-heading_small">
+                        Istruzioni: copia dall'excel tutte le righe che vuoi caricare, e premi il tasto "Inserisci Valori Copiati". Correggi ogni cella evidenziata in rosso e, quando completato, premi "Procedi con il Summary"
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Toolbar -->
+            <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                <div class="slds-col">
+                    <lightning-button 
+                        label="Aggiungi Riga" 
+                        onclick={addRow}
+                        variant="neutral"
+                        icon-name="utility:add">
+                    </lightning-button>
+                    <lightning-button 
+                        label="Inserisci Valori Copiati" 
+                        onclick={pasteFromClipboard}
+                        variant="neutral"
+                        icon-name="utility:paste"
+                        class="slds-m-left_small">
+                    </lightning-button>
+                    <lightning-button 
+                        label="Elimina Riga Selezionata" 
+                        onclick={deleteSelectedRow}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isNoRowSelected}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Elimina tutte le righe" 
+                        onclick={deleteAllRows}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isTableEmpty}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Procedi con il Summary" 
+                        onclick={organizeInvoicesAndVisits}
+                        variant="brand"
+                        icon-name="utility:group"
+                        class="slds-m-left_small"
+                        disabled={isTableEmpty}>
+                    </lightning-button>
+                </div>
+            </div>
+
+            <!-- Tabella tipo Excel -->
+            <div class="excel-table-container">
+                <table class="excel-table" role="grid">
+                    <thead>
+                        <tr>
+                            <th class="row-number-header">#</th>
+                            <th class="editable-cell-header">Partner</th>
+                            <th class="editable-cell-header">Data Fattura</th>
+                            <th class="editable-cell-header">Data Competenza</th>
+                            <th class="editable-cell-header">Numero Fattura</th>
+                            <th class="editable-cell-header">Centro Medico</th>
+                            <th class="editable-cell-header">Ente No Profit</th>
+                            <th class="editable-cell-header">Categoria Ente</th>
+                            <th class="editable-cell-header">Prestazione Gratuita</th>
+                            <th class="editable-cell-header">Fattura Non Disponibile</th>
+                            <th class="editable-cell-header">Tipo Visita</th>
+                            <th class="editable-cell-header">Tipo Beneficiario</th>
+                            <th class="editable-cell-header">Numero Visite</th>
+                            <th class="editable-cell-header">Totale Minuti</th>
+                            <th class="editable-cell-header">Ammontare</th>
+                            <th class="editable-cell-header">Data Visita</th>
+                            <th class="editable-cell-header">Comune</th>
+                            <th class="editable-cell-header">Provincia</th>
+                            <th class="editable-cell-header">Regione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="row" for:index="rowIndex">
+                            <tr key={row.id} 
+                                data-row-index={rowIndex}
+                                class={row.selectedClass}
+                                onkeydown={handleKeyDown}>
+                                <td class="row-number-cell"
+                                    data-row-index={rowIndex}
+                                    onclick={selectRow}>
+                                    <template if:true={row.hasErrors}>
+                                        <div class="slds-text-color_error slds-text-body_small">
+                                            Questa riga contiene errori
+                                        </div>
+                                    </template>
+                                    <template if:false={row.hasErrors}>
+                                        {row.rowNumber}
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="partner"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.partner}
+                                    <template if:true={row.partner}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="partner"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell" 
+                                    data-field="invoiceDate"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.invoiceDate}
+                                    <template if:true={row.invoiceDate}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="invoiceDate"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell" 
+                                    data-field="competenceDate"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.competenceDate}
+                                    <template if:true={row.competenceDate}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="competenceDate"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell {row.validationErrors.invoiceNumber ? 'invalid-cell' : ''}" 
+                                    data-field="invoiceNumber"
+                                    data-row-index={rowIndex}>
+                                    <div class="invoice-number-container">
+                                        <span class="invoice-number-value"
+                                            contenteditable="true"
+                                            onblur={handleCellBlur}
+                                            onfocus={handleCellFocus}
+                                            oninput={handleCellInput}
+                                            onkeydown={handleKeyDown}
+                                            onpaste={handlePaste}>
+                                            {row.invoiceNumber}
+                                        </span>
+                                        <template if:true={row.validationErrors.invoiceNumber}>
+                                            <div class="invoice-number-error-message">
+                                                Numero fattura già presente a sistema, verificare
+                                            </div>
+                                        </template>
+                                        <template if:true={row.invoiceNumber}>
+                                            <button 
+                                                type="button"
+                                                class="cell-clear-button"
+                                                data-field="invoiceNumber"
+                                                data-row-index={rowIndex}
+                                                onclick={clearCellContent}
+                                                title="Cancella contenuto">
+                                            </button>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.medicalCenter ? 'invalid-cell' : ''}" 
+                                    data-field="medicalCenter"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.medicalCenter}
+                                    <template if:true={row.medicalCenter}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="medicalCenter"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.noProfit ? 'invalid-cell' : ''}" 
+                                    data-field="noProfit"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.noProfit}
+                                    <template if:true={row.noProfit}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="noProfit"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.noProfitCategory ? 'invalid-cell' : ''}" 
+                                    data-field="noProfitCategory"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.noProfitCategory}
+                                    <template if:true={row.noProfitCategory}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="noProfitCategory"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell checkbox-cell" 
+                                    data-field="isFree"
+                                    data-row-index={rowIndex}
+                                    onclick={toggleCheckbox}>
+                                    <template if:true={row.isFree}>
+                                        <span class="checkbox-checked">✓</span>
+                                    </template>
+                                    <template if:false={row.isFree}>
+                                        <span class="checkbox-unchecked"></span>
+                                    </template>
+                                </td>
+                                <td class="editable-cell checkbox-cell" 
+                                    data-field="noInvoiceAvailable"
+                                    data-row-index={rowIndex}
+                                    onclick={toggleCheckbox}>
+                                    <template if:true={row.noInvoiceAvailable}>
+                                        <span class="checkbox-checked">✓</span>
+                                    </template>
+                                    <template if:false={row.noInvoiceAvailable}>
+                                        <span class="checkbox-unchecked"></span>
+                                    </template>
+                                </td>
+                                <!-- Colonne Visite Mediche -->
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="tipoVisita"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.tipoVisita}
+                                    <template if:true={row.tipoVisita}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="tipoVisita"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="beneficiaryType"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.beneficiaryType}
+                                    <template if:true={row.beneficiaryType}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="beneficiaryType"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell" 
+                                    data-field="numeroVisite"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.numeroVisite}
+                                    <template if:true={row.hasNumeroVisite}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="numeroVisite"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell" 
+                                    data-field="totaleMinuti"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.totaleMinuti}
+                                    <template if:true={row.hasTotaleMinuti}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="totaleMinuti"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell" 
+                                    data-field="amount"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.amount}
+                                    <template if:true={row.hasAmount}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="amount"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell" 
+                                    data-field="dataVisita"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.dataVisita}
+                                    <template if:true={row.dataVisita}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="dataVisita"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="comune"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.comune}
+                                    <template if:true={row.comune}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="comune"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="provincia"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.provincia}
+                                    <template if:true={row.provincia}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="provincia"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell" 
+                                    data-field="regione"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.regione}
+                                    <template if:true={row.regione}>
+                                        <button 
+                                            type="button"
+                                            class="cell-clear-button"
+                                            data-field="regione"
+                                            data-row-index={rowIndex}
+                                            onclick={clearCellContent}
+                                            title="Cancella contenuto">
+                                        </button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Dropdown Menu -->
+            <template if:true={isDropdownOpen}>
+                <div class="dropdown-menu" onclick={handleDropdownClick}>
+                    <div class="dropdown-header">
+                        <input 
+                            type="text" 
+                            class="dropdown-filter" 
+                            placeholder="Cerca..."
+                            value={dropdownFilter}
+                            oninput={handleDropdownFilter}
+                            onclick={handleDropdownFilterClick}
+                            onfocus={handleDropdownFilterClick}
+                        />
+                    </div>
+                    <div class="dropdown-list">
+                        <template if:true={dropdownFilteredOptions.length}>
+                            <template for:each={dropdownFilteredOptions} for:item="option">
+                                <div 
+                                    key={option.value}
+                                    class="dropdown-item"
+                                    data-value={option.value}
+                                    onclick={selectDropdownValue}>
+                                    {option.label}
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={dropdownFilteredOptions.length}>
+                            <div class="dropdown-item dropdown-item-empty">
+                                Nessun risultato trovato
+                            </div>
+                        </template>
+                    </div>
+                    <template if:true={showConfirmButton}>
+                        <div class="dropdown-footer">
+                            <button 
+                                type="button" 
+                                class="confirm-value-button"
+                                onmousedown={handleConfirmMouseDown}
+                                onclick={confirmNewComune}>
+                                Conferma Valore
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Date Picker -->
+            <template if:true={isDatePickerOpen}>
+                <input 
+                    type="date" 
+                    class="date-picker-input"
+                    value={currentDatePickerValue}
+                    data-field={currentDatePickerField}
+                    onchange={handleDateChange}
+                    onblur={closeDatePicker}
+                />
+            </template>
+
+            <!-- Messaggi di stato -->
+            <template if:true={hasError}>
+                <div class="slds-m-top_medium">
+                    <lightning-alert variant="error" title="Errore">
+                        {errorMessage}
+                    </lightning-alert>
+                </div>
+            </template>
+
+            <template if:true={hasSuccess}>
+                <div class="slds-m-top_medium">
+                    <lightning-alert variant="success" title="Successo">
+                        {successMessage}
+                    </lightning-alert>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+    </template>
+    
+    <!-- Vista Organizzata Fatture e Visite -->
+    <template if:true={showOrganizedView}>
+        <lightning-card title="Summary Fatture e Visite" icon-name="standard:invoice">
+            <div class="slds-m-around_medium">
+                <!-- Toolbar con pulsante Salva -->
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                    <div class="slds-col">
+                        <lightning-button 
+                            label="Salva Tutte le Fatture" 
+                            onclick={saveAllInvoices}
+                            variant="brand"
+                            icon-name="utility:save"
+                            disabled={hasValidationErrors}>
+                        </lightning-button>
+                        <lightning-button 
+                            label="Torna alla Tabella" 
+                            onclick={backToTableView}
+                            variant="neutral"
+                            icon-name="utility:back"
+                            class="slds-m-left_small">
+                        </lightning-button>
+                    </div>
+                    <div class="slds-col slds-text-align_right">
+                        <template if:true={hasValidationErrors}>
+                            <div class="slds-text-color_error slds-text-body_small">
+                                ⚠️ Ci sono errori di validazione. Correggili prima di salvare.
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <template for:each={organizedInvoices} for:item="invoiceGroup" for:index="invoiceIndex">
+                    <div key={invoiceGroup.invoice.invoiceNumber} class="slds-card slds-m-bottom_small invoice-group-card">
+                        <div class="slds-card__header slds-grid">
+                            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                <div class="slds-media__figure">
+                                    <lightning-icon icon-name="standard:invoice" size="x-small"></lightning-icon>
+                                </div>
+                                <div class="slds-media__body">
+                                    <h2 class="slds-card__header-title">
+                                        <span class="slds-text-heading_small">Fattura: {invoiceGroup.invoice.invoiceNumber}</span>
+                                    </h2>
+                                </div>
+                            </header>
+                        </div>
+                        <div class="slds-card__body slds-card__body_inner slds-p-around_small">
+                            <!-- Dettagli Fattura Compatti -->
+                            <div class="slds-grid slds-grid_vertical slds-m-bottom_x-small">
+                                <div class="slds-col">
+                                    <div class="slds-grid slds-grid_align-spread slds-wrap">
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Data:</span> 
+                                                <template if:true={invoiceGroup.invoice.hasErrors}>
+                                                    <template if:true={invoiceGroup.invoice.errors.invoiceDate}>
+                                                        <span class="error-value">{invoiceGroup.invoice.invoiceDate}</span>
+                                                    </template>
+                                                    <template if:false={invoiceGroup.invoice.errors.invoiceDate}>
+                                                        <span>{invoiceGroup.invoice.invoiceDate}</span>
+                                                    </template>
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.hasErrors}>
+                                                    <span>{invoiceGroup.invoice.invoiceDate}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Centro Medico:</span> 
+                                                <template if:true={invoiceGroup.invoice.hasErrors}>
+                                                    <template if:true={invoiceGroup.invoice.errors.medicalCenter}>
+                                                        <span class="error-value">{invoiceGroup.invoice.medicalCenter}</span>
+                                                    </template>
+                                                    <template if:false={invoiceGroup.invoice.errors.medicalCenter}>
+                                                        <span>{invoiceGroup.invoice.medicalCenter}</span>
+                                                    </template>
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.hasErrors}>
+                                                    <span>{invoiceGroup.invoice.medicalCenter}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Ente:</span> 
+                                                <template if:true={invoiceGroup.invoice.hasErrors}>
+                                                    <template if:true={invoiceGroup.invoice.errors.noProfit}>
+                                                        <span class="error-value">{invoiceGroup.invoice.noProfit}</span>
+                                                    </template>
+                                                    <template if:false={invoiceGroup.invoice.errors.noProfit}>
+                                                        <span>{invoiceGroup.invoice.noProfit}</span>
+                                                    </template>
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.hasErrors}>
+                                                    <span>{invoiceGroup.invoice.noProfit}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Categoria Ente:</span> 
+                                                <template if:true={invoiceGroup.invoice.hasErrors}>
+                                                    <template if:true={invoiceGroup.invoice.errors.noProfitCategory}>
+                                                        <span class="error-value">{invoiceGroup.invoice.noProfitCategory}</span>
+                                                    </template>
+                                                    <template if:false={invoiceGroup.invoice.errors.noProfitCategory}>
+                                                        <span>{invoiceGroup.invoice.noProfitCategory}</span>
+                                                    </template>
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.hasErrors}>
+                                                    <span>{invoiceGroup.invoice.noProfitCategory}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Ammontare:</span> {invoiceGroup.invoice.amountFormatted}
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                            <div class="slds-text-body_small">
+                                                <span class="slds-text-color_weak">Numero Fattura:</span> 
+                                                <template if:true={invoiceGroup.invoice.hasErrors}>
+                                                    <template if:true={invoiceGroup.invoice.errors.invoiceNumber}>
+                                                        <span class="error-value">{invoiceGroup.invoice.invoiceNumber}</span>
+                                                    </template>
+                                                    <template if:false={invoiceGroup.invoice.errors.invoiceNumber}>
+                                                        <span>{invoiceGroup.invoice.invoiceNumber}</span>
+                                                    </template>
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.hasErrors}>
+                                                    <span>{invoiceGroup.invoice.invoiceNumber}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <template if:true={invoiceGroup.visits.length}>
+                                            <div class="slds-col slds-size_1-of-3 slds-small-size_1-of-2">
+                                                <div class="slds-text-body_small">
+                                                    <span class="slds-text-color_weak">Tot. Minuti:</span> {invoiceGroup.totalVisitsMinutesFormatted}
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Visite Associate - Toggle Button -->
+                            <template if:true={invoiceGroup.visits.length}>
+                                <div class="slds-m-top_small">
+                                    <button 
+                                        type="button" 
+                                        class="slds-button slds-button_neutral visits-toggle-button" 
+                                        class:slds-text-color_error={invoiceGroup.hasVisitErrors}
+                                        data-index={invoiceIndex}
+                                        onclick={toggleVisitsAccordion}>
+                                        <lightning-icon 
+                                            icon-name="utility:chevronright" 
+                                            alternative-text="Espandi"
+                                            class="visits-toggle-icon"
+                                            class:visits-toggle-icon-expanded={invoiceGroup.expanded}
+                                            size="x-small">
+                                        </lightning-icon>
+                                        <span class="slds-text-body_small slds-m-left_x-small">
+                                            Visite Associate ({invoiceGroup.visits.length})
+                                        </span>
+                                    </button>
+                                    <template if:true={invoiceGroup.hasVisitErrors}>
+                                        <div class="slds-text-color_error slds-text-body_small slds-m-top_x-small">
+                                            Ci sono errori da correggere nelle visite di questa fattura, espandi la sezione per verificare
+                                        </div>
+                                    </template>
+                                    
+                                    <template if:true={invoiceGroup.expanded}>
+                                        <div class="slds-m-top_x-small visits-content">
+                                            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
+                                                <thead>
+                                                    <tr class="slds-line-height_reset">
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Tipo Visita</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Tipo Beneficiario</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Data Visita</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Comune</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Provincia</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Regione</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Numero Visite</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Totale Minuti</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-text-body_small">
+                                                            <div class="slds-truncate">Ammontare</div>
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <template for:each={invoiceGroup.visits} for:item="visit">
+                                                        <tr key={visit.id} class="slds-text-body_small">
+                                                            <td data-label="Tipo Visita">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.tipoVisita}>
+                                                                        <div class="slds-truncate error-value">{visit.tipoVisita}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.tipoVisita}>
+                                                                        <div class="slds-truncate">{visit.tipoVisita}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.tipoVisita}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Tipo Beneficiario">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.beneficiaryType}>
+                                                                        <div class="slds-truncate error-value">{visit.beneficiaryType}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.beneficiaryType}>
+                                                                        <div class="slds-truncate">{visit.beneficiaryType}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.beneficiaryType}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Data Visita">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.dataVisita}>
+                                                                        <div class="slds-truncate error-value">{visit.dataVisita}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.dataVisita}>
+                                                                        <div class="slds-truncate">{visit.dataVisita}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.dataVisita}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Comune">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.comune}>
+                                                                        <div class="slds-truncate error-value">{visit.comune}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.comune}>
+                                                                        <div class="slds-truncate">{visit.comune}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.comune}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Provincia">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.provincia}>
+                                                                        <div class="slds-truncate error-value">{visit.provincia}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.provincia}>
+                                                                        <div class="slds-truncate">{visit.provincia}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.provincia}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Regione">
+                                                                <template if:true={visit.hasErrors}>
+                                                                    <template if:true={visit.errors.regione}>
+                                                                        <div class="slds-truncate error-value">{visit.regione}</div>
+                                                                    </template>
+                                                                    <template if:false={visit.errors.regione}>
+                                                                        <div class="slds-truncate">{visit.regione}</div>
+                                                                    </template>
+                                                                </template>
+                                                                <template if:false={visit.hasErrors}>
+                                                                    <div class="slds-truncate">{visit.regione}</div>
+                                                                </template>
+                                                            </td>
+                                                            <td data-label="Numero Visite">
+                                                                <div class="slds-truncate">{visit.numeroVisite}</div>
+                                                            </td>
+                                                            <td data-label="Totale Minuti">
+                                                                <div class="slds-truncate">{visit.totaleMinuti}</div>
+                                                            </td>
+                                                            <td data-label="Ammontare">
+                                                                <div class="slds-truncate">{visit.amountFormatted}</div>
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                
+                <template if:true={organizedInvoices.length}>
+                    <div class="slds-text-align_center slds-text-color_weak slds-m-top_medium">
+                        Totale Fatture: {organizedInvoices.length}
+                    </div>
+                </template>
+            </div>
+        </lightning-card>
+    </template>
+    
+    <!-- Spinner durante le validazioni -->
+    <template if:true={isValidating}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Validazione in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Validazione in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono validate le celle e vengono evidenziate quelle con errori.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Spinner durante il salvataggio -->
+    <template if:true={isSaving}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Salvataggio in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Salvataggio in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono create le fatture e le visite.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    
+    </template>
+    
+</template>

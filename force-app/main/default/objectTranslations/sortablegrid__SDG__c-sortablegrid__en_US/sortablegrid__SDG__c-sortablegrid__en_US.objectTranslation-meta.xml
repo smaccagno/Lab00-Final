@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Sortable Data Grid</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Sortable Data Grids</value>
+    </caseValues>
+    <fieldSets>
+        <label><!-- default --></label>
+        <name>sortablegrid__default</name>
+    </fieldSets>
+    <layouts>
+        <layout>SDG Layout</layout>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+    </layouts>
+    <layouts>
+        <layout>SDG Layout v2</layout>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+    </layouts>
+    <quickActions>
+        <label><!-- Export Wizard --></label>
+        <name>sortablegrid__Export_Wizard</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Help --></label>
+        <name>sortablegrid__Help</name>
+    </quickActions>
+    <startsWith>Vowel</startsWith>
+    <validationRules>
+        <errorMessage><!-- sObjectName is mandatory --></errorMessage>
+        <name>sortablegrid__Make_sObjectName_Mandatory</name>
+    </validationRules>
+</CustomObjectTranslation>

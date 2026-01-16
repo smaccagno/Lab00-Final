@@ -1,0 +1,14 @@
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="comune">
+    <apiVersion>56.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__FlowScreen</target> <!-- Allows usage in Flow -->
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="selectedComune" type="String" label="Selected Comune" />
+            <property name="selectedProvincia" type="String" label="Selected Provincia" />
+            <property name="selectedRegione" type="String" label="Selected Regione" />   
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

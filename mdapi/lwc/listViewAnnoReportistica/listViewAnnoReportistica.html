@@ -1,0 +1,31 @@
+<template>
+    <lightning-card title="Reportistica" class="white-background-card">
+        <div class="slds-p-around_medium">
+            <template if:true={groupedData}>
+                <template for:each={groupedData} for:item="groupYear">
+                    <div key={groupYear.year} class="datatable-year-wrapper">
+                        <h2>Anno: {groupYear.year}</h2>
+
+                        <template for:each={groupYear.tables} for:item="table">
+                            <div key={table.programId} class="datatable-container slds-m-top_medium">
+
+                                <lightning-datatable
+                                    data={table.records}
+                                    columns={table.columns}
+                                    key-field="Id"
+                                    hide-checkbox-column
+                                    column-width-mode="auto"
+                                    class="slds-table_col-bordered"
+                                    wrap-text
+                                ></lightning-datatable>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </template>
+            <template if:true={error}>
+                <p class="slds-text-color_error">Errore nel recuperare i dati: {error}</p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

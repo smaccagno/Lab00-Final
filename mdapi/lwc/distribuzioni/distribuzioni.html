@@ -1,0 +1,97 @@
+<template>
+    <lightning-card title={cardTitle}>
+
+        <!-- ================= FILTRI ================= -->
+        <lightning-layout horizontal-align="spread" class="slds-p-around_medium">
+
+            <!-- Programma (mostrato solo se ce n'è più di uno) -->
+            <template if:true={showProgramFilter}>
+                <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                    <label class="custom-label">Programma</label>
+                    <lightning-combobox variant="label-hidden"
+                                        label="Seleziona Programma"
+                                        value={selectedProgram}
+                                        options={programOptions}
+                                        placeholder="Seleziona un Programma"
+                                        onchange={handleProgramChange}
+                                        disabled={isLoading}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+            </template>
+
+            <!-- Anno -->
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Anno</label>
+                <lightning-combobox variant="label-hidden"
+                                    label="Seleziona Anno di Allocazione"
+                                    value={selectedYear}
+                                    options={yearOptions}
+                                    onchange={handleYearChange}
+                                    disabled={mustChooseProgram}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Stato -->
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Stato</label>
+                <lightning-combobox variant="label-hidden"
+                                    label="Seleziona Stato"
+                                    value={selectedStatus}
+                                    options={statusOptions}
+                                    onchange={handleStatusChange}
+                                    disabled={mustChooseProgram}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Budget (mostrato solo se hideBudget = false) -->
+            <template if:false={hideBudget}>
+                <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                    <label class="custom-label">Budget</label>
+                    <lightning-combobox variant="label-hidden"
+                                        label="Seleziona Budget"
+                                        value={selectedBudgetId}
+                                        options={budgetOptions}
+                                        onchange={handleBudgetChange}
+                                        disabled={mustChooseProgram}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+            </template>
+        </lightning-layout>
+
+        <!-- Spinner centrale -->
+        <template if:true={isLoading}>
+            <lightning-spinner size="medium" alternative-text="Caricamento..."></lightning-spinner>
+        </template>
+
+        <!-- Messaggio "scegli un programma" -->
+        <template if:true={mustChooseProgram}>
+            <p class="slds-text-color_error slds-p-around_medium">
+                Seleziona un Programma per visualizzare le allocazioni.
+            </p>
+        </template>
+        <template if:true={noBudgetFound}>
+            <p class="slds-text-color_error slds-p-around_medium">
+                Nessun Budget è associato al tuo utente.<br/>
+                Contatta l’amministratore per poter accedere ai dati di allocazione.
+            </p>
+        </template>
+        <!-- ================= DATI ================= -->
+        <template if:true={isReady}>
+            <div class="slds-p-around_medium">
+                <p><b>{totalPaidLabel}</b> {totalPaid} EUR</p>
+                <p><b>{totalDistributedLabel}</b> {totalDistributed} EUR</p>
+            </div>
+
+            <lightning-datatable key-field="Id"
+                                 data={relatedData}
+                                 columns={columns}
+                                 hide-checkbox-column
+                                 default-sort-direction={defaultSortDirection}
+                                 sorted-direction={sortDirection}
+                                 sorted-by={sortedBy}
+                                 onsort={onHandleSort}
+                                 wrap-table-header="all">
+            </lightning-datatable>
+        </template>
+    </lightning-card>
+</template>

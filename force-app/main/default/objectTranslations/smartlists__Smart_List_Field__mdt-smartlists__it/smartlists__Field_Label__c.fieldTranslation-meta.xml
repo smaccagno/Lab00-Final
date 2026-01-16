@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Enter a text value or $Label­.CustomLabelName or leave blank.
+Required with Apex Data Source lists.
+With Files and SOQL lists, the label of the database field is used if left blank -->
+    </help>
+    <label><!-- Field Label --></label>
+    <name>smartlists__Field_Label__c</name>
+</CustomFieldTranslation>

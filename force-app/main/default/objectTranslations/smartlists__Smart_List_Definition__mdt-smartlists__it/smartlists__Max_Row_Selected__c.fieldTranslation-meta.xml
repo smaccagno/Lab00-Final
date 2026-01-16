@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Maximum number of rows that can be selected in the list --></help>
+    <label><!-- Max Row Selected --></label>
+    <name>smartlists__Max_Row_Selected__c</name>
+</CustomFieldTranslation>

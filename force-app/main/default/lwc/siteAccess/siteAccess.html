@@ -1,0 +1,37 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 10-08-2025
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+    <div class="slds-m-top_xx-large slds-grid_vertical slds-align_absolute-center">
+        <img src={logo} alt="Logo Lab00" class="logo slds-m-bottom_x-small"/>
+         
+        <lightning-card variant="base">
+            <div slot="title" title="Accesso Fornitori" class="slds-p-horizontal_xx-large slds-p-top_x-small slds-text-heading_medium title">
+                Accesso Fornitori
+            </div>
+    
+            <div class="slds-p-around_large">
+                <lightning-input 
+                    label="Codice Fornitore" 
+                    lwc:ref="code" 
+                    type="text" 
+                    pattern="[A-Za-z0-9]+" 
+                    message-when-pattern-mismatch="Per favore inserire solo caratteri alfanumerici." 
+                    max-length="16"
+                    onchange={handleCodeChange}
+                    ></lightning-input>
+                    <!-- value="ABC1DEF2GHI3LMN4" -->
+                <p if:true={error} class="slds-text-color_error">{error}</p>
+            </div>
+            
+            <div slot="footer" class="slds-align_absolute-center">
+                <lightning-button label="Accedi" title="Accedi"  variant="brand-outline" onclick={login} disabled={isButtonDisabled}></lightning-button>
+                <!-- <lightning-button label="Accedi" title="Accedi"  variant="brand-outline" onclick={login}></lightning-button> -->
+            </div>
+        </lightning-card>
+    </div>
+</template>

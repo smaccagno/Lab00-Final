@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Field containing the Id of the parent record. Not used in Files lists
+Example: For a Cases list on an Account page, AccountId is used for retrieving Cases related to the parent account -->
+    </help>
+    <label><!-- Parent Id Field (Not for Files Lists) --></label>
+    <name>smartlists__Parent_Id_Field__c</name>
+</CustomFieldTranslation>

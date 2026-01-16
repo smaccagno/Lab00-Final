@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Enable/Disable field display.  If the package thinks there&apos;s something wrong with the config it will automatically set this value to false. --></help>
+    <label><!-- Is Valid --></label>
+    <name>sortablegrid__is_valid_field__c</name>
+</CustomFieldTranslation>

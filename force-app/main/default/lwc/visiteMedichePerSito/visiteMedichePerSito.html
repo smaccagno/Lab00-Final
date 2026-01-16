@@ -1,0 +1,171 @@
+<template>
+    <lightning-card title="Visite con Dettagli Fattura">
+      <div class="slds-p-around_medium">
+  
+        <!-- Spinner Esportazione -->
+        <template if:true={isExporting}>
+          <div class="slds-p-bottom_small slds-align_absolute-center">
+            <lightning-spinner size="small" alternative-text="Esportazione in corso"></lightning-spinner>
+          </div>
+        </template>
+  
+        <!-- FILTRI -->
+        <lightning-layout multiple-rows>
+          <!-- ANNO -->
+          <lightning-layout-item size="3" padding="around-small">
+            <label class="custom-label">Anno</label>
+            <lightning-combobox
+              variant="label-hidden"
+              value={year}
+              options={yearOptions}
+              onchange={handleYearChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+  
+          <!-- MESE -->
+          <lightning-layout-item size="3" padding="around-small">
+            <label class="custom-label">Mese</label>
+            <lightning-combobox
+              variant="label-hidden"
+              value={month}
+              options={monthOptions}
+              onchange={handleMonthChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+  
+          <!-- BENEFICIARIO -->
+          <lightning-layout-item size="3" padding="around-small">
+            <label class="custom-label">Beneficiario</label>
+            <lightning-combobox
+              variant="label-hidden"
+              value={beneficiario}
+              options={beneficiaryTypeOptions}
+              onchange={handleBeneficiarioChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+  
+          <!-- BUDGET -->
+          <lightning-layout-item size="3" padding="around-small">
+            <label class="custom-label">Budget</label>
+            <lightning-combobox
+              variant="label-hidden"
+              value={budgetId}
+              options={budgetOptions}
+              onchange={handleBudgetChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+  
+        </lightning-layout>
+
+        <!-- FILTRI AREA GEOGRAFICA -->
+        <lightning-layout multiple-rows="false" class="slds-m-top_x-small">
+          <!-- COMUNE -->
+          <lightning-layout-item size="4" padding="around-small">
+            <label class="custom-label">Comune</label>
+            <lightning-button
+              label="Reset"
+              onclick={resetCity}
+              variant="base"
+              class="reset-button"
+              icon-name="utility:refresh"
+              icon-position="left">
+            </lightning-button>
+            <lightning-combobox
+              variant="label-hidden"
+              value={selectedCity}
+              options={cityOptions}
+              onchange={handleCityChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+
+          <!-- PROVINCIA -->
+          <lightning-layout-item size="4" padding="around-small">
+            <label class="custom-label">Provincia</label>
+            <lightning-button
+              label="Reset"
+              onclick={resetProvince}
+              variant="base"
+              class="reset-button"
+              icon-name="utility:refresh"
+              icon-position="left">
+            </lightning-button>
+            <lightning-combobox
+              variant="label-hidden"
+              value={selectedProvince}
+              options={provinceOptions}
+              onchange={handleProvinceChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+
+          <!-- REGIONE -->
+          <lightning-layout-item size="4" padding="around-small">
+            <label class="custom-label">Regione</label>
+            <lightning-button
+              label="Reset"
+              onclick={resetRegion}
+              variant="base"
+              class="reset-button"
+              icon-name="utility:refresh"
+              icon-position="left">
+            </lightning-button>
+            <lightning-combobox
+              variant="label-hidden"
+              value={selectedRegion}
+              options={regionOptions}
+              onchange={handleRegionChange}>
+            </lightning-combobox>
+          </lightning-layout-item>
+        </lightning-layout>
+
+        <!-- RIEPILOGO -->
+        <div class="summary slds-m-vertical_small">
+          <lightning-layout>
+            <lightning-layout-item size="6" padding="around-small">
+              <div class="summary-item">
+                <div class="summary-label">Totale Visite</div>
+                <div class="summary-value">
+                  <lightning-formatted-number value={totalVisits} maximum-fraction-digits="0"></lightning-formatted-number>
+                </div>
+              </div>
+            </lightning-layout-item>
+            <lightning-layout-item size="6" padding="around-small">
+              <div class="summary-item">
+                <div class="summary-label">Totale Importo</div>
+                <div class="summary-value">
+                  <lightning-formatted-number value={totalAmount} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                </div>
+              </div>
+            </lightning-layout-item>
+          </lightning-layout>
+        </div>
+
+        <!-- PULSANTI EXPORT -->
+        <lightning-layout multiple-rows>
+          <lightning-layout-item size="12" class="slds-p-top_small">
+            <lightning-button
+              label="Esporta Lista completa in Excel"
+              onclick={exportAllRecords}
+              class="slds-m-right_small">
+            </lightning-button>
+            <lightning-button
+              label="Esporta tutti i dati filtrati"
+              onclick={exportFilteredRecords}
+              class="slds-m-right_small">
+            </lightning-button>
+          </lightning-layout-item>
+        </lightning-layout>
+  
+        <!-- TABELLA -->
+        <lightning-datatable
+          key-field="Id"
+          data={records}
+          columns={columns}
+          hide-checkbox-column
+          class="slds-m-top_medium">
+        </lightning-datatable>
+  
+        <!-- Sentinella per scroll infinito -->
+        <div class="sentinella"></div>
+      </div>
+    </lightning-card>
+  </template>

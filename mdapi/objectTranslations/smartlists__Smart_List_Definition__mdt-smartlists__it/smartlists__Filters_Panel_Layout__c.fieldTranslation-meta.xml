@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Specifies if the Filters Panel is displayed on the right or the left of the list and if a user action is needed to display/hide it.
+On Demand: users needs to click the Show Filters button to display the panel.
+All the Time: the panel is always displayed and cannot be hidden -->
+    </help>
+    <label><!-- Filters Panel Layout --></label>
+    <name>smartlists__Filters_Panel_Layout__c</name>
+    <picklistValues>
+        <masterLabel>Left - All the Time</masterLabel>
+        <translation><!-- Left - All the Time --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Left - On Demand</masterLabel>
+        <translation><!-- Left - On Demand --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Right - All the Time</masterLabel>
+        <translation><!-- Right - All the Time --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Right - On Demand</masterLabel>
+        <translation><!-- Right - On Demand --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

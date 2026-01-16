@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Tipo Beneficiario</label>
+    <name>Beneficiary_Type__c</name>
+    <picklistValues>
+        <masterLabel>Altro</masterLabel>
+        <translation><!-- Altro --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Donna</masterLabel>
+        <translation><!-- Donna --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Minorenne</masterLabel>
+        <translation><!-- Minorenne --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

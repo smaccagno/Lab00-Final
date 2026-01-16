@@ -1,0 +1,30 @@
+.form-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.form-field {
+    flex: 1 1 14rem;
+}
+
+.form-field lightning-combobox {
+    width: 100%;
+}
+
+.form-field_spinner {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 3.25rem;
+}
+
+.button-field {
+    align-items: flex-end;
+    display: flex;
+    flex: 1 1 12rem;
+}
+
+.button-field lightning-button {
+    width: 100%;
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <layouts>
+        <layout>Layout opportunità</layout>
+        <sections>
+            <label><!-- Amount Information --></label>
+            <section>Amount Information</section>
+        </sections>
+    </layouts>
+    <quickActions>
+        <label><!-- Create Budget --></label>
+        <name>Create_Budget</name>
+    </quickActions>
+</CustomObjectTranslation>

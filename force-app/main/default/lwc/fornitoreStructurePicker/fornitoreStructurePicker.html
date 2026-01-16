@@ -1,0 +1,136 @@
+<template>
+    <template if:true={showSpinner}>
+        <lightning-spinner size="small"></lightning-spinner>
+    </template>
+    <template if:true={errorMessage}>
+        <div class="slds-text-color_error slds-m-bottom_small">{errorMessage}</div>
+    </template>
+
+    <template if:true={showStructureOnlyMessage}>
+        <div class="slds-text-body_regular slds-m-bottom_small">{structureOnlyMessage}</div>
+    </template>
+
+    <template if:true={showFornitoreSelector}>
+        <lightning-combobox
+            name="fornitore"
+            label={labelFornitore}
+            value={selectedFornitoreId}
+            options={fornitoreOptions}
+            onchange={handleFornitoreChange}
+            required>
+        </lightning-combobox>
+    </template>
+
+    <lightning-radio-group
+        name="struttura"
+        label={labelStruttura}
+        value={selectedSubStructureId}
+        options={subStructureOptions}
+        onchange={handleSubStructureChange}
+        required
+        type="radio"
+        disabled={isSubStructureDisabled}>
+    </lightning-radio-group>
+
+    <template if:true={shouldShowCreationUi}>
+        <div class="slds-box slds-theme_default slds-m-top_medium">
+            <div class="slds-text-heading_small slds-m-bottom_small">{creationMessage}</div>
+            <template if:true={creationErrorMessage}>
+                <div class="slds-text-color_error slds-m-bottom_small">{creationErrorMessage}</div>
+            </template>
+            <lightning-button
+                variant="neutral"
+                label="Aggiungi Struttura"
+                onclick={handleAddStructureRow}
+                disabled={isAddStructureDisabled}>
+            </lightning-button>
+
+            <template if:true={hasNewStructureRows}>
+                <div class="slds-m-top_medium">
+                    <template for:each={newStructureRows} for:item="row">
+                        <div key={row.key} class="slds-grid slds-gutters slds-wrap slds-align-end slds-m-bottom_small" data-section="new-structure-row">
+                            <div class="slds-col slds-size_1-of-4 slds-p-right_xx-small">
+                                <lightning-input
+                                    data-key={row.key}
+                                    data-field="name"
+                                    label="Nome Struttura"
+                                    value={row.name}
+                                    maxlength="255"
+                                    required
+                                    onchange={handleNewStructureValueChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4 slds-p-right_xx-small">
+                                <lightning-combobox
+                                    data-key={row.key}
+                                    data-field="typeValue"
+                                    label="Tipo Struttura"
+                                    value={row.typeValue}
+                                    options={structureTypeOptions}
+                                    required
+                                    onchange={handleNewStructureValueChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4 slds-p-right_xx-small">
+                                <lightning-combobox
+                                    data-key={row.key}
+                                    data-field="comuneId"
+                                    label="Comune"
+                                    value={row.comuneId}
+                                    options={comuneOptions}
+                                    required
+                                    onchange={handleNewStructureValueChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4 slds-p-right_xx-small">
+                                <lightning-input
+                                    data-key={row.key}
+                                    data-field="address"
+                                    label="Indirizzo"
+                                    value={row.address}
+                                    maxlength="255"
+                                    onchange={handleNewStructureValueChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_auto">
+                                <lightning-button-icon
+                                    data-key={row.key}
+                                    icon-name="utility:delete"
+                                    alternative-text="Rimuovi"
+                                    onclick={handleRemoveStructureRow}
+                                    class="slds-m-left_x-small">
+                                </lightning-button-icon>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="slds-m-top_small">
+                    <lightning-button
+                        variant="brand"
+                        label="Salva Strutture"
+                        onclick={handleSaveStructures}
+                        disabled={isSaveDisabled}>
+                    </lightning-button>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <div class="slds-m-top_medium slds-text-align_right">
+        <template if:true={showCreateNewFornitoreButton}>
+            <lightning-button
+                class="slds-m-right_small"
+                variant="neutral"
+                label="Crea Nuovo Fornitore"
+                onclick={handleCreateNewFornitore}
+                disabled={createNewFornitoreDisabled}>
+            </lightning-button>
+        </template>
+        <lightning-button
+            variant="brand"
+            label="Prosegui"
+            onclick={handleProceed}
+            disabled={proceedDisabled}>
+        </lightning-button>
+    </div>
+</template>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Visite_Rendicontate</fullName>
+    <columns>NAME</columns>
+    <columns>Visit_Type__c</columns>
+    <columns>Visit_Type_other__c</columns>
+    <columns>Beneficiary_Type__c</columns>
+    <columns>Quantity__c</columns>
+    <columns>Duration_in_minutes__c</columns>
+    <columns>Invoice__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>Visite Rendicontate</label>
+</ListView>

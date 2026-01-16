@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tipo_Visita__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Tipo Visita</label>
+    <referenceTo>Tipo_Visita__c</referenceTo>
+    <relationshipLabel>Visite Mediche</relationshipLabel>
+    <relationshipName>Visite_Mediche</relationshipName>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

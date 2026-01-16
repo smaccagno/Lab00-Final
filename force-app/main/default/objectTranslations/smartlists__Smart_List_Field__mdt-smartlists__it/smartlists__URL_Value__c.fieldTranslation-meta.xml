@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Field returning the URL associated to the URL label returned by Field Name --></help>
+    <label><!-- URL with Label: Value --></label>
+    <name>smartlists__URL_Value__c</name>
+</CustomFieldTranslation>

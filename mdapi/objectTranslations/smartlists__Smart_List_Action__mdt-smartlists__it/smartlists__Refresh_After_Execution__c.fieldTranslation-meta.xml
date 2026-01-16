@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Refresh After Execution --></label>
+    <name>smartlists__Refresh_After_Execution__c</name>
+    <picklistValues>
+        <masterLabel>List</masterLabel>
+        <translation><!-- List --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Row</masterLabel>
+        <translation><!-- Row --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

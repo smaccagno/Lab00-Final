@@ -1,0 +1,89 @@
+.slds-text-color_error {
+    color: #d85c5c;
+}
+
+.slds-box {
+    padding: 1rem;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    background-color: #f4f6f9;
+}
+
+.slds-m-top_medium {
+    margin-top: 1rem;
+}
+
+.slds-dropdown {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slds-dropdown__item {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}
+
+.visita-container {
+    border: 2px solid var(--lwc-brandPrimary, #1a73e8);
+    border-radius: .25rem;
+    padding: .75rem;
+    margin-bottom: .75rem;
+}
+
+.visita-container.saved {
+    /* Evita token non disponibili: usa il colore fisso SLDS success */
+    border-color: #2e844a;
+}
+
+.visita-container.editing {
+    border-color: #ba0517; /* SLDS error color */
+}
+
+/* Header (titolo + bottone) – spazio inferiore ridotto */
+.visita-header {
+    margin-bottom: .5rem; /* prima era .75rem             */
+}
+
+.visita-footer {
+    margin-top: .5rem;
+}
+
+/* Titolo “Visita x” */
+.visita-label {
+    font-weight: 700;
+    font-size: 1.125rem;   /* più compatto */
+    line-height: 1.2;
+}
+
+.visita-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Spazio tra i campi e il pulsante di rimozione */
+}
+
+.button-container {
+    display: flex;
+    align-items: center;
+    gap: .75rem;          /* spazio fra i pulsanti       */
+    margin-top: 1rem;     /* ridotto da 1.5rem           */
+}
+
+.save-button {
+    margin-left: auto; /* Posiziona il pulsante Salva a destra */
+}
+
+.success-message {
+    margin-top: 1rem;     /* ridotto da 1.5rem           */
+    color: #28a745;
+    font-weight: bold;
+    text-align: center;
+}

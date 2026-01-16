@@ -1,0 +1,51 @@
+.export-banner {
+    background-color: #f3f3f3;
+    color: #1a1a1a;
+    border: 1px solid #d8dde6;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .custom-label {
+    font-weight: bold;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.spinner-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 1rem;
+}
+
+.reset-button {
+    font-size: 0.75rem;
+}
+
+.summary {
+    background: #f3f6fb;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: #5f6a7d;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.summary-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1b2d4f;
+}

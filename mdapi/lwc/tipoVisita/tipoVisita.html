@@ -1,0 +1,125 @@
+<template>
+    <div class="visita-grid">
+ 
+        <!-- COLONNA 1 ———— Comune: occupa tre righe -->
+        <div class="comune-cell">
+            <c-comune 
+                selected-comune={comune}
+                selected-provincia={provincia}
+                selected-regione={regione}
+                oncomunechange={handleComuneChange}>
+            </c-comune>
+        </div>
+
+                <!-- COLONNA 2 ———— Riga 1: Tipo Visita -->
+        <div class="tipo-visita-cell">
+            <lightning-input
+                class="full-width-input"
+                type="text"
+                label="Tipo Visita"
+                required
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                value={tipoVisita}
+                data-id="tipoVisita"
+                onchange={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}>
+            </lightning-input>
+
+            <!-- Messaggi / dropdown (immutati) -->
+
+
+            <template if:true={filteredSuggestions}>
+                <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                    <template for:each={filteredSuggestions} for:item="suggestion">
+                        <li key={suggestion}
+                            class="slds-dropdown__item"
+                            onclick={handleSuggestionClick}>
+                            <span>{suggestion}</span>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template if:true={showErrorMessage}>
+                <div class="slds-text-color_error slds-m-top_x-small">
+                    Il tipo visita inserito non è presente nella lista. Prova a correggere quanto inserito.
+                    Se vuoi confermare ed inserire il nome del tipo visita anche se non presente nella lista, premi il tasto Confermo.
+                </div>
+                <lightning-button
+                    label="Confermo"
+                    onclick={handleConfirm}
+                    variant="brand">
+                </lightning-button>
+            </template>
+        </div>
+       <!-- COLONNA 3 ———— Riga 1: Beneficiary Type -->
+        <div class="beneficiary-cell">
+            <lightning-combobox
+                class="full-width-input"
+                data-id="beneficiaryType"
+                label="Tipo Beneficiario"
+                options={beneficiaryTypeOptions}
+                value={beneficiaryType}
+                required
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                onchange={handleBeneficiaryTypeChange}>
+            </lightning-combobox>
+        </div>
+        <!-- COLONNA 2 ———— Riga 2: Numero Visite -->
+        <div class="numero-cell">
+            <lightning-input
+                class="full-width-input"
+                type="number"
+                data-id="numeroVisite"
+                label="Numero di Visite (stesso tipo, beneficiario e comune)"
+                value={numeroVisite}
+                required
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                onchange={handleNumeroVisiteChange}>
+            </lightning-input>
+        </div>
+
+        <!-- COLONNA 3 ———— Riga 2: Totale Minuti -->
+        <div class="minuti-cell">
+            <lightning-input
+                class="full-width-input"
+                type="number"
+                data-id="totaleMinuti"
+                label="Totale Minuti di Visite"
+                value={totaleMinuti}
+                required
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                onchange={handleTotaleMinutiChange}>
+            </lightning-input>
+        </div>
+
+        <!-- COLONNA 2 ———— Riga 3: Ammontare -->
+        <div class="amount-cell">
+            <lightning-input
+                class="full-width-input"
+                type="text"
+                data-id="amount"
+                label="Ammontare Totale (€)"
+                value={amountInput}
+                required={isAmountRequired}
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                onchange={handleAmountChange}
+                disabled={isAmountDisabled}>
+            </lightning-input>
+        </div>
+        <!-- COLONNA 3 ———— Riga 3: Data Visita -->
+        <div class="data-cell">
+            <lightning-input
+                class="full-width-input"
+                type="date"
+                data-id="dataVisita"
+                label="Data delle Visite"
+                value={dataVisita}
+                required
+                message-when-value-missing="Questo campo è obbligatorio, compilalo prima di Salvare"
+                onchange={handleDataVisitaChange}>
+            </lightning-input>
+        </div>
+
+    </div>
+</template>

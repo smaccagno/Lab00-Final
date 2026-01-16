@@ -1,0 +1,23 @@
+<template>
+    <template if:true={tables}>
+        <template for:each={tables} for:item="tbl">
+            <lightning-card key={tbl.recordTypeId}
+                            title={tbl.recordTypeLabel}
+                            icon-name="standard:account">
+                <div class="slds-p-horizontal_large">
+                    <lightning-datatable key-field="Id"
+                                         data={tbl.rows}
+                                         columns={tbl.columns}
+                                         hide-checkbox-column>
+                    </lightning-datatable>
+                </div>
+            </lightning-card>
+        </template>
+    </template>
+
+    <template if:true={error}>
+        <div class="slds-text-color_error slds-m-around_medium">
+            {errorMessage}
+        </div>
+    </template>
+</template>

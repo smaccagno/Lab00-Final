@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Smart List Action</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Smart List Actions</value>
+    </caseValues>
+    <gender>Neuter</gender>
+    <layouts>
+        <layout>Smart List Action Layout</layout>
+        <sections>
+            <label><!-- Action --></label>
+            <section>Action</section>
+        </sections>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+    </layouts>
+    <startsWith>Consonant</startsWith>
+    <validationRules>
+        <errorMessage><!-- List Action Availability is required for List Actions --></errorMessage>
+        <name>smartlists__Check_List_Availability</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Refresh type can only be List for List Actions --></errorMessage>
+        <name>smartlists__Check_Refresh_Type</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Screenflow Modal Height is required for Category Screen Flow --></errorMessage>
+        <name>smartlists__Check_Screenflow_Modal_Height</name>
+    </validationRules>
+</CustomObjectTranslation>

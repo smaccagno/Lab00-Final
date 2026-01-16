@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Tipo Donatore --></label>
+    <name>Tipo_Donatore__c</name>
+    <picklistValues>
+        <masterLabel>Grande Donatore</masterLabel>
+        <translation><!-- Grande Donatore --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Piccolo Donatore</masterLabel>
+        <translation><!-- Piccolo Donatore --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

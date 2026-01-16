@@ -1,0 +1,64 @@
+<template>
+    <lightning-card title="Pagamenti - Overview">
+        <lightning-layout horizontal-align="spread" class="slds-p-around_medium">
+            <!-- Programma -->
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Programma</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Seleziona Programma"
+                    value={selectedProgram}
+                    options={programOptions}
+                    onchange={handleProgramChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Anno -->
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Anno</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Seleziona Anno"
+                    value={selectedYear}
+                    options={yearOptions}
+                    onchange={handleYearChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Stato -->
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Stato</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Filtra per Stato"
+                    value={selectedStatus}
+                    options={statusOptions}
+                    onchange={handleStatusChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+        </lightning-layout>
+
+        <!-- Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
+        </template>
+
+        <template if:false={isLoading}>
+            <!-- Totale -->
+            <div class="slds-p-around_medium">
+                <p><b>Totale Pagato:</b> {totalePagato} EUR</p>
+            </div>
+
+            <!-- Pagati -->
+            <div class="slds-p-around_medium">
+                <h3 class="slds-text-heading_small">Lista Pagamenti</h3>
+                <lightning-datatable
+                    key-field="Id"
+                    data={pagamenti}
+                    columns={columns}
+                    hide-checkbox-column>
+                </lightning-datatable>
+            </div>
+        </template>
+    </lightning-card>
+</template>

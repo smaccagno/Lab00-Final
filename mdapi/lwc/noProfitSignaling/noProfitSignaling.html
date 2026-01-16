@@ -1,0 +1,74 @@
+<template>
+    <lightning-card>
+        <div class="slds-form-element">
+            <label class="custom-required-label" for="non-profit-input">
+                <span class="slds-required">*</span>
+                Inserisci l'Ente No Profit o selezionalo dalla lista se presente
+            </label>
+            <lightning-input
+                id="non-profit-input"
+                class={inputClass}
+                type="text"
+                onchange={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}
+            ></lightning-input>
+        </div>
+
+        <template if:false={isInputValid}>
+            <div class="slds-text-color_error slds-m-top_x-small">
+                Il campo è obbligatorio. Inserisci un Ente No Profit.
+            </div>
+        </template>
+
+        <template if:true={filteredSuggestions}>
+            <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                <template for:each={filteredSuggestions} for:item="suggestion">
+                    <li
+                        key={suggestion.Id}
+                        class="slds-dropdown__item"
+                        onclick={handleSuggestionClick}
+                        onmousedown={handleMouseDownSuggestion}
+                        onmouseup={handleMouseUpSuggestion}
+                    >
+                        <span>{suggestion.Name}</span>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
+        <template if:true={showErrorMessage}>
+            <div class="slds-text-color_error slds-m-top_medium">
+                <p>
+                    L'ente no profit inserito non è presente nella lista. Prova a correggere quanto inserito.
+                    Se vuoi confermare ed inserire il nome dell'ente no profit anche se non presente nella lista, premi il tasto Conferma.
+                </p>
+                <lightning-button
+                    label="Confermo"
+                    onclick={handleConfirm}
+                    variant="brand"
+                ></lightning-button>
+            </div>
+        </template>
+
+        <template if:true={showCategoryInput}>
+            <div class="slds-form-element">
+                <label class="slds-form-element__label">Seleziona la Categoria</label>
+                <lightning-combobox
+                    options={categoryOptions}
+                    value={selectedCategory}
+                    onchange={handleCategoryChange}
+                ></lightning-combobox>
+            </div>
+        </template>
+
+        <template if:true={selectedNoProfit}>
+            <div class="slds-box slds-m-top_medium">
+                <p><strong>Ente No Profit Selezionato:</strong> {selectedNoProfit}</p>
+                <template if:true={selectedCategory}>
+                    <p><strong>Categoria:</strong> {selectedCategory}</p>
+                </template>
+            </div>
+        </template>
+    </lightning-card>
+</template>

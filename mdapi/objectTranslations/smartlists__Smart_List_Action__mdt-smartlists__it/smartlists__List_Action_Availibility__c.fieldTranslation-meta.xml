@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Define when the list buttons are enabled.
+- When Records are Selected in the List: the action button is only enabled when users select records in the list. The selected records are passed to the flow
+- When Records are Loaded: the action button is only enabled when records have been loaded in the list. The loaded records are passed to the flow
+- Always: the action button is enabled all the time. The loaded records are passed to the flow -->
+    </help>
+    <label><!-- List Action Availability --></label>
+    <name>smartlists__List_Action_Availibility__c</name>
+    <picklistValues>
+        <masterLabel>Always</masterLabel>
+        <translation><!-- Always --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>When Records are Loaded</masterLabel>
+        <translation><!-- When Records are Loaded --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>When Records are Selected</masterLabel>
+        <translation><!-- When Records are Selected --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

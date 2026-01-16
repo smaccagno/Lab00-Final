@@ -1,0 +1,196 @@
+<template>
+    <lightning-card title="Configurazioni">
+        <div class="slds-p-around_medium">
+            <template if:true={showConfigurationsSection}>
+                <div class="slds-m-bottom_medium">
+                    <template if:true={configurationsLoading}>
+                        <div class="slds-align_absolute-center slds-p-vertical_small">
+                            <lightning-spinner size="small"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:true={configurationsError}>
+                        <p class="slds-text-color_error">{configurationsError}</p>
+                    </template>
+
+                    <template if:true={hasConfigurations}>
+                        <lightning-datatable
+                            key-field="Id"
+                            data={configurations}
+                            columns={configurationColumns}
+                            hide-checkbox-column
+                            onrowaction={handleRowAction}
+                        ></lightning-datatable>
+                    </template>
+
+                    <template if:true={showEmptyConfigurationsMessage}>
+                        <p class="slds-text-color_weak">Nessuna configurazione presente per questo account.</p>
+                    </template>
+                </div>
+            </template>
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <lightning-combobox
+                        name="partner"
+                        label="Partner"
+                        value={selectedPartner}
+                        options={partnerOptions}
+                        placeholder="Seleziona..."
+                        onchange={handlePartnerChange}
+                        disabled={isPartnerLoading}
+                        required
+                        data-required-field
+                        message-when-value-missing="Seleziona un partner"
+                    ></lightning-combobox>
+                </div>
+
+                <div class="form-field">
+                    <lightning-combobox
+                        name="configurationType"
+                        label="Tipo di Configurazione"
+                        value={selectedValue}
+                        options={options}
+                        onchange={handleChange}
+                        required
+                        data-required-field
+                        message-when-value-missing="Seleziona il tipo di configurazione"
+                        placeholder="Seleziona..."
+                    ></lightning-combobox>
+                </div>
+
+                <template if:true={showFunctionalityPicker}>
+                    <div class="form-field">
+                        <lightning-combobox
+                            name="functionality"
+                            label="Funzionalità"
+                            value={selectedFunctionality}
+                            options={functionalityOptions}
+                            onchange={handleFunctionalityChange}
+                            required
+                            data-required-field
+                            message-when-value-missing="Seleziona una funzionalità"
+                            placeholder="Seleziona..."
+                        ></lightning-combobox>
+                    </div>
+
+                    <div class="form-field">
+                        <lightning-combobox
+                            name="onOff"
+                            label="On / Off"
+                            value={selectedOnOff}
+                            options={onOffOptions}
+                            onchange={handleOnOffChange}
+                            required
+                            data-required-field
+                            message-when-value-missing="Seleziona On o Off"
+                            placeholder="Seleziona..."
+                        ></lightning-combobox>
+                    </div>
+                </template>
+
+                <template if:true={showDefaultObjectPicker}>
+                    <div class="form-field">
+                        <lightning-combobox
+                            name="defaultObject"
+                            label="Oggetto"
+                            value={selectedDefaultObject}
+                            options={defaultObjectOptions}
+                            onchange={handleDefaultObjectChange}
+                            required
+                            data-required-field
+                            message-when-value-missing="Seleziona un oggetto"
+                            placeholder="Seleziona..."
+                        ></lightning-combobox>
+                    </div>
+
+                    <template if:true={hasDefaultFields}>
+                        <div class="form-field">
+                            <lightning-combobox
+                                name="defaultField"
+                                label="Campo"
+                                value={selectedDefaultField}
+                                options={defaultFieldOptions}
+                                onchange={handleDefaultFieldChange}
+                                required
+                                data-required-field
+                                message-when-value-missing="Seleziona un campo"
+                                placeholder="Seleziona..."
+                            ></lightning-combobox>
+                        </div>
+                    </template>
+
+                    <template if:true={showDefaultValueSpinner}>
+                        <div class="form-field form-field_spinner">
+                            <lightning-spinner size="small"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:true={showDefaultValuePicker}>
+                        <div class="form-field">
+                            <lightning-combobox
+                                name="defaultValue"
+                                label="Valore"
+                                value={selectedDefaultValue}
+                                options={defaultValueOptions}
+                                onchange={handleDefaultValueChange}
+                                disabled={isDefaultValueDisabled}
+                                required={isDefaultValueRequired}
+                                data-required-field
+                                message-when-value-missing="Seleziona un valore"
+                                placeholder={defaultValuePlaceholder}
+                            ></lightning-combobox>
+                        </div>
+                    </template>
+                </template>
+
+                <template if:true={isEditing}>
+                    <div class="form-field">
+                        <lightning-input
+                            type="toggle"
+                            label="Attiva"
+                            checked={selectedActive}
+                            onchange={handleActiveChange}
+                        ></lightning-input>
+                    </div>
+                </template>
+
+                <template if:true={isEditing}>
+                    <div class="form-field button-field">
+                        <lightning-button
+                            variant="brand"
+                            label="Salva Configurazione"
+                            onclick={handleSaveConfiguration}
+                            disabled={isCreateDisabled}
+                        ></lightning-button>
+                    </div>
+                    <div class="form-field button-field">
+                        <lightning-button
+                            variant="neutral"
+                            label="Annulla"
+                            onclick={handleCancelEdit}
+                            disabled={isSaving}
+                        ></lightning-button>
+                    </div>
+                </template>
+
+                <template if:false={isEditing}>
+                    <div class="form-field button-field">
+                        <lightning-button
+                            variant="brand"
+                            label="Crea Configurazione"
+                            onclick={handleCreateConfiguration}
+                            disabled={isCreateDisabled}
+                        ></lightning-button>
+                    </div>
+                </template>
+            </div>
+
+            <template if:true={isSaving}>
+                <div class="slds-m-top_medium slds-align_absolute-center">
+                    <lightning-spinner size="small"></lightning-spinner>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

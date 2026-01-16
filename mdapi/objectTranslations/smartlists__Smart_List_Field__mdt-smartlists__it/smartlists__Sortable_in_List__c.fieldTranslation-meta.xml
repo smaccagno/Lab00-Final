@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- if &apos;Yes if Sortable&apos; is selected, the field will be sortable in the list if the data type of the field is sortable in Salesforce. Example: Text is sortable and Text Area Long is not --></help>
+    <label><!-- Sortable in List --></label>
+    <name>smartlists__Sortable_in_List__c</name>
+    <picklistValues>
+        <masterLabel>No</masterLabel>
+        <translation><!-- No --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Yes if Sortable</masterLabel>
+        <translation><!-- Yes if Sortable --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

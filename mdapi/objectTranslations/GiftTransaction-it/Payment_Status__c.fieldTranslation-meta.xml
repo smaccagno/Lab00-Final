@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Stato del Pagamento</label>
+    <name>Payment_Status__c</name>
+    <picklistValues>
+        <masterLabel>Payment Done</masterLabel>
+        <translation><!-- Payment Done --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Payment not Done</masterLabel>
+        <translation><!-- Payment not Done --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

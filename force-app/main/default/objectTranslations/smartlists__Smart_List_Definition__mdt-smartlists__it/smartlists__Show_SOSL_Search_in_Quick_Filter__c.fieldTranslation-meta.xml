@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Display the SOSL Search in the Filters widget.
+Can only be selected if the visibility filter My Team is not selected -->
+    </help>
+    <label><!-- Show SOSL Search in Filters (Deprecated) --></label>
+    <name>smartlists__Show_SOSL_Search_in_Quick_Filter__c</name>
+</CustomFieldTranslation>

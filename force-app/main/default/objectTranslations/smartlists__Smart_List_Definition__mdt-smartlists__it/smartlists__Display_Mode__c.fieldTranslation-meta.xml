@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Display the list as Table or Tiles --></help>
+    <label><!-- Display Mode --></label>
+    <name>smartlists__Display_Mode__c</name>
+    <picklistValues>
+        <masterLabel>Table</masterLabel>
+        <translation><!-- Table --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Tiles</masterLabel>
+        <translation><!-- Tiles --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

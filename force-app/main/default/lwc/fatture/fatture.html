@@ -1,0 +1,163 @@
+<template>
+    <lightning-card title="Lista delle Fatture">
+        <lightning-layout multiple-rows="true">
+            <!-- Programma -->
+            <template if:true={showProgramFilter}>
+                <lightning-layout-item size="2" padding="around-small">
+                    <label class="custom-label">Programma</label>
+                    <lightning-combobox
+                        variant="label-hidden"
+                        label="Programma"
+                        value={selectedProgram}
+                        options={programOptions}
+                        onchange={handleProgramChange}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+            </template>
+
+            <!-- Anno -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Anno</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Anno"
+                    value={selectedYear}
+                    options={yearOptions}
+                    onchange={handleYearChange}
+                    disabled={mustChooseProgram}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Mese -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Mese</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Mese"
+                    value={selectedMonth}
+                    options={monthOptions}
+                    onchange={handleMonthChange}
+                    disabled={mustChooseProgram}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Budget (mostrato solo se !hideBudget) -->
+            <template if:false={hideBudget}>
+                <lightning-layout-item size="2" padding="around-small">
+                    <label class="custom-label">Budget</label>
+                    <lightning-combobox
+                        variant="label-hidden"
+                        label="Budget"
+                        value={selectedBudget}
+                        options={budgetOptions}
+                        onchange={handleBudgetChange}
+                        disabled={mustChooseProgram}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+            </template>
+
+            <!-- Donatore -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Donatore</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Donatore"
+                    value={selectedDonor}
+                    options={donorOptions}
+                    onchange={handleDonorChange}
+                    disabled={mustChooseProgram}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Numero Fattura -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Numero Fattura</label>
+                <lightning-input
+                    variant="label-hidden"
+                    type="search"
+                    label="Numero Fattura"
+                    value={invoiceNumberFilter}
+                    onchange={handleInvoiceNumberChange}
+                    placeholder="Cerca per numero..."
+                    disabled={mustChooseProgram}>
+                </lightning-input>
+            </lightning-layout-item>
+
+            <!-- Spacer: riempie le 2 colonne lasciate libere quando il budget è nascosto -->
+            <template if:true={hideBudget}>
+                <lightning-layout-item size="2" padding="around-small"></lightning-layout-item>
+            </template>
+        </lightning-layout>
+
+        <!-- EXPORT: spinner durante generazione -->
+        <template if:true={isExporting}>
+            <div class="slds-p-bottom_small slds-align_absolute-center">
+                <lightning-spinner size="small" alternative-text="Esportazione in corso"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- EXPORT: pulsanti -->
+        <lightning-layout multiple-rows>
+            <lightning-layout-item size="12" class="slds-p-top_small slds-p-horizontal_small">
+                <lightning-button label="Esporta lista completa in Excel"
+                                  onclick={exportAllRecords}
+                                  class="slds-m-right_small"
+                                  disabled={mustChooseProgram}>
+                </lightning-button>
+                <lightning-button label="Esporta tutti i dati filtrati"
+                                  onclick={exportFilteredRecords}
+                                  disabled={mustChooseProgram}>
+                </lightning-button>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" class="slds-p-horizontal_small slds-p-top_x-small slds-text-align_right">
+                <lightning-button
+                    label="Aggiorna"
+                    title="Aggiorna"
+                    icon-name="utility:refresh"
+                    variant="neutral"
+                    onclick={handleRefreshClick}>
+                </lightning-button>
+            </lightning-layout-item>
+        </lightning-layout>
+
+        <!-- Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
+        </template>
+        <template if:true={mustChooseProgram}>
+            <p class="slds-text-color_error slds-p-around_medium">
+                Seleziona un Programma per visualizzare le fatture.
+            </p>
+        </template>
+        <template if:true={noBudgetFound}>
+            <p class="slds-text-color_error slds-p-around_medium">
+                Nessun Budget è associato al tuo utente.<br/>
+                Contatta l’amministratore per poter accedere alla lista fatture.
+            </p>
+        </template>
+        <!-- Totali e tabella -->
+        <template if:false={isLoading}>
+            <template if:true={totalsSummary}>
+                <div class="slds-p-around_medium">
+                    <template for:each={totalsSummary} for:item="t">
+                        <p key={t.api}><b>{t.label}:</b>&nbsp;{t.formatted}</p>
+                    </template>
+                </div>
+            </template>
+            <div class="scroll-container" onscroll={handleScroll} style="max-height:600px; overflow:auto">
+            <lightning-datatable
+                key-field="Id"
+                data={relatedData}
+                columns={columns}
+                hide-checkbox-column="true"
+                default-sort-direction={defaultSortDirection}
+                sorted-direction={sortDirection}
+                sorted-by={sortedBy}
+                onsort={onHandleSort}
+                onrowaction={handleRowAction}
+                wrap-table-header="all">
+            </lightning-datatable>
+        </div>
+        </template>
+    </lightning-card>
+</template>

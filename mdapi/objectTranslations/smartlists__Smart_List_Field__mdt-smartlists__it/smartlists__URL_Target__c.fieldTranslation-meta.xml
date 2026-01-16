@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Select _self if you want to display the URL in the current tab. Select _blank if you want to display the URL in a new tab.
+Note: _self can only be used with Salesforce URLs. Non Salesforce URLs are opened in a new tab -->
+    </help>
+    <label><!-- URL with Label: Target --></label>
+    <name>smartlists__URL_Target__c</name>
+    <picklistValues>
+        <masterLabel>_blank</masterLabel>
+        <translation><!-- _blank --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>_parent</masterLabel>
+        <translation><!-- _parent --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>_self (Salesforce URL only)</masterLabel>
+        <translation><!-- _self (Salesforce URL only) --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>_top</masterLabel>
+        <translation><!-- _top --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

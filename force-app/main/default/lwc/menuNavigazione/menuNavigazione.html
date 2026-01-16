@@ -1,0 +1,15 @@
+<template>
+    <div class="card">
+        <div class="grid-container">
+            <template for:each={tabs} for:item="tab">
+                <div key={tab.id} class="tab-item">
+                    <a href={tab.url} class="tab-link">
+                        <div class="tab-content">
+                            <p>{tab.label}</p>
+                        </div>
+                    </a>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

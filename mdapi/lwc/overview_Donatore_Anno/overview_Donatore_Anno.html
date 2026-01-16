@@ -1,0 +1,23 @@
+<template>
+    <lightning-card title="Dettaglio Donatore per Anno">
+        <lightning-datatable
+            key-field="recordLink"
+            data={aggregato}
+            columns={columns}
+            hide-checkbox-column
+        >
+        </lightning-datatable>
+
+        <template if:true={hasFigli}>
+            <lightning-card title="Dettaglio Figli per Anno">
+                <lightning-datatable
+                    key-field="recordLink"
+                    data={figli}
+                    columns={columns}
+                    hide-checkbox-column
+                >
+                </lightning-datatable>
+            </lightning-card>
+        </template>
+    </lightning-card>
+</template>

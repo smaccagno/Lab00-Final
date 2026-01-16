@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>63.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Spettacolo - Input</masterLabel>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="showId" type="String" label="Id Spettacolo" role="inputOnly"/>
+            <property name="selectedShow" type="String" label="Nome Spettacolo" role="outputOnly"/>
+            <property name="selectedType" type="String" label="Tipologia" role="outputOnly"/>
+            <property name="selectedDatetime" type="Datetime" label="Data/Ora" role="outputOnly"/>   
+            <property name="selectedShowId" label="Id Spettacolo" type="String" role="outputOnly"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

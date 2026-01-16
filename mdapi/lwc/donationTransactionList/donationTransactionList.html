@@ -1,0 +1,62 @@
+<template>
+    <lightning-card title="Elenco Donazioni">
+
+
+        <lightning-layout horizontal-align="spread" class="slds-p-around_medium">
+
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Programma</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Seleziona Programma"
+                    value={selectedProgram}
+                    options={programOptions}
+                    onchange={handleProgramChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Anno</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Seleziona Anno di Competenza"
+                    value={selectedYear}
+                    options={yearOptions}
+                    onchange={handleYearChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+            <lightning-layout-item flexibility="grow" padding="horizontal-small">
+                <label class="custom-label">Stato</label>       
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Filtra per Stato"
+                    value={selectedStatus}
+                    options={statusOptions}
+                    onchange={handleStatusChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+        </lightning-layout>
+        <!-- Mostra lo spinner durante il caricamento -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
+        </template>
+        <template if:false={isLoading}><!-- Mostra i totali -->
+        <!-- Eventuali riepiloghi o totali -->
+            <div class="slds-p-around_medium">
+                <p><b>Totale Donato per l'anno selezionato:</b> {totalOriginalDonation} EUR</p>
+                <p><b>Totale Allocabile per l'anno selezionato:</b> {totalAllocable} EUR</p>            
+                <p><b>Totale Allocato per l'anno selezionato:</b> {totalAllocated} EUR</p>   
+                <p><b>Totale Allocato Pagato per l'anno selezionato:</b> {totalAllocatedPaid} EUR</p>  
+                <p><b>Totale Allocato NON Pagato per l'anno selezionato:</b> {totalAllocatedNotPaid} EUR</p>                                   
+                <p><b>Totale Allocazioni per l'anno selezionato:</b> {totalAllocations}</p>
+            </div>
+
+            <!-- Tabella con i risultati -->
+            <lightning-datatable
+                key-field="Id"
+                data={relatedData}
+                columns={columns}
+                hide-checkbox-column="true">
+            </lightning-datatable>
+        </template>
+    </lightning-card>
+</template>

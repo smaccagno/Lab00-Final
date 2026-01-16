@@ -1,0 +1,32 @@
+<template>
+
+    <lightning-card title="Overview Budget Anno Corrente">
+        <div class="budget_table">
+            <lightning-datatable
+                data={budgetData}
+                columns={budgetColumns}
+                key-field="Id"
+                hide-checkbox-column="true"
+                column-width-mode="fixed"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <lightning-card title="Overview Donatore Anno Corrente">
+        <div class="donor_table">
+            <lightning-datatable
+                data={donorData}
+                columns={donorColumns}
+                key-field="Id"
+                hide-checkbox-column="true"
+                column-width-mode="fixed"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>

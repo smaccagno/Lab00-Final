@@ -1,0 +1,91 @@
+<template>
+    <lightning-card title="Gestisci Biglietti / Abbonamenti">
+
+        <div class="slds-p-around_medium">
+            <p class="center slds-m-bottom_x-large"><b>{structureName} - {showName}</b></p>
+
+            <div class="grid">
+                <lightning-input
+                    type="number"
+                    label="Quantità di beneficiari (numero di biglietti o abbonamenti) Totale"
+                    value={quantityShow}
+                    field-level-help="La quantità visualizzata è calcolata automaticamente dal sistema."
+                    required
+                    disabled>
+                </lightning-input>
+
+                <lightning-input
+                    type="number"
+                    formatter="currency" 
+                    step="0.01"
+                    label="Valore Commerciale Totale (€)"
+                    value={totalCommercial}
+                    onchange={handleTotalCommercialChange}
+                    disabled={isTotalCommercialDisabled}
+                    required>
+                </lightning-input>
+    
+                <lightning-input
+                    type="number"
+                    formatter="currency" 
+                    step="0.01"
+                    label="Valore Scontato Totale (€)"
+                    field-level-help="Il valore scontato deve essere minore o uguale al valore commerciale."
+                    value={totalDiscounted}
+                    onchange={handleTotalDiscountedChange}
+                    disabled={isTotalDiscountedDisabled}
+                    required>
+                </lightning-input>
+            </div>
+        </div>
+
+        <!-- Lista dei componenti figlio -->
+        <template for:each={tipoTicketsWithIndex} for:item="ticket">
+            <div key={ticket.id} class="ticket-container">
+                <c-ticket-item
+                    data-id={ticket.id}
+                    gratuita={gratuita} 
+                    onupdateticket={handleTicketChange} 
+                    total-commercial={totalCommercial}
+                    total-discounted={totalDiscounted}
+                    total-quantity={totalQuantityInput}
+                ></c-ticket-item>
+
+                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center ticket-footer">
+                    <div class="ticket-label">
+                        Biglietto / Abbonamento &nbsp;{ticket.seq}
+                    </div>
+                    <lightning-button
+                        label="Rimuovi Bilgietto / Abbonamento" 
+                        variant="destructive-text"     
+                        icon-name="utility:delete"
+                        icon-position="right"
+                        onclick={removeTicket}
+                        data-id={ticket.id}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <div class="button-container">
+            <lightning-button
+                label="Aggiungi Ticket"
+                variant="brand"
+                onclick={addTipoTicket}
+            ></lightning-button>
+        
+            <lightning-button 
+                label="Avanti" 
+                variant="brand" 
+                onclick={handleNext}
+                disabled={isNextDisabled}>
+            </lightning-button>
+        </div>
+        
+        <template if:true={isNextDisabled}>
+            <div class="slds-text-color_error slds-m-top_x-small">
+                Per proseguire, è necessario che tutti i dati siano corretti.
+            </div>
+        </template>
+    </lightning-card>
+</template>

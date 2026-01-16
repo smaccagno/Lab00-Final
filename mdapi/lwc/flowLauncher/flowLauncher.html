@@ -1,0 +1,60 @@
+<template>
+    <lightning-card>
+        <h2 class="grid-title">Azioni Disponibili</h2>
+        <div class="group-container">
+            <!-- Ciclo sui gruppi di bottoni -->
+            <template for:each={groupedButtons} for:item="group">
+                <div key={group.groupKey} class="button-grid">
+                    <!-- Ciclo sui bottoni all'interno del gruppo -->
+                    <template for:each={group.buttons} for:item="button">
+                        <div key={button.id} class="button-wrapper">
+                            <button 
+                                class="flow-button" 
+                                onclick={button.action}
+                            >
+                                {button.label}
+                            </button>
+                        </div>
+                    </template>
+                    <!-- Spazio vuoto per centrare l'ultimo bottone nei gruppi dispari -->
+                    <template if:true={group.isOdd}>
+                        <div class="button-wrapper empty-container"></div>
+                    </template>
+                </div>
+                <!-- Separatore tra i gruppi -->
+                <template if:true={group.hasSeparator}>
+                    <hr key={group.separatorKey} class="separator" />
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+
+    <!-- Modal per l'esecuzione del Flow -->
+    <template if:true={isFlowVisible}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container modal-fixed-size">
+                <header class="slds-modal__header">
+                    <button 
+                        class="slds-button slds-button_icon slds-modal__close" 
+                        title="Chiudi" 
+                        onclick={closeFlow}
+                    >
+                        <lightning-icon 
+                            icon-name="utility:close" 
+                            alternative-text="Chiudi" 
+                            size="small">
+                        </lightning-icon>
+                    </button>
+                    <h2 class="slds-text-heading_medium">Esecuzione del Flow</h2>
+                </header>
+                <div class="slds-modal__content">
+                    <lightning-flow 
+                        flow-api-name={currentFlow} 
+                        onstatuschange={handleFlowStatusChange}>
+                    </lightning-flow>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

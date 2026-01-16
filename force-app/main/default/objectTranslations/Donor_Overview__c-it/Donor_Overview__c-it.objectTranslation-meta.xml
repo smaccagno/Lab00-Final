@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Donatore per Programma</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Donatori per Programma</value>
+    </caseValues>
+    <gender>Feminine</gender>
+    <nameFieldLabel>Codice</nameFieldLabel>
+    <quickActions>
+        <label><!-- Aggiorna Vista Donatore --></label>
+        <name>Aggiorna_Vista_Donatore</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Update Overview --></label>
+        <name>Update_Overview</name>
+    </quickActions>
+    <startsWith>Consonant</startsWith>
+</CustomObjectTranslation>

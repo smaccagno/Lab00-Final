@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If checked, New, Edit and Delete record actions are available in the list if the running user has the corresponding permissions on the object --></help>
+    <label><!-- Enable all Record Actions --></label>
+    <name>smartlists__Enable_CRUD_Actions__c</name>
+</CustomFieldTranslation>

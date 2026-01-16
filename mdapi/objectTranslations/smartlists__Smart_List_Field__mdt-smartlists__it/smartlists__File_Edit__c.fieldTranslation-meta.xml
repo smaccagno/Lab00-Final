@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Used with Files lists only. If checked, the field is displayed in the File Edit Form. --></help>
+    <label><!-- Editable in File Edit Form --></label>
+    <name>smartlists__File_Edit__c</name>
+    <picklistValues>
+        <masterLabel>Editable</masterLabel>
+        <translation><!-- Editable --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Editable and required</masterLabel>
+        <translation><!-- Editable and required --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

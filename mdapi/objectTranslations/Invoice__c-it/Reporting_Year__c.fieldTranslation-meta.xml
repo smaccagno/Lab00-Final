@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Overview Donatore Anno</label>
+    <name>Reporting_Year__c</name>
+    <relationshipLabel>Donatore Anno</relationshipLabel>
+</CustomFieldTranslation>

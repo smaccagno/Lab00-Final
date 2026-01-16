@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Tipologia Fatturazione --></label>
+    <name>InvoicingType__c</name>
+    <picklistValues>
+        <masterLabel>Altro</masterLabel>
+        <translation><!-- Altro --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Fattura</masterLabel>
+        <translation><!-- Fattura --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Ricevuta</masterLabel>
+        <translation><!-- Ricevuta --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Scontrino</masterLabel>
+        <translation><!-- Scontrino --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

@@ -1,0 +1,53 @@
+.card {
+    background-color: #ffffff; /* Colore chiaro per contrastare */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Ombreggiatura leggera */
+    margin: 0 auto; /* Centra la card */
+}
+
+.grid-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* Spazio tra i pulsanti */
+    justify-content: center;
+}
+
+.tab-item {
+    flex: 1 1 calc(25% - 16px); /* Pulsanti distribuiti uniformemente */
+    max-width: 250px; /* Imposta una larghezza massima */
+    min-width: 160px; /* Assicura leggibilità su schermi piccoli */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tab-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #4caf50, #81c784); /* Gradiente verde */
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #bd3b3b; /* Testo in contrasto */
+    font-weight: bold;
+    text-decoration: none;
+    width: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Transizione per hover */
+}
+
+.tab-link:hover {
+    background: linear-gradient(135deg, #388e3c, #66bb6a); /* Gradiente più scuro al passaggio del mouse */
+    transform: translateY(-4px); /* Effetto sollevamento */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Aumenta l'ombreggiatura */
+}
+
+.tab-content {
+    font-size: 16px; /* Migliora leggibilità */
+    font-family: 'Arial', sans-serif; /* Font pulito */
+    text-transform: uppercase; /* Testo in maiuscolo */
+    white-space: nowrap;
+}

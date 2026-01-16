@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Maximum display height in pixels of the filters. A scrollbar will be displayed in the Filters Panel if the height of the filters is greater that this value.
+Leave empty if you don&apos;t want to limit the display height of the filters -->
+    </help>
+    <label><!-- Filters Panel Max Height --></label>
+    <name>smartlists__Filters_Max_Height__c</name>
+</CustomFieldTranslation>

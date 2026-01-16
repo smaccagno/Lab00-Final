@@ -1,0 +1,292 @@
+<template>
+    <lightning-card title="Lista delle Visite Mediche">
+        <!-- █████████████  FILTRI  ▒▒▒  RIGA 1  ▒▒▒  █████████████ -->
+        <lightning-layout multiple-rows="false">
+            <!-- Anno (2/12) -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Anno</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Anno"
+                    value={selectedYear}
+                    options={yearOptions}
+                    onchange={handleYearChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Mese (2/12) -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Mese</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Mese"
+                    value={selectedMonth}
+                    options={monthOptions}
+                    onchange={handleMonthChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Beneficiario (2/12) -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Beneficiario</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Beneficiario"
+                    value={selectedBeneficiaryType}
+                    options={beneficiaryTypeOptions}
+                    onchange={handleBeneficiaryTypeChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Numero Fattura (2/12) -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Numero di Fattura</label>
+                <lightning-input
+                    type="search"
+                    variant="label-hidden"
+                    label="Numero di Fattura"
+                    value={invoiceNumberFilter}
+                    onchange={handleInvoiceNumberChange}
+                    placeholder="Cerca…"
+                    disabled={uiDisabled}>
+                </lightning-input>
+            </lightning-layout-item>
+
+            <!-- Budget (2/12) – mostrato solo se necessario -->
+            <template if:false={hideBudget}>
+                <lightning-layout-item size="2" padding="around-small">
+                    <label class="custom-label">Budget</label>
+                    <lightning-combobox
+                        variant="label-hidden"
+                        label="Budget"
+                        value={selectedBudgetId}
+                        options={budgetOptions}
+                        onchange={handleBudgetChange}
+                        disabled={uiDisabled}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+            </template>
+
+            <!-- Donatore (2/12) - sempre visibile anche se il budget è nascosto -->
+            <lightning-layout-item size="2" padding="around-small">
+                <label class="custom-label">Donatore</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Donatore"
+                    value={selectedDonorId}
+                    options={donorOptions}
+                    onchange={handleDonorChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+        </lightning-layout>
+
+        <!-- █████████████  FILTRI  ▒▒▒  RIGA 2  ▒▒▒  █████████████ -->
+        <lightning-layout multiple-rows="false" class="slds-m-top_x-small">
+            <!-- Tipo Visita (3/12) -->
+            <lightning-layout-item size="3" padding="around-small">
+                <div class="slds-grid slds-grid_align-spread">
+                    <label class="custom-label">Tipo Visita</label>
+                    <template if:true={hasSelectedTipoVisite}>
+                        <lightning-button
+                            label="Reset"
+                            onclick={handleResetTipoVisite}
+                            variant="base"
+                            class="reset-button"
+                            icon-name="utility:refresh"
+                            icon-position="left"
+                            disabled={uiDisabled}>
+                        </lightning-button>
+                    </template>
+                </div>
+
+                <!-- wrapper + dropdown rimangono invariati -->
+                <div class="tipo-visita-wrapper">
+                    <!-- Input -->
+                    <lightning-input
+                        class="tipo-visita-input"
+                        data-id="tipovisita"
+                        type="text"
+                        variant="label-hidden"
+                        label="Tipo Visita"
+                        value={selectedTipoVisitaName}
+                        onchange={handleTipoVisitaInput}
+                        onfocus={handleTipoVisitaFocus}
+                        onblur={handleTipoVisitaBlur}
+                        disabled={uiDisabled}>
+                    </lightning-input>
+                    <!-- Pillole selezionate -->
+                    <div class="selected-pill-container">
+                        <template for:each={selectedTipoVisite} for:item="visita">
+                            <lightning-pill
+                                key={visita}
+                                label={visita}
+                                name={visita}
+                                onremove={removeTipoVisita}
+                                data-name={visita}>
+                            </lightning-pill>
+                        </template>
+                    </div>
+                    <!-- Dropdown suggerimenti -->
+                    <template if:true={tipoVisitaDropdownVisible}>
+                        <ul class="slds-dropdown custom-suggestion-dropdown">
+                            <template for:each={filteredSuggestions} for:item="suggestion">
+                                <li
+                                    key={suggestion}
+                                    class="slds-dropdown__item"
+                                    data-name={suggestion}
+                                    onclick={handleSuggestionClick}>
+                                    <span>{suggestion}</span>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                    <!-- Messaggio errore + bottone conferma -->
+                    <template if:true={showTipoVisitaError}>
+                        <div class="slds-text-color_error tipo-visita-feedback slds-m-top_x-small">
+                            Il tipo visita inserito non è presente nella lista.
+                            Se vuoi confermare ed usarlo lo stesso, premi il tasto Confermo.
+                        </div>
+                        <lightning-button
+                            label="Confermo"
+                            onclick={handleTipoVisitaConfirm}
+                            variant="brand"
+                            class="slds-m-top_x-small">
+                        </lightning-button>
+                    </template>
+                </div>
+            </lightning-layout-item>
+
+            <!-- Comune (3/12) -->
+            <lightning-layout-item size="3" padding="around-small">
+                <label class="custom-label">Comune</label>
+                <lightning-button
+                    label="Reset"
+                    onclick={resetCity}
+                    variant="base"
+                    class="reset-button"
+                    icon-name="utility:refresh"
+                    icon-position="left"
+                    disabled={uiDisabled}>
+                </lightning-button>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Comune"
+                    value={selectedCity}
+                    options={cityOptions}
+                    onchange={handleCityChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Provincia (3/12) -->
+            <lightning-layout-item size="3" padding="around-small">
+                <label class="custom-label">Provincia</label>
+                <lightning-button
+                    label="Reset"
+                    onclick={resetProvince}
+                    variant="base"
+                    class="reset-button"
+                    icon-name="utility:refresh"
+                    icon-position="left"
+                    disabled={uiDisabled}>
+                </lightning-button>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Provincia"
+                    value={selectedProvince}
+                    options={provinceOptions}
+                    onchange={handleProvinceChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <!-- Regione (3/12) -->
+            <lightning-layout-item size="3" padding="around-small">
+                <label class="custom-label">Regione</label>
+                <lightning-button
+                    label="Reset"
+                    onclick={resetRegion}
+                    variant="base"
+                    class="reset-button"
+                    icon-name="utility:refresh"
+                    icon-position="left"
+                    disabled={uiDisabled}>
+                </lightning-button>
+                <lightning-combobox
+                    variant="label-hidden"
+                    label="Regione"
+                    value={selectedRegion}
+                    options={regionOptions}
+                    onchange={handleRegionChange}
+                    disabled={uiDisabled}>
+                </lightning-combobox>
+            </lightning-layout-item>
+        </lightning-layout>
+
+
+                    <!-- // EXPORT –- spinner durante la generazione -->
+        <template if:true={isExporting}>
+            <div class="slds-p-bottom_small slds-align_absolute-center">
+                <lightning-spinner size="small"
+                                   alternative-text="Esportazione in corso">
+                </lightning-spinner>
+            </div>
+        </template>
+
+                <!-- // EXPORT –- pulsanti -->
+        <lightning-layout multiple-rows>
+            <lightning-layout-item size="12" class="slds-p-top_small">
+                <lightning-button label="Esporta Lista completa in Excel"
+                                  onclick={exportAllRecords}
+                                  class="slds-m-right_small"
+                                  disabled={uiDisabled}>
+                </lightning-button>
+                <lightning-button label="Esporta tutti i dati filtrati"
+                                  onclick={exportFilteredRecords}
+                                  class="slds-m-right_small"
+                                  disabled={uiDisabled}>
+                </lightning-button>
+            </lightning-layout-item>
+        </lightning-layout>
+        <!-- fine sezione EXPORT -->
+        <template if:true={isLoadingInit}>
+            <div class="slds-p-vertical_medium slds-align_absolute-center">
+                <lightning-spinner alternative-text="Caricamento…" size="medium"></lightning-spinner>
+            </div>
+        </template>
+        <template if:true={noBudgetFound}>
+            <p class="slds-text-color_error slds-p-around_medium">
+                Nessun Budget è associato al tuo utente.<br/>
+                Contatta l’amministratore per poter accedere alla lista delle visite mediche.
+            </p>
+        </template>
+        <!-- Totali e Tabella -->
+        <template if:false={isLoadingInit}>
+            <div class="slds-p-around_medium">
+                <p><b>Totale Numero Visite nell'anno selezionato:</b> {totalVisits}</p>
+                <p><b>Totale Minuti di Visita nell'anno selezionato:</b> {totalMinutes}</p>
+                <p><b>Totale Ammontare nell'anno selezionato:</b> {totalAmount} EUR</p>
+            </div>
+            <div class="table-container" style="max-height:600px;overflow:auto">
+            <lightning-datatable
+                key-field="Id"
+                data={relatedData}
+                columns={columns}
+                hide-checkbox-column="true"
+                sorted-direction={sortDirection}
+                sorted-by={sortedBy}
+                onsort={onHandleSort}
+                enable-infinite-loading
+                onloadmore={handleLoadMore}
+                is-loading={isLoadingMore} 
+                wrap-table-header="all">
+            </lightning-datatable>
+        </div>
+
+        </template>
+    </lightning-card>
+</template>

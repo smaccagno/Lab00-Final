@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>City__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Comune</label>
+    <referenceTo>Comune__c</referenceTo>
+    <relationshipName>Structures</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

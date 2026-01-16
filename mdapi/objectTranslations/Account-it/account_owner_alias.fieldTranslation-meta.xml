@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Alias titolare stakeholder</value>
+    </caseValues>
+    <gender>Masculine</gender>
+    <name>account_owner_alias</name>
+    <startsWith>Special</startsWith>
+</CustomFieldTranslation>

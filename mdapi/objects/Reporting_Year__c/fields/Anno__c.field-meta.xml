@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Anno__c</fullName>
+    <label>Anno</label>
+    <referenceTo>Anno_Reportistica__c</referenceTo>
+    <relationshipLabel>Anni di Reportistica</relationshipLabel>
+    <relationshipName>Anni_di_Reportistica</relationshipName>
+    <relationshipOrder>1</relationshipOrder>
+    <reparentableMasterDetail>true</reparentableMasterDetail>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

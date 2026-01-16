@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Display the Filters Panel all the time. The panel cannot be closed --></help>
+    <label><!-- Display Filters Panel All the Time --></label>
+    <name>smartlists__Display_Quick_Filters_All_the_Time__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>Fattura__c</columns>
+    <columns>Totale_Durata_Visite__c</columns>
+    <columns>Totale_Durata_Visite_Static__c</columns>
+    <columns>Totale_Fattura__c</columns>
+    <columns>Totale_Fattura_Static__c</columns>
+    <columns>Totale_Numero_di_Visite__c</columns>
+    <columns>Totale_Numero_di_Visite_Static__c</columns>
+    <columns>Totali_Budget_Anno__c</columns>
+    <columns>Totali_Donatore_Anno__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All</label>
+</ListView>

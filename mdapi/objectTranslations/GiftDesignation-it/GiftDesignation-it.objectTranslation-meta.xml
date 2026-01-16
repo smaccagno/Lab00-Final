@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Budget</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Budgets</value>
+    </caseValues>
+    <gender>Feminine</gender>
+    <quickActions>
+        <label><!-- Allinea Budget per Programma --></label>
+        <name>Allinea_Budget_per_Programma</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- View Budget --></label>
+        <name>View_Budget</name>
+    </quickActions>
+    <startsWith>Consonant</startsWith>
+</CustomObjectTranslation>

@@ -1,0 +1,26 @@
+<template>
+    <lightning-card>
+        <lightning-input
+            type="text"
+            label="Inserisci il Centro Medico o selezionalo dalla lista se presente"
+            onchange={handleInputChange}
+            onfocus={handleFocus}
+        ></lightning-input>
+        <template if:true={filteredSuggestions}>
+            <ul
+                class="slds-dropdown slds-dropdown_fluid"
+                style={dropdownStyle}
+            >
+                <template for:each={filteredSuggestions} for:item="suggestion">
+                    <li
+                        key={suggestion}
+                        class="slds-dropdown__item"
+                        onclick={handleSuggestionClick}
+                    >
+                        <span>{suggestion}</span>
+                    </li>
+                </template>
+            </ul>
+        </template>
+    </lightning-card>
+</template>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- SOQL filter used for querying the records. Example: Status = &apos;Open&apos;.
+Used for SOQL type only -->
+    </help>
+    <label><!-- SOQL Filter --></label>
+    <name>smartlists__SOQL_Filter__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="campaignRelatedRecords">
+    <apiVersion>62.0</apiVersion> <!-- Assicurati di usare la versione più recente supportata -->
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__RecordPage</target>
+        <target>lightning__AppPage</target>
+        <target>lightning__FlowScreen</target> <!-- Questo rende il componente disponibile nei Flows -->
+    </targets>
+    <targetConfigs>
+        <!-- Configurazione per Lightning Record Page -->
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>Anno_Reportistica__c</object> <!-- Disponibile per tutti gli oggetti -->
+            </objects>
+        </targetConfig>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="recordId" type="String" label="Anno Record Id" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

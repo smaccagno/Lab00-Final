@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fatture</fullName>
+    <columns>Budget__c</columns>
+    <columns>NAME</columns>
+    <columns>City__c</columns>
+    <columns>Date__c</columns>
+    <columns>Invoice_Number__c</columns>
+    <columns>Medical_Center__c</columns>
+    <columns>Non_Profit_Signaling__c</columns>
+    <columns>Province__c</columns>
+    <columns>Region__c</columns>
+    <columns>Account__c</columns>
+    <columns>CREATED_DATE</columns>
+    <filterScope>Everything</filterScope>
+    <label>Fatture</label>
+</ListView>

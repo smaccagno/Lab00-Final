@@ -1,0 +1,65 @@
+<template>
+    <lightning-card>
+        <!-- Campo di input per l'ente Non Profit -->
+        <div class="slds-form-element">
+            <label class="custom-required-label" for="non-profit-input">
+                <span class="slds-required">*</span>
+                Inserisci l'ente Non Profit segnalante o selezionalo dalla lista se presente
+            </label>
+            <lightning-input
+                id="non-profit-input"
+                class={inputClass}
+                type="text"
+                onchange={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}
+            ></lightning-input>
+        </div>
+
+        <!-- Messaggio di errore personalizzato -->
+        <template if:false={isInputValid}>
+            <div class="slds-text-color_error slds-m-top_x-small">
+                Il campo è obbligatorio. Inserisci un ente Non Profit.
+            </div>
+        </template>
+
+        <!-- Tendina per i suggerimenti filtrati -->
+        <template if:true={filteredSuggestions}>
+            <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                <template for:each={filteredSuggestions} for:item="suggestion">
+                    <li
+                        key={suggestion}
+                        class="slds-dropdown__item"
+                        onclick={handleSuggestionClick}
+                        onmousedown={handleMouseDownSuggestion}
+                        onmouseup={handleMouseUpSuggestion}
+                    >
+                        <span>{suggestion}</span>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
+        <!-- Messaggio di errore e pulsante Confermo -->
+        <template if:true={showErrorMessage}>
+            <div class="slds-text-color_error slds-m-top_medium">
+                <p>
+                    L'ente Non Profit inserito non è presente nella lista. Prova a correggere quanto inserito.
+                    Se vuoi confermare ed inserire il nome dell'ente Non Profit anche se non presente nella lista, premi il tasto Conferma.
+                </p>
+                <lightning-button
+                    label="Confermo"
+                    onclick={handleConfirm}
+                    variant="brand"
+                ></lightning-button>
+            </div>
+        </template>
+
+        <!-- Ente Non Profit selezionato -->
+        <template if:true={selectedSignalingNonProfit}>
+            <div class="slds-box slds-m-top_medium">
+                <p><strong>Ente Non Profit Selezionato:</strong> {selectedSignalingNonProfit}</p>
+            </div>
+        </template>
+    </lightning-card>
+</template>

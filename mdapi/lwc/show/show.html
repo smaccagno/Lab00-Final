@@ -1,0 +1,83 @@
+<template>
+    <div class="slds-m-bottom_x-small">
+        <div class="slds-form-element">
+            <lightning-input
+                label="Inserisci lo Spettacolo o selezionalo dalla lista"
+                class={inputClass}
+                data-id="show"
+                type="text"
+                onchange={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}
+                required
+            ></lightning-input>
+    
+            <!-- Tendina per i suggerimenti filtrati -->
+            <template if:true={filteredSuggestions}>
+                <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                    <template for:each={filteredSuggestions} for:item="show">
+                        <li 
+                            data-id={show.Id}
+                            key={show.Id} 
+                            class="slds-dropdown__item" 
+                            onclick={handleSuggestionClick} 
+                            onmousedown={handleMouseDownSuggestion}
+                            onmouseup={handleMouseUpSuggestion}>
+                            {show.Name}
+                        </li>
+                    </template>
+                </ul>
+            </template>
+        </div>        
+    
+        <!-- Messaggio di errore e pulsante Confermo -->
+        <template if:true={showErrorMessage}>
+            <div class="slds-text-color_error slds-m-top_medium">
+                <p class="slds-m-bottom_small">
+                    Lo spettacolo inserito non è presente nella lista. Prova a correggere quanto inserito.
+                    Se vuoi confermare ed inserire il nome dello spettacolo anche se non presente nella lista, premi il tasto Confermo.
+                </p>
+                <lightning-button 
+                    label="Confermo"
+                    onclick={handleConfirm}
+                    variant="brand-outline"
+                ></lightning-button>
+            </div>
+        </template>
+    
+        <template if:true={showTypeInput}>
+            <div class="slds-form-element slds-m-top_small">
+                <lightning-combobox
+                    name="type"
+                    label="Inserisci la Tipologia"
+                    placeholder="Seleziona la tipologia..."
+                    options={types}
+                    onchange={handleTypeInputChange}
+                    required>
+                </lightning-combobox>
+            </div>
+        </template>
+    
+        <template if:true={showDatetimeInput}>
+            <div class="slds-form-element slds-m-top_small">
+                <label class="slds-form-element__label" for="type-input">
+                    <abbr class="slds-required" part="required" title="required">*</abbr>
+                    Inserisci Data/Ora dello Spettacolo
+                </label>
+                <lightning-input 
+                    variant="label-hidden"
+                    type="datetime"
+                    onchange={handleDatetimeInputChange}>
+                </lightning-input>
+            </div>
+        </template>
+        
+        <template if:true={showSummary}>
+            <div class="slds-box slds-m-top_medium">
+                <p><strong>Spettacolo:</strong> {selectedShow}</p>
+                <p><strong>Tipologia:</strong> {selectedType}</p>
+                <p><strong>Data/Ora:</strong> {dateString}</p>
+            </div>
+        </template>
+    </div>
+</template>

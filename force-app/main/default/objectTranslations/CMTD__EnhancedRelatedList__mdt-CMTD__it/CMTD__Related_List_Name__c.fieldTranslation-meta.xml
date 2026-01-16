@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Related List Name as specified in &quot;Related List Name&quot; attribute of the CMTD Enhanced Related List component --></help>
+    <label><!-- Related List Name --></label>
+    <name>CMTD__Related_List_Name__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,74 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 10-23-2025
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+    <lightning-card title="Offerte Sottoscritte">
+        <lightning-layout multiple-rows class="filters-layout slds-p-around_medium">
+            <lightning-layout-item size="3" padding="around-small">
+                <label class="custom-label">Stato</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    value={selectedState}
+                    options={stateOptions}
+                    onchange={handleStateChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <lightning-layout-item size="3" padding="around-small">
+                <label class="custom-label">Fornitore</label>
+                <lightning-combobox
+                    variant="label-hidden"
+                    value={selectedStructure}
+                    options={structureOptions}
+                    onchange={handleStructureChange}>
+                </lightning-combobox>
+            </lightning-layout-item>
+
+            <lightning-layout-item size="3" padding="around-small" class="reset-item">
+                <lightning-button
+                    label="Reset filtri"
+                    variant="base"
+                    icon-name="utility:refresh"
+                    icon-position="left"
+                    onclick={handleResetFilters}
+                    class="reset-button">
+                </lightning-button>
+            </lightning-layout-item>
+        </lightning-layout>
+
+        <template if:true={error}>
+            <div class="slds-p-around_medium slds-text-color_error">
+                Si è verificato un errore durante il caricamento delle offerte.
+            </div>
+        </template>
+
+        <template if:true={data.length}>
+            <lightning-datatable
+                key-field="Id"
+                data={data}
+                columns={columns}
+                hide-checkbox-column
+                enable-infinite-loading
+                onloadmore={handleLoadMore}
+                load-more-status={loadMoreStatus}
+                is-loading={isLoading}>
+            </lightning-datatable>
+        </template>
+
+        <template if:true={showEmptyState}>
+            <div class="slds-p-around_medium slds-text-align_center slds-text-body_regular">
+                Nessun record disponibile con i filtri correnti.
+            </div>
+        </template>
+
+        <template if:true={isInitialLoad}>
+            <div class="slds-is-relative slds-p-around_medium">
+                <lightning-spinner alternative-text="Caricamento in corso..." size="medium"></lightning-spinner>
+            </div>
+        </template>
+    </lightning-card>
+</template>

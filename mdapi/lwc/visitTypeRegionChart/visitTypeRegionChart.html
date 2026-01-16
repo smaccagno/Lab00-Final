@@ -1,0 +1,78 @@
+<template>
+  <lightning-card title="Visite per Località e Tipo">
+    <div class="slds-p-around_medium">
+
+      <template if:true={isLoading}>
+        <div class="slds-align_absolute-center slds-m-bottom_small">
+          <lightning-spinner alternative-text="Caricamento" size="small"></lightning-spinner>
+        </div>
+      </template>
+
+      <div class="info-banner">
+        I filtri permettono di visualizzare i dettagli del numero di visite per tipo in relazione a Comuni, Province e Regioni per le quali esistono visite.
+      </div>
+
+      <div class="export-bar slds-m-bottom_small">
+        <div class="export-actions">
+          <lightning-button label="Esporta dati filtrati" onclick={exportFiltered} class="slds-m-right_small" disabled={isExporting}></lightning-button>
+          <lightning-button label="Esporta dati completi" onclick={exportAll} class="slds-m-right_small" disabled={isExporting}></lightning-button>
+          <lightning-button label="PDF grafico (filtri)" onclick={exportPdfFiltered} class="slds-m-right_small" disabled={isExporting}></lightning-button>
+          <lightning-button label="PDF grafico (completo)" onclick={exportPdfAll} variant="brand" disabled={isExporting}></lightning-button>
+        </div>
+        <template if:true={isExporting}>
+          <lightning-spinner size="small" alternative-text="Esportazione in corso"></lightning-spinner>
+        </template>
+      </div>
+
+      <!-- FILTRI AREA GEOGRAFICA -->
+      <lightning-layout multiple-rows="false" class="slds-m-bottom_small">
+        <lightning-layout-item size="4" padding="around-small">
+          <div class="filter-header">
+            <span class="custom-label">Comune</span>
+            <lightning-button class="reset-button" variant="base" label="Reset" icon-name="utility:refresh" icon-position="left" onclick={resetCity} disabled={isCityResetDisabled}></lightning-button>
+          </div>
+          <lightning-combobox value={selectedCity} options={cityOptions} onchange={handleCityChange} variant="label-hidden"></lightning-combobox>
+        </lightning-layout-item>
+        <lightning-layout-item size="4" padding="around-small">
+          <div class="filter-header">
+            <span class="custom-label">Provincia</span>
+            <lightning-button class="reset-button" variant="base" label="Reset" icon-name="utility:refresh" icon-position="left" onclick={resetProvince} disabled={isProvinceResetDisabled}></lightning-button>
+          </div>
+          <lightning-combobox value={selectedProvince} options={provinceOptions} onchange={handleProvinceChange} variant="label-hidden"></lightning-combobox>
+        </lightning-layout-item>
+        <lightning-layout-item size="4" padding="around-small">
+          <div class="filter-header">
+            <span class="custom-label">Regione</span>
+            <lightning-button class="reset-button" variant="base" label="Reset" icon-name="utility:refresh" icon-position="left" onclick={resetRegion} disabled={isRegionResetDisabled}></lightning-button>
+          </div>
+          <lightning-combobox value={selectedRegion} options={regionOptions} onchange={handleRegionChange} variant="label-hidden"></lightning-combobox>
+        </lightning-layout-item>
+      </lightning-layout>
+
+      <!-- GRAFICO A BARRE (TESTUALE) -->
+      <template if:true={groupedData.length}>
+        <template for:each={groupedData} for:item="group">
+          <div key={group.region} class="region-block">
+            <div class="region-title">
+              {group.displayName}
+              <span class="region-total">({group.totalQuantity} visite)</span>
+            </div>
+            <template for:each={group.items} for:item="item">
+              <div key={item.visitType} class="bar-row">
+                <div class="bar-label">{item.visitType}</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style={item.styleWidth}></div>
+                </div>
+                <div class="bar-value">{item.quantity}</div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </template>
+
+      <template if:false={groupedData.length}>
+        <p class="slds-text-body_regular">Nessun dato per i filtri selezionati.</p>
+      </template>
+    </div>
+  </lightning-card>
+</template>

@@ -1,0 +1,15 @@
+.logo {
+    width: 200px;
+    height: auto;
+}
+
+.title {
+    color: #FFFFFF !important;
+        /* Testo bianco puro */
+        text-shadow: -0.5px -0.5px 0 rgba(0, 0, 0, 0.6),
+            0.5px -0.5px 0 rgba(0, 0, 0, 0.6),
+            -0.5px 0.5px 0 rgba(0, 0, 0, 0.6),
+            0.5px 0.5px 0 rgba(0, 0, 0, 0.6),
+            2px 2px 4px rgba(0, 0, 0, 0.3);
+        /* Aggiunta ombra più marcata */
+}

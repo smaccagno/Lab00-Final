@@ -1,0 +1,63 @@
+<template>
+    <lightning-card>
+        <div class="slds-form-element">
+            <label class="custom-required-label" for="medical-center-input">
+                <span class="slds-required">*</span>
+                Inserisci il Centro Medico o selezionalo dalla lista se presente
+            </label>
+            <lightning-input
+                id="medical-center-input"
+                class={inputClass}
+                type="text"
+                value={inputValue}
+                onchange={handleInputChange}
+                oninput={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}
+            ></lightning-input>
+        </div>
+
+        <template if:false={isInputValid}>
+            <div class="slds-text-color_error slds-m-top_x-small">
+                Il campo è obbligatorio. Inserisci un Centro Medico.
+            </div>
+        </template>
+
+        <template if:true={hasSuggestions}>
+            <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                <template for:each={filteredSuggestions} for:item="suggestion">
+                    <li
+                        key={suggestion}
+                        data-value={suggestion}
+                        class="slds-dropdown__item"
+                        onclick={handleSuggestionClick}
+                        onmousedown={handleMouseDownSuggestion}
+                        onmouseup={handleMouseUpSuggestion}
+                    >
+                        <span>{suggestion}</span>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
+        <template if:true={showErrorMessage}>
+            <div class="slds-text-color_error slds-m-top_medium">
+                <p>
+                    Il centro medico inserito non è presente nella lista. Prova a correggere quanto inserito.
+                    Se vuoi confermare ed inserire il nome del centro medico anche se non presente nella lista, premi il tasto Confermo.
+                </p>
+                <lightning-button
+                    label="Confermo"
+                    onclick={handleConfirm}
+                    variant="brand"
+                ></lightning-button>
+            </div>
+        </template>
+
+        <template if:true={selectedMedicalCenter}>
+            <div class="slds-box slds-m-top_medium">
+                <p><strong>Centro Medico Selezionato:</strong> {selectedMedicalCenter}</p>
+            </div>
+        </template>
+    </lightning-card>
+</template>

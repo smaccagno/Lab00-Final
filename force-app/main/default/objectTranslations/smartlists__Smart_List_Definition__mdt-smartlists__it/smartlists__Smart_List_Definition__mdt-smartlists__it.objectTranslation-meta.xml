@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Smart List Definition</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Smart List Definitions</value>
+    </caseValues>
+    <gender>Neuter</gender>
+    <layouts>
+        <layout>Smart List Definition Layout</layout>
+        <sections>
+            <label><!-- Apex Settings --></label>
+            <section>Apex Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Child Lists - Relationship Settings --></label>
+            <section>Child Lists - Relationship Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+        <sections>
+            <label><!-- Files Settings --></label>
+            <section>Files Settings</section>
+        </sections>
+        <sections>
+            <label><!-- List Settings --></label>
+            <section>List Settings</section>
+        </sections>
+        <sections>
+            <label><!-- SOQL with/without Sharing &amp; Apex Settings --></label>
+            <section>SOQL with/without Sharing &amp; Apex Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Table Settings --></label>
+            <section>Table Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Tiles Settings --></label>
+            <section>Tiles Settings</section>
+        </sections>
+    </layouts>
+    <layouts>
+        <layout>Smart List Definition Layout 280</layout>
+        <sections>
+            <label><!-- Apex Settings --></label>
+            <section>Apex Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Child Lists - Relationship Settings --></label>
+            <section>Child Lists - Relationship Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+        <sections>
+            <label><!-- Files Settings --></label>
+            <section>Files Settings</section>
+        </sections>
+        <sections>
+            <label><!-- List Settings --></label>
+            <section>List Settings</section>
+        </sections>
+        <sections>
+            <label><!-- SOQL with/without Sharing &amp; Apex Settings --></label>
+            <section>SOQL with/without Sharing &amp; Apex Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Table Settings --></label>
+            <section>Table Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Tiles Settings --></label>
+            <section>Tiles Settings</section>
+        </sections>
+    </layouts>
+    <startsWith>Consonant</startsWith>
+    <validationRules>
+        <errorMessage><!-- Data Provider Class is required for type &apos;	Apex Data Source&apos; --></errorMessage>
+        <name>smartlists__Check_Data_Provider</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- The default filter is not one of the selected filters --></errorMessage>
+        <name>smartlists__Check_Default_Scope</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Enable All Record Actions cannot be checked when individual record actions are selected --></errorMessage>
+        <name>smartlists__Check_Enable_All_CRUD_Actions</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Record actions cannot be enabled for Files Lists --></errorMessage>
+        <name>smartlists__Check_Enable_CRUD_Actions</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Files datasource: Parent Object, Parent Key Field and Parent Id are required for an indirect relationship --></errorMessage>
+        <name>smartlists__Check_Indirect_Relationship_FILES</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- SOQL or APEX Data Source: Parent Key Field and Parent Id are required for an indirect relationship --></errorMessage>
+        <name>smartlists__Check_Indirect_Relationship_SOQL_APEX</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Tile Layout is required when Display Mode is Tiles --></errorMessage>
+        <name>smartlists__Check_Layout_For_Tiles</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- List Icon is required for APEX Data Source without SObject --></errorMessage>
+        <name>smartlists__Check_List_Icon_APEX</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- List Label is required for APEX Data Source without SObject --></errorMessage>
+        <name>smartlists__Check_List_Label_APEX</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Parent Id Field is required for Apex Data Source with Parent --></errorMessage>
+        <name>smartlists__Check_Parent_Field</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Row Key is required for type &apos; Apex Data Source&apos; --></errorMessage>
+        <name>smartlists__Check_RowKey</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- SObject is required for types &apos;SOQL with/without Sharing&apos; --></errorMessage>
+        <name>smartlists__Check_SObject</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- SObject is required when record actions are enabled on an Apex Data Source --></errorMessage>
+        <name>smartlists__Check_SObject_APEX</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Show SOQL Search in Quick Filter cannot be selected with the My Team records scope --></errorMessage>
+        <name>smartlists__Check_Show_Sosl_Search</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Show SOQL Search in Component or Filters Panel cannot be selected with the My Team visibility filter --></errorMessage>
+        <name>smartlists__Check_Show_Sosl_Search_Picklist</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Wrap Text Max Lines must be greater than 0 --></errorMessage>
+        <name>smartlists__Check_Wrap_Text_Max_Lines</name>
+    </validationRules>
+</CustomObjectTranslation>

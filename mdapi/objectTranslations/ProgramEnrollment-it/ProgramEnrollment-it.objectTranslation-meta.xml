@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Partecipazione ai Programmi</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Partecipazione ai Programmi</value>
+    </caseValues>
+    <gender>Feminine</gender>
+    <layouts>
+        <layout>Program Enrollment Layout</layout>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+    </layouts>
+    <quickActions>
+        <label><!-- Chiudi Iscrizione --></label>
+        <name>Chiudi_Iscrizione</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Iscrizione a Programma --></label>
+        <name>Iscrizione_a_Programma</name>
+    </quickActions>
+    <startsWith>Vowel</startsWith>
+</CustomObjectTranslation>

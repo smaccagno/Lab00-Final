@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DigitalExperienceConfig xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Fornitori</label>
+    <site>
+        <urlPathPrefix>test</urlPathPrefix>
+    </site>
+    <space>site/Fornitori1</space>
+</DigitalExperienceConfig>

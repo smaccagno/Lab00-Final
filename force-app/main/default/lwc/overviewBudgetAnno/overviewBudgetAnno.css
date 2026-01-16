@@ -1,0 +1,15 @@
+.table-wrapper {
+    overflow: auto;
+}
+
+.lightning-datatable {
+    table-layout: auto; /* Permette alle colonne di adattarsi al contenuto */
+}
+
+.slds-table td,
+.slds-table thead th {
+    white-space: normal; /* Permette il wrapping del testo nell'header */
+    word-wrap: break-word; /* Spezza le parole lunghe */
+    text-align: left; /* Opzionale, allinea il testo a sinistra */
+    max-width: 200px; /* Imposta una larghezza massima, regolabile */
+}

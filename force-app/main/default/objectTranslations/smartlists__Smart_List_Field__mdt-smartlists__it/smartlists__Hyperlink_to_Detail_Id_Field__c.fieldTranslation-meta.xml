@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Only used if Display Type = Hyperlink to Detail.
+Field of the record containing the Id of the target record.
+For SOQL and Files list, enter a value if you don&apos;t want to use the default value
+Required for Apex Data Source. -->
+    </help>
+    <label><!-- Hyperlink to Detail: Id Field --></label>
+    <name>smartlists__Hyperlink_to_Detail_Id_Field__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- If checked, no records are automatically loaded when the list is displayed for the first time
+If unchecked, records are automatically loaded when the list is displayed for the first time -->
+    </help>
+    <label><!-- Disable Autoload on Initialization --></label>
+    <name>smartlists__Disable_Autoload__c</name>
+</CustomFieldTranslation>

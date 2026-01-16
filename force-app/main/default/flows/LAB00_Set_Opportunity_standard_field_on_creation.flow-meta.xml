@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>61.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <environments>Default</environments>
+    <formulas>
+        <description>Amount withheld calculated based on the percentage of cost management defined on the account</description>
+        <name>AmountWithheld</name>
+        <dataType>Currency</dataType>
+        <expression>{!$Record.Amount} * {!$Record.Account.Donation_Percentage_Withheld__c} / 100</expression>
+        <scale>2</scale>
+    </formulas>
+    <interviewLabel>LAB00 - Set Opportunity standard field on creation {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>LAB00 - Set Opportunity standard field on creation</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordUpdates>
+        <name>Update_Original_Opportunity</name>
+        <label>Update Original Opportunity</label>
+        <locationX>176</locationX>
+        <locationY>287</locationY>
+        <inputAssignments>
+            <field>AmounWithheld__c</field>
+            <value>
+                <elementReference>AmountWithheld</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record</inputReference>
+    </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Original_Opportunity</targetReference>
+        </connector>
+        <filterFormula>ISNEW() || ISCHANGED({!$Record.Amount})</filterFormula>
+        <object>Opportunity</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

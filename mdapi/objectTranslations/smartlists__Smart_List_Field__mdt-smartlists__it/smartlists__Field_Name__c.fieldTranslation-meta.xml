@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- With SOQL and Files lists, API name of the field. Can include a reference to a parent object: Owner.Name or ProductType__r.Subtype__c
+
+Field name for Apex Data Source -->
+    </help>
+    <label><!-- Field Name --></label>
+    <name>smartlists__Field_Name__c</name>
+</CustomFieldTranslation>

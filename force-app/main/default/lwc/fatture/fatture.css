@@ -1,0 +1,10 @@
+.custom-label {
+    font-weight: bold;
+    font-size: 1.25rem; /* Puoi regolare la dimensione del font secondo le tue esigenze */
+    margin-bottom: 0.5rem; /* Spazio tra l'etichetta e il combobox */
+    display: inline-block;
+}
+
+.reset-button {
+    font-size: 0.75rem;
+}

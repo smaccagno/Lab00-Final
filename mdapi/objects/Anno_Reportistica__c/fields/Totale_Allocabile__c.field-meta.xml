@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Totale_Allocabile__c</fullName>
+    <label>Totale Allocabile</label>
+    <summarizedField>Reporting_Year__c.Current_Year_Donation_Amount__c</summarizedField>
+    <summaryForeignKey>Reporting_Year__c.Anno__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

@@ -1,0 +1,29 @@
+<template>
+    <lightning-card>
+        <div class="button-grid">
+            <button class="flow-button" onclick={handleOpenHome}>Home</button>
+            <button class="flow-button" onclick={handleCreaVisitType}>Aggiungi un Tipo di Visita</button>
+            <button class="flow-button" onclick={handleCreaNewCity}>Inserisci un Comune</button>
+            <button class="flow-button" onclick={handleOpenReport}>Gestisci i Report</button>
+            <button class="flow-button" onclick={handleOpenDashboard}>Gestisci le Dashboard</button> 
+        </div>
+    </lightning-card>
+
+    <!-- Modale per il flow -->
+    <template if:true={isFlowVisible}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container modal-fixed-size">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close" title="Chiudi" onclick={closeFlow}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" size="small"></lightning-icon>
+                    </button>
+                    <h2 class="slds-text-heading_medium">Esecuzione del Flow</h2>
+                </header>
+                <div class="slds-modal__content">
+                    <lightning-flow flow-api-name={currentFlow}></lightning-flow>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

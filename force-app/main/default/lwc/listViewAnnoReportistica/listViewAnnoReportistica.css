@@ -1,0 +1,46 @@
+.datatable-wrapper {
+    margin-bottom: 20px; /* Spazio tra ogni datatable */
+}
+
+.datatable-container {
+    margin: 10px 0;
+}
+
+.slds-card__header {
+    background-color: #f4f6f9;
+}
+
+.separator {
+    height: 20px; /* Altezza del separatore */
+    background-color: transparent; /* Sfondo trasparente */
+}
+
+.separator-line {
+    border-top: 1px solid #d8dde6; /* Linea sottile */
+    margin: 10px 0; /* Spazio sopra e sotto */
+}
+
+.datatable-year-wrapper {
+    margin-bottom: 40px; /* Spazio tra gli anni */
+}
+
+.datatable-program-wrapper {
+    margin-bottom: 20px; /* Spazio tra i programmi */
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #3e3e3c;
+}
+
+.white-background-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slds-p-around_medium {
+    padding: 1rem;
+}

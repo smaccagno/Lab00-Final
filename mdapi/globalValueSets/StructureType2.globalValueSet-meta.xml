@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Cinema</fullName>
+        <default>false</default>
+        <label>Cinema</label>
+    </customValue>
+    <customValue>
+        <fullName>Museo</fullName>
+        <default>false</default>
+        <label>Museo</label>
+    </customValue>
+    <customValue>
+        <fullName>Stadio</fullName>
+        <default>false</default>
+        <label>Stadio</label>
+    </customValue>
+    <customValue>
+        <fullName>Teatro</fullName>
+        <default>false</default>
+        <label>Teatro</label>
+    </customValue>
+    <masterLabel>Tipologia Struttura2</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

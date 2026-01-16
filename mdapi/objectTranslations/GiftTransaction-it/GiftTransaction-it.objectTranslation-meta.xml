@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Donazione</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Donazioni</value>
+    </caseValues>
+    <gender>Feminine</gender>
+    <quickActions>
+        <label><!-- Elimina Donazione --></label>
+        <name>Elimina_Donazione</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Finalizza Donazioni Incomplete --></label>
+        <name>Finalizza_Donazioni_Incomplete</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Gestisci la Distribuzione --></label>
+        <name>Gestisci_la_Distribuzione</name>
+    </quickActions>
+    <startsWith>Consonant</startsWith>
+</CustomObjectTranslation>

@@ -1,0 +1,84 @@
+<template>
+  <lightning-card title="Statistiche Visite per Geografia" class="geo-card">
+    <!-- Spinner di caricamento -->
+    <template if:true={isLoading}>
+      <div class="slds-is-relative spinner-box">
+        <lightning-spinner alternative-text="Caricamento dati..." size="medium"></lightning-spinner>
+      </div>
+    </template>
+
+    <div class="wrapper">
+      <!-- Riepilogo compatto -->
+      <div class="summary-grid">
+        <div class="tile">
+          <div class="tile-label">Regioni</div>
+          <div class="tile-value">{totalRegions}</div>
+        </div>
+        <div class="tile">
+          <div class="tile-label">Province</div>
+          <div class="tile-value">{totalProvinces}</div>
+        </div>
+        <div class="tile">
+          <div class="tile-label">Comuni</div>
+          <div class="tile-value">{totalCities}</div>
+        </div>
+        <div class="tile">
+          <div class="tile-label">N. Visite</div>
+          <div class="tile-value">{totalVisits}</div>
+        </div>
+        <div class="tile wide">
+          <div class="tile-label">Totale Valore Visite</div>
+          <div class="tile-value emphasis">{totalVisitValueFormatted}</div>
+        </div>
+      </div>
+
+      <!-- Griglia principale -->
+      <div class="slds-grid slds-wrap grid-gap">
+        <!-- Colonna sinistra -->
+        <div class="slds-col slds-size_1-of-2 slds-p-right_small">
+          <div class="section-card">
+            <div class="section-title">Statistiche per Regione</div>
+            <lightning-datatable
+              key-field="region"
+              data={regionData}
+              columns={regionColumns}
+              onsort={handleRegionSort}
+              sorted-by={regionSortedBy}
+              sorted-direction={regionSortDirection}
+              hide-checkbox-column>
+            </lightning-datatable>
+          </div>
+
+          <div class="section-card">
+            <div class="section-title">Dettaglio per Comune (Località)</div>
+            <lightning-datatable
+              key-field="name"
+              data={localitaData}
+              columns={localitaColumns}
+              onsort={handleLocalitaSort}
+              sorted-by={localitaSortedBy}
+              sorted-direction={localitaSortDirection}
+              hide-checkbox-column>
+            </lightning-datatable>
+          </div>
+        </div>
+
+        <!-- Colonna destra -->
+        <div class="slds-col slds-size_1-of-2 slds-p-left_small">
+          <div class="section-card">
+            <div class="section-title">Statistiche per Provincia</div>
+            <lightning-datatable
+              key-field="province"
+              data={provinceData}
+              columns={provinceColumns}
+              onsort={handleProvinceSort}
+              sorted-by={provinceSortedBy}
+              sorted-direction={provinceSortDirection}
+              hide-checkbox-column>
+            </lightning-datatable>
+          </div>
+        </div>
+      </div>
+    </div>
+  </lightning-card>
+</template>

@@ -1,0 +1,33 @@
+.dual-tables {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.destinazione {
+    flex: 1;
+}
+
+.scrollable-table {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #d8dde6;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.section-title {
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    font-size: 1rem;
+}
+
+.summary {
+    margin-top: 0.75rem;
+}
+
+.divider {
+    margin: 1.5rem 0;
+    border: none;
+    border-top: 1px solid #dddbda;
+}

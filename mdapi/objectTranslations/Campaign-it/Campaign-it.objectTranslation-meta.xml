@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <quickActions>
+        <label><!-- Aggiorna Totali --></label>
+        <name>Aggiorna_Totali</name>
+    </quickActions>
+    <quickActions>
+        <label><!-- Crea Nuova Campagna --></label>
+        <name>Crea_Nuova_Campagna</name>
+    </quickActions>
+    <recordTypes>
+        <label><!-- Campagna Donazione --></label>
+        <name>Campagna_Donazione</name>
+    </recordTypes>
+    <webLinks>
+        <label><!-- Crea_Nuova_Campagna --></label>
+        <name>Crea_Nuova_Campagna</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- ViewAllCampaignMembers --></label>
+        <name>ViewAllCampaignMembers</name>
+    </webLinks>
+    <webLinks>
+        <label><!-- ViewCampaignInfluenceReport --></label>
+        <name>ViewCampaignInfluenceReport</name>
+    </webLinks>
+</CustomObjectTranslation>

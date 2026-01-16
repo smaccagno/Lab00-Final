@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Name of the field used for sorting the records --></help>
+    <label><!-- Default Sort Field (Deprecated) --></label>
+    <name>smartlists__Default_Sort_Field__c</name>
+</CustomFieldTranslation>

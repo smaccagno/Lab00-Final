@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Donatore_per_Programma</fullName>
+    <fields>Name</fields>
+    <fields>Account__c</fields>
+    <fields>Programma__c</fields>
+    <fields>Holding__c</fields>
+    <label>Donatore per Programma</label>
+</CompactLayout>

@@ -1,0 +1,96 @@
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.custom-label {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #1b2d4f;
+}
+
+.reset-button {
+  --sds-c-button-text-color: #0176d3;
+  --sds-c-button-font-weight: 600;
+  --sds-c-button-font-size: 0.9rem;
+  padding: 0;
+  height: auto;
+  line-height: 1.2;
+}
+
+.region-block {
+  border: 1px solid #d8dde6;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #f9fafb;
+}
+
+.region-title {
+  font-weight: 700;
+  color: #1b2d4f;
+  margin-bottom: 0.5rem;
+}
+
+.region-total {
+  font-weight: 600;
+  margin-left: 0.5rem;
+  color: #5f6a7d;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 1fr 4fr auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.bar-label {
+  font-size: 0.9rem;
+  color: #444;
+  word-break: break-word;
+}
+
+.bar-track {
+  height: 12px;
+  background: #e6ebf1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0070d2, #00a1e0);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.bar-value {
+  font-weight: 600;
+  min-width: 3rem;
+  text-align: right;
+}
+
+.info-banner {
+  background: linear-gradient(135deg, #f4f7fb, #eef3fb);
+  border: 1px solid #d9e2f3;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #2a3b5e;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-actions lightning-button:not(:last-child) {
+  margin-right: 0.5rem;
+}

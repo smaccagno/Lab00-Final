@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If checked, the row will be expanded to display the content of the cell on several lines. Otherwise, the content of the cell is clipped to the size of the column --></help>
+    <label><!-- Wrap Text --></label>
+    <name>smartlists__Wrap_Text__c</name>
+</CustomFieldTranslation>

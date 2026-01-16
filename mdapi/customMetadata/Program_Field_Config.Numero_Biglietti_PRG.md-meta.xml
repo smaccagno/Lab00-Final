@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Numero Biglietti PRG</label>
+    <protected>false</protected>
+    <values>
+        <field>Field_API__c</field>
+        <value xsi:type="xsd:string">Totale_Numero_Biglietti__c</value>
+    </values>
+    <values>
+        <field>Is_Summary__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Program_Config__c</field>
+        <value xsi:type="xsd:string">Sorriso_Sospeso</value>
+    </values>
+    <values>
+        <field>Sequence__c</field>
+        <value xsi:type="xsd:double">1.0</value>
+    </values>
+    <values>
+        <field>Target_Object_API__c</field>
+        <value xsi:type="xsd:string">Program</value>
+    </values>
+    <values>
+        <field>Type__c</field>
+        <value xsi:type="xsd:string">Number</value>
+    </values>
+    <values>
+        <field>UI_Label__c</field>
+        <value xsi:type="xsd:string">Num Esperienze</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,102 @@
+<template>
+
+        <!-- Campo di input per il Comune -->
+        <div class="slds-form-element">
+            <lightning-input
+                class={computedInputClass}
+                label="* Inserisci o seleziona il Comune di residenza del beneficiario"
+                field-level-help="Inserisci o seleziona il Comune di residenza del beneficiario"
+                data-id="comune"
+                type="text"
+                value={selectedComune}
+                onchange={handleInputChange}
+                onfocus={handleFocus}
+                onblur={handleBlur}>
+            </lightning-input>
+
+
+            <!-- Messaggio di errore personalizzato -->
+            <template if:false={isInputValid}>
+                <div class="slds-text-color_error slds-m-top_x-small">
+                    Il campo è obbligatorio. Inserisci un Comune o selezionalo dalla lista.
+                </div>
+            </template>
+
+            <!-- Tendina per i suggerimenti filtrati -->
+            <template if:true={filteredSuggestions}>
+                <ul class="slds-dropdown slds-dropdown_fluid" style={dropdownStyle}>
+                    <template for:each={filteredSuggestions} for:item="comune">
+                        <li 
+                            key={comune.Id} 
+                            class="slds-dropdown__item" 
+                            onclick={handleSuggestionClick} 
+                            onmousedown={handleMouseDownSuggestion}
+                            onmouseup={handleMouseUpSuggestion}>
+                            <span>{comune.Nome_Comune__c}</span>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+
+            <!-- Messaggio di errore e pulsante Confermo -->
+            <template if:true={showErrorMessage}>
+                <div class="slds-text-color_error slds-m-top_medium">
+                    <p>
+                        Il comune inserito non è presente nella lista. Prova a correggere quanto inserito.
+                        Se vuoi confermare ed inserire il nome del comune anche se non presente nella lista, premi il tasto Confermo.
+                    </p>
+                    <lightning-button 
+                        label="Confermo"
+                        onclick={handleConfirm}
+                        variant="brand"
+                    ></lightning-button>
+                </div>
+            </template>
+
+
+            <!-- Campo di input per la Provincia -->
+            <template if:true={showProvinceInput}>
+                <div class="slds-form-element">
+                    <label class="custom-required-label" for="provincia-input">
+                        <span class="slds-required">*</span>
+                        Inserisci la Provincia
+                    </label>
+                    <lightning-input
+                        id="provincia-input"
+                        class={computedInputClass}
+                        data-id="provincia"
+                        type="text"
+                        value={selectedProvincia}
+                        onchange={handleProvinceInputChange}
+                        onfocus={handleProvinceFocus}
+                        onblur={handleProvinceBlur}
+                    ></lightning-input>
+                </div>
+
+                <!-- Tendina per i suggerimenti delle Province -->
+                <template if:true={filteredProvinceSuggestions}>
+                    <ul class="slds-dropdown slds-dropdown_fluid" style={provinceDropdownStyle}>
+                        <template for:each={filteredProvinceSuggestions} for:item="provincia">
+                            <li 
+                                key={provincia} 
+                                class="slds-dropdown__item" 
+                                onclick={handleProvinceSuggestionClick} 
+                                onmousedown={handleMouseDownSuggestion}
+                                onmouseup={handleMouseUpSuggestion}>
+                                <span>{provincia}</span>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+            </template>
+
+            <!-- Regione selezionata -->
+            <template if:true={selectedRegione}>
+                <div class="slds-box slds-m-top_medium">
+                    <p><strong>Comune:</strong> {selectedComune}</p>
+                    <p><strong>Provincia:</strong> {selectedProvincia}</p>
+                    <p><strong>Regione:</strong> {selectedRegione}</p>
+                </div>
+            </template>
+        </div>
+</template>

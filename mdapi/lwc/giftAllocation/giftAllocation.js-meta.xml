@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="giftAllocation">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+
+    <targets>
+        <target>lightning__RecordPage</target>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+         <target>lightning__FlowScreen</target> 
+    </targets>
+
+    <!-- Permette di impostare i due Id da Page Builder -->
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="programId"         type="String" label="Program Id"         description="Id del Programma" />
+            <property name="giftTransactionId" type="String" label="Gift Transaction Id" description="Id della Gift Transaction" />
+            <property name="isValid"           type="Boolean" label="Allocazione Valida"  role="outputOnly"/>
+            <property name="designationsJson"
+          type="String"
+          label="Gift Transaction Designations (JSON)"
+          role="outputOnly"/>
+          <property name="designationRows"
+          type="String[]"
+          label="Gift Transaction Designation Rows"
+          role="outputOnly"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

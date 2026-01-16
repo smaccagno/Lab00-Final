@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Ammontare_Distribuzioni_NON_Pagate__c</fullName>
+    <label>Ammontare Distribuzioni NON Pagate</label>
+    <summarizedField>Overview_Budget_per_Anno__c.Totale_Distribuito_NON_Pagato__c</summarizedField>
+    <summaryForeignKey>Overview_Budget_per_Anno__c.Anno_Reportistica__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

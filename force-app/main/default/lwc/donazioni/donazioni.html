@@ -1,0 +1,28 @@
+<template>
+    <lightning-card title="Lista delle Distribuzioni">
+        <lightning-combobox
+            label="Seleziona Anno"
+            value={selectedYear}
+            options={yearOptions}
+            onchange={handleYearChange}>
+        </lightning-combobox>
+
+        <!-- Mostra i totali -->
+        <div class="slds-p-around_medium">
+            <p><b>Totale Ammontare Originale Donazioni nell'anno selezionato:</b> {totalOriginal} EUR</p>
+            <p><b>Totale Ammontare Distribuibile nell'anno selezionato:</b> {totalToDistribute} EUR</p>
+        </div>
+        
+        <lightning-datatable
+            key-field="Id"
+            data={relatedData}
+            columns={columns}
+            hide-checkbox-column="true"
+            default-sort-direction={defaultSortDirection}
+            sorted-direction={sortDirection}
+            sorted-by={sortedBy}
+            onsort={onHandleSort}
+            wrap-table-header="all">
+        ></lightning-datatable>
+    </lightning-card>
+</template>

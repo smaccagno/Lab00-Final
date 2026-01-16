@@ -1,0 +1,45 @@
+<template>
+    <div class="grid">
+ 
+        <div class="comune-cell">
+            <c-comune oncomunechange={handleComuneChange}></c-comune>
+        </div>
+
+        <div>
+            <lightning-input
+                class="full-width-input"
+                type="number"
+                label="Quantità di beneficiari (numero di biglietti o abbonamenti)"
+                value={ticketNumbers}
+                onchange={handleTicketNumbers}
+                required>
+            </lightning-input>
+        </div>
+
+        <div>
+            <lightning-input
+                class="full-width-input"
+                type="number"
+                formatter="currency" 
+                step="0.01"
+                label="Valore Commerciale (€)"
+                value={amountCommercial}
+                disabled
+                required>
+            </lightning-input>
+        </div>
+
+        <div>
+            <lightning-input
+                class="full-width-input"
+                type="number"
+                formatter="currency" 
+                step="0.01"
+                label="Valore Scontato (€)"
+                value={amountDiscounted}
+                disabled
+                required>
+            </lightning-input>
+        </div>
+    </div>
+</template>

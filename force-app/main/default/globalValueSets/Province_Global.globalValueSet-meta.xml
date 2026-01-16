@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Agrigento (AG)</fullName>
+        <default>false</default>
+        <label>Agrigento (AG)</label>
+    </customValue>
+    <customValue>
+        <fullName>Alessandria (AL)</fullName>
+        <default>false</default>
+        <label>Alessandria (AL)</label>
+    </customValue>
+    <customValue>
+        <fullName>Ancona (AN)</fullName>
+        <default>false</default>
+        <label>Ancona (AN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Aosta (AO)</fullName>
+        <default>false</default>
+        <label>Aosta (AO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Arezzo (AR)</fullName>
+        <default>false</default>
+        <label>Arezzo (AR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Ascoli Piceno (AP)</fullName>
+        <default>false</default>
+        <label>Ascoli Piceno (AP)</label>
+    </customValue>
+    <customValue>
+        <fullName>Asti (AT)</fullName>
+        <default>false</default>
+        <label>Asti (AT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Avellino (AV)</fullName>
+        <default>false</default>
+        <label>Avellino (AV)</label>
+    </customValue>
+    <customValue>
+        <fullName>Bari (BA)</fullName>
+        <default>false</default>
+        <label>Bari (BA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Barletta-Andria-Trani (BT)</fullName>
+        <default>false</default>
+        <label>Barletta-Andria-Trani (BT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Belluno (BL)</fullName>
+        <default>false</default>
+        <label>Belluno (BL)</label>
+    </customValue>
+    <customValue>
+        <fullName>Benevento (BN)</fullName>
+        <default>false</default>
+        <label>Benevento (BN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Bergamo (BG)</fullName>
+        <default>false</default>
+        <label>Bergamo (BG)</label>
+    </customValue>
+    <customValue>
+        <fullName>Biella (BI)</fullName>
+        <default>false</default>
+        <label>Biella (BI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Bologna (BO)</fullName>
+        <default>false</default>
+        <label>Bologna (BO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Bolzano/Bozen (BZ)</fullName>
+        <default>false</default>
+        <label>Bolzano/Bozen (BZ)</label>
+    </customValue>
+    <customValue>
+        <fullName>Brescia (BS)</fullName>
+        <default>false</default>
+        <label>Brescia (BS)</label>
+    </customValue>
+    <customValue>
+        <fullName>Brindisi (BR)</fullName>
+        <default>false</default>
+        <label>Brindisi (BR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Cagliari (CA)</fullName>
+        <default>false</default>
+        <label>Cagliari (CA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Caltanissetta (CL)</fullName>
+        <default>false</default>
+        <label>Caltanissetta (CL)</label>
+    </customValue>
+    <customValue>
+        <fullName>Campobasso (CB)</fullName>
+        <default>false</default>
+        <label>Campobasso (CB)</label>
+    </customValue>
+    <customValue>
+        <fullName>Caserta (CE)</fullName>
+        <default>false</default>
+        <label>Caserta (CE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Catania (CT)</fullName>
+        <default>false</default>
+        <label>Catania (CT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Catanzaro (CZ)</fullName>
+        <default>false</default>
+        <label>Catanzaro (CZ)</label>
+    </customValue>
+    <customValue>
+        <fullName>Chieti (CH)</fullName>
+        <default>false</default>
+        <label>Chieti (CH)</label>
+    </customValue>
+    <customValue>
+        <fullName>Como (CO)</fullName>
+        <default>false</default>
+        <label>Como (CO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Cosenza (CS)</fullName>
+        <default>false</default>
+        <label>Cosenza (CS)</label>
+    </customValue>
+    <customValue>
+        <fullName>Cremona (CR)</fullName>
+        <default>false</default>
+        <label>Cremona (CR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Crotone (KR)</fullName>
+        <default>false</default>
+        <label>Crotone (KR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Cuneo (CN)</fullName>
+        <default>false</default>
+        <label>Cuneo (CN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Enna (EN)</fullName>
+        <default>false</default>
+        <label>Enna (EN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Fermo (FM)</fullName>
+        <default>false</default>
+        <label>Fermo (FM)</label>
+    </customValue>
+    <customValue>
+        <fullName>Ferrara (FE)</fullName>
+        <default>false</default>
+        <label>Ferrara (FE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Firenze (FI)</fullName>
+        <default>false</default>
+        <label>Firenze (FI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Foggia (FG)</fullName>
+        <default>false</default>
+        <label>Foggia (FG)</label>
+    </customValue>
+    <customValue>
+        <fullName>Forlì-Cesena (FC)</fullName>
+        <default>false</default>
+        <label>Forlì-Cesena (FC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Frosinone (FR)</fullName>
+        <default>false</default>
+        <label>Frosinone (FR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Genova (GE)</fullName>
+        <default>false</default>
+        <label>Genova (GE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Gorizia (GO)</fullName>
+        <default>false</default>
+        <label>Gorizia (GO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Grosseto (GR)</fullName>
+        <default>false</default>
+        <label>Grosseto (GR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Imperia (IM)</fullName>
+        <default>false</default>
+        <label>Imperia (IM)</label>
+    </customValue>
+    <customValue>
+        <fullName>Isernia (IS)</fullName>
+        <default>false</default>
+        <label>Isernia (IS)</label>
+    </customValue>
+    <customValue>
+        <fullName>L&apos;Aquila (AQ)</fullName>
+        <default>false</default>
+        <label>L&apos;Aquila (AQ)</label>
+    </customValue>
+    <customValue>
+        <fullName>La Spezia (SP)</fullName>
+        <default>false</default>
+        <label>La Spezia (SP)</label>
+    </customValue>
+    <customValue>
+        <fullName>Latina (LT)</fullName>
+        <default>false</default>
+        <label>Latina (LT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Lecce (LE)</fullName>
+        <default>false</default>
+        <label>Lecce (LE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Lecco (LC)</fullName>
+        <default>false</default>
+        <label>Lecco (LC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Livorno (LI)</fullName>
+        <default>false</default>
+        <label>Livorno (LI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Lodi (LO)</fullName>
+        <default>false</default>
+        <label>Lodi (LO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Lucca (LU)</fullName>
+        <default>false</default>
+        <label>Lucca (LU)</label>
+    </customValue>
+    <customValue>
+        <fullName>Macerata (MC)</fullName>
+        <default>false</default>
+        <label>Macerata (MC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Mantova (MN)</fullName>
+        <default>false</default>
+        <label>Mantova (MN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Massa-Carrara (MS)</fullName>
+        <default>false</default>
+        <label>Massa-Carrara (MS)</label>
+    </customValue>
+    <customValue>
+        <fullName>Matera (MT)</fullName>
+        <default>false</default>
+        <label>Matera (MT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Messina (ME)</fullName>
+        <default>false</default>
+        <label>Messina (ME)</label>
+    </customValue>
+    <customValue>
+        <fullName>Milano (MI)</fullName>
+        <default>false</default>
+        <label>Milano (MI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Modena (MO)</fullName>
+        <default>false</default>
+        <label>Modena (MO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Monza e Brianza (MB)</fullName>
+        <default>false</default>
+        <label>Monza e Brianza (MB)</label>
+    </customValue>
+    <customValue>
+        <fullName>Napoli (NA)</fullName>
+        <default>false</default>
+        <label>Napoli (NA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Novara (NO)</fullName>
+        <default>false</default>
+        <label>Novara (NO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Nuoro (NU)</fullName>
+        <default>false</default>
+        <label>Nuoro (NU)</label>
+    </customValue>
+    <customValue>
+        <fullName>Oristano (OR)</fullName>
+        <default>false</default>
+        <label>Oristano (OR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Padova (PD)</fullName>
+        <default>false</default>
+        <label>Padova (PD)</label>
+    </customValue>
+    <customValue>
+        <fullName>Palermo (PA)</fullName>
+        <default>false</default>
+        <label>Palermo (PA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Parma (PR)</fullName>
+        <default>false</default>
+        <label>Parma (PR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pavia (PV)</fullName>
+        <default>false</default>
+        <label>Pavia (PV)</label>
+    </customValue>
+    <customValue>
+        <fullName>Perugia (PG)</fullName>
+        <default>false</default>
+        <label>Perugia (PG)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pesaro e Urbino (PU)</fullName>
+        <default>false</default>
+        <label>Pesaro e Urbino (PU)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pescara (PE)</fullName>
+        <default>false</default>
+        <label>Pescara (PE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Piacenza (PC)</fullName>
+        <default>false</default>
+        <label>Piacenza (PC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pisa (PI)</fullName>
+        <default>false</default>
+        <label>Pisa (PI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pistoia (PT)</fullName>
+        <default>false</default>
+        <label>Pistoia (PT)</label>
+    </customValue>
+    <customValue>
+        <fullName>Pordenone (PN)</fullName>
+        <default>false</default>
+        <label>Pordenone (PN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Potenza (PZ)</fullName>
+        <default>false</default>
+        <label>Potenza (PZ)</label>
+    </customValue>
+    <customValue>
+        <fullName>Prato (PO)</fullName>
+        <default>false</default>
+        <label>Prato (PO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Ragusa (RG)</fullName>
+        <default>false</default>
+        <label>Ragusa (RG)</label>
+    </customValue>
+    <customValue>
+        <fullName>Ravenna (RA)</fullName>
+        <default>false</default>
+        <label>Ravenna (RA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Reggio Calabria (RC)</fullName>
+        <default>false</default>
+        <label>Reggio Calabria (RC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Reggio Emilia (RE)</fullName>
+        <default>false</default>
+        <label>Reggio Emilia (RE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Rieti (RI)</fullName>
+        <default>false</default>
+        <label>Rieti (RI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Rimini (RN)</fullName>
+        <default>false</default>
+        <label>Rimini (RN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Roma (RM)</fullName>
+        <default>false</default>
+        <label>Roma (RM)</label>
+    </customValue>
+    <customValue>
+        <fullName>Rovigo (RO)</fullName>
+        <default>false</default>
+        <label>Rovigo (RO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Salerno (SA)</fullName>
+        <default>false</default>
+        <label>Salerno (SA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Sassari (SS)</fullName>
+        <default>false</default>
+        <label>Sassari (SS)</label>
+    </customValue>
+    <customValue>
+        <fullName>Savona (SV)</fullName>
+        <default>false</default>
+        <label>Savona (SV)</label>
+    </customValue>
+    <customValue>
+        <fullName>Siena (SI)</fullName>
+        <default>false</default>
+        <label>Siena (SI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Siracusa (SR)</fullName>
+        <default>false</default>
+        <label>Siracusa (SR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Sondrio (SO)</fullName>
+        <default>false</default>
+        <label>Sondrio (SO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Sud Sardegna (SU)</fullName>
+        <default>false</default>
+        <label>Sud Sardegna (SU)</label>
+    </customValue>
+    <customValue>
+        <fullName>Taranto (TA)</fullName>
+        <default>false</default>
+        <label>Taranto (TA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Teramo (TE)</fullName>
+        <default>false</default>
+        <label>Teramo (TE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Terni (TR)</fullName>
+        <default>false</default>
+        <label>Terni (TR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Torino (TO)</fullName>
+        <default>false</default>
+        <label>Torino (TO)</label>
+    </customValue>
+    <customValue>
+        <fullName>Trapani (TP)</fullName>
+        <default>false</default>
+        <label>Trapani (TP)</label>
+    </customValue>
+    <customValue>
+        <fullName>Trento (TN)</fullName>
+        <default>false</default>
+        <label>Trento (TN)</label>
+    </customValue>
+    <customValue>
+        <fullName>Treviso (TV)</fullName>
+        <default>false</default>
+        <label>Treviso (TV)</label>
+    </customValue>
+    <customValue>
+        <fullName>Trieste (TS)</fullName>
+        <default>false</default>
+        <label>Trieste (TS)</label>
+    </customValue>
+    <customValue>
+        <fullName>Udine (UD)</fullName>
+        <default>false</default>
+        <label>Udine (UD)</label>
+    </customValue>
+    <customValue>
+        <fullName>Varese (VA)</fullName>
+        <default>false</default>
+        <label>Varese (VA)</label>
+    </customValue>
+    <customValue>
+        <fullName>Venezia (VE)</fullName>
+        <default>false</default>
+        <label>Venezia (VE)</label>
+    </customValue>
+    <customValue>
+        <fullName>Verbano-Cusio-Ossola (VB)</fullName>
+        <default>false</default>
+        <label>Verbano-Cusio-Ossola (VB)</label>
+    </customValue>
+    <customValue>
+        <fullName>Vercelli (VC)</fullName>
+        <default>false</default>
+        <label>Vercelli (VC)</label>
+    </customValue>
+    <customValue>
+        <fullName>Verona (VR)</fullName>
+        <default>false</default>
+        <label>Verona (VR)</label>
+    </customValue>
+    <customValue>
+        <fullName>Vibo Valentia (VV)</fullName>
+        <default>false</default>
+        <label>Vibo Valentia (VV)</label>
+    </customValue>
+    <customValue>
+        <fullName>Vicenza (VI)</fullName>
+        <default>false</default>
+        <label>Vicenza (VI)</label>
+    </customValue>
+    <customValue>
+        <fullName>Viterbo (VT)</fullName>
+        <default>false</default>
+        <label>Viterbo (VT)</label>
+    </customValue>
+    <masterLabel>Province</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

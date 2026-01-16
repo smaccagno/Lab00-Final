@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Totale_Fattura__c</fullName>
+    <formula>IF( Budget__r.Program__r.Name = &quot;Tempo Sospeso&quot;,  Totale_Ammontare_Visite__c , IF(Budget__r.Program__r.Name = &quot;Sorriso Sospeso&quot;,  Totale_Ammontare_Biglietti__c , 0))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Totale Fattura</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>

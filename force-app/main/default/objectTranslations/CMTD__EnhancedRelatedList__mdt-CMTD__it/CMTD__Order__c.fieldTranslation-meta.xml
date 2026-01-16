@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Sequence to display the fields in the component --></help>
+    <label><!-- Order --></label>
+    <name>CMTD__Order__c</name>
+</CustomFieldTranslation>

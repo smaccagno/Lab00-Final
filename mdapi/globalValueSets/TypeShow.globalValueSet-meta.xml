@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Acquario</fullName>
+        <default>false</default>
+        <label>Acquario</label>
+    </customValue>
+    <customValue>
+        <fullName>Centro Sportivo</fullName>
+        <default>false</default>
+        <label>Centro Sportivo</label>
+    </customValue>
+    <customValue>
+        <fullName>Cinema</fullName>
+        <default>false</default>
+        <label>Cinema</label>
+    </customValue>
+    <customValue>
+        <fullName>Circo</fullName>
+        <default>false</default>
+        <label>Circo</label>
+    </customValue>
+    <customValue>
+        <fullName>Concerto</fullName>
+        <default>false</default>
+        <label>Concerto</label>
+    </customValue>
+    <customValue>
+        <fullName>Danza</fullName>
+        <default>false</default>
+        <label>Danza</label>
+    </customValue>
+    <customValue>
+        <fullName>Evento (es. Festival, Rassegne)</fullName>
+        <default>false</default>
+        <label>Evento (es. Festival, Rassegne)</label>
+    </customValue>
+    <customValue>
+        <fullName>Gita scolastica</fullName>
+        <default>false</default>
+        <label>Gita scolastica</label>
+    </customValue>
+    <customValue>
+        <fullName>Museo</fullName>
+        <default>false</default>
+        <label>Museo</label>
+    </customValue>
+    <customValue>
+        <fullName>Parchi tematici, avventura, divertimento</fullName>
+        <default>false</default>
+        <label>Parchi tematici, avventura, divertimento</label>
+    </customValue>
+    <customValue>
+        <fullName>Partita (Stadio o Palazzetto dello sport)</fullName>
+        <default>false</default>
+        <label>Partita (Stadio o Palazzetto dello sport)</label>
+    </customValue>
+    <customValue>
+        <fullName>Teatro</fullName>
+        <default>false</default>
+        <label>Teatro</label>
+    </customValue>
+    <customValue>
+        <fullName>Altro</fullName>
+        <default>false</default>
+        <label>Altro</label>
+    </customValue>
+    <masterLabel>Tipologia Spettacolo</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

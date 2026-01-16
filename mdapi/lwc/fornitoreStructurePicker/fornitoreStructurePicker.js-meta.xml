@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>63.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Fornitore Structure Picker</masterLabel>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="structureRecordTypeId" type="String" role="inputOnly" required="true" label="Record Type Id delle Strutture"/>
+            <property name="labelFornitore" type="String" role="inputOnly" label="Etichetta Fornitore"/>
+            <property name="labelStruttura" type="String" role="inputOnly" label="Etichetta Struttura"/>
+            <property name="forcedFornitoreId" type="String" role="inputOnly" label="Fornitore Bloccato"/>
+            <property name="structureOnlyMessage" type="String" role="inputOnly" label="Messaggio per la sola scelta della Struttura"/>
+            <property name="initialFornitoreId" type="String" role="inputOnly" label="Fornitore Preselezionato"/>
+            <property name="initialSubStructureId" type="String" role="inputOnly" label="Struttura Preselezionata"/>
+            <property name="selectedFornitoreId" type="String" role="outputOnly" label="Fornitore Selezionato"/>
+            <property name="selectedSubStructureId" type="String" role="outputOnly" label="Struttura Selezionata"/>
+            <property name="crea_nuovo_fornitore_output" type="Boolean" role="outputOnly" label="Crea Nuovo Fornitore"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

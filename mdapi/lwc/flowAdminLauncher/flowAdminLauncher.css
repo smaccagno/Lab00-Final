@@ -1,0 +1,49 @@
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adatta le colonne in base alla larghezza disponibile */
+    gap: 10px;
+    padding: 10px;
+    justify-items: center;
+}
+
+.flow-button {
+    background-color: #0070d2; /* Colore azzurro */
+    color: #ffffff; /* Testo bianco */
+    border: none; /* Rimuove il bordo */
+    width: 100%; /* Occupa l'intera larghezza della colonna */
+    max-width: 250px; /* Massima larghezza per evitare di allungarsi troppo */
+    height: 60px; /* Altezza fissa */
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 10px;
+    box-shadow: none;
+}
+
+.flow-button:hover {
+    background-color: #005fb2;
+}
+
+.flow-button:focus {
+    background-color: #005fb2;
+    outline: none;
+}
+
+.modal-fixed-size {
+    width: 1000px;
+    height: 700px;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.slds-modal__container {
+    width: 1000px;
+    height: 700px;
+    max-width: 100%;
+    max-height: 100%;
+}

@@ -1,0 +1,11 @@
+<template>
+    <div class="">
+        <c-site-access if:false={accessGranted} onlogin={handleLogin} onloading={handleLoading}></c-site-access>
+
+        <c-site-ticket if:true={accessGranted} account={account} onloading={handleLoading}></c-site-ticket>
+    </div>
+
+    <div class="spinner-holder" if:true={loading}>
+        <lightning-spinner alternative-text="Loading" size="large" variant="brand"></lightning-spinner>
+    </div>
+</template>

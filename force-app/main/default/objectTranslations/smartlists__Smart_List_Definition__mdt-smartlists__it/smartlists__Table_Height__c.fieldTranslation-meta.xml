@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If set, defined the height of the table in pixels. If not set, the height is automatically calculated based on the value of Number of Records per Page --></help>
+    <label><!-- Table Height in Pixels --></label>
+    <name>smartlists__Table_Height__c</name>
+</CustomFieldTranslation>

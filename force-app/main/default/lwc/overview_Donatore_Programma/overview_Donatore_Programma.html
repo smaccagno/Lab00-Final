@@ -1,0 +1,27 @@
+<template>
+    <lightning-card title="Vista Donatore (Holding) per Anno">
+        <lightning-datatable
+            key-field="fakeId"
+            data={relatedData}
+            columns={columns}
+            hide-checkbox-column
+            default-sort-direction={defaultSortDirection}
+            sorted-direction={sortDirection}
+            sorted-by={sortedBy}
+            onsort={onHandleSort}
+            wrap-table-header="all">
+        </lightning-datatable>
+    </lightning-card>
+
+    <template if:true={hasChildren}>
+        <lightning-card title="Dettaglio del Donatore selezionato">
+            <lightning-datatable
+                key-field="fakeId"
+                data={childData}
+                columns={columns}
+                hide-checkbox-column
+                wrap-table-header="all">
+            </lightning-datatable>
+        </lightning-card>
+    </template>
+</template>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Screenflow: Show Label in Modal Header --></label>
+    <name>smartlists__Screenflow_Show_Label_in_Modal_Header__c</name>
+</CustomFieldTranslation>

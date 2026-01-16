@@ -1,0 +1,153 @@
+<template>
+    <!-- Caricamento o errore -->
+    <template if:true={error}>
+        <div class="slds-text-color_error">Errore: {error}</div>
+    </template>
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
+    </template>
+
+    <template if:true={hasData}>
+        <template if:false={invoiceId}>
+            <div class="slds-text-body_regular slds-text-color_weak">
+                <p>Seleziona il Programma, l'anno e il budget per cui vuoi vedere la lista di fatture caricate a sistema.</p>
+            </div>
+            <template if:true={showProgramWarning}>
+                <div class="slds-text-color_error slds-m-bottom_small">
+                    Seleziona un programma per iniziare
+                </div>
+            </template>
+            <!-- Filtri allineati su una riga -->
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col">
+                    <lightning-combobox
+                        name="Programma"
+                        label="Programma"
+                        placeholder="Seleziona Programma"
+                        options={programOptions}
+                        value={selectedProgram}
+                        onchange={handleProgramChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col">
+                    <lightning-combobox
+                        name="Anno"
+                        label="Anno"
+                        placeholder="Seleziona Anno"
+                        options={annoOptions}
+                        value={selectedAnno}
+                        onchange={handleAnnoChange}
+                        disabled={notProgramSelected}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col">
+                    <lightning-combobox
+                        name="Budget"
+                        label="Budget"
+                        placeholder="Seleziona Budget"
+                        options={budgetOptions}
+                        value={selectedGiftDesignation}
+                        onchange={handleBudgetChange}
+                        disabled={notProgramSelected}>
+                    </lightning-combobox>
+                </div>
+            </div>
+
+            <!-- Linea separazione con padding -->
+            <div class="slds-m-vertical_medium">
+                <hr />
+            </div>
+        </template>
+        <template if:true={showDonatoreSorgente}>
+            <div class="slds-text-body_regular slds-text-color_weak">
+                <p>Seleziona nella tabella a sinistra il donatore da cui vuoi rimuovere l'associazione alle fatture.
+                Nella tabella di destra, seleziona il donatore a cui vuoi assegnare le fatture.</p>
+            </div>
+        </template>
+          <!-- Due datatable DONATORI affiancate -->
+        <div class="slds-grid slds-wrap slds-gutters">
+            <template if:true={showDonatoreSorgente}>
+                <!-- Tabella Donatore ORIGINE -->
+                <div class="slds-col slds-size_1-of-2 slds-p-right_small">
+                    <div class="slds-text-heading_small slds-m-bottom_small">
+                        Seleziona il donatore da cui vuoi spostare delle fatture
+                    </div>
+                    <lightning-datatable
+                        key-field="id"
+                        data={donatoriData}
+                        columns={columnsDonatori}
+                        max-row-selection="1"
+                        onrowselection={handleDonatoreRowSelection}>
+                    </lightning-datatable>
+                    <template if:true={selectedSorgenteName}>
+                        <p class="slds-m-top_small">
+                            Hai selezionato come sorgente: <strong>{selectedSorgenteName}</strong>
+                        </p>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Tabella Donatore DESTINATARIO -->
+            <div class={donatoreDestColClass}>
+                <div class="slds-text-heading_small slds-m-bottom_small">
+                    Seleziona il donatore destinatario delle fatture selezionate
+                </div>
+                <lightning-datatable
+                    key-field="id"
+                    data={donatoriDataWithUpdate}
+                    columns={columnsDonatori}
+                    max-row-selection="1"
+                    onrowselection={handleSecondaryDonatoreRowSelection}>
+                </lightning-datatable>
+                <template if:true={selectedSecondaryDonatoreId}>
+                    <p class="slds-m-top_small">
+                        Hai selezionato come destinatario: <strong>{selectedDestinatarioName}</strong>
+                    </p>
+                </template>
+            </div>
+        </div>
+
+
+        <!-- Linea separazione con padding -->
+        <div class="slds-m-vertical_medium">
+            <hr />
+        </div>
+        <template if:true={showDonatoreSorgente}>
+            <div class="slds-text-body_regular slds-text-color_weak">
+                <p>
+                    Seleziona le fatture, attualmente associate al donatore sorgente (scelto sopra nella tabella di sinistra)
+                    che vuoi spostare sul donatore destinatario (scelto sopra nella tabella di destra).
+                    I valori della tabella di destra si aggiorneranno dinamicamente per mostrarti come cambieranno
+                    i totali fatturati dopo la conferma di questo spostamento.
+                    Tutto verrà confermato solo dopo la pressione del tasto <strong>Continua</strong>.
+                </p>
+            </div>
+        </template>
+        <!-- Tabella Fatture -->
+        <template if:true={selectedDonatoreId}>
+            <div class="slds-text-heading_small slds-m-bottom_small">
+                Seleziona le fatture che vuoi associare al donatore:
+                <strong>{selectedDonatoreName}</strong>
+            </div>
+
+            <div style="height: 300px;">
+                <lightning-datatable
+                    key-field="id"
+                    data={fattureData}
+                    columns={columnsFatture}
+                    max-row-selection="999"
+                    onrowselection={handleFattureSelection}
+                    selected-rows={preselectedInvoiceIds}
+                    class="slds-scrollable_y"
+                    style="height: 100%;">
+                </lightning-datatable>
+            </div>
+
+            <p class="slds-m-top_small">
+                Ammontare totale selezionato: 
+                <strong>{selectedFattureAmount}</strong> €
+            </p>
+        </template>
+
+    </template>
+</template>

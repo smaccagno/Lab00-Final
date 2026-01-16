@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Maximum number of records displayed in the list --></help>
+    <label><!-- Maximum Number of Records --></label>
+    <name>smartlists__Maximum_Number_of_Records__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Display type of the field. Required with Apex Data Source lists. 
+File Preview can only be used with Files lists. -->
+    </help>
+    <label><!-- Display Type --></label>
+    <name>smartlists__Display_Type__c</name>
+    <picklistValues>
+        <masterLabel>Boolean</masterLabel>
+        <translation><!-- Boolean --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Currency</masterLabel>
+        <translation><!-- Currency --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Currency Converted</masterLabel>
+        <translation><!-- Currency Converted --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Currency Formatted</masterLabel>
+        <translation><!-- Currency Formatted --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Date</masterLabel>
+        <translation><!-- Date --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Datetime</masterLabel>
+        <translation><!-- Datetime --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Double</masterLabel>
+        <translation><!-- Double --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Email</masterLabel>
+        <translation><!-- Email --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>File Preview</masterLabel>
+        <translation><!-- File Preview --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Html</masterLabel>
+        <translation><!-- Html --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Hyperlink to Detail</masterLabel>
+        <translation><!-- Hyperlink to Detail --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Integer</masterLabel>
+        <translation><!-- Integer --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Location</masterLabel>
+        <translation><!-- Location --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Percent</masterLabel>
+        <translation><!-- Percent --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Phone</masterLabel>
+        <translation><!-- Phone --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Picklist</masterLabel>
+        <translation><!-- Picklist --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>String</masterLabel>
+        <translation><!-- String --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Time</masterLabel>
+        <translation><!-- Time --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>URL</masterLabel>
+        <translation><!-- URL --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>URL with Label</masterLabel>
+        <translation><!-- URL with Label --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

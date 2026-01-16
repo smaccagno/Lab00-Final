@@ -1,0 +1,93 @@
+.slds-text-color_error {
+    color: #d85c5c;
+}
+
+.slds-box {
+    padding: 1rem;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    background-color: #f4f6f9;
+}
+
+.slds-m-top_medium {
+    margin-top: 1rem;
+}
+
+.slds-dropdown {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slds-dropdown__item {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}
+
+.ticket-container {
+    border: 2px solid var(--lwc-brandPrimary, #1a73e8);
+    border-radius: .25rem;
+    padding: .75rem;
+    margin-bottom: .75rem;
+}
+
+/* Header (titolo + bottone) – spazio inferiore ridotto */
+.ticket-header {
+    margin-bottom: .5rem; /* prima era .75rem             */
+}
+
+.ticket-footer {
+    margin-top: .5rem;
+}
+
+/* Titolo “Ticket x” */
+.ticket-label {
+    font-weight: 700;
+    font-size: 1.125rem;   /* più compatto */
+    line-height: 1.2;
+}
+
+.ticket-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Spazio tra i campi e il pulsante di rimozione */
+}
+
+.button-container {
+    display: flex;
+    align-items: center;
+    gap: .75rem;          /* spazio fra i pulsanti       */
+    margin-top: 1rem;     /* ridotto da 1.5rem           */
+    justify-content: end;
+}
+
+.save-button {
+    margin-left: auto; /* Posiziona il pulsante Salva a destra */
+}
+
+.success-message {
+    margin-top: 1rem;     /* ridotto da 1.5rem           */
+    color: #28a745;
+    font-weight: bold;
+    text-align: center;
+}
+
+.center {
+    text-align: center;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; 
+    grid-auto-rows: auto;
+    column-gap: var(--lwc-spacingMedium, 0.75rem);
+    row-gap:   var(--lwc-spacingLarge, 1rem);
+}

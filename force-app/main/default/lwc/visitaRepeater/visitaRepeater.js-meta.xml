@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="visitaRepeater">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="invoiceId" type="String" label="Invoice ID (String)" />
+            <property name="createdVisitaIds" type="String" label="Created Visit IDs" />
+            <property name="isComplete" type="Boolean" label="Is Complete" />
+            <property name="invoiceDate" type="String" label="Data della Fattura" />            
+            <property name="gratuita" type="Boolean" label="Prestazione Gratuita" />
+            <property name="visitaId" type="String" label="Visit Id to Edit (optional)" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

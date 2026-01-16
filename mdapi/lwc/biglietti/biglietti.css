@@ -1,0 +1,68 @@
+.custom-label {
+    font-weight: bold;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.tipo-visita-wrapper {
+    position: relative;
+}
+
+.tipo-visita-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.custom-suggestion-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 34%;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 0.25rem;
+    list-style: none;
+    padding: 0;
+}
+
+.slds-dropdown__item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}
+
+.tipo-visita-feedback {
+    margin-top: 0.5rem;
+    word-break: break-word;
+}
+
+.selected-pill-container {
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.tipo-visita-wrapper {
+    position: relative;
+}
+
+.selected-pill-container {
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.reset-button {
+    font-size: 0.75rem;
+}

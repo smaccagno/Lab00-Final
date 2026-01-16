@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- When this is checked, it will ignore the Label value defined in CMT. It will use the label as defined in the field definition for the Field API Name. --></help>
+    <label><!-- Use Field Definition Label --></label>
+    <name>CMTD__Use_Field_Definition_Label__c</name>
+</CustomFieldTranslation>

@@ -1,0 +1,36 @@
+/* Griglia a 3 colonne, spazi basati sui token SLDS */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;    /* 3 colonne uguali */
+    grid-auto-rows: auto;
+    column-gap: var(--lwc-spacingMedium, 0.75rem);
+    row-gap:   var(--lwc-spacingLarge, 1rem);
+}
+
+/* Facoltativo: bordo inferiore leggero tra righe 1-2-3 (look SLDS) */
+.grid > div:not(.comune-cell) {
+    row-gap: .5rem
+    /* padding-top: .25rem;  se serve altro spazio verticale */
+}
+
+/* Contenitore dell’ul – larghezza piena, bordo, ombra */
+.slds-dropdown {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #d8dde6;
+    border-radius: .25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.10);
+}
+
+/* Singolo elemento (<li>) */
+.slds-dropdown__item {
+    padding: .5rem;
+    cursor: pointer;
+}
+
+/* Hover */
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}

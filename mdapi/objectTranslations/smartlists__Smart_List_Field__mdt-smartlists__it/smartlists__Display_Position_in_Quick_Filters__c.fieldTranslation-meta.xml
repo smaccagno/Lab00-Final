@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Position of the field in the Filters Panel from lowest to greatest. If not specified, the display position is determined by the display position in the list --></help>
+    <label><!-- Display Position in Filters Panel --></label>
+    <name>smartlists__Display_Position_in_Quick_Filters__c</name>
+</CustomFieldTranslation>

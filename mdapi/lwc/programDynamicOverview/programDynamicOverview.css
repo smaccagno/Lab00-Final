@@ -1,0 +1,144 @@
+/* =========================================================
+ * programDynamicOverview.css – v.11-07-2025 (consolidato)
+ * ========================================================= */
+
+/* ---------- 0. Overlay refresh -------------------------- */
+.component-wrapper {
+    position: relative;
+}
+
+.spinner-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    pointer-events: all;
+}
+
+/* ---------- 1. Utility layout / tabelle ----------------- */
+.full-width,
+.full-width .slds-scrollable_x {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+.THIS .year_table   th .slds-th__action { text-align: center !important; }
+.THIS .budget_table th .slds-th__action { text-align: right  !important; }
+.THIS .donor_table  .slds-th__action    { text-align: left   !important; }
+
+.slds-table thead th .slds-truncate { white-space: pre-line; }
+
+.combobox-container { display: flex; justify-content: center; }
+.combobox-label     { margin: -10px -140px 0 0; font-weight: bold; }
+
+.highlight-gray  { background:#f4f4f4; }
+.highlight-green { background:#e6f9e6; }
+.highlight-blue  { background:#e6f0ff; }
+
+/* ---------- 2. Wrapper grafico a barre ------------------ */
+.bar-wrapper{
+    background:#e5f0ff;
+    padding:1rem;
+    border:1px solid #f48fb1;
+    border-radius:.5rem;
+}
+
+/* ---------- 3. Struttura righe/colonne ------------------ */
+.row{
+    display:flex;
+    width:100%;
+    margin:4px 0;
+    align-items:center;
+}
+.row-right{ justify-content:flex-end; }
+
+.flex-full{ flex:1 1 100%; min-width:0; }
+
+/* ---------- 4. Barra principale ------------------------- */
+.bar{
+    position:relative;
+    contain:inline-size;
+    overflow:visible;
+    white-space:nowrap;
+
+    display:flex;                       /* centratura verticale */
+    align-items:center;
+    justify-content:center;
+
+    border-radius:6px;
+    height:24px;
+    padding:0 .5rem;
+    box-shadow:inset 0 0 4px rgba(0,0,0,.15);
+
+    /* font Lightning standard (0.8125 rem ≈ 13 px) */
+    font:600 .8125rem/1 'Salesforce Sans', Arial, sans-serif;
+    color:var(--bar-text-color,#fff);
+}
+
+/* copia del testo – invisibile finché non serve */
+.bar::after{
+    font:inherit;
+    content:"";
+    position:absolute;
+    top:0;
+    right:0;
+    bottom:0;
+    left:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap;
+    pointer-events:none;
+}
+
+/* mini-bar (Non Allocato / Non Pagato) */
+.mini-bar{
+    border-radius:6px;
+    box-shadow:inset 0 0 4px rgba(0,0,0,.15);
+    height:24px;
+}
+
+/* barra “ghost” per allineare Capienza a destra */
+.ghost{ visibility:hidden; height:22px; }
+
+/* etichetta di destra (fuori dal grafico) */
+.label-right{ margin-left:.35rem; font-weight:600; color:#000; }
+
+/* barre con valore zero → solo linea colorata */
+.zero-bar{
+    background:transparent !important;
+    border:2px solid currentColor;
+    width:2px !important;
+    min-width:2px !important;
+    padding:0 !important;
+}
+
+.label-outside{
+    color:transparent !important;
+}
+.label-outside::after{
+    content:attr(data-label);
+    left:calc(100% + .4rem);
+    right:auto;
+    justify-content:flex-start;
+    color:var(--lwc-colorTextDefault,#16325c);
+}
+
+/* ---------- 5. Palette con gradienti -------------------- */
+.bg-donato       { background:linear-gradient(90deg,#0d6efd 0%,#5a8dfd 100%); }
+.bg-allocabile   { background:linear-gradient(90deg,#bbdefb 0%,#e3f2fd 100%); --bar-text-color:#000; }
+.bg-trattenuta   { background:linear-gradient(90deg,#ff9800 0%,#ffb74d 100%); --bar-text-color:#000; }
+.bg-allocato     { background:linear-gradient(90deg,#4caf50 0%,#81c784 100%); --bar-text-color:#000; }
+.bg-nonallocato  { background:linear-gradient(90deg,#f44336 0%,#e57373 100%); --bar-text-color:#000; }
+.bg-pagato       { background:linear-gradient(90deg,#00bfa5 0%,#4dd0b0 100%); --bar-text-color:#000; }
+.bg-nonpagato    { background:linear-gradient(90deg,#c53d00 0%,#ff7043 100%); --bar-text-color:#000; }
+.bg-fatturato    { background:linear-gradient(90deg,#ffd600 0%,#fff176 100%); --bar-text-color:#000; }
+.bg-nonfatturato { background:linear-gradient(90deg,#d6ceb0 0%,#ece8d6 100%); --bar-text-color:#000; }
+.bg-capienza     { background:linear-gradient(90deg,#e1b7ff 0%,#f0d9ff 100%); --bar-text-color:#000; }
+
+/* ---------- 6. Larghezze fisse d’esempio (facoltative) --- */
+.full{ width:100%; }
+.med { width:35%; }

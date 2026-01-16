@@ -1,0 +1,18 @@
+.slds-dropdown {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slds-dropdown__item {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}

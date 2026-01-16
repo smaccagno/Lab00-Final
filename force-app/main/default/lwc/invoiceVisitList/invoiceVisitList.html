@@ -1,0 +1,20 @@
+<template>
+    <lightning-card title="Visite collegate">
+        <div class="slds-p-around_small">
+            <lightning-button label="Aggiungi Visita" variant="brand" onclick={handleAdd} class="slds-m-right_small"></lightning-button>
+            <lightning-button label="Aggiorna" icon-name="utility:refresh" onclick={handleRefresh}></lightning-button>
+        </div>
+        <template if:true={isLoading}>
+            <div class="slds-p-bottom_small slds-align_absolute-center">
+                <lightning-spinner size="small" alternative-text="Aggiornamento in corso"></lightning-spinner>
+            </div>
+        </template>
+        <lightning-datatable
+            key-field="Id"
+            data={rows}
+            columns={columns}
+            hide-checkbox-column
+            onrowaction={handleRowAction}
+        ></lightning-datatable>
+    </lightning-card>
+</template>

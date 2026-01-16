@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If checked, the paging mode is disabled and all the records are loaded when the list is displayed for the first time or a search is made in the Filters panel --></help>
+    <label><!-- Disable Paging --></label>
+    <name>smartlists__Disable_Paging__c</name>
+</CustomFieldTranslation>

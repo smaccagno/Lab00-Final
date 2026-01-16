@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If checked, the field will be rendered as a badge --></help>
+    <label><!-- Display as Badge --></label>
+    <name>smartlists__Display_as_Badge__c</name>
+</CustomFieldTranslation>

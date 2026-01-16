@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>InvoicingType__c</fullName>
+    <label>Tipologia Fatturazione</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Fattura</fullName>
+                <default>true</default>
+                <label>Fattura</label>
+            </value>
+            <value>
+                <fullName>Scontrino</fullName>
+                <default>false</default>
+                <label>Scontrino</label>
+            </value>
+            <value>
+                <fullName>Ricevuta</fullName>
+                <default>false</default>
+                <label>Ricevuta</label>
+            </value>
+            <value>
+                <fullName>Altro</fullName>
+                <default>false</default>
+                <label>Altro</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

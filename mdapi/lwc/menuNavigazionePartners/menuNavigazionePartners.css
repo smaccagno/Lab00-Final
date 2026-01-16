@@ -1,0 +1,52 @@
+.vertical-button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 1rem;
+}
+
+.button-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.flow-button {
+    background: linear-gradient(135deg, #0070d2, #005fb2);
+    color: #ffffff;
+    border: none;
+    width: 100%;
+    max-width: 300px;
+    height: 60px;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flow-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #005fb2, #004a91);
+}
+
+.flow-button:focus {
+    outline: none;
+    background: linear-gradient(135deg, #005fb2, #004a91);
+    box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.3);
+}
+
+.modal-fixed-size {
+    width: 1400px;
+    height: 800px;
+    max-width: 100%;
+    /* Assicurati che non vada oltre la larghezza della finestra */
+    max-height: 100%;
+    /* Assicurati che non vada oltre l'altezza della finestra */
+}

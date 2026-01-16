@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="invoiceId" type="String" label="Invoice ID (String)" description="Deprecated"/>
+            <property name="createdTicketIds" type="String" label="Created Ticket IDs" description="Deprecated"/>
+            <property name="isComplete" type="Boolean" label="Is Complete" description="Deprecated" />
+            <property name="invoiceDate" type="String" label="Data della Fattura" description="Deprecated" />            
+            <property name="totalAmount" type="Integer" label="Total Amount" description="Deprecated"/>
+            <property name="gratuita" type="Boolean" label="Prestazione Gratuita" />
+            <property name="totalQuantity" type="Integer" label="Quantità Totale" />
+            <property name="structureName" type="String" label="Nome Struttura" />
+            <property name="showName" type="String" label="Nome Spettacolo" />
+            <property name="tickets" type="@salesforce/schema/Ticket__c[]" role="outputOnly" label="Tickets" />
+            <property name="totalAmountDiscounted" type="Integer" label="Valore Totale Scontato" />
+            <property name="totalAmountCommercial" type="Integer" label="Valore Totale Commerciale" />
+            <property name="isManual" type="Boolean" label="Manuale?" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

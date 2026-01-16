@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- Select tile layout: number of tiles per row x number of colums per tile.
+As an example, 2x2 means 2 tiles per row of the widget x 2 field colum per tile -->
+    </help>
+    <label><!-- Tile Layout --></label>
+    <name>smartlists__Tile_Layout__c</name>
+    <picklistValues>
+        <masterLabel>1x1</masterLabel>
+        <translation><!-- 1x1 --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>1x2</masterLabel>
+        <translation><!-- 1x2 --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>1x3</masterLabel>
+        <translation><!-- 1x3 --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>2x1</masterLabel>
+        <translation><!-- 2x1 --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>2x2</masterLabel>
+        <translation><!-- 2x2 --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>3x1</masterLabel>
+        <translation><!-- 3x1 --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

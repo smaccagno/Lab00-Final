@@ -1,0 +1,22 @@
+.THIS .year_table th .slds-th__action{
+    text-align: center !important;
+}
+
+.THIS .budget_table th .slds-th__action {
+    text-align: right !important;
+}
+
+.THIS .donor_table .slds-th__action {
+    text-align: left !important;
+}
+
+.combobox-container {
+    display: flex;
+    justify-content: center; /* Allinea il contenuto a destra */
+}
+
+.combobox-label {
+    margin-right: -140px; /* Spazio tra l'etichetta e la combobox */
+    margin-top: -10px;
+    font-weight: bold; /* Imposta il testo in grassetto */
+}

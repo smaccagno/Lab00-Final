@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObjectTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <caseValues>
+        <plural>false</plural>
+        <value>Smart List Field</value>
+    </caseValues>
+    <caseValues>
+        <plural>true</plural>
+        <value>Smart List Fields</value>
+    </caseValues>
+    <gender>Neuter</gender>
+    <layouts>
+        <layout>Smart List Field Layout</layout>
+        <sections>
+            <label><!-- Field --></label>
+            <section>Field</section>
+        </sections>
+        <sections>
+            <label><!-- Field Type Settings --></label>
+            <section>Field Type Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Files Settings --></label>
+            <section>Files Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Filters Settings --></label>
+            <section>Filters Settings</section>
+        </sections>
+        <sections>
+            <label><!-- List Settings --></label>
+            <section>List Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Table Settings --></label>
+            <section>Table Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Tiles Settings --></label>
+            <section>Tiles Settings</section>
+        </sections>
+    </layouts>
+    <layouts>
+        <layout>Smart List Field Layout 280</layout>
+        <sections>
+            <label><!-- Custom Links --></label>
+            <section>Custom Links</section>
+        </sections>
+        <sections>
+            <label><!-- Field --></label>
+            <section>Field</section>
+        </sections>
+        <sections>
+            <label><!-- Field Type Settings --></label>
+            <section>Field Type Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Files Settings --></label>
+            <section>Files Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Filters Settings --></label>
+            <section>Filters Settings</section>
+        </sections>
+        <sections>
+            <label><!-- List Settings --></label>
+            <section>List Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Table Settings --></label>
+            <section>Table Settings</section>
+        </sections>
+        <sections>
+            <label><!-- Tiles Settings --></label>
+            <section>Tiles Settings</section>
+        </sections>
+    </layouts>
+    <startsWith>Consonant</startsWith>
+    <validationRules>
+        <errorMessage><!-- Badge Style Field is required if the field is displayed as a Badge --></errorMessage>
+        <name>smartlists__Check_Badge_Style_Field</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Display Position is required for List fields --></errorMessage>
+        <name>smartlists__Check_Display_Position</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Display Position is required for Filters Panel fields --></errorMessage>
+        <name>smartlists__Check_Display_Position_QuickFilters</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Picklist is not supported for Apex Data Source lists. --></errorMessage>
+        <name>smartlists__Check_Display_Type_Picklist</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Display Type is required for Apex Data Source lists. --></errorMessage>
+        <name>smartlists__Check_Display_Type_Required</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage>
+            <!-- Fields can only be edited if they are on the base object or are related to a parent record of the base object.
+Example on Account: Parent.Parent.Name is not editable because it is on the parent account  of the parent account. Parent.Name is editable -->
+        </errorMessage>
+        <name>smartlists__Check_Editable_in_List_Related_Fields</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Field Label is required for Apex Data Source lists. --></errorMessage>
+        <name>smartlists__Check_Field_Label</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- &apos;File Preview&apos; can only be used with Files list --></errorMessage>
+        <name>smartlists__Check_File_Preview</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Hyperlink to Detail Id Field is required when Display Type is Hyperlink to Detail for an Apex Data Source --></errorMessage>
+        <name>smartlists__Check_Hyperlink_To_Detail</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Lookup Subtitle cannot be a related field such as Account.Name --></errorMessage>
+        <name>smartlists__Check_Lookup_Subtitle</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Lookup in Quick Filters is only available for related parent fields such as Account.Name or for Owner. It is not available for base fields such as Name or related grand parent fields such as Account.Parent.Name --></errorMessage>
+        <name>smartlists__Check_Lookup_on_Related_Field</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- Number of Columns must be between 1 and 3 --></errorMessage>
+        <name>smartlists__Check_Number_of_Columns</name>
+    </validationRules>
+    <validationRules>
+        <errorMessage><!-- URL Value is required for Display Type &apos;URL with Label&apos; --></errorMessage>
+        <name>smartlists__Check_URL_Value</name>
+    </validationRules>
+</CustomObjectTranslation>

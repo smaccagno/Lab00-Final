@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Budget Allocation Status --></label>
+    <name>BudgetAllocationStatus__c</name>
+    <picklistValues>
+        <masterLabel>Allocated</masterLabel>
+        <translation><!-- Allocated --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Available</masterLabel>
+        <translation><!-- Available --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

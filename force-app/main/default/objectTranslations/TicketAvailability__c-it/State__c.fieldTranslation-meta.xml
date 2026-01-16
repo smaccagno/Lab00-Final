@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Stato --></label>
+    <name>State__c</name>
+    <picklistValues>
+        <masterLabel>Disponibile</masterLabel>
+        <translation><!-- Disponibile --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Fatturato</masterLabel>
+        <translation><!-- Fatturato --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Prenotato</masterLabel>
+        <translation><!-- Prenotato --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Scaduto</masterLabel>
+        <translation><!-- Scaduto --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Utilizzato</masterLabel>
+        <translation><!-- Utilizzato --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

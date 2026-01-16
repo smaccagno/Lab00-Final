@@ -1,0 +1,535 @@
+.excel-table-container {
+    overflow-x: auto;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+}
+
+.excel-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f3f3f3;
+}
+
+.excel-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid #d8dde6;
+    background-color: #f3f3f3;
+    color: #080707;
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.excel-table td {
+    padding: 6px 12px;
+    border: 1px solid #d8dde6;
+    background-color: #ffffff;
+    min-height: 32px;
+}
+
+.excel-table tbody tr {
+    position: relative;
+}
+
+.excel-table tbody tr:hover {
+    background-color: #f3f3f3;
+    box-shadow: 0 0 0 2px #0176d3;
+    z-index: 999; /* Sotto il dropdown ma sopra le altre righe */
+}
+
+.excel-table tbody tr.selected-row {
+    background-color: #e8f4f8;
+    box-shadow: 0 0 0 2px #2e844a;
+    z-index: 998; /* Sotto hover ma sopra le altre righe */
+}
+
+.row-number-header,
+.row-number-cell {
+    width: 50px;
+    text-align: center;
+    background-color: #f3f3f3;
+    font-weight: 600;
+    color: #706e6b;
+}
+
+.row-number-cell {
+    background-color: #fafaf9;
+    user-select: none;
+    cursor: pointer;
+}
+
+.editable-cell {
+    min-width: 120px;
+    outline: none;
+    cursor: text;
+    position: relative;
+    padding-right: 24px; /* Spazio per il pulsante di cancellazione */
+}
+
+.editable-cell:focus,
+.editable-cell.cell-focused {
+    background-color: #fff9e5;
+    border: 2px solid #0070d2 !important;
+    outline: none;
+    box-shadow: 0 0 0 1px #0070d2;
+}
+
+.invoice-number-value:focus,
+.invoice-number-value.cell-focused {
+    outline: none;
+}
+
+.editable-cell[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #c9c9c9;
+}
+
+.checkbox-cell {
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    min-width: 80px;
+}
+
+.checkbox-checked {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background-color: #0070d2;
+    color: white;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.checkbox-unchecked {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background-color: #ffffff;
+    border: 2px solid #d8dde6;
+    border-radius: 3px;
+}
+
+.checkbox-cell:hover .checkbox-unchecked {
+    border-color: #0070d2;
+}
+
+/* Scrollbar styling */
+.excel-table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.excel-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Stile per celle con validazione fallita */
+.error-value {
+    color: #c23934;
+    font-weight: bold;
+    border-bottom: 2px solid #c23934;
+}
+
+.invalid-cell {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+.invoice-number-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 32px;
+    position: relative;
+    padding-right: 24px; /* Spazio per il pulsante di cancellazione */
+}
+
+.invoice-number-value {
+    flex: 1;
+    outline: none;
+}
+
+.invoice-number-error-message {
+    font-size: 0.75rem;
+    color: #c23934;
+    margin-top: 4px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* Stili per la vista organizzata */
+.invoice-group-card {
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.invoice-details {
+    background-color: #f3f2f2;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.visits-section {
+    margin-top: 1rem;
+}
+
+.visits-table {
+    font-size: 0.875rem;
+}
+
+.visits-table th {
+    background-color: #fafaf9;
+    font-weight: 600;
+}
+
+.visits-table td {
+    vertical-align: middle;
+}
+
+/* Stili per toggle visite */
+.visits-toggle-button {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    background-color: #fafaf9;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.visits-toggle-button:hover {
+    background-color: #f3f2f2;
+}
+
+.visits-toggle-icon {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.visits-toggle-icon-expanded {
+    transform: rotate(90deg);
+}
+
+.visits-content {
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    background-color: #ffffff;
+    margin-top: 0.5rem;
+}
+
+/* Compattazione vista organizzata */
+.invoice-group-card .slds-card__body_inner {
+    padding: 0.5rem;
+}
+
+.invoice-group-card .slds-text-body_small {
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.invalid-cell:focus {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+/* Stile per celle con dropdown */
+.dropdown-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.dropdown-cell:hover {
+    background-color: #f3f3f3;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    position: fixed;
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.dropdown-header {
+    padding: 8px;
+    border-bottom: 1px solid #d8dde6;
+    background-color: #f3f3f3;
+}
+
+.dropdown-filter {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d8dde6;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.dropdown-filter:focus {
+    border-color: #0070d2;
+    box-shadow: 0 0 0 1px #0070d2;
+}
+
+.dropdown-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #ffffff;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #080707;
+    border-bottom: 1px solid #f3f3f3;
+    transition: background-color 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 100%;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f3f3;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item-empty {
+    color: #706e6b;
+    font-style: italic;
+    cursor: default;
+}
+
+.dropdown-item-empty:hover {
+    background-color: transparent;
+}
+
+/* Scrollbar per dropdown */
+.dropdown-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.dropdown-footer {
+    padding: 8px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.confirm-value-button {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #0070d2;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.confirm-value-button:hover {
+    background-color: #005fb2;
+}
+
+.confirm-value-button:active {
+    background-color: #004d99;
+}
+
+/* Date Picker */
+.date-picker-input {
+    position: absolute;
+    padding: 6px 12px;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+    z-index: 1001;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.date-picker-input:focus {
+    outline: none;
+    border-color: #0070d2;
+    box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
+}
+
+.date-cell {
+    cursor: pointer;
+}
+
+.date-cell:hover {
+    background-color: #f3f3f3;
+}
+
+/* Pulsante di cancellazione cella */
+.cell-clear-button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    z-index: 10;
+    padding: 0;
+    font-size: 12px;
+    color: #706e6b;
+    line-height: 1;
+}
+
+.cell-clear-button:hover {
+    opacity: 1;
+    color: #c23934;
+}
+
+.cell-clear-button:focus {
+    outline: none;
+    opacity: 1;
+}
+
+.cell-clear-button::before {
+    content: '×';
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Il pulsante viene mostrato/nascosto tramite template if:true nel HTML */
+
+/* Spinner durante il salvataggio */
+.slds-modal {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9001;
+}
+
+.slds-modal__container {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 500px;
+    width: 90%;
+}
+
+.slds-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9000;
+}
+
+/* Tabella risultati */
+.slds-table {
+    font-size: 0.875rem;
+}
+
+.slds-table th {
+    white-space: nowrap;
+}
+
+.slds-table td {
+    vertical-align: top;
+}
+
+.slds-text-link {
+    color: #0070d2;
+    text-decoration: none;
+}
+
+.slds-text-link:hover {
+    text-decoration: underline;
+}
+
+/* Stili per la tabella dei risultati raggruppati */
+.invoice-row {
+    background-color: #f3f3f3 !important;
+    font-weight: 600;
+    border-top: 2px solid #0176d3;
+}
+
+.invoice-row td {
+    background-color: #f3f3f3 !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.visit-row {
+    background-color: #ffffff;
+}
+
+.visit-row td {
+    background-color: #ffffff;
+    border-top: 1px solid #e5e5e5;
+}
+
+.visit-row:hover {
+    background-color: #fafaf9 !important;
+}
+
+.visit-row:hover td {
+    background-color: #fafaf9 !important;
+}

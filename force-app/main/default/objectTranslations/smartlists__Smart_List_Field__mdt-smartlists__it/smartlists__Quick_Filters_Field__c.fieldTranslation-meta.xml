@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- If &apos;Yes if Filterable&apos; is selected, the field will be added to the Filters Panel if it is filterable at the object level. Some fields are not filterable because of their data type or because they are encrypted with the probabilistic algorithm --></help>
+    <label><!-- Display in Filters Panel --></label>
+    <name>smartlists__Quick_Filters_Field__c</name>
+    <picklistValues>
+        <masterLabel>No</masterLabel>
+        <translation><!-- No --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Yes if Filterable</masterLabel>
+        <translation><!-- Yes if Filterable --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

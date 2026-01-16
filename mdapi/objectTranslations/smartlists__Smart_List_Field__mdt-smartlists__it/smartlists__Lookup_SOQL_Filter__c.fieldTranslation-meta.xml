@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help>
+        <!-- SOQL Filter used for retrieving the records in a lookup field.
+Example: Type = &apos;Dealer&apos; AND Active__c = true -->
+    </help>
+    <label><!-- Lookup: SOQL Filter --></label>
+    <name>smartlists__Lookup_SOQL_Filter__c</name>
+</CustomFieldTranslation>

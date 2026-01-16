@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <help><!-- Comma separated list of allowed extensions for file upload. Example: txt,jpg,docx --></help>
+    <label><!-- Allowed Extensions --></label>
+    <name>smartlists__Allowed_Extensions__c</name>
+</CustomFieldTranslation>

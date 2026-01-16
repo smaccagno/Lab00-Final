@@ -1,0 +1,25 @@
+.custom-label {
+    font-weight: bold;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.filters-layout lightning-combobox,
+.filters-layout lightning-input {
+    width: 100%;
+}
+
+.reset-item {
+    display: flex;
+    align-items: flex-end;
+}
+
+.reset-item lightning-button {
+    width: 100%;
+    margin-top: 1.75rem;
+}
+
+.reset-button {
+    font-size: 0.75rem;
+}

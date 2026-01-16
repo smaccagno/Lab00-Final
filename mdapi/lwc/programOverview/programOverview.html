@@ -1,0 +1,90 @@
+<template>
+    <lightning-card title="Overview Totale Per Budget">
+        <div class="budget_table_tot">
+            <lightning-datatable
+                data={aggregatedBudgetData}
+                columns={budgetColumnsAgg}
+                key-field="Budget__c"
+                hide-checkbox-column="true"
+                column-width-mode="auto"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>      
+        </div>
+    </lightning-card>
+
+    <lightning-card title="Overview Totale Per Donatore">
+        <div class="donor_table_tot">
+            <lightning-datatable
+                data={aggregatedDonorData}
+                columns={donorColumnsAgg}
+                key-field="Account__c"
+                hide-checkbox-column="true"
+                column-width-mode="auto"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <lightning-card>
+        <div class="combobox-container">
+            <label for="year-combobox" class="combobox-label">Filtra per Anno</label>
+            <lightning-combobox
+                style="width: 200px;" 
+                name="year-combobox"
+                value={selectedYear}
+                options={yearOptions}
+                onchange={handleYearChange}>
+            </lightning-combobox>
+        </div>
+    </lightning-card>
+
+    <lightning-card title="Overview Totale per Anno">
+
+        <div class="year_table">
+            <lightning-datatable
+                data={yearData}
+                columns={yearColumns}
+                key-field="Id"
+                hide-checkbox-column="true"
+                column-width-mode="auto"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <lightning-card title="Overview Budget Per Anno">
+        <div class="budget_table">
+            <lightning-datatable
+                data={budgetData}
+                columns={budgetColumns}
+                key-field="Id"
+                hide-checkbox-column="true"
+                column-width-mode="auto"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <lightning-card title="Overview Donatore Per Anno">
+        <div class="donor_table">
+            <lightning-datatable
+                data={donorData}
+                columns={donorColumns}
+                key-field="Id"
+                hide-checkbox-column="true"
+                column-width-mode="auto"
+                wrap-table-header="all"
+                class="slds-table_col-bordered"
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>
