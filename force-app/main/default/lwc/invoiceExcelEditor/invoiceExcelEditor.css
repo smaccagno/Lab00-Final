@@ -769,3 +769,91 @@
     --sds-c-icon-width: 12px;
     --sds-c-icon-height: 12px;
 }
+
+/* Box di editing inline per campi numerici (numeroVisite, totaleMinuti, amount) */
+.numeric-field-container {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+}
+
+.numeric-field-value {
+    display: inline-block;
+    width: 100%;
+    min-height: 20px;
+}
+
+.numeric-field-edit-box {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    gap: 4px;
+    z-index: 1000;
+    background-color: white;
+    padding: 4px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #0070d2;
+    border-radius: 4px;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.numeric-field-edit-input {
+    flex: 1;
+    font-size: 0.875rem;
+    padding: 4px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    min-width: 0;
+    max-width: calc(100% - 52px);
+}
+
+.numeric-field-edit-input:focus {
+    border-color: #005fb2;
+    box-shadow: 0 0 3px rgba(0, 112, 210, 0.3);
+}
+
+.numeric-field-confirm-button,
+.numeric-field-cancel-button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.numeric-field-confirm-button {
+    background-color: #2e844a; /* Verde */
+    opacity: 0.9;
+}
+
+.numeric-field-confirm-button:hover {
+    opacity: 1;
+    background-color: #256e3e; /* Verde più scuro */
+}
+
+.numeric-field-cancel-button {
+    background-color: #c23934; /* Rosso */
+    opacity: 0.9;
+}
+
+.numeric-field-cancel-button:hover {
+    opacity: 1;
+    background-color: #a32924; /* Rosso più scuro */
+}
+
+.numeric-field-confirm-button lightning-icon,
+.numeric-field-cancel-button lightning-icon {
+    --sds-c-icon-color-foreground: white;
+    --sds-c-icon-color-background: transparent;
+    --sds-c-icon-width: 12px;
+    --sds-c-icon-height: 12px;
+}

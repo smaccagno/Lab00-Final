@@ -701,98 +701,155 @@
                                 <td class="editable-cell" 
                                     data-field="numeroVisite"
                                     data-row-index={rowIndex}
-                                    contenteditable="true"
-                                    onblur={handleCellBlur}
-                                    onfocus={handleCellFocus}
-                                    oninput={handleCellInput}
-                                    onkeydown={handleKeyDown}
-                                    onpaste={handlePaste}>
-                                    {row.numeroVisite}
-                                    <template if:true={row.isEditing.numeroVisite}>
-                                        <button 
-                                            type="button"
-                                            class="cell-confirm-button"
-                                            data-field="numeroVisite"
-                                            data-row-index={rowIndex}
-                                            onclick={handleConfirmButtonClick}
-                                            title="Conferma valore">
-                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
-                                        </button>
-                                    </template>
-                                    <template if:true={row.hasNumeroVisite}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="numeroVisite"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingNumeroVisite}>
+                                            <span class="numeric-field-value">
+                                                {row.numeroVisite}
+                                            </span>
+                                            <template if:true={row.hasNumeroVisite}>
+                                                <button 
+                                                    type="button"
+                                                    class="cell-clear-button"
+                                                    data-field="numeroVisite"
+                                                    data-row-index={rowIndex}
+                                                    onclick={clearCellContent}
+                                                    title="Cancella contenuto">
+                                                </button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingNumeroVisite}>
+                                            <div class="numeric-field-edit-box">
+                                                <input 
+                                                    type="text"
+                                                    class="numeric-field-edit-input"
+                                                    value={numeroVisiteModalValue}
+                                                    data-field="numeroVisite"
+                                                    oninput={handleNumericFieldModalInput}
+                                                    onkeydown={handleNumericFieldModalKeyDown}
+                                                    onclick={handleNumericFieldEditBoxClick}
+                                                    placeholder="Inserisci il numero visite" />
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-confirm-button"
+                                                    data-field="numeroVisite"
+                                                    onclick={handleNumericFieldConfirmClick}
+                                                    title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-cancel-button"
+                                                    data-field="numeroVisite"
+                                                    onclick={handleNumericFieldCancelClick}
+                                                    title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td class="editable-cell" 
                                     data-field="totaleMinuti"
                                     data-row-index={rowIndex}
-                                    contenteditable="true"
-                                    onblur={handleCellBlur}
-                                    onfocus={handleCellFocus}
-                                    oninput={handleCellInput}
-                                    onkeydown={handleKeyDown}
-                                    onpaste={handlePaste}>
-                                    {row.totaleMinuti}
-                                    <template if:true={row.isEditing.totaleMinuti}>
-                                        <button 
-                                            type="button"
-                                            class="cell-confirm-button"
-                                            data-field="totaleMinuti"
-                                            data-row-index={rowIndex}
-                                            onclick={handleConfirmButtonClick}
-                                            title="Conferma valore">
-                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
-                                        </button>
-                                    </template>
-                                    <template if:true={row.hasTotaleMinuti}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="totaleMinuti"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingTotaleMinuti}>
+                                            <span class="numeric-field-value">
+                                                {row.totaleMinuti}
+                                            </span>
+                                            <template if:true={row.hasTotaleMinuti}>
+                                                <button 
+                                                    type="button"
+                                                    class="cell-clear-button"
+                                                    data-field="totaleMinuti"
+                                                    data-row-index={rowIndex}
+                                                    onclick={clearCellContent}
+                                                    title="Cancella contenuto">
+                                                </button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingTotaleMinuti}>
+                                            <div class="numeric-field-edit-box">
+                                                <input 
+                                                    type="text"
+                                                    class="numeric-field-edit-input"
+                                                    value={totaleMinutiModalValue}
+                                                    data-field="totaleMinuti"
+                                                    oninput={handleNumericFieldModalInput}
+                                                    onkeydown={handleNumericFieldModalKeyDown}
+                                                    onclick={handleNumericFieldEditBoxClick}
+                                                    placeholder="Inserisci il totale minuti" />
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-confirm-button"
+                                                    data-field="totaleMinuti"
+                                                    onclick={handleNumericFieldConfirmClick}
+                                                    title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-cancel-button"
+                                                    data-field="totaleMinuti"
+                                                    onclick={handleNumericFieldCancelClick}
+                                                    title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td class="editable-cell" 
                                     data-field="amount"
                                     data-row-index={rowIndex}
-                                    contenteditable="true"
-                                    onblur={handleCellBlur}
-                                    onfocus={handleCellFocus}
-                                    oninput={handleCellInput}
-                                    onkeydown={handleKeyDown}
-                                    onpaste={handlePaste}>
-                                    {row.amount}
-                                    <template if:true={row.isEditing.amount}>
-                                        <button 
-                                            type="button"
-                                            class="cell-confirm-button"
-                                            data-field="amount"
-                                            data-row-index={rowIndex}
-                                            onclick={handleConfirmButtonClick}
-                                            title="Conferma valore">
-                                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
-                                        </button>
-                                    </template>
-                                    <template if:true={row.hasAmount}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="amount"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingAmount}>
+                                            <span class="numeric-field-value">
+                                                {row.amount}
+                                            </span>
+                                            <template if:true={row.hasAmount}>
+                                                <button 
+                                                    type="button"
+                                                    class="cell-clear-button"
+                                                    data-field="amount"
+                                                    data-row-index={rowIndex}
+                                                    onclick={clearCellContent}
+                                                    title="Cancella contenuto">
+                                                </button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingAmount}>
+                                            <div class="numeric-field-edit-box">
+                                                <input 
+                                                    type="text"
+                                                    class="numeric-field-edit-input"
+                                                    value={amountModalValue}
+                                                    data-field="amount"
+                                                    oninput={handleNumericFieldModalInput}
+                                                    onkeydown={handleNumericFieldModalKeyDown}
+                                                    onclick={handleNumericFieldEditBoxClick}
+                                                    placeholder="Inserisci l'ammontare" />
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-confirm-button"
+                                                    data-field="amount"
+                                                    onclick={handleNumericFieldConfirmClick}
+                                                    title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    class="numeric-field-cancel-button"
+                                                    data-field="amount"
+                                                    onclick={handleNumericFieldCancelClick}
+                                                    title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td class="editable-cell date-cell" 
                                     data-field="dataVisita"

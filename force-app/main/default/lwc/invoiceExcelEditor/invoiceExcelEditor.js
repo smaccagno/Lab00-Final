@@ -53,6 +53,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     // Stato modal editing Invoice Number
     @track invoiceNumberModalOpen = null; // {rowIndex: number} o null
     invoiceNumberModalValue = ''; // Valore temporaneo nel modal
+    // Stato modal editing altri campi numerici
+    @track numeroVisiteModalOpen = null; // {rowIndex: number} o null
+    numeroVisiteModalValue = ''; // Valore temporaneo nel modal
+    @track totaleMinutiModalOpen = null; // {rowIndex: number} o null
+    totaleMinutiModalValue = ''; // Valore temporaneo nel modal
+    @track amountModalOpen = null; // {rowIndex: number} o null
+    amountModalValue = ''; // Valore temporaneo nel modal
     // Stato selezione programma e partner
     @track showProgramSelection = false;
     @track showPartnerSelection = false;
@@ -485,7 +492,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             hasErrors: false, // Flag per indicare se la riga contiene errori
             isValidating: {}, // Oggetto per tracciare lo stato di validazione per ogni campo
             isEditing: {}, // Oggetto per tracciare quali campi sono in modifica
-            isEditingInvoiceNumber: false // Flag per indicare se il box di editing per Invoice Number è aperto
+            isEditingInvoiceNumber: false, // Flag per indicare se il box di editing per Invoice Number è aperto
+            isEditingNumeroVisite: false, // Flag per indicare se il box di editing per Numero Visite è aperto
+            isEditingTotaleMinuti: false, // Flag per indicare se il box di editing per Totale Minuti è aperto
+            isEditingAmount: false // Flag per indicare se il box di editing per Ammontare è aperto
         };
         // Aggiungi getter per selectedClass
         Object.defineProperty(newRow, 'selectedClass', {
@@ -773,20 +783,46 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         const field = cell.dataset.field;
         
-        // Per Invoice Number, apri il box di editing invece del contenteditable normale
-        if (field === 'invoiceNumber') {
+        // Per Invoice Number, Numero Visite, Totale Minuti e Ammontare, apri il box di editing invece del contenteditable normale
+        if (field === 'invoiceNumber' || field === 'numeroVisite' || field === 'totaleMinuti' || field === 'amount') {
             const rowIndex = parseInt(cell.dataset.rowIndex, 10);
-            // Se il box di editing è già aperto per questa cella, non fare nulla
-            if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex === rowIndex) {
-                return;
-            }
-            // Chiudi eventuali altri box aperti prima di aprirne uno nuovo
-            if (this.invoiceNumberModalOpen) {
-                this.closeInvoiceNumberModal();
-            }
             event.preventDefault();
-            if (rowIndex >= 0 && rowIndex < this.rows.length) {
-                this.openInvoiceNumberModal(rowIndex);
+            
+            // Chiudi eventuali altri box aperti prima di aprirne uno nuovo
+            if (field === 'invoiceNumber') {
+                if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex === rowIndex) {
+                    return;
+                }
+                if (this.invoiceNumberModalOpen) {
+                    this.closeInvoiceNumberModal();
+                }
+                if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                    this.openInvoiceNumberModal(rowIndex);
+                }
+            } else if (field === 'numeroVisite') {
+                if (this.numeroVisiteModalOpen && this.numeroVisiteModalOpen.rowIndex === rowIndex) {
+                    return;
+                }
+                this.closeAllEditingModals();
+                if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                    this.openNumericFieldModal(rowIndex, 'numeroVisite');
+                }
+            } else if (field === 'totaleMinuti') {
+                if (this.totaleMinutiModalOpen && this.totaleMinutiModalOpen.rowIndex === rowIndex) {
+                    return;
+                }
+                this.closeAllEditingModals();
+                if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                    this.openNumericFieldModal(rowIndex, 'totaleMinuti');
+                }
+            } else if (field === 'amount') {
+                if (this.amountModalOpen && this.amountModalOpen.rowIndex === rowIndex) {
+                    return;
+                }
+                this.closeAllEditingModals();
+                if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                    this.openNumericFieldModal(rowIndex, 'amount');
+                }
             }
             return;
         }
@@ -894,6 +930,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             window.removeEventListener('resize', this._invoiceNumberEditBoxPositionHandler);
             this._invoiceNumberEditBoxPositionHandler = null;
         }
+        
+        // Chiudi anche gli altri modali aperti
+        this.closeAllEditingModals();
         
         if (this.invoiceNumberModalOpen && this.invoiceNumberModalOpen.rowIndex >= 0) {
             const rowIndex = this.invoiceNumberModalOpen.rowIndex;
@@ -1019,6 +1058,298 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     handleInvoiceNumberEditBoxClick(event) {
         event.stopPropagation();
+    }
+
+    /**
+     * Chiude tutti i modali di editing aperti
+     */
+    closeAllEditingModals() {
+        // Chiudi Invoice Number senza chiamare closeAllEditingModals per evitare loop infinito
+        if (this.invoiceNumberModalOpen) {
+            // Rimuovi i listener di scroll e resize
+            if (this._invoiceNumberEditBoxPositionHandler) {
+                window.removeEventListener('scroll', this._invoiceNumberEditBoxPositionHandler, true);
+                window.removeEventListener('resize', this._invoiceNumberEditBoxPositionHandler);
+                this._invoiceNumberEditBoxPositionHandler = null;
+            }
+            
+            const rowIndex = this.invoiceNumberModalOpen.rowIndex;
+            if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingInvoiceNumber = false;
+                this.rows = updatedRows;
+            }
+            this.invoiceNumberModalOpen = null;
+            this.invoiceNumberModalValue = '';
+        }
+        
+        // Chiudi gli altri modali
+        if (this.numeroVisiteModalOpen) {
+            this.closeNumericFieldModal('numeroVisite');
+        }
+        if (this.totaleMinutiModalOpen) {
+            this.closeNumericFieldModal('totaleMinuti');
+        }
+        if (this.amountModalOpen) {
+            this.closeNumericFieldModal('amount');
+        }
+    }
+
+    /**
+     * Apre il box di editing per un campo numerico (numeroVisite, totaleMinuti, amount)
+     */
+    openNumericFieldModal(rowIndex, field) {
+        if (rowIndex >= 0 && rowIndex < this.rows.length) {
+            const updatedRows = [...this.rows];
+            const row = updatedRows[rowIndex];
+            
+            // Chiudi eventuali altri box aperti per questo campo
+            updatedRows.forEach((r, idx) => {
+                if (field === 'numeroVisite' && r.isEditingNumeroVisite) {
+                    r.isEditingNumeroVisite = false;
+                } else if (field === 'totaleMinuti' && r.isEditingTotaleMinuti) {
+                    r.isEditingTotaleMinuti = false;
+                } else if (field === 'amount' && r.isEditingAmount) {
+                    r.isEditingAmount = false;
+                }
+            });
+            
+            // Apri il box per questa riga
+            if (field === 'numeroVisite') {
+                row.isEditingNumeroVisite = true;
+                this.numeroVisiteModalOpen = { rowIndex: rowIndex };
+                this.numeroVisiteModalValue = row.numeroVisite || '';
+            } else if (field === 'totaleMinuti') {
+                row.isEditingTotaleMinuti = true;
+                this.totaleMinutiModalOpen = { rowIndex: rowIndex };
+                this.totaleMinutiModalValue = row.totaleMinuti || '';
+            } else if (field === 'amount') {
+                row.isEditingAmount = true;
+                this.amountModalOpen = { rowIndex: rowIndex };
+                this.amountModalValue = row.amount || '';
+            }
+            this.rows = updatedRows;
+            
+            // Posiziona la box sopra la cella dopo che il DOM è stato aggiornato
+            setTimeout(() => {
+                const cell = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"]`);
+                const editBox = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"] .numeric-field-edit-box`);
+                const input = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"] .numeric-field-edit-input`);
+                
+                if (cell && editBox) {
+                    // Funzione per posizionare la box
+                    const positionEditBox = () => {
+                        const cellRect = cell.getBoundingClientRect();
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                        
+                        // Posiziona la box sopra la cella
+                        editBox.style.top = `${cellRect.top + scrollTop}px`;
+                        editBox.style.left = `${cellRect.left + scrollLeft}px`;
+                        editBox.style.width = `${Math.max(cellRect.width, 200)}px`;
+                    };
+                    
+                    // Posiziona inizialmente
+                    positionEditBox();
+                    
+                    // Aggiungi listener per scroll e resize (rimuovili quando si chiude il box)
+                    const handlerKey = `_${field}EditBoxPositionHandler`;
+                    this[handlerKey] = positionEditBox;
+                    window.addEventListener('scroll', positionEditBox, true);
+                    window.addEventListener('resize', positionEditBox);
+                }
+                
+                if (input) {
+                    input.focus();
+                    // Posiziona il cursore alla fine del testo
+                    input.setSelectionRange(input.value.length, input.value.length);
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Chiude il box di editing per un campo numerico senza salvare
+     */
+    closeNumericFieldModal(field) {
+        // Rimuovi i listener di scroll e resize
+        const handlerKey = `_${field}EditBoxPositionHandler`;
+        if (this[handlerKey]) {
+            window.removeEventListener('scroll', this[handlerKey], true);
+            window.removeEventListener('resize', this[handlerKey]);
+            this[handlerKey] = null;
+        }
+        
+        if (field === 'numeroVisite' && this.numeroVisiteModalOpen && this.numeroVisiteModalOpen.rowIndex >= 0) {
+            const rowIndex = this.numeroVisiteModalOpen.rowIndex;
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingNumeroVisite = false;
+                this.rows = updatedRows;
+            }
+            this.numeroVisiteModalOpen = null;
+            this.numeroVisiteModalValue = '';
+        } else if (field === 'totaleMinuti' && this.totaleMinutiModalOpen && this.totaleMinutiModalOpen.rowIndex >= 0) {
+            const rowIndex = this.totaleMinutiModalOpen.rowIndex;
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingTotaleMinuti = false;
+                this.rows = updatedRows;
+            }
+            this.totaleMinutiModalOpen = null;
+            this.totaleMinutiModalValue = '';
+        } else if (field === 'amount' && this.amountModalOpen && this.amountModalOpen.rowIndex >= 0) {
+            const rowIndex = this.amountModalOpen.rowIndex;
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingAmount = false;
+                this.rows = updatedRows;
+            }
+            this.amountModalOpen = null;
+            this.amountModalValue = '';
+        }
+    }
+
+    /**
+     * Conferma il valore nel box di editing per un campo numerico e lo applica alla cella
+     */
+    async confirmNumericFieldModal(field) {
+        let modalOpen, modalValue, rowIndex, newValue;
+        
+        if (field === 'numeroVisite' && this.numeroVisiteModalOpen && this.numeroVisiteModalOpen.rowIndex >= 0) {
+            modalOpen = this.numeroVisiteModalOpen;
+            modalValue = this.numeroVisiteModalValue;
+            rowIndex = modalOpen.rowIndex;
+            newValue = modalValue.trim();
+        } else if (field === 'totaleMinuti' && this.totaleMinutiModalOpen && this.totaleMinutiModalOpen.rowIndex >= 0) {
+            modalOpen = this.totaleMinutiModalOpen;
+            modalValue = this.totaleMinutiModalValue;
+            rowIndex = modalOpen.rowIndex;
+            newValue = modalValue.trim();
+        } else if (field === 'amount' && this.amountModalOpen && this.amountModalOpen.rowIndex >= 0) {
+            modalOpen = this.amountModalOpen;
+            modalValue = this.amountModalValue;
+            rowIndex = modalOpen.rowIndex;
+            newValue = modalValue.trim();
+        } else {
+            return;
+        }
+        
+        if (rowIndex < this.rows.length) {
+            const updatedRows = [...this.rows];
+            const row = updatedRows[rowIndex];
+            const oldValue = row[field] || '';
+            
+            // Rimuovi i listener di scroll e resize
+            const handlerKey = `_${field}EditBoxPositionHandler`;
+            if (this[handlerKey]) {
+                window.removeEventListener('scroll', this[handlerKey], true);
+                window.removeEventListener('resize', this[handlerKey]);
+                this[handlerKey] = null;
+            }
+            
+            // Chiudi il box di editing prima di aggiornare
+            if (field === 'numeroVisite') {
+                row.isEditingNumeroVisite = false;
+                this.numeroVisiteModalOpen = null;
+                this.numeroVisiteModalValue = '';
+            } else if (field === 'totaleMinuti') {
+                row.isEditingTotaleMinuti = false;
+                this.totaleMinutiModalOpen = null;
+                this.totaleMinutiModalValue = '';
+            } else if (field === 'amount') {
+                row.isEditingAmount = false;
+                this.amountModalOpen = null;
+                this.amountModalValue = '';
+            }
+            
+            // Processa il valore in base al tipo di campo
+            if (field === 'numeroVisite' || field === 'totaleMinuti') {
+                const numValue = this.parseInteger(newValue);
+                row[field] = numValue !== null ? numValue : newValue;
+            } else if (field === 'amount') {
+                const currencyValue = this.parseCurrency(newValue);
+                row[field] = currencyValue !== null ? currencyValue : newValue;
+            } else {
+                row[field] = newValue;
+            }
+            
+            // Aggiorna l'array rows per forzare il rerender
+            this.rows = updatedRows;
+            
+            // Validazione campo
+            this.validateField(row, field, row[field]);
+            
+            // Aggiorna lo stato visivo della cella
+            const cell = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"]`);
+            if (cell) {
+                this.updateCellValidationState(cell, row, field);
+            }
+            
+            // Forza un rerender per aggiornare la visualizzazione
+            this.rows = [...this.rows];
+        }
+    }
+
+    /**
+     * Gestisce l'input nel box di editing per un campo numerico
+     */
+    handleNumericFieldModalInput(event) {
+        const field = event.currentTarget.dataset.field;
+        if (field === 'numeroVisite') {
+            this.numeroVisiteModalValue = event.target.value;
+        } else if (field === 'totaleMinuti') {
+            this.totaleMinutiModalValue = event.target.value;
+        } else if (field === 'amount') {
+            this.amountModalValue = event.target.value;
+        }
+    }
+
+    /**
+     * Gestisce il keydown nel box di editing per un campo numerico (Enter per confermare, Escape per chiudere)
+     */
+    handleNumericFieldModalKeyDown(event) {
+        const field = event.currentTarget.dataset.field;
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.confirmNumericFieldModal(field);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            this.closeNumericFieldModal(field);
+        }
+    }
+
+    /**
+     * Gestisce il click sul box di editing per evitare che si apra di nuovo il modal
+     */
+    handleNumericFieldEditBoxClick(event) {
+        event.stopPropagation();
+    }
+
+    /**
+     * Gestisce il click sul pulsante di conferma per un campo numerico
+     */
+    handleNumericFieldConfirmClick(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        const field = event.currentTarget.dataset.field;
+        this.confirmNumericFieldModal(field);
+    }
+
+    /**
+     * Gestisce il click sul pulsante di annullamento per un campo numerico
+     */
+    handleNumericFieldCancelClick(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        const field = event.currentTarget.dataset.field;
+        this.closeNumericFieldModal(field);
     }
     
     /**
