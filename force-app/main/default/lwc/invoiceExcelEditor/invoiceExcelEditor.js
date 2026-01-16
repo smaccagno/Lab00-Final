@@ -1479,35 +1479,39 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
             
-            // Verifica se il valore iniziale era errato (non nel dataset)
-            const wasInitialValueIncorrect = initialValue && !this.isValueInDataset(field, initialValue);
-            // Verifica se il nuovo valore è corretto (è nel dataset)
-            const isNewValueValid = this.isValueInDataset(field, exactValue);
-            
-            // Per numero fattura, traccia la modifica per correggere dopo la validazione
-            if (field === 'invoiceNumber' && initialValue && initialValue.trim().toLowerCase() !== value.trim().toLowerCase()) {
-                this.pendingInvoiceNumberCorrection = {
-                    oldValue: initialValue.trim().toLowerCase(),
-                    newValue: exactValue,
-                    rowIndex: rowIndex,
-                    invoiceDate: row.invoiceDate,
-                    medicalCenter: row.medicalCenter || ''
-                };
-            } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
-                this.hasValidation(field) && field !== 'comune' && field !== 'provincia' && field !== 'regione') {
-                // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
-                const valueToFind = initialValue.trim().toLowerCase();
-                updatedRows.forEach((otherRow, otherIndex) => {
-                    if (otherIndex !== rowIndex && otherRow[field] && 
-                        field !== 'comune' && field !== 'provincia' && field !== 'regione') {
-                        const otherValue = String(otherRow[field]).trim().toLowerCase();
-                        const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
-                        if (otherValue === valueToFind && otherValueHasError) {
-                            otherRow[field] = exactValue;
-                            this.validateField(otherRow, field, exactValue);
+            // Per comune, provincia e regione, NON fare correzione automatica delle altre celle
+            if (field === 'comune' || field === 'provincia' || field === 'regione') {
+                // Non fare nulla, solo aggiornare questa cella
+            } else {
+                // Verifica se il valore iniziale era errato (non nel dataset)
+                const wasInitialValueIncorrect = initialValue && !this.isValueInDataset(field, initialValue);
+                // Verifica se il nuovo valore è corretto (è nel dataset)
+                const isNewValueValid = this.isValueInDataset(field, exactValue);
+                
+                // Per numero fattura, traccia la modifica per correggere dopo la validazione
+                if (field === 'invoiceNumber' && initialValue && initialValue.trim().toLowerCase() !== value.trim().toLowerCase()) {
+                    this.pendingInvoiceNumberCorrection = {
+                        oldValue: initialValue.trim().toLowerCase(),
+                        newValue: exactValue,
+                        rowIndex: rowIndex,
+                        invoiceDate: row.invoiceDate,
+                        medicalCenter: row.medicalCenter || ''
+                    };
+                } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
+                    this.hasValidation(field)) {
+                    // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
+                    const valueToFind = initialValue.trim().toLowerCase();
+                    updatedRows.forEach((otherRow, otherIndex) => {
+                        if (otherIndex !== rowIndex && otherRow[field]) {
+                            const otherValue = String(otherRow[field]).trim().toLowerCase();
+                            const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
+                            if (otherValue === valueToFind && otherValueHasError) {
+                                otherRow[field] = exactValue;
+                                this.validateField(otherRow, field, exactValue);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
             
             // Pulisci il valore iniziale dopo l'uso
@@ -1696,41 +1700,45 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 }
                 
-                // Verifica se il valore iniziale era errato (non nel dataset)
-                const wasInitialValueIncorrect = initialValue && !this.isValueInDataset(field, initialValue);
-                // Verifica se il nuovo valore è corretto (è nel dataset)
-                const isNewValueValid = this.isValueInDataset(field, exactValue);
-                
-                // Per numero fattura, traccia la modifica per correggere dopo la validazione
-                // La correzione automatica avverrà dopo checkInvoiceNumbersUniqueness
-                if (field === 'invoiceNumber' && initialValue && initialValue.trim().toLowerCase() !== value.trim().toLowerCase()) {
-                    // Salva le informazioni per la correzione automatica dopo la validazione
-                    this.pendingInvoiceNumberCorrection = {
-                        oldValue: initialValue.trim().toLowerCase(),
-                        newValue: exactValue,
-                        rowIndex: rowIndex,
-                        invoiceDate: row.invoiceDate,
-                        medicalCenter: row.medicalCenter || ''
-                    };
-                } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
-                    this.hasValidation(field) && field !== 'comune' && field !== 'provincia' && field !== 'regione') {
-                    // Per tutti gli altri campi validati (esclusi comune, provincia e regione), correggi tutte le celle della stessa colonna
-                    // Usa initialValue (valore iniziale salvato durante il focus) per cercare le celle da correggere
-                    const valueToFind = initialValue.trim().toLowerCase();
-                    updatedRows.forEach((otherRow, otherIndex) => {
-                        if (otherIndex !== rowIndex && otherRow[field] && 
-                            field !== 'comune' && field !== 'provincia' && field !== 'regione') {
-                            const otherValue = String(otherRow[field]).trim().toLowerCase();
-                            // Correggi solo se il valore è errato (non nel dataset) e corrisponde al valore iniziale
-                            const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
-                            if (otherValue === valueToFind && otherValueHasError) {
-                                // Correggi il valore
-                                otherRow[field] = exactValue;
-                                // Aggiorna anche la validazione
-                                this.validateField(otherRow, field, exactValue);
+                // Per comune, provincia e regione, NON fare correzione automatica delle altre celle
+                if (field === 'comune' || field === 'provincia' || field === 'regione') {
+                    // Non fare nulla, solo aggiornare questa cella
+                } else {
+                    // Verifica se il valore iniziale era errato (non nel dataset)
+                    const wasInitialValueIncorrect = initialValue && !this.isValueInDataset(field, initialValue);
+                    // Verifica se il nuovo valore è corretto (è nel dataset)
+                    const isNewValueValid = this.isValueInDataset(field, exactValue);
+                    
+                    // Per numero fattura, traccia la modifica per correggere dopo la validazione
+                    // La correzione automatica avverrà dopo checkInvoiceNumbersUniqueness
+                    if (field === 'invoiceNumber' && initialValue && initialValue.trim().toLowerCase() !== value.trim().toLowerCase()) {
+                        // Salva le informazioni per la correzione automatica dopo la validazione
+                        this.pendingInvoiceNumberCorrection = {
+                            oldValue: initialValue.trim().toLowerCase(),
+                            newValue: exactValue,
+                            rowIndex: rowIndex,
+                            invoiceDate: row.invoiceDate,
+                            medicalCenter: row.medicalCenter || ''
+                        };
+                    } else if (wasInitialValueIncorrect && isNewValueValid && exactValue !== initialValue && 
+                        this.hasValidation(field)) {
+                        // Per tutti gli altri campi validati, correggi tutte le celle della stessa colonna
+                        // Usa initialValue (valore iniziale salvato durante il focus) per cercare le celle da correggere
+                        const valueToFind = initialValue.trim().toLowerCase();
+                        updatedRows.forEach((otherRow, otherIndex) => {
+                            if (otherIndex !== rowIndex && otherRow[field]) {
+                                const otherValue = String(otherRow[field]).trim().toLowerCase();
+                                // Correggi solo se il valore è errato (non nel dataset) e corrisponde al valore iniziale
+                                const otherValueHasError = otherRow.validationErrors && otherRow.validationErrors[field] === true;
+                                if (otherValue === valueToFind && otherValueHasError) {
+                                    // Correggi il valore
+                                    otherRow[field] = exactValue;
+                                    // Aggiorna anche la validazione
+                                    this.validateField(otherRow, field, exactValue);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
                 
                 // Pulisci il valore iniziale dopo l'uso
