@@ -586,6 +586,22 @@
     background-color: #fafaf9 !important;
 }
 
+.visit-header-row {
+    background-color: #fafaf9;
+    border-top: 1px solid #dddbda;
+}
+
+.visit-header-row td {
+    background-color: #fafaf9;
+    padding: 8px 12px !important;
+}
+
+.visits-header-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .visit-expand-row {
     background-color: #ffffff;
 }

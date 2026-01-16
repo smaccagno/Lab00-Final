@@ -4353,7 +4353,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 totalVisitsMinutesFormatted: totalMinutes.toLocaleString('it-IT'),
                 expanded: false, // Per gestire l'accordion
                 hasVisitErrors: hasVisitErrors,
-                visitsRowKey: `visits-${invoiceGroup.invoice.invoiceNumber}` // ID univoco per la riga delle visite
+                visitsRowKey: `visits-header-${invoiceGroup.invoice.invoiceNumber}`, // ID univoco per la riga header delle visite
+                visitsContentRowKey: `visits-content-${invoiceGroup.invoice.invoiceNumber}` // ID univoco per la riga contenuto delle visite
             };
         });
         this.showOrganizedView = true;
