@@ -45,7 +45,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     dropdownOpen = null; // {rowIndex: number, field: string}
     dropdownFilter = '';
     dropdownFilteredOptions = [];
-    showConfirmButton = false; // Mostra pulsante "Conferma Valore" per comune
+    @track showConfirmButton = false; // Mostra pulsante "Conferma Valore" per comune
     isConfirmingValue = false; // Flag per prevenire blur quando si conferma un valore
     skipNextConfirmClick = false; // Evita doppia esecuzione quando usiamo mousedown+click sul bottone
     // Stato calendario date
@@ -3943,18 +3943,26 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Apri il nuovo dropdown
         this.dropdownOpen = { rowIndex, field };
         this.dropdownFilter = trimmedValue;
+        
+        // Aggiorna le opzioni filtrate immediatamente
         this.updateFilteredOptions();
-
-        // Posiziona il dropdown
+        
+        // Posiziona il dropdown e aggiorna nuovamente le opzioni dopo che il DOM è stato aggiornato
         setTimeout(() => {
             this.positionDropdown(cell);
             // Focus sul campo di ricerca
             const filterInput = this.template.querySelector('.dropdown-filter');
             if (filterInput) {
+                // Assicurati che il valore del filtro corrisponda al valore della cella
+                if (filterInput.value !== trimmedValue) {
+                    filterInput.value = trimmedValue;
+                }
                 filterInput.focus();
                 if (trimmedValue) {
                     filterInput.select();
                 }
+                // Aggiorna nuovamente le opzioni dopo che il filtro è stato impostato nel DOM
+                this.updateFilteredOptions();
             }
         }, 0);
     }
@@ -4523,19 +4531,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 option.label.toLowerCase().includes(filter)
             );
             
-            // Per comune, medicalCenter, noProfit e noProfitCategory, mostra "Conferma Valore" se:
+            // Per comune, medicalCenter, noProfit, noProfitCategory e tipoVisita, mostra "Conferma Valore" se:
             // 1. Non ci sono risultati nel filtro, OPPURE
-            // 2. Per medicalCenter, noProfit e noProfitCategory: se c'è un valore nel filtro (anche se corrisponde a un'opzione)
+            // 2. Per medicalCenter, noProfit, noProfitCategory e tipoVisita: se c'è un valore nel filtro (anche se corrisponde a un'opzione)
             // NOTA: per 'partner' NON mostrare mai il pulsante "Conferma Valore" perché il valore deve essere obbligatoriamente uno di quelli ammessi
             if (this.dropdownOpen.field === 'partner') {
                 // Per partner, non mostrare mai il pulsante "Conferma Valore"
                 this.showConfirmButton = false;
-            } else if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory'].includes(this.dropdownOpen.field)) {
+            } else if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
                 if (this.dropdownFilteredOptions.length === 0) {
-                    // Nessun risultato trovato
+                    // Nessun risultato trovato - mostra sempre il pulsante per confermare il valore
                     this.showConfirmButton = true;
-                } else if (['medicalCenter', 'noProfit', 'noProfitCategory'].includes(this.dropdownOpen.field)) {
-                    // Per medicalCenter, noProfit e noProfitCategory, mostra sempre il pulsante se c'è un valore nel filtro
+                } else if (['medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
+                    // Per medicalCenter, noProfit, noProfitCategory e tipoVisita, mostra sempre il pulsante se c'è un valore nel filtro
                     // Questo permette di confermare il valore anche se corrisponde a un'opzione esistente
                     this.showConfirmButton = filter !== '';
                 } else {
@@ -4555,7 +4563,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Previeni la propagazione per evitare che il click chiuda il dropdown
         event.stopPropagation();
         this.dropdownFilter = event.target.value;
+        // Forza l'aggiornamento reattivo
         this.updateFilteredOptions();
+        // Forza un re-render per assicurarsi che il pulsante venga mostrato
+        setTimeout(() => {
+            this.updateFilteredOptions();
+        }, 0);
     }
 
     /**
