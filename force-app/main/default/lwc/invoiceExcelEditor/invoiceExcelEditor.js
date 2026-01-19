@@ -4520,10 +4520,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const options = this.getDropdownOptions(this.dropdownOpen.field, this.dropdownOpen.rowIndex);
         
         // Leggi il filtro dall'input se disponibile, altrimenti usa dropdownFilter
+        // IMPORTANTE: Leggi sempre dall'input se disponibile per avere il valore più aggiornato
         let filter = '';
         const filterInput = this.template.querySelector('.dropdown-filter');
-        if (filterInput && filterInput.value) {
-            filter = filterInput.value.toLowerCase().trim();
+        if (filterInput) {
+            // Usa sempre il valore dall'input se disponibile (più aggiornato)
+            filter = (filterInput.value || '').toString().toLowerCase().trim();
+            // Sincronizza anche dropdownFilter con il valore dell'input
+            if (this.dropdownFilter !== filterInput.value) {
+                this.dropdownFilter = filterInput.value;
+            }
         } else {
             filter = (this.dropdownFilter || '').toString().toLowerCase().trim();
         }
@@ -4561,13 +4567,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else if (['medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
                     // Per medicalCenter, noProfit, noProfitCategory e tipoVisita, mostra sempre il pulsante se c'è un valore nel filtro
                     // Questo permette di confermare il valore anche se corrisponde a un'opzione esistente
-                    // Verifica anche se il valore digitato corrisponde esattamente a qualche risultato
-                    const exactMatch = this.dropdownFilteredOptions.some(opt => 
-                        opt.label.toLowerCase().trim() === filter
-                    );
-                    // Mostra il pulsante se c'è un valore nel filtro E non corrisponde esattamente a nessun risultato
-                    // oppure se corrisponde esattamente ma vogliamo comunque permettere la conferma
-                    this.showConfirmButton = filter !== '' && (!exactMatch || filter !== '');
+                    this.showConfirmButton = filter !== '';
                 } else {
                     // Per comune, mostra solo se non ci sono risultati
                     this.showConfirmButton = false;
