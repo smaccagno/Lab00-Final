@@ -699,13 +699,27 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (this.showOrganizedView) return;
         if (!this.rows || this.rows.length === 0) return;
 
+        // Lista di tutti i campi validabili per assicurarsi di aggiornare tutti i bordi
+        const validatableFields = [
+            'partner',
+            'tipoVisita',
+            'beneficiaryType',
+            'comune',
+            'provincia',
+            'regione',
+            'medicalCenter',
+            'noProfit',
+            'noProfitCategory',
+            'invoiceNumber'
+        ];
+
         this.rows.forEach((row, rowIndex) => {
-            const fields = row && row.validationErrors ? Object.keys(row.validationErrors) : [];
-            fields.forEach((field) => {
+            // Aggiorna tutti i campi validabili, non solo quelli con errori già registrati
+            validatableFields.forEach((field) => {
                 const cell = this.template.querySelector(
                     `td[data-field="${field}"][data-row-index="${rowIndex}"]`
                 );
-                if (cell) {
+                if (cell && row[field] !== undefined && row[field] !== null && row[field] !== '') {
                     this.updateCellValidationState(cell, row, field);
                 }
             });
@@ -6105,10 +6119,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
+        // Forza un re-render immediato per assicurarsi che la tabella sia visibile
+        this.rows = [...this.rows];
         // Dopo il rerender della tabella, rifai il check di validazione completo con spinner
-        setTimeout(async () => {
-            await this.validateAllRows();
-        }, 0);
+        // Usa requestAnimationFrame per assicurarsi che il DOM sia completamente renderizzato
+        requestAnimationFrame(() => {
+            setTimeout(async () => {
+                await this.validateAllRows();
+            }, 150);
+        });
     }
     
     /**
@@ -6116,7 +6135,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Attiva gli spinner per le validazioni asincrone e aggiorna i bordi rossi
      */
     async validateAllRows() {
-        if (!this.rows || this.rows.length === 0) return;
+        if (!this.rows || this.rows.length === 0) {
+            console.log('[validateAllRows] Nessuna riga da validare');
+            return;
+        }
+        
+        console.log('[validateAllRows] Inizio validazione di', this.rows.length, 'righe');
         
         // Lista di tutti i campi validabili
         const validatableFields = [
@@ -6146,7 +6170,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.rows.forEach((row, rowIndex) => {
             validatableFields.forEach(field => {
                 const value = row[field];
-                if (value !== undefined && value !== null) {
+                if (value !== undefined && value !== null && value !== '') {
                     // Valida solo i campi sincroni qui (invoiceNumber sarà validato dopo)
                     if (field !== 'invoiceNumber') {
                         this.validateField(row, field, value);
@@ -6163,6 +6187,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Esegui validazione asincrona per invoiceNumber se presente
         if (rowsWithInvoiceNumber.length > 0) {
+            console.log('[validateAllRows] Validazione asincrona per', rowsWithInvoiceNumber.length, 'numeri fattura');
             try {
                 await this.checkInvoiceNumbersUniqueness();
             } catch (error) {
@@ -6176,9 +6201,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         
         // Aggiorna i bordi rossi dopo tutte le validazioni
+        // Usa un delay maggiore per assicurarsi che il DOM sia completamente aggiornato
         setTimeout(() => {
+            console.log('[validateAllRows] Aggiornamento bordi rossi');
             this.refreshValidationBordersInTable();
-        }, 100);
+            // Forza un altro re-render per assicurarsi che i bordi vengano mostrati
+            this.rows = [...this.rows];
+        }, 200);
     }
     
     /**
