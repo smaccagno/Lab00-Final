@@ -1,0 +1,60 @@
+<template>
+    <lightning-card title="Esportazione Dati" icon-name="standard:data_mapping">
+        <div class="slds-m-around_medium">
+            <!-- Pulsante Esporta Excel -->
+            <div class="slds-m-bottom_medium">
+                <lightning-button
+                    label="Esporta in Excel"
+                    variant="brand"
+                    icon-name="utility:download"
+                    onclick={exportToExcel}
+                    disabled={isButtonDisabled}
+                    class="slds-m-right_small">
+                </lightning-button>
+                <template if:true={hasData}>
+                    <span class="slds-text-color_weak slds-m-left_small">
+                        Totale record: {dataCount}
+                    </span>
+                </template>
+            </div>
+
+            <!-- Spinner durante il caricamento -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Caricamento dati in corso..." size="medium"></lightning-spinner>
+            </template>
+
+            <!-- Messaggio di errore -->
+            <template if:true={error}>
+                <div class="slds-m-top_medium">
+                    <lightning-formatted-text
+                        value="Errore nel caricamento dei dati. Contattare l'amministratore."
+                        class="slds-text-color_error">
+                    </lightning-formatted-text>
+                </div>
+            </template>
+
+            <!-- Tabella dati -->
+            <template if:false={isLoading}>
+                <template if:true={hasData}>
+                    <lightning-datatable
+                        key-field="id"
+                        data={tableData}
+                        columns={columns}
+                        hide-checkbox-column
+                        show-row-number-column
+                        resize-column-disabled
+                        max-row-count={maxRowCount}>
+                    </lightning-datatable>
+                </template>
+                <template if:false={hasData}>
+                    <div class="slds-m-top_medium">
+                        <lightning-formatted-text
+                            value="Nessun dato disponibile."
+                            class="slds-text-color_weak">
+                        </lightning-formatted-text>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

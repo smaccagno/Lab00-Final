@@ -57,6 +57,15 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
     }
   }
 
+  connectedCallback() {
+    // Aggiungi il pulsante "Lista Valori per template" alla fine della lista
+    this._tabs.push({
+      id: "999",
+      label: "Lista Valori per template",
+      pageName: "Lista_Valori_Template"
+    });
+  }
+
   /**
    * Apre un nuovo tab console sul Navigation Item richiesto
    * e gli assegna subito l’etichetta del bottone cliccato.
@@ -64,6 +73,7 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
   handleTabClick(event) {
     const flowName = event.currentTarget.dataset.flowname;
     const apiName = event.currentTarget.dataset.apiname;
+    const pageName = event.currentTarget.dataset.pagename;
     const label = event.currentTarget.innerText; // “Donazioni”, “Fatture”, …
 
     if (apiName) {
@@ -87,6 +97,22 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
             attributes: { apiName }
           });
         });
+    } else if (pageName) {
+      // Navigazione a una pagina Lightning App Page
+      this[NavigationMixin.Navigate]({
+        type: "standard__app",
+        attributes: {
+          appName: "Invoice_Submission",
+          page: "Lista_Valori_Template"
+        }
+      }).catch((error) => {
+        console.error("Navigation error:", error);
+        // Fallback: usa l'URL diretto alla pagina
+        const url = `/lightning/cmp/__c__Lista_Valori_Template`;
+        openTab({ url, label }).catch((err) => {
+          console.error("OpenTab error:", err);
+        });
+      });
     } else if (flowName) {
       this.openFlow(flowName, label);
     }
