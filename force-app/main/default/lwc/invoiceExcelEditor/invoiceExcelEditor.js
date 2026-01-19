@@ -5639,11 +5639,28 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     updateOrganizedInvoicesWithSaveResults(saveResults) {
         // Crea una mappa dei risultati usando invoiceNumber come chiave
+        // IMPORTANTE: Aggrega tutte le visite di tutte le righe con lo stesso invoiceNumber
         const resultsMap = new Map();
         saveResults.forEach(result => {
             const invoiceNumber = result.invoiceNumber || '';
             if (invoiceNumber) {
-                resultsMap.set(invoiceNumber, result);
+                if (resultsMap.has(invoiceNumber)) {
+                    // Se esiste già, aggrega le visite
+                    const existingResult = resultsMap.get(invoiceNumber);
+                    const existingVisitDetails = existingResult.visitDetails || [];
+                    const newVisitDetails = result.visitDetails || [];
+                    // Combina le visite preservando l'ordine: prima quelle esistenti, poi quelle nuove
+                    existingResult.visitDetails = [...existingVisitDetails, ...newVisitDetails];
+                    // Aggrega anche altri contatori se necessario
+                    existingResult.visitsCreated = (existingResult.visitsCreated || 0) + (result.visitsCreated || 0);
+                    existingResult.visitsFailed = (existingResult.visitsFailed || 0) + (result.visitsFailed || 0);
+                } else {
+                    // Prima volta che vediamo questo invoiceNumber, salva il risultato
+                    resultsMap.set(invoiceNumber, {
+                        ...result,
+                        visitDetails: result.visitDetails || []
+                    });
+                }
             }
         });
         

@@ -815,9 +815,23 @@ public with sharing class InvoiceExcelEditorController {
                         }
                     }
                     
-                    // Raccogli tutte le visite da inserire
-                    for (List<Visit__c> visits : visitsByInputRow.values()) {
-                        visitsToInsert.addAll(visits);
+                    // Raccogli tutte le visite da inserire preservando l'ordine originale
+                    // Crea una lista ordinata che preserva l'ordine di inputRowIndex
+                    List<Integer> sortedInputRowIndices = new List<Integer>(visitsByInputRow.keySet());
+                    sortedInputRowIndices.sort();
+                    
+                    // Crea una mappa per tracciare l'ordine originale di ogni visita
+                    Map<Id, Integer> visitOrderMap = new Map<Id, Integer>();
+                    Integer globalVisitIndex = 0;
+                    
+                    for (Integer inputRowIndex : sortedInputRowIndices) {
+                        List<Visit__c> visits = visitsByInputRow.get(inputRowIndex);
+                        for (Visit__c v : visits) {
+                            visitsToInsert.add(v);
+                            // Traccia l'ordine originale usando l'indice globale
+                            // Questo sarà usato dopo l'inserimento per preservare l'ordine
+                            globalVisitIndex++;
+                        }
                     }
                     
                     // Inserisci le visite se presenti
@@ -826,6 +840,15 @@ public with sharing class InvoiceExcelEditorController {
                             // Prima gestisci comuni e tipi visita
                             processVisitsBeforeInsert(visitsToInsert, comuniMap);
                             insert visitsToInsert;
+                            
+                            // Crea una mappa che preserva l'ordine originale delle visite inserite
+                            // L'ordine in visitsToInsert corrisponde all'ordine di inserimento
+                            Map<Id, Integer> visitInsertOrderMap = new Map<Id, Integer>();
+                            for (Integer i = 0; i < visitsToInsert.size(); i++) {
+                                if (visitsToInsert[i].Id != null) {
+                                    visitInsertOrderMap.put(visitsToInsert[i].Id, i);
+                                }
+                            }
                             
                             // Query per recuperare i dettagli delle visite create
                             Set<Id> visitIds = new Set<Id>();
@@ -837,13 +860,29 @@ public with sharing class InvoiceExcelEditorController {
                             
                             Map<Id, Visit__c> visitDetailsMap = new Map<Id, Visit__c>();
                             if (!visitIds.isEmpty()) {
-                                for (Visit__c v : [
+                                // Usa ORDER BY CreatedDate per preservare l'ordine di inserimento
+                                // ma meglio ancora, usa una lista ordinata basata su visitInsertOrderMap
+                                List<Visit__c> visitDetailsList = [
                                     SELECT Id, Name, Tipo_Visita__r.Name, Beneficiary_Type__c, 
-                                           City__c, Province__c, Region__c, Invoice__c
+                                           City__c, Province__c, Region__c, Invoice__c, CreatedDate
                                     FROM Visit__c
                                     WHERE Id IN :visitIds
-                                ]) {
-                                    visitDetailsMap.put(v.Id, v);
+                                    ORDER BY CreatedDate ASC
+                                ];
+                                
+                                // Ordina per l'ordine di inserimento originale invece che per CreatedDate
+                                // perché CreatedDate potrebbe non essere abbastanza preciso
+                                List<Visit__c> sortedVisitDetailsList = new List<Visit__c>();
+                                for (Visit__c v : visitsToInsert) {
+                                    if (v.Id != null) {
+                                        for (Visit__c detail : visitDetailsList) {
+                                            if (detail.Id == v.Id) {
+                                                sortedVisitDetailsList.add(detail);
+                                                visitDetailsMap.put(detail.Id, detail);
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             
@@ -851,10 +890,13 @@ public with sharing class InvoiceExcelEditorController {
                             Map<Integer, List<Map<String, Object>>> visitsByInputRowMap = new Map<Integer, List<Map<String, Object>>>();
                             
                             // Aggiorna i risultati con il numero di visite create e i dettagli
-                            for (Integer inputRowIndex : visitsByInputRow.keySet()) {
+                            // Usa sortedInputRowIndices per preservare l'ordine
+                            for (Integer inputRowIndex : sortedInputRowIndices) {
                                 List<Visit__c> invoiceVisits = visitsByInputRow.get(inputRowIndex);
                                 List<Map<String, Object>> visitDetails = new List<Map<String, Object>>();
                                 
+                                // Le visite vengono aggiunte nell'ordine originale perché invoiceVisits
+                                // mantiene l'ordine in cui sono state create
                                 for (Visit__c v : invoiceVisits) {
                                     if (v.Id != null && visitDetailsMap.containsKey(v.Id)) {
                                         Visit__c visitDetail = visitDetailsMap.get(v.Id);
