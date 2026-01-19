@@ -431,6 +431,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         }
         
+        // Se il dropdown è aperto per questo campo, aggiorna il filtro
+        if (this.dropdownOpen && 
+            this.dropdownOpen.field === field && 
+            this.dropdownOpen.rowIndex === rowIndex) {
+            this.dropdownFilter = '';
+            this.updateFilteredOptions();
+        }
+        
         // Forza il re-render aggiornando l'array senza perdere i getter computed
         // Usa setTimeout per permettere a LWC di gestire il re-render correttamente
         setTimeout(() => {
@@ -4553,7 +4561,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else if (['medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
                     // Per medicalCenter, noProfit, noProfitCategory e tipoVisita, mostra sempre il pulsante se c'è un valore nel filtro
                     // Questo permette di confermare il valore anche se corrisponde a un'opzione esistente
-                    this.showConfirmButton = filter !== '';
+                    // Verifica anche se il valore digitato corrisponde esattamente a qualche risultato
+                    const exactMatch = this.dropdownFilteredOptions.some(opt => 
+                        opt.label.toLowerCase().trim() === filter
+                    );
+                    // Mostra il pulsante se c'è un valore nel filtro E non corrisponde esattamente a nessun risultato
+                    // oppure se corrisponde esattamente ma vogliamo comunque permettere la conferma
+                    this.showConfirmButton = filter !== '' && (!exactMatch || filter !== '');
                 } else {
                     // Per comune, mostra solo se non ci sono risultati
                     this.showConfirmButton = false;
@@ -4737,6 +4751,41 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 if (row.regione) {
                     this.validateField(row, 'regione', row.regione);
                 }
+                
+                // Chiudi il dropdown prima di aggiornare il DOM
+                this.closeDropdown();
+                
+                // Aggiorna il DOM della cella corrente e delle celle correlate
+                setTimeout(() => {
+                    const comuneCell = this.template.querySelector(
+                        `td[data-field="comune"][data-row-index="${rowIndex}"]`
+                    );
+                    const updatedRow = this.rows[rowIndex];
+                    if (comuneCell && updatedRow) {
+                        comuneCell.textContent = updatedRow.comune || '';
+                        this.updateCellValidationState(comuneCell, updatedRow, 'comune');
+                    }
+                    // Aggiorna anche provincia e regione se sono state modificate
+                    if (updatedRow.provincia) {
+                        const provinciaCell = this.template.querySelector(
+                            `td[data-field="provincia"][data-row-index="${rowIndex}"]`
+                        );
+                        if (provinciaCell) {
+                            provinciaCell.textContent = updatedRow.provincia || '';
+                            this.updateCellValidationState(provinciaCell, updatedRow, 'provincia');
+                        }
+                    }
+                    if (updatedRow.regione) {
+                        const regioneCell = this.template.querySelector(
+                            `td[data-field="regione"][data-row-index="${rowIndex}"]`
+                        );
+                        if (regioneCell) {
+                            regioneCell.textContent = updatedRow.regione || '';
+                            this.updateCellValidationState(regioneCell, updatedRow, 'regione');
+                        }
+                    }
+                }, 0);
+                return; // Esci subito dopo aver aggiornato il DOM
             } else if (field === 'noProfit') {
                 // Se si seleziona un ente no profit, aggiorna anche la categoria
                 row.noProfit = value;
@@ -4747,10 +4796,42 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 
                 // Valida i campi
                 this.validateField(row, 'noProfit', value);
+                
+                // Chiudi il dropdown prima di aggiornare il DOM
+                this.closeDropdown();
+                
+                // Aggiorna il DOM della cella corrente
+                setTimeout(() => {
+                    const noProfitCell = this.template.querySelector(
+                        `td[data-field="noProfit"][data-row-index="${rowIndex}"]`
+                    );
+                    const updatedRow = this.rows[rowIndex];
+                    if (noProfitCell && updatedRow) {
+                        noProfitCell.textContent = updatedRow.noProfit || '';
+                        this.updateCellValidationState(noProfitCell, updatedRow, 'noProfit');
+                    }
+                }, 0);
+                return; // Esci subito dopo aver aggiornato il DOM
             } else if (field === 'medicalCenter') {
                 // Aggiorna il centro medico
                 row.medicalCenter = value;
                 this.validateField(row, 'medicalCenter', value);
+                
+                // Chiudi il dropdown prima di aggiornare il DOM
+                this.closeDropdown();
+                
+                // Aggiorna il DOM della cella corrente
+                setTimeout(() => {
+                    const medicalCenterCell = this.template.querySelector(
+                        `td[data-field="medicalCenter"][data-row-index="${rowIndex}"]`
+                    );
+                    const updatedRow = this.rows[rowIndex];
+                    if (medicalCenterCell && updatedRow) {
+                        medicalCenterCell.textContent = updatedRow.medicalCenter || '';
+                        this.updateCellValidationState(medicalCenterCell, updatedRow, 'medicalCenter');
+                    }
+                }, 0);
+                return; // Esci subito dopo aver aggiornato il DOM
             } else if (field === 'noProfitCategory') {
                 // Aggiorna la categoria ente
                 row.noProfitCategory = value;
@@ -4793,6 +4874,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     if (option && option.id) {
                         row.tipoVisitaId = option.id;
                     }
+                    
+                    // Chiudi il dropdown prima di aggiornare il DOM
+                    this.closeDropdown();
+                    
+                    // Aggiorna il DOM della cella corrente
+                    setTimeout(() => {
+                        const tipoVisitaCell = this.template.querySelector(
+                            `td[data-field="tipoVisita"][data-row-index="${rowIndex}"]`
+                        );
+                        const updatedRow = this.rows[rowIndex];
+                        if (tipoVisitaCell && updatedRow) {
+                            tipoVisitaCell.textContent = updatedRow.tipoVisita || '';
+                            this.updateCellValidationState(tipoVisitaCell, updatedRow, 'tipoVisita');
+                        }
+                    }, 0);
+                    return; // Esci subito dopo aver aggiornato il DOM
                 }
                 
                 // Valida il campo
