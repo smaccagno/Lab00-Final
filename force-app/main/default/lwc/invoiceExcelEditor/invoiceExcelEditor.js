@@ -6100,22 +6100,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.selectedRowIndex = -1;
     }
     
-    backToTableView() {
+    async backToTableView() {
         this.showOrganizedView = false;
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
-        // Dopo il rerender della tabella, rifai il check di validazione completo
-        setTimeout(() => {
-            this.validateAllRows();
-            this.refreshValidationBordersInTable();
+        // Dopo il rerender della tabella, rifai il check di validazione completo con spinner
+        setTimeout(async () => {
+            await this.validateAllRows();
         }, 0);
     }
     
     /**
      * Valida tutte le righe e tutti i campi nella tabella
+     * Attiva gli spinner per le validazioni asincrone e aggiorna i bordi rossi
      */
-    validateAllRows() {
+    async validateAllRows() {
         if (!this.rows || this.rows.length === 0) return;
         
         // Lista di tutti i campi validabili
@@ -6132,21 +6132,53 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             'invoiceNumber'
         ];
         
+        // Attiva gli spinner per invoiceNumber (unica validazione asincrona)
+        const rowsWithInvoiceNumber = [];
         this.rows.forEach((row, rowIndex) => {
-            // Valida ogni campo della riga
+            // Attiva spinner per invoiceNumber se presente (validazione asincrona)
+            if (row.invoiceNumber) {
+                this.setCellValidating(rowIndex, 'invoiceNumber', true);
+                rowsWithInvoiceNumber.push(rowIndex);
+            }
+        });
+        
+        // Valida tutti i campi sincroni
+        this.rows.forEach((row, rowIndex) => {
             validatableFields.forEach(field => {
                 const value = row[field];
                 if (value !== undefined && value !== null) {
-                    this.validateField(row, field, value);
+                    // Valida solo i campi sincroni qui (invoiceNumber sarà validato dopo)
+                    if (field !== 'invoiceNumber') {
+                        this.validateField(row, field, value);
+                    }
                 }
             });
             
-            // Aggiorna lo stato hasErrors della riga
+            // Aggiorna lo stato hasErrors della riga (senza invoiceNumber per ora)
             row.hasErrors = this.hasRowErrors(row);
         });
         
         // Forza il re-render per aggiornare lo stato visivo
         this.rows = [...this.rows];
+        
+        // Esegui validazione asincrona per invoiceNumber se presente
+        if (rowsWithInvoiceNumber.length > 0) {
+            try {
+                await this.checkInvoiceNumbersUniqueness();
+            } catch (error) {
+                console.error('Errore durante la validazione asincrona dei numeri fattura:', error);
+            } finally {
+                // Disattiva gli spinner per invoiceNumber
+                rowsWithInvoiceNumber.forEach(rowIndex => {
+                    this.setCellValidating(rowIndex, 'invoiceNumber', false);
+                });
+            }
+        }
+        
+        // Aggiorna i bordi rossi dopo tutte le validazioni
+        setTimeout(() => {
+            this.refreshValidationBordersInTable();
+        }, 100);
     }
     
     /**
