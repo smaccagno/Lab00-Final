@@ -4431,6 +4431,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     `td[data-field="${field}"][data-row-index="${rowIndex}"]`
                 );
                 if (currentCell && currentRow) {
+                    // Aggiorna il contenuto della cella con il valore confermato
+                    currentCell.textContent = currentRow[field] || '';
                     this.updateCellValidationState(currentCell, currentRow, field);
                 }
                 
@@ -4591,13 +4593,45 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     handleDropdownFilter(event) {
         // Previeni la propagazione per evitare che il click chiuda il dropdown
         event.stopPropagation();
-        this.dropdownFilter = event.target.value;
-        // Forza l'aggiornamento reattivo
-        this.updateFilteredOptions();
-        // Forza un re-render per assicurarsi che il pulsante venga mostrato
-        setTimeout(() => {
-            this.updateFilteredOptions();
-        }, 0);
+        const newValue = event.target.value;
+        this.dropdownFilter = newValue;
+        
+        // Aggiorna immediatamente le opzioni filtrate usando il nuovo valore
+        // Passa il valore direttamente per evitare problemi di timing
+        if (this.dropdownOpen) {
+            const options = this.getDropdownOptions(this.dropdownOpen.field, this.dropdownOpen.rowIndex);
+            const filter = newValue.toLowerCase().trim();
+            
+            if (!filter) {
+                this.dropdownFilteredOptions = options;
+                if (this.dropdownOpen.field === 'partner') {
+                    this.showConfirmButton = false;
+                } else if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
+                    this.showConfirmButton = true;
+                } else {
+                    this.showConfirmButton = false;
+                }
+            } else {
+                this.dropdownFilteredOptions = options.filter(option =>
+                    option.label.toLowerCase().includes(filter)
+                );
+                
+                if (this.dropdownOpen.field === 'partner') {
+                    this.showConfirmButton = false;
+                } else if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
+                    if (this.dropdownFilteredOptions.length === 0) {
+                        this.showConfirmButton = true;
+                    } else if (['medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
+                        // Per questi campi, mostra sempre il pulsante se c'è un valore nel filtro
+                        this.showConfirmButton = filter !== '';
+                    } else {
+                        this.showConfirmButton = false;
+                    }
+                } else {
+                    this.showConfirmButton = false;
+                }
+            }
+        }
     }
 
     /**
