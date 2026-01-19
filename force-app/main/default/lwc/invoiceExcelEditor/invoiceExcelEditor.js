@@ -43,8 +43,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     pasteStartCol = -1;
     // Stato dropdown
     dropdownOpen = null; // {rowIndex: number, field: string}
-    dropdownFilter = '';
-    dropdownFilteredOptions = [];
+    @track dropdownFilter = '';
+    @track dropdownFilteredOptions = [];
     @track showConfirmButton = false; // Mostra pulsante "Conferma Valore" per comune
     isConfirmingValue = false; // Flag per prevenire blur quando si conferma un valore
     skipNextConfirmClick = false; // Evita doppia esecuzione quando usiamo mousedown+click sul bottone
@@ -4510,7 +4510,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
 
         const options = this.getDropdownOptions(this.dropdownOpen.field, this.dropdownOpen.rowIndex);
-        const filter = this.dropdownFilter.toLowerCase().trim();
+        
+        // Leggi il filtro dall'input se disponibile, altrimenti usa dropdownFilter
+        let filter = '';
+        const filterInput = this.template.querySelector('.dropdown-filter');
+        if (filterInput && filterInput.value) {
+            filter = filterInput.value.toLowerCase().trim();
+        } else {
+            filter = (this.dropdownFilter || '').toString().toLowerCase().trim();
+        }
 
         if (!filter) {
             this.dropdownFilteredOptions = options;
