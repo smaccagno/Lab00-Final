@@ -431,12 +431,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         }
         
-        // Se il dropdown è aperto per questo campo, aggiorna il filtro
+        // Se il dropdown è aperto per questo campo, aggiorna il filtro e forza l'aggiornamento
         if (this.dropdownOpen && 
             this.dropdownOpen.field === field && 
             this.dropdownOpen.rowIndex === rowIndex) {
             this.dropdownFilter = '';
-            this.updateFilteredOptions();
+            // Aggiorna anche l'input del filtro se disponibile
+            setTimeout(() => {
+                const filterInput = this.template.querySelector('.dropdown-filter');
+                if (filterInput) {
+                    filterInput.value = '';
+                }
+                this.updateFilteredOptions();
+            }, 0);
         }
         
         // Forza il re-render aggiornando l'array senza perdere i getter computed
