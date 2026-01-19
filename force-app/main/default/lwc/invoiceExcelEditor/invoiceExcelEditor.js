@@ -6142,6 +6142,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         console.log('[validateAllRows] Inizio validazione di', this.rows.length, 'righe');
         
+        // Attiva lo spinner globale all'inizio della validazione
+        this.isValidating = true;
+        
         // Lista di tutti i campi validabili
         const validatableFields = [
             'partner',
@@ -6199,6 +6202,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 });
             }
         }
+        
+        // Disattiva lo spinner globale alla fine della validazione
+        this.isValidating = false;
         
         // Aggiorna i bordi rossi dopo tutte le validazioni
         // Usa un delay maggiore per assicurarsi che il DOM sia completamente aggiornato
