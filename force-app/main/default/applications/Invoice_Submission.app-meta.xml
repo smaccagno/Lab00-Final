@@ -132,11 +132,15 @@
     <navType>Console</navType>
     <setupExperience>service</setupExperience>
     <tabs>standard-home</tabs>
+    <tabs>Lista_Valori_Template</tabs>
     <uiType>Lightning</uiType>
     <utilityBar>Invoice_Submission_UtilityBar</utilityBar>
     <workspaceConfig>
         <mappings>
             <tab>standard-home</tab>
+        </mappings>
+        <mappings>
+            <tab>Lista_Valori_Template</tab>
         </mappings>
     </workspaceConfig>
 </CustomApplication>

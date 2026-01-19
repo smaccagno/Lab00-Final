@@ -59,10 +59,11 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
 
   connectedCallback() {
     // Aggiungi il pulsante "Lista Valori per template" alla fine della lista
+    // Usa apiName per aprire come Navigation Item (tab)
     this._tabs.push({
       id: "999",
       label: "Lista Valori per template",
-      pageName: "Lista_Valori_Template"
+      apiName: "Lista_Valori_Template"
     });
   }
 
@@ -85,7 +86,9 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
         .then((tabId) => {
           /* 2. In rari casi il framework riassegna il label dopo il load.
                      Forziamo di nuovo l’etichetta quando il tab è pronto. */
-          return setTabLabel({ tabId, label });
+          if (tabId) {
+            return setTabLabel({ tabId, label });
+          }
         })
         .catch((error) => {
           /* Fallback: se per qualche motivo openTab fallisce,
@@ -98,21 +101,40 @@ export default class MenuNavigazione extends NavigationMixin(LightningElement) {
           });
         });
     } else if (pageName) {
-      // Navigazione a una pagina Lightning App Page
-      this[NavigationMixin.Navigate]({
-        type: "standard__app",
+      // Navigazione a una pagina Lightning App Page nella console
+      // Per le Lightning App Pages nella console, dobbiamo creare un Navigation Item
+      // oppure usare un pageReference corretto. Proviamo con standard__namedPage
+      const pageReference = {
+        type: "standard__namedPage",
         attributes: {
-          appName: "Invoice_Submission",
-          page: "Lista_Valori_Template"
+          pageName: pageName
         }
-      }).catch((error) => {
-        console.error("Navigation error:", error);
-        // Fallback: usa l'URL diretto alla pagina
-        const url = `/lightning/cmp/__c__Lista_Valori_Template`;
-        openTab({ url, label }).catch((err) => {
-          console.error("OpenTab error:", err);
+      };
+      
+      // Usa openTab con pageReference per aprire in un nuovo tab console
+      openTab({ pageReference, label })
+        .then((tabId) => {
+          if (tabId) {
+            if (tabId) {
+            return setTabLabel({ tabId, label });
+          }
+          }
+        })
+        .catch((error) => {
+          console.error("WorkspaceAPI error:", error);
+          // Fallback: usa NavigationMixin per aprire la pagina
+          this[NavigationMixin.Navigate](pageReference).catch((navError) => {
+            console.error("Navigation error:", navError);
+            // Ultimo fallback: prova con URL diretto
+            const pageUrl = `/lightning/page/${pageName}`;
+            this[NavigationMixin.Navigate]({
+              type: "standard__webPage",
+              attributes: {
+                url: pageUrl
+              }
+            });
+          });
         });
-      });
     } else if (flowName) {
       this.openFlow(flowName, label);
     }

@@ -46,16 +46,20 @@ public with sharing class DataExportController {
         beneficiaryTypes.sort();
         
         // 4. Centro Medico - valori distinct e ordinati alfabeticamente di Medical_Center__c da Invoice__c
-        Set<String> medicalCentersSet = new Set<String>();
-        for (Invoice__c invoice : [
+        // Ottimizzazione: usa GROUP BY invece di loop su tutti i record
+        List<String> medicalCenters = new List<String>();
+        for (AggregateResult ar : [
             SELECT Medical_Center__c 
             FROM Invoice__c 
             WHERE Medical_Center__c != null
+            GROUP BY Medical_Center__c
+            ORDER BY Medical_Center__c
         ]) {
-            medicalCentersSet.add(invoice.Medical_Center__c);
+            String mc = (String) ar.get('Medical_Center__c');
+            if (mc != null) {
+                medicalCenters.add(mc);
+            }
         }
-        List<String> medicalCenters = new List<String>(medicalCentersSet);
-        medicalCenters.sort();
         
         // 5. Ente No Profit e No Profit Category - ordinati alfabeticamente su Name
         List<Ente_No_Profit__c> entiNoProfit = [
@@ -68,26 +72,41 @@ public with sharing class DataExportController {
         List<String> booleanValues = new List<String>{'TRUE', 'FALSE'};
         
         // 7. Partner - nomi da Account con Type = 'Investor', campo Nome_Donatore__c
-        Set<String> partnersSet = new Set<String>();
-        for (Account acc : [
+        // Escludi gli Account con DEFAULT__c = true (Default for invoice)
+        // Ottimizzazione: usa GROUP BY per ottenere valori distinti già ordinati
+        List<String> partners = new List<String>();
+        for (AggregateResult ar : [
             SELECT Nome_Donatore__c 
             FROM Account 
             WHERE Type = 'Investor' 
             AND Nome_Donatore__c != null
+            AND (DEFAULT__c = false OR DEFAULT__c = null)
+            GROUP BY Nome_Donatore__c
+            ORDER BY Nome_Donatore__c
         ]) {
-            partnersSet.add(acc.Nome_Donatore__c);
+            String partner = (String) ar.get('Nome_Donatore__c');
+            if (partner != null) {
+                partners.add(partner);
+            }
         }
-        List<String> partners = new List<String>(partnersSet);
-        partners.sort();
         
-        // Prepara le liste per ogni colonna
+        // Prepara le liste per ogni colonna (ottimizzazione: usa direttamente i dati dalle query)
         List<String> comuniNames = new List<String>();
         List<String> province = new List<String>();
         List<String> regioni = new List<String>();
+        Set<String> provinceSet = new Set<String>();
+        Set<String> regioniSet = new Set<String>();
+        
         for (Comune__c comune : comuni) {
             comuniNames.add(comune.Name);
-            if (comune.Provincia__c != null) province.add(comune.Provincia__c);
-            if (comune.Regione__c != null) regioni.add(comune.Regione__c);
+            if (comune.Provincia__c != null && !provinceSet.contains(comune.Provincia__c)) {
+                province.add(comune.Provincia__c);
+                provinceSet.add(comune.Provincia__c);
+            }
+            if (comune.Regione__c != null && !regioniSet.contains(comune.Regione__c)) {
+                regioni.add(comune.Regione__c);
+                regioniSet.add(comune.Regione__c);
+            }
         }
         
         List<String> tipiVisitaNames = new List<String>();
@@ -99,7 +118,9 @@ public with sharing class DataExportController {
         List<String> entiCategories = new List<String>();
         for (Ente_No_Profit__c ente : entiNoProfit) {
             entiNames.add(ente.Name);
-            if (ente.Ente_Categoria__c != null) entiCategories.add(ente.Ente_Categoria__c);
+            if (ente.Ente_Categoria__c != null) {
+                entiCategories.add(ente.Ente_Categoria__c);
+            }
         }
         
         // Trova il numero massimo di righe necessario

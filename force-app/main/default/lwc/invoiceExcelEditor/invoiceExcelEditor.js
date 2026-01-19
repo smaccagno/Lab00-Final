@@ -475,6 +475,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             medicalCenterIsNew: false, // Flag per indicare se il centro medico è nuovo
             noProfitIsNew: false, // Flag per indicare se l'ente no profit è nuovo e deve essere creato
             noProfitCategoryIsNew: false, // Flag per indicare se la categoria ente è nuova e deve essere creata
+            tipoVisitaIsNew: false, // Flag per indicare se il tipo visita è nuovo e deve essere creato
             selected: false,
             // Stato validazione campi
             validationErrors: {
@@ -1657,7 +1658,28 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const rowIndex = parseInt(event.currentTarget.dataset.rowIndex, 10);
         const field = event.currentTarget.dataset.field;
         
-        this.confirmCellValue(rowIndex, field);
+        // Per i campi che supportano la conferma di nuovi valori, usa confirmNewComune
+        // Per gli altri campi, usa confirmCellValue
+        if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(field)) {
+            // Se il dropdown è aperto per questo campo, usa confirmNewComune
+            if (this.dropdownOpen && 
+                this.dropdownOpen.field === field && 
+                this.dropdownOpen.rowIndex === rowIndex) {
+                // Crea un evento fittizio per confirmNewComune
+                const fakeEvent = {
+                    preventDefault: () => {},
+                    stopPropagation: () => {},
+                    type: 'click'
+                };
+                this.confirmNewComune(fakeEvent);
+            } else {
+                // Se il dropdown non è aperto, apri il dropdown e poi conferma
+                // Oppure usa confirmCellValue come fallback
+                this.confirmCellValue(rowIndex, field);
+            }
+        } else {
+            this.confirmCellValue(rowIndex, field);
+        }
     }
 
     async handleCellBlur(event) {
@@ -3903,6 +3925,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Chiudi altri dropdown aperti
         this.closeDropdown();
 
+        // Imposta isEditing per mostrare il pulsante "Conferma Valore" nella cella
+        // Questo è necessario quando la cella è vuota o quando ha un valore non valido
+        if (rowIndex >= 0 && rowIndex < this.rows.length) {
+            const row = this.rows[rowIndex];
+            if (!row.isEditing) {
+                row.isEditing = {};
+            }
+            // Per i campi che supportano la conferma, imposta sempre isEditing = true quando si apre il dropdown
+            if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(field)) {
+                row.isEditing[field] = true;
+                // Forza il rerender per mostrare il pulsante di conferma nella cella
+                this.rows = [...this.rows];
+            }
+        }
+
         // Apri il nuovo dropdown
         this.dropdownOpen = { rowIndex, field };
         this.dropdownFilter = trimmedValue;
@@ -4185,8 +4222,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     if (categoryCell && updatedRow) {
                         categoryCell.textContent = updatedRow.noProfitCategory || '';
                         this.updateCellValidationState(categoryCell, updatedRow, 'noProfitCategory');
+                        // Rimuovi isEditing dopo la conferma
+                        if (updatedRow.isEditing) {
+                            updatedRow.isEditing.noProfitCategory = false;
+                        }
                     }
                     this.isConfirmingValue = false;
+                    // Forza il rerender per nascondere il pulsante
+                    this.rows = [...this.rows];
                 }, 0);
                 return;
             }
@@ -4227,6 +4270,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         row.noProfitCategoryIsNew = true;
                     }
                     row.validationErrors.noProfitCategory = false;
+                } else if (field === 'tipoVisita') {
+                    // Se viene confermato un tipo visita, segna come nuovo se non esiste nel dataset
+                    const tipoVisitaExists = this.tipoVisite && this.tipoVisite.some(
+                        tipo => tipo.Name && tipo.Name.toLowerCase() === filterValue.toLowerCase()
+                    );
+                    if (!tipoVisitaExists) {
+                        row.tipoVisitaIsNew = true;
+                    }
+                    row.validationErrors.tipoVisita = false;
                 } else if (field === 'invoiceNumber') {
                 // Per numero fattura, rimuovi l'errore di validazione
                 // Il controllo di unicità verrà fatto dopo per verificare che il nuovo valore non sia duplicato
@@ -4337,11 +4389,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
                 this.rows = updatedRows;
 
+            // Chiudi il dropdown e resetta isEditing
+            this.isConfirmingValue = true;
+            
             // Aggiorna lo stato visivo per tutte le celle corrette (inclusa quella corrente)
             // Usa un delay maggiore per assicurarsi che il DOM sia completamente aggiornato
             setTimeout(() => {
                 // Usa this.rows che è già stato aggiornato
                 const currentRow = this.rows[rowIndex];
+                
+                // Rimuovi isEditing dopo la conferma
+                if (currentRow && currentRow.isEditing) {
+                    currentRow.isEditing[field] = false;
+                }
                 
                 // Aggiorna prima la cella corrente
                 const currentCell = this.template.querySelector(
@@ -4368,6 +4428,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                     });
                 }
+                
+                // Forza il rerender per nascondere il pulsante dopo la conferma
+                this.rows = [...this.rows];
+                this.isConfirmingValue = false;
             }, 150);
 
             // Per numero fattura, dopo la correzione, verifica l'unicità del nuovo valore
@@ -4377,25 +4441,23 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }, 200);
             }
 
-                // Per ente no profit, dopo la conferma, apri il dropdown per la categoria
-                if (field === 'noProfit') {
-                    this.closeDropdown();
-                    setTimeout(() => {
-                        const categoryCell = this.template.querySelector(
-                            `td[data-field="noProfitCategory"][data-row-index="${rowIndex}"]`
-                        );
-                        if (categoryCell) {
-                            // Usa helper che crea un evento "safe" (openDropdown richiede preventDefault/stopPropagation)
-                            this.openDropdownForCell(categoryCell, rowIndex, 'noProfitCategory');
-                        }
-                    }, 200);
-                    return;
-                }
-            
+            // Per ente no profit, dopo la conferma, apri il dropdown per la categoria
+            if (field === 'noProfit') {
+                setTimeout(() => {
+                    const categoryCell = this.template.querySelector(
+                        `td[data-field="noProfitCategory"][data-row-index="${rowIndex}"]`
+                    );
+                    if (categoryCell) {
+                        // Usa helper che crea un evento "safe" (openDropdown richiede preventDefault/stopPropagation)
+                        this.openDropdownForCell(categoryCell, rowIndex, 'noProfitCategory');
+                    }
+                }, 200);
+                return;
             }
-
-            // Chiudi il dropdown
+            
+            // Chiudi il dropdown (già chiuso sopra, ma per sicurezza)
             this.closeDropdown();
+            } // Chiude il blocco if (rowIndex >= 0 && rowIndex < this.rows.length && filterValue)
         } catch (e) {
             console.error('[invoiceExcelEditor] confirmNewComune error:', e);
             // se succede un errore, garantiamo comunque la chiusura del dropdown
@@ -4444,22 +4506,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
         if (!filter) {
             this.dropdownFilteredOptions = options;
-                // Per medicalCenter e noProfit, mostra sempre il pulsante se c'è un valore nella cella con errore
+            // Per i campi che supportano la conferma, mostra sempre il pulsante quando il filtro è vuoto
+            // Questo permette di inserire un nuovo valore anche quando la cella è vuota
             // NOTA: per 'partner' NON mostrare mai il pulsante "Conferma Valore"
             if (this.dropdownOpen.field === 'partner') {
                 this.showConfirmButton = false;
-            } else if (['medicalCenter', 'noProfit'].includes(this.dropdownOpen.field)) {
-                const rowIndex = this.dropdownOpen.rowIndex;
-                const field = this.dropdownOpen.field;
-                if (rowIndex >= 0 && rowIndex < this.rows.length) {
-                    const row = this.rows[rowIndex];
-                    const cellValue = row[field] || '';
-                    const hasError = row.validationErrors && row.validationErrors[field] === true;
-                    // Mostra il pulsante se c'è un valore nella cella e ha un errore di validazione
-                    this.showConfirmButton = cellValue.trim() !== '' && hasError;
-                } else {
-                    this.showConfirmButton = false;
-                }
+            } else if (['comune', 'medicalCenter', 'noProfit', 'noProfitCategory', 'tipoVisita'].includes(this.dropdownOpen.field)) {
+                // Per questi campi, mostra sempre il pulsante quando il filtro è vuoto
+                // Questo permette di inserire un nuovo valore anche quando la cella è vuota
+                this.showConfirmButton = true;
             } else {
                 this.showConfirmButton = false;
             }
@@ -5271,7 +5326,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 comuneIsNew: row.comuneIsNew || false, // Flag per indicare se il comune è nuovo
                 medicalCenterIsNew: row.medicalCenterIsNew || false, // Flag per indicare se il centro medico è nuovo
                 noProfitIsNew: row.noProfitIsNew || false, // Flag per indicare se l'ente no profit è nuovo
-                noProfitCategoryIsNew: row.noProfitCategoryIsNew || false // Flag per indicare se la categoria ente è nuova
+                noProfitCategoryIsNew: row.noProfitCategoryIsNew || false, // Flag per indicare se la categoria ente è nuova
+                tipoVisitaIsNew: row.tipoVisitaIsNew || false // Flag per indicare se il tipo visita è nuovo
             };
             console.log(`[saveAllInvoices] Riga ${index + 1} - partnerId:`, rowData.partnerId, 'partner:', rowData.partner);
             return rowData;
