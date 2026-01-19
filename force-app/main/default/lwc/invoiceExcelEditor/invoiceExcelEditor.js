@@ -4432,14 +4432,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 );
                 if (currentCell && currentRow) {
                     // Aggiorna il contenuto della cella con il valore confermato
-                    // NON usare textContent perché distrugge la struttura DOM complessa
-                    // LWC aggiornerà automaticamente il contenuto quando this.rows viene aggiornato
-                    // Aggiorna solo se la cella è contenteditable semplice (non ha struttura complessa)
-                    if (currentCell.contentEditable === 'true') {
+                    // NON usare textContent per campi con struttura DOM complessa (invoiceNumber, numeroVisite, totaleMinuti, amount)
+                    // Questi campi hanno una struttura con div e span che verrebbe distrutta
+                    const fieldsWithComplexStructure = ['invoiceNumber', 'numeroVisite', 'totaleMinuti', 'amount'];
+                    if (!fieldsWithComplexStructure.includes(field) && currentCell.contentEditable === 'true') {
                         // Per celle contenteditable semplici, aggiorna il contenuto
                         currentCell.textContent = currentRow[field] || '';
                     }
-                    // Per celle con struttura complessa, LWC aggiornerà automaticamente tramite il binding
+                    // Per celle con struttura complessa, LWC aggiornerà automaticamente tramite il binding quando this.rows viene aggiornato
                     this.updateCellValidationState(currentCell, currentRow, field);
                 }
                 
@@ -5715,7 +5715,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Strategia 1: Se il numero corrisponde esattamente, usa matching per indice (più affidabile)
                     if (useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
-                        if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
+                        if (candidateByIndex && 
+                            !candidateByIndex.assigned && 
+                            !assignedVisitIds.has(candidateByIndex.id) &&
+                            candidateByIndex.id) {
                             // Verifica che almeno tipoVisita e beneficiaryType corrispondano per sicurezza
                             const basicMatch = candidateByIndex.normalizedVisitType === normalizedTipoVisita &&
                                              candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType;
@@ -5770,7 +5773,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Strategia 5: Se ancora non trovato e il numero corrisponde, usa l'indice come fallback assoluto
                     if (!visitResult && useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
-                        if (candidateByIndex && !candidateByIndex.assigned && candidateByIndex.id) {
+                        if (candidateByIndex && 
+                            !candidateByIndex.assigned && 
+                            !assignedVisitIds.has(candidateByIndex.id) &&
+                            candidateByIndex.id) {
                             visitResult = candidateByIndex;
                         }
                     }
