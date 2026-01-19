@@ -5720,8 +5720,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     
                     let visitResult = null;
                     
-                    // Strategia 1: Se il numero corrisponde esattamente, usa matching per indice (più affidabile)
+                    // Strategia 1: Se il numero corrisponde esattamente, usa SOLO matching per indice
                     // Quando il numero corrisponde esattamente, l'ordine dovrebbe essere preservato
+                    // e non dobbiamo usare altre strategie che potrebbero causare assegnazioni errate
                     if (useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
                         if (candidateByIndex && 
@@ -5735,69 +5736,57 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             // Marca immediatamente l'indice come assegnato per evitare duplicati
                             assignedVisitIndices.add(visitIndex);
                         }
-                    }
-                    
-                    // Strategia 2: Matching completo (tipoVisita + beneficiaryType + localita) - più preciso
-                    if (!visitResult) {
-                        for (const visitDetail of availableVisitDetails) {
-                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
-                            
-                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
-                                visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType &&
-                                visitDetail.normalizedLocalita === normalizedLocalita) {
-                                visitResult = visitDetail;
-                                break;
+                    } else if (!useIndexMatching) {
+                        // Solo se il numero NON corrisponde esattamente, usa le altre strategie
+                        
+                        // Strategia 2: Matching completo (tipoVisita + beneficiaryType + localita) - più preciso
+                        if (!visitResult) {
+                            for (const visitDetail of availableVisitDetails) {
+                                if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                                
+                                if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                    visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType &&
+                                    visitDetail.normalizedLocalita === normalizedLocalita) {
+                                    visitResult = visitDetail;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    
-                    // Strategia 3: Matching per tipoVisita + localita (se comune/provincia/regione sono disponibili)
-                    if (!visitResult && normalizedLocalita) {
-                        for (const visitDetail of availableVisitDetails) {
-                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
-                            
-                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
-                                visitDetail.normalizedLocalita === normalizedLocalita) {
-                                visitResult = visitDetail;
-                                break;
+                        
+                        // Strategia 3: Matching per tipoVisita + localita (se comune/provincia/regione sono disponibili)
+                        if (!visitResult && normalizedLocalita) {
+                            for (const visitDetail of availableVisitDetails) {
+                                if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                                
+                                if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                    visitDetail.normalizedLocalita === normalizedLocalita) {
+                                    visitResult = visitDetail;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    
-                    // Strategia 4: Matching per tipoVisita + beneficiaryType
-                    if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType) {
-                        for (const visitDetail of availableVisitDetails) {
-                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
-                            
-                            if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
-                                visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType) {
-                                visitResult = visitDetail;
-                                break;
+                        
+                        // Strategia 4: Matching per tipoVisita + beneficiaryType
+                        if (!visitResult && normalizedTipoVisita && normalizedBeneficiaryType) {
+                            for (const visitDetail of availableVisitDetails) {
+                                if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                                
+                                if (visitDetail.normalizedVisitType === normalizedTipoVisita &&
+                                    visitDetail.normalizedBeneficiaryType === normalizedBeneficiaryType) {
+                                    visitResult = visitDetail;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    
-                    // Strategia 5: Se ancora non trovato e il numero corrisponde, usa l'indice come fallback assoluto
-                    if (!visitResult && useIndexMatching && visitIndex < availableVisitDetails.length) {
-                        const candidateByIndex = availableVisitDetails[visitIndex];
-                        if (candidateByIndex && 
-                            !candidateByIndex.assigned && 
-                            !assignedVisitIds.has(candidateByIndex.id) &&
-                            !assignedVisitIndices.has(visitIndex) &&
-                            candidateByIndex.id) {
-                            visitResult = candidateByIndex;
-                            // Marca immediatamente l'indice come assegnato per evitare duplicati
-                            assignedVisitIndices.add(visitIndex);
-                        }
-                    }
-                    
-                    // Strategia 6: Ultimo tentativo - prendi la prima visita disponibile non assegnata
-                    if (!visitResult) {
-                        for (const visitDetail of availableVisitDetails) {
-                            if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
-                            if (visitDetail.id) {
-                                visitResult = visitDetail;
-                                break;
+                        
+                        // Strategia 5: Ultimo tentativo - prendi la prima visita disponibile non assegnata
+                        if (!visitResult) {
+                            for (const visitDetail of availableVisitDetails) {
+                                if (visitDetail.assigned || assignedVisitIds.has(visitDetail.id)) continue;
+                                if (visitDetail.id) {
+                                    visitResult = visitDetail;
+                                    break;
+                                }
                             }
                         }
                     }
