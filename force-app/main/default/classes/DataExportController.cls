@@ -48,17 +48,36 @@ public with sharing class DataExportController {
         // 4. Centro Medico - valori distinct e ordinati alfabeticamente di Medical_Center__c da Invoice__c
         // Ottimizzazione: usa GROUP BY invece di loop su tutti i record
         List<String> medicalCenters = new List<String>();
-        for (AggregateResult ar : [
-            SELECT Medical_Center__c 
-            FROM Invoice__c 
-            WHERE Medical_Center__c != null
-            GROUP BY Medical_Center__c
-            ORDER BY Medical_Center__c
-        ]) {
-            String mc = (String) ar.get('Medical_Center__c');
-            if (mc != null) {
-                medicalCenters.add(mc);
+        try {
+            for (AggregateResult ar : [
+                SELECT Medical_Center__c 
+                FROM Invoice__c 
+                WHERE Medical_Center__c != null
+                GROUP BY Medical_Center__c
+                ORDER BY Medical_Center__c
+                LIMIT 10000
+            ]) {
+                String mc = (String) ar.get('Medical_Center__c');
+                if (mc != null) {
+                    medicalCenters.add(mc);
+                }
             }
+        } catch (Exception e) {
+            // Fallback: se GROUP BY non funziona, usa Set con query normale
+            Set<String> medicalCentersSet = new Set<String>();
+            for (Invoice__c invoice : [
+                SELECT Medical_Center__c 
+                FROM Invoice__c 
+                WHERE Medical_Center__c != null
+                ORDER BY Medical_Center__c
+                LIMIT 10000
+            ]) {
+                if (invoice.Medical_Center__c != null) {
+                    medicalCentersSet.add(invoice.Medical_Center__c);
+                }
+            }
+            medicalCenters = new List<String>(medicalCentersSet);
+            medicalCenters.sort();
         }
         
         // 5. Ente No Profit e No Profit Category - ordinati alfabeticamente su Name
@@ -73,22 +92,23 @@ public with sharing class DataExportController {
         
         // 7. Partner - nomi da Account con Type = 'Investor', campo Nome_Donatore__c
         // Escludi gli Account con DEFAULT__c = true (Default for invoice)
-        // Ottimizzazione: usa GROUP BY per ottenere valori distinti già ordinati
-        List<String> partners = new List<String>();
-        for (AggregateResult ar : [
+        // Ottimizzazione: usa Set per deduplicazione e query con ORDER BY
+        Set<String> partnersSet = new Set<String>();
+        for (Account acc : [
             SELECT Nome_Donatore__c 
             FROM Account 
             WHERE Type = 'Investor' 
             AND Nome_Donatore__c != null
             AND (DEFAULT__c = false OR DEFAULT__c = null)
-            GROUP BY Nome_Donatore__c
             ORDER BY Nome_Donatore__c
+            LIMIT 10000
         ]) {
-            String partner = (String) ar.get('Nome_Donatore__c');
-            if (partner != null) {
-                partners.add(partner);
+            if (acc.Nome_Donatore__c != null) {
+                partnersSet.add(acc.Nome_Donatore__c);
             }
         }
+        List<String> partners = new List<String>(partnersSet);
+        partners.sort();
         
         // Prepara le liste per ogni colonna (ottimizzazione: usa direttamente i dati dalle query)
         List<String> comuniNames = new List<String>();

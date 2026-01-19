@@ -4432,7 +4432,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 );
                 if (currentCell && currentRow) {
                     // Aggiorna il contenuto della cella con il valore confermato
-                    currentCell.textContent = currentRow[field] || '';
+                    // NON usare textContent perché distrugge la struttura DOM complessa
+                    // LWC aggiornerà automaticamente il contenuto quando this.rows viene aggiornato
+                    // Aggiorna solo se la cella è contenteditable semplice (non ha struttura complessa)
+                    if (currentCell.contentEditable === 'true') {
+                        // Per celle contenteditable semplici, aggiorna il contenuto
+                        currentCell.textContent = currentRow[field] || '';
+                    }
+                    // Per celle con struttura complessa, LWC aggiornerà automaticamente tramite il binding
                     this.updateCellValidationState(currentCell, currentRow, field);
                 }
                 
