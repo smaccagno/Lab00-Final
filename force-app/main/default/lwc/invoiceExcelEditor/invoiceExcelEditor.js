@@ -5721,6 +5721,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     let visitResult = null;
                     
                     // Strategia 1: Se il numero corrisponde esattamente, usa matching per indice (più affidabile)
+                    // Quando il numero corrisponde esattamente, l'ordine dovrebbe essere preservato
                     if (useIndexMatching && visitIndex < availableVisitDetails.length) {
                         const candidateByIndex = availableVisitDetails[visitIndex];
                         if (candidateByIndex && 
@@ -5728,16 +5729,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                             !assignedVisitIds.has(candidateByIndex.id) &&
                             !assignedVisitIndices.has(visitIndex) &&
                             candidateByIndex.id) {
-                            // Verifica che almeno tipoVisita e beneficiaryType corrispondano per sicurezza
-                            const basicMatch = candidateByIndex.normalizedVisitType === normalizedTipoVisita &&
-                                             candidateByIndex.normalizedBeneficiaryType === normalizedBeneficiaryType;
-                            
-                            // Se corrisponde perfettamente o almeno tipoVisita e beneficiaryType corrispondono
-                            if (basicMatch) {
-                                visitResult = candidateByIndex;
-                                // Marca immediatamente l'indice come assegnato per evitare duplicati
-                                assignedVisitIndices.add(visitIndex);
-                            }
+                            // Se il numero corrisponde esattamente, usa sempre l'indice come matching principale
+                            // perché l'ordine dovrebbe essere preservato dal backend
+                            visitResult = candidateByIndex;
+                            // Marca immediatamente l'indice come assegnato per evitare duplicati
+                            assignedVisitIndices.add(visitIndex);
                         }
                     }
                     
@@ -5811,12 +5807,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         assignedVisitIds.add(visitResult.id);
                         visitResult.assigned = true;
                         
+                        // Se è stato usato il matching per indice, marca anche l'indice come assegnato
+                        if (useIndexMatching && visitIndex < availableVisitDetails.length) {
+                            assignedVisitIndices.add(visitIndex);
+                        }
+                        
                         // Log per debug
                         console.log(`[updateOrganizedInvoicesWithSaveResults] Visita ${visitIndex} assegnata:`, {
                             visitId: visitResult.id,
                             visitName: visitResult.name,
                             tipoVisita: visit.tipoVisita,
-                            beneficiaryType: visit.beneficiaryType
+                            beneficiaryType: visit.beneficiaryType,
+                            originalIndex: visitResult.originalIndex
                         });
                         
                         return {
