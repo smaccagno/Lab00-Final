@@ -6105,10 +6105,48 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
-        // Dopo il rerender della tabella, ripristina i bordi rossi delle celle con errore
+        // Dopo il rerender della tabella, rifai il check di validazione completo
         setTimeout(() => {
+            this.validateAllRows();
             this.refreshValidationBordersInTable();
         }, 0);
+    }
+    
+    /**
+     * Valida tutte le righe e tutti i campi nella tabella
+     */
+    validateAllRows() {
+        if (!this.rows || this.rows.length === 0) return;
+        
+        // Lista di tutti i campi validabili
+        const validatableFields = [
+            'partner',
+            'tipoVisita',
+            'beneficiaryType',
+            'comune',
+            'provincia',
+            'regione',
+            'medicalCenter',
+            'noProfit',
+            'noProfitCategory',
+            'invoiceNumber'
+        ];
+        
+        this.rows.forEach((row, rowIndex) => {
+            // Valida ogni campo della riga
+            validatableFields.forEach(field => {
+                const value = row[field];
+                if (value !== undefined && value !== null) {
+                    this.validateField(row, field, value);
+                }
+            });
+            
+            // Aggiorna lo stato hasErrors della riga
+            row.hasErrors = this.hasRowErrors(row);
+        });
+        
+        // Forza il re-render per aggiornare lo stato visivo
+        this.rows = [...this.rows];
     }
     
     /**
