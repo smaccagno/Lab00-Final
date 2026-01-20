@@ -6119,7 +6119,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
-        // Forza un re-render immediato per assicurarsi che la tabella sia visibile
+        // Attiva lo spinner globale immediatamente
+        this.isValidating = true;
+        // Forza un re-render immediato per assicurarsi che la tabella sia visibile e lo spinner sia mostrato
         this.rows = [...this.rows];
         // Dopo il rerender della tabella, rifai il check di validazione completo con spinner
         // Usa requestAnimationFrame per assicurarsi che il DOM sia completamente renderizzato
