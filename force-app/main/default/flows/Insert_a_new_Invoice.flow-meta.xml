@@ -1080,6 +1080,43 @@
             <targetReference>Gratuita</targetReference>
         </connector>
         <fields>
+            <name>excel_editor_launcher</name>
+            <extensionName>c:invoiceExcelEditorLauncher</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>programId</name>
+                <value>
+                    <elementReference>programma_selezionato.Id</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>partnerBudgetId</name>
+                <value>
+                    <elementReference>budget_final</elementReference>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+            <visibilityRule>
+                <conditionLogic>and</conditionLogic>
+                <conditions>
+                    <leftValueReference>programma_selezionato.Name</leftValueReference>
+                    <operator>EqualTo</operator>
+                    <rightValue>
+                        <elementReference>nome_tempo_sospeso</elementReference>
+                    </rightValue>
+                </conditions>
+            </visibilityRule>
+        </fields>
+        <fields>
             <name>Inserisci_i_dati_della_fattura_Section1</name>
             <fieldType>RegionContainer</fieldType>
             <fields>
@@ -1571,7 +1608,7 @@
             <targetReference>Get_Account_Partner</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <subflows>
         <name>Collega_Fattura_a_Donatore</name>
         <label>Collega Fattura a Donatore</label>
