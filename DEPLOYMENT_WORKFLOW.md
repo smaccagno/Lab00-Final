@@ -126,6 +126,28 @@ git push origin main
 4. **Verifica i test**: Assicurati che tutti i test passino prima del deployment
 5. **Backup**: Prima di deployare modifiche significative, considera di fare un backup
 
+## Script Helper
+
+È disponibile uno script helper per semplificare il deployment:
+
+```bash
+# Deploy da versione-con-inserimento-massivo a PROD
+./scripts/deploy-from-github.sh PROD
+
+# Deploy da versione-con-inserimento-massivo a DEV
+./scripts/deploy-from-github.sh DEV
+
+# Deploy da un branch specifico
+./scripts/deploy-from-github.sh PROD feature-branch main
+```
+
+Lo script:
+1. Mostra le differenze tra i branch
+2. Chiede conferma prima di procedere
+3. Crea un branch temporaneo
+4. Esegue il deployment
+5. Offre di mergeare in main se il deployment a PROD è riuscito
+
 ## Comandi Utili
 
 ```bash
@@ -143,6 +165,13 @@ git log main..versione-con-inserimento-massivo
 
 # Crea un manifest da un branch
 sf project generate manifest --source-dir force-app/main/default --name package-from-branch
+
+# Vedi solo i file modificati (senza contenuto)
+git diff --name-only main..versione-con-inserimento-massivo
+
+# Vedi le differenze per tipo di componente
+git diff --name-only main..versione-con-inserimento-massivo | grep "\.cls$"
+git diff --name-only main..versione-con-inserimento-massivo | grep "lwc/"
 ```
 
 ## Note Importanti
