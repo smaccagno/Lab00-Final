@@ -1013,12 +1013,24 @@ public with sharing class InvoiceExcelEditorController {
                                 errors.add('Errore DML Visita riga ' + (dmlIndex + 1) + ': ' + e.getDmlMessage(i));
                             }
                         } catch (Exception e) {
-                            errors.add('Errore nella creazione delle visite: ' + e.getMessage());
+                            String errorMessage = 'Errore nella creazione delle visite: ' + e.getMessage();
+                            String stackTrace = e.getStackTraceString();
+                            System.debug('ERRORE nella creazione delle visite: ' + errorMessage);
+                            System.debug('Stack trace: ' + stackTrace);
+                            System.debug('Numero visite da inserire: ' + visitsToInsert.size());
+                            for (Integer i = 0; i < visitsToInsert.size(); i++) {
+                                Visit__c v = visitsToInsert[i];
+                                System.debug('Visita ' + (i + 1) + ' - Visit_Type__c: ' + v.Visit_Type__c + 
+                                    ', Tipo_Visita__c: ' + v.Tipo_Visita__c + 
+                                    ', Beneficiary_Type__c: ' + v.Beneficiary_Type__c +
+                                    ', Invoice__c: ' + v.Invoice__c);
+                            }
+                            errors.add(errorMessage);
                             // Aggiorna tutti i risultati con l'errore generale
                             for (Integer inputRowIndex : visitsByInputRow.keySet()) {
                                 if (inputRowIndex < invoiceResults.size()) {
                                     Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
-                                    invoiceResult.put('visitError', e.getMessage());
+                                    invoiceResult.put('visitError', errorMessage);
                                     invoiceResult.put('visitsCreated', 0);
                                     invoiceResult.put('visitsFailed', visitsByInputRow.get(inputRowIndex).size());
                                 }
@@ -1716,9 +1728,48 @@ public with sharing class InvoiceExcelEditorController {
             String.valueOf(visitData.get('tipoVisita')) : null;
         Id tipoVisitaId = visitData.containsKey('tipoVisitaId') ? 
             toIdSafe(visitData.get('tipoVisitaId')) : null;
+        Boolean tipoVisitaIsNew = visitData.containsKey('tipoVisitaIsNew') && 
+            Boolean.valueOf(visitData.get('tipoVisitaIsNew'));
         
         if (String.isBlank(tipoVisitaName) && tipoVisitaId == null) {
             throw new AuraHandledException('Tipo Visita è obbligatorio');
+        }
+        
+        // Se il tipo visita è nuovo e non ha un ID, crealo
+        if (tipoVisitaIsNew && String.isNotBlank(tipoVisitaName) && tipoVisitaId == null) {
+            try {
+                // Cerca prima se esiste già (case-insensitive)
+                List<Tipo_Visita__c> existingTipi = [
+                    SELECT Id, Name FROM Tipo_Visita__c 
+                    WHERE Name = :tipoVisitaName.trim()
+                    LIMIT 1
+                ];
+                
+                if (!existingTipi.isEmpty()) {
+                    tipoVisitaId = existingTipi[0].Id;
+                    System.debug('Tipo Visita trovato esistente: ' + tipoVisitaName + ' -> ' + tipoVisitaId);
+                } else {
+                    // Crea il nuovo tipo visita
+                    Tipo_Visita__c newTipoVisita = new Tipo_Visita__c(Name = tipoVisitaName.trim());
+                    insert newTipoVisita;
+                    tipoVisitaId = newTipoVisita.Id;
+                    System.debug('Tipo Visita creato: ' + tipoVisitaName + ' -> ' + tipoVisitaId);
+                }
+            } catch (Exception e) {
+                System.debug('Errore nella creazione del Tipo Visita: ' + e.getMessage());
+                // Prova a cercare di nuovo nel database (potrebbe essere stato creato da un trigger)
+                List<Tipo_Visita__c> retryTipi = [
+                    SELECT Id, Name FROM Tipo_Visita__c 
+                    WHERE Name = :tipoVisitaName.trim()
+                    LIMIT 1
+                ];
+                if (!retryTipi.isEmpty()) {
+                    tipoVisitaId = retryTipi[0].Id;
+                    System.debug('Tipo Visita trovato dopo retry: ' + tipoVisitaName + ' -> ' + tipoVisitaId);
+                } else {
+                    throw new AuraHandledException('Errore nella creazione del Tipo Visita: ' + e.getMessage());
+                }
+            }
         }
         
         visit.Visit_Type__c = tipoVisitaName;
