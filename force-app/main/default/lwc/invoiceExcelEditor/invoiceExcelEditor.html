@@ -335,7 +335,7 @@
                                         </template>
                                     </div>
                                 </td>
-                                <td class="editable-cell dropdown-cell" 
+                                <td class="editable-cell dropdown-cell {row.validationErrors.partner ? 'invalid-cell' : ''}" 
                                     data-field="partner"
                                     data-row-index={rowIndex}
                                     contenteditable="true"

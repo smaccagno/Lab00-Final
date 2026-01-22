@@ -798,15 +798,32 @@ public with sharing class InvoiceExcelEditorController {
                     System.debug('  - Senza partnerId: ' + nullPartnerIdCount);
                     
                     // Ora crea le visite mediche associate alle fatture
+                    System.debug('=== INIZIO CREAZIONE VISITE ===');
+                    System.debug('Numero totale righe: ' + invoiceDataList.size());
+                    System.debug('Numero fatture create: ' + invoicesToInsert.size());
+                    System.debug('inputRowToInvoiceIndex: ' + inputRowToInvoiceIndex);
+                    
                     for (Integer i = 0; i < invoiceDataList.size(); i++) {
                         Object invoiceObj = invoiceDataList[i];
-                        if (!(invoiceObj instanceof Map<String, Object>)) continue;
+                        if (!(invoiceObj instanceof Map<String, Object>)) {
+                            System.debug('Riga ' + (i + 1) + ': Non è una Map, skip');
+                            continue;
+                        }
                         
                         Map<String, Object> invoiceDataMap = (Map<String, Object>) invoiceObj;
+                        
+                        // Log dei dati della visita per questa riga
+                        System.debug('Riga ' + (i + 1) + ' - Dati visita - tipoVisita: ' + invoiceDataMap.get('tipoVisita') + 
+                            ', beneficiaryType: ' + invoiceDataMap.get('beneficiaryType') + 
+                            ', numeroVisite: ' + invoiceDataMap.get('numeroVisite') + 
+                            ', comune: ' + invoiceDataMap.get('comune') + 
+                            ', hasVisitData: ' + hasVisitData(invoiceDataMap) + 
+                            ', hasInvoiceIndex: ' + inputRowToInvoiceIndex.containsKey(i));
                         
                         // Verifica se questa riga ha una fattura creata e se ci sono dati per le visite mediche
                         if (inputRowToInvoiceIndex.containsKey(i) && hasVisitData(invoiceDataMap)) {
                             Integer invoiceIdx = inputRowToInvoiceIndex.get(i);
+                            System.debug('Riga ' + (i + 1) + ': Creazione visita per fattura index ' + invoiceIdx + ' (ID: ' + invoicesToInsert[invoiceIdx].Id + ')');
                             List<Visit__c> invoiceVisits = new List<Visit__c>();
                             List<String> invoiceVisitErrors = new List<String>();
                             
@@ -814,19 +831,33 @@ public with sharing class InvoiceExcelEditorController {
                                 Visit__c visit = createVisitRecord(invoiceDataMap, invoicesToInsert[invoiceIdx].Id, i + 1, comuniMap);
                                 if (visit != null) {
                                     invoiceVisits.add(visit);
+                                    System.debug('Riga ' + (i + 1) + ': Visita creata con successo');
+                                } else {
+                                    System.debug('Riga ' + (i + 1) + ': createVisitRecord ha restituito null');
                                 }
                             } catch (Exception e) {
                                 invoiceVisitErrors.add(e.getMessage());
                                 errors.add('Riga ' + (i + 1) + ' - Visita: ' + e.getMessage());
                                 System.debug('Errore nella creazione della visita riga ' + (i + 1) + ': ' + e.getMessage());
+                                System.debug('Stack trace: ' + e.getStackTraceString());
                             }
                             
                             visitsByInputRow.put(i, invoiceVisits);
                             if (!invoiceVisitErrors.isEmpty()) {
                                 visitErrorsByInputRow.put(i, invoiceVisitErrors);
                             }
+                        } else {
+                            if (!inputRowToInvoiceIndex.containsKey(i)) {
+                                System.debug('Riga ' + (i + 1) + ': Non ha un indice fattura (fattura non creata o errore)');
+                            }
+                            if (!hasVisitData(invoiceDataMap)) {
+                                System.debug('Riga ' + (i + 1) + ': Non ha dati visita sufficienti');
+                            }
                         }
                     }
+                    
+                    System.debug('=== FINE CREAZIONE VISITE ===');
+                    System.debug('Visite create: ' + visitsByInputRow.size() + ' righe con visite');
                     
                     // Raccogli tutte le visite da inserire preservando l'ordine originale
                     // Crea una lista ordinata che preserva l'ordine di inputRowIndex
@@ -846,6 +877,8 @@ public with sharing class InvoiceExcelEditorController {
                             globalVisitIndex++;
                         }
                     }
+                    
+                    System.debug('Totale visite da inserire: ' + visitsToInsert.size());
                     
                     // Inserisci le visite se presenti
                     if (!visitsToInsert.isEmpty()) {
@@ -1648,10 +1681,25 @@ public with sharing class InvoiceExcelEditorController {
      * Verifica se ci sono dati per le visite mediche
      */
     private static Boolean hasVisitData(Map<String, Object> invoiceData) {
-        return (invoiceData.containsKey('tipoVisita') && invoiceData.get('tipoVisita') != null) ||
-               (invoiceData.containsKey('beneficiaryType') && invoiceData.get('beneficiaryType') != null) ||
-               (invoiceData.containsKey('numeroVisite') && invoiceData.get('numeroVisite') != null) ||
-               (invoiceData.containsKey('comune') && invoiceData.get('comune') != null);
+        // Verifica che ci siano dati non vuoti per le visite
+        String tipoVisita = invoiceData.containsKey('tipoVisita') ? String.valueOf(invoiceData.get('tipoVisita')) : null;
+        String beneficiaryType = invoiceData.containsKey('beneficiaryType') ? String.valueOf(invoiceData.get('beneficiaryType')) : null;
+        Object numeroVisite = invoiceData.get('numeroVisite');
+        String comune = invoiceData.containsKey('comune') ? String.valueOf(invoiceData.get('comune')) : null;
+        
+        Boolean hasTipoVisita = String.isNotBlank(tipoVisita);
+        Boolean hasBeneficiaryType = String.isNotBlank(beneficiaryType);
+        Boolean hasNumeroVisite = numeroVisite != null && (numeroVisite instanceof Integer ? (Integer)numeroVisite > 0 : true);
+        Boolean hasComune = String.isNotBlank(comune);
+        
+        Boolean result = hasTipoVisita || hasBeneficiaryType || hasNumeroVisite || hasComune;
+        
+        System.debug('hasVisitData check - tipoVisita: ' + tipoVisita + ', hasTipoVisita: ' + hasTipoVisita + 
+            ', beneficiaryType: ' + beneficiaryType + ', hasBeneficiaryType: ' + hasBeneficiaryType + 
+            ', numeroVisite: ' + numeroVisite + ', hasNumeroVisite: ' + hasNumeroVisite + 
+            ', comune: ' + comune + ', hasComune: ' + hasComune + ', result: ' + result);
+        
+        return result;
     }
     
     /**

@@ -1879,6 +1879,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Aggiorna lo stato visivo della cella
             this.updateCellValidationState(cell, row, field);
             
+            // Aggiorna hasErrors e forza il re-render per aggiornare il messaggio di errore nella prima colonna
+            row.hasErrors = this.hasRowErrors(row);
+            this.rows = [...updatedRows];
+            
             // Se è stato modificato comune, provincia o regione, aggiorna anche lo stato visivo degli altri due campi correlati
             if (field === 'comune' || field === 'provincia' || field === 'regione') {
                 setTimeout(() => {
@@ -1906,6 +1910,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 targetElement.textContent = row[field] || '';
             }
 
+            // Aggiorna l'array rows per forzare il re-render (già fatto sopra, ma assicuriamoci che sia aggiornato)
             this.rows = updatedRows;
             
             // Aggiorna le celle corrette nel DOM dopo un breve delay
@@ -5720,13 +5725,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Crea un array delle visite disponibili dal backend (non ancora assegnate)
                 // Aggiungi anche l'indice originale per il matching
                 const availableVisitDetails = (saveResult.visitDetails || []).map((vd, index) => ({
-                    ...vd,
+                    id: vd.id,
+                    name: vd.name || null, // Assicurati che name sia incluso
+                    visitType: vd.visitType || '',
+                    beneficiaryType: vd.beneficiaryType || '',
+                    localita: vd.localita || '',
                     normalizedVisitType: normalizeString(vd.visitType),
                     normalizedBeneficiaryType: normalizeString(vd.beneficiaryType),
                     normalizedLocalita: normalizeString(vd.localita),
                     originalIndex: index, // Indice originale nell'array restituito dal backend
                     assigned: false
                 }));
+                
+                // Log per debug
+                console.log(`[updateOrganizedInvoicesWithSaveResults] Visite disponibili dal backend per ${invoiceNumber}:`, 
+                    availableVisitDetails.map(v => ({ id: v.id, name: v.name, visitType: v.visitType })));
                 
                 // Traccia le visite già assegnate per evitare duplicati
                 const assignedVisitIds = new Set();
