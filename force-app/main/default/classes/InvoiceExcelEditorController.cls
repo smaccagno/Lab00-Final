@@ -1750,10 +1750,37 @@ public with sharing class InvoiceExcelEditorController {
                     System.debug('Tipo Visita trovato esistente: ' + tipoVisitaName + ' -> ' + tipoVisitaId);
                 } else {
                     // Crea il nuovo tipo visita
-                    Tipo_Visita__c newTipoVisita = new Tipo_Visita__c(Name = tipoVisitaName.trim());
-                    insert newTipoVisita;
-                    tipoVisitaId = newTipoVisita.Id;
-                    System.debug('Tipo Visita creato: ' + tipoVisitaName + ' -> ' + tipoVisitaId);
+                    // Nota: Tipo_Visita__c ha un campo univoco Tipo_Visita__c che deve essere valorizzato
+                    String trimmedName = tipoVisitaName.trim();
+                    Tipo_Visita__c newTipoVisita = new Tipo_Visita__c(
+                        Name = trimmedName,
+                        Tipo_Visita__c = trimmedName  // Campo univoco obbligatorio
+                    );
+                    try {
+                        insert newTipoVisita;
+                        tipoVisitaId = newTipoVisita.Id;
+                        System.debug('Tipo Visita creato: ' + trimmedName + ' -> ' + tipoVisitaId);
+                    } catch (DmlException dmlEx) {
+                        System.debug('Errore DML nella creazione del Tipo Visita: ' + dmlEx.getMessage());
+                        System.debug('DML Message: ' + dmlEx.getDmlMessage(0));
+                        System.debug('DML Type: ' + dmlEx.getDmlType(0));
+                        // Se c'è un errore di duplicato, prova a cercare di nuovo
+                        if (dmlEx.getDmlType(0) == StatusCode.DUPLICATE_VALUE) {
+                            List<Tipo_Visita__c> duplicateTipi = [
+                                SELECT Id, Name FROM Tipo_Visita__c 
+                                WHERE Name = :trimmedName OR Tipo_Visita__c = :trimmedName
+                                LIMIT 1
+                            ];
+                            if (!duplicateTipi.isEmpty()) {
+                                tipoVisitaId = duplicateTipi[0].Id;
+                                System.debug('Tipo Visita trovato dopo errore duplicato: ' + trimmedName + ' -> ' + tipoVisitaId);
+                            } else {
+                                throw new AuraHandledException('Errore nella creazione del Tipo Visita: ' + dmlEx.getDmlMessage(0));
+                            }
+                        } else {
+                            throw new AuraHandledException('Errore nella creazione del Tipo Visita: ' + dmlEx.getDmlMessage(0));
+                        }
+                    }
                 }
             } catch (Exception e) {
                 System.debug('Errore nella creazione del Tipo Visita: ' + e.getMessage());
