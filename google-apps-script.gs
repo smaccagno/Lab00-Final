@@ -1070,19 +1070,21 @@ function cleanupValidationState_() {
 function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, errorNum, totalErrors) {
   const ui = SpreadsheetApp.getUi();
   
-  // Crea HTML per i pulsanti dei candidati usando data attributes per evitare problemi di escape
+  // Crea HTML per i pulsanti dei candidati
+  // Usa un indice invece del valore per evitare problemi di escape
   let buttonsHtml = '';
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     const scoreText = candidate.score !== null ? ` (${Math.round(candidate.score * 100)}%)` : '';
-    // Usa data attribute invece di onclick per evitare problemi di escape
-    const escapedValue = candidate.value.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     buttonsHtml += `
-      <button class="candidate-button" data-candidate-value="${escapedValue}">
+      <button class="candidate-button" data-index="${i}">
         "${candidate.value}"${scoreText}
       </button>
     `;
   }
+  
+  // Serializza i candidati in JSON per passarli al JavaScript
+  const candidatesJson = JSON.stringify(candidates.map(c => c.value));
   
   const html = HtmlService.createHtmlOutput(`
     <html>
@@ -1136,25 +1138,80 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
         </button>
         
         <script>
-          // Aggiungi event listener ai pulsanti quando il documento è caricato
-          document.addEventListener('DOMContentLoaded', function() {
-            // Aggiungi event listener a tutti i pulsanti candidati
-            const candidateButtons = document.querySelectorAll('.candidate-button[data-candidate-value]');
-            candidateButtons.forEach(function(button) {
-              button.addEventListener('click', function() {
-                const value = button.getAttribute('data-candidate-value');
-                // Decodifica i caratteri HTML entities
-                const decodedValue = value.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-                selectCandidate(decodedValue);
+          // Array dei valori candidati (passato dal server)
+          const candidates = ${candidatesJson};
+          
+          // Funzione per inizializzare gli event listener sui pulsanti
+          function initializeButtons() {
+            try {
+              // Aggiungi event listener a tutti i pulsanti candidati usando l'indice
+              const candidateButtons = document.querySelectorAll('.candidate-button[data-index]');
+              console.log('Trovati ' + candidateButtons.length + ' pulsanti candidati');
+              
+              candidateButtons.forEach(function(button, idx) {
+                // Rimuovi eventuali listener esistenti clonando il pulsante
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                newButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    const index = parseInt(newButton.getAttribute('data-index'));
+                    console.log('Click su pulsante indice: ' + index);
+                    if (index >= 0 && index < candidates.length) {
+                      console.log('Valore selezionato: ' + candidates[index]);
+                      selectCandidate(candidates[index]);
+                    } else {
+                      console.error('Indice non valido: ' + index);
+                    }
+                  } catch (err) {
+                    console.error('Errore nel click handler: ' + err.message);
+                    alert('Errore: ' + err.message);
+                  }
+                });
               });
-            });
-            
-            // Aggiungi event listener al pulsante "Rifiuta suggerimenti"
-            const rejectButton = document.querySelector('.reject-button');
-            if (rejectButton) {
-              rejectButton.addEventListener('click', rejectSuggestion);
+              
+              // Aggiungi event listener al pulsante "Rifiuta suggerimenti"
+              const rejectButton = document.querySelector('.reject-button');
+              if (rejectButton) {
+                const newRejectButton = rejectButton.cloneNode(true);
+                rejectButton.parentNode.replaceChild(newRejectButton, rejectButton);
+                newRejectButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  rejectSuggestion();
+                });
+                console.log('Pulsante rifiuta inizializzato');
+              }
+            } catch (err) {
+              console.error('Errore in initializeButtons: ' + err.message);
+              alert('Errore nell\'inizializzazione: ' + err.message);
             }
-          });
+          }
+          
+          // Inizializza i pulsanti immediatamente e anche dopo il caricamento
+          // Prova diversi metodi per assicurarsi che funzioni
+          setTimeout(function() {
+            console.log('Inizializzazione pulsanti con setTimeout');
+            initializeButtons();
+          }, 100);
+          
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+              console.log('DOMContentLoaded - inizializzazione pulsanti');
+              initializeButtons();
+            });
+          } else {
+            console.log('DOM già caricato - inizializzazione immediata');
+            initializeButtons();
+          }
+          
+          // Fallback con window.onload
+          window.onload = function() {
+            console.log('window.onload - inizializzazione pulsanti');
+            initializeButtons();
+          };
           
           function selectCandidate(value) {
             try {
