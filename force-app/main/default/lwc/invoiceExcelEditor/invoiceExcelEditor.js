@@ -2129,7 +2129,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     async validateAllRowsHandler() {
         try {
             console.log('Validazione completa richiesta dall\'utente');
-            // Esegui la validazione completa (la funzione gestisce già lo spinner)
+            // Attiva lo spinner immediatamente per garantire che venga mostrato
+            this.isValidating = true;
+            // Forza un piccolo delay per assicurarsi che lo spinner venga renderizzato
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Esegui la validazione completa (la funzione gestisce già lo spinner internamente)
             await this.validateAllRows();
             
             // Mostra messaggio di successo
@@ -6411,6 +6416,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Attiva lo spinner globale all'inizio della validazione
         this.isValidating = true;
+        // Forza un piccolo delay per assicurarsi che lo spinner venga renderizzato prima di iniziare la validazione
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         // Lista di tutti i campi validabili
         const validatableFields = [
@@ -6470,17 +6477,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         }
         
-        // Disattiva lo spinner globale alla fine della validazione
-        this.isValidating = false;
-        
         // Aggiorna i bordi rossi dopo tutte le validazioni
         // Usa un delay maggiore per assicurarsi che il DOM sia completamente aggiornato
-        setTimeout(() => {
-            console.log('[validateAllRows] Aggiornamento bordi rossi');
-            this.refreshValidationBordersInTable();
-            // Forza un altro re-render per assicurarsi che i bordi vengano mostrati
-            this.rows = [...this.rows];
-        }, 200);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        console.log('[validateAllRows] Aggiornamento bordi rossi');
+        this.refreshValidationBordersInTable();
+        // Forza un altro re-render per assicurarsi che i bordi vengano mostrati
+        this.rows = [...this.rows];
+        
+        // Disattiva lo spinner globale solo dopo che tutto è completato
+        this.isValidating = false;
     }
     
     /**
