@@ -2086,7 +2086,7 @@ function columnNumberToLetter_(columnNumber) {
  */
 function sendDataToInvoiceExcelEditor() {
   const RENDICONTAZIONE_SHEET = 'Rendicontazione';
-  const INVOICE_EXCEL_EDITOR_URL = 'https://fondazionelab00ets--dev.sandbox.lightning.force.com/lightning/n/InvoiceExcelEditor';
+  const INVOICE_EXCEL_EDITOR_URL = 'https://fondazionelab00ets.lightning.force.com/lightning/n/InvoiceExcelEditor';
   
   const ss = SpreadsheetApp.getActive();
   const rendicontazioneSheet = ss.getSheetByName(RENDICONTAZIONE_SHEET);
