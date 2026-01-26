@@ -5,13 +5,12 @@ const SF_LOGIN = 'https://login.salesforce.com'; // PRODUCTION
 const SHEET_NAME = 'Validazione Dati';
 const SF_API_VERSION = 'v60.0';
 
-// IMPORTANTE: Sostituisci questi valori con le tue credenziali Salesforce OAuth2
-const CLIENT_ID = 'YOUR_SALESFORCE_CLIENT_ID_HERE';
-const CLIENT_SECRET = 'YOUR_SALESFORCE_CLIENT_SECRET_HERE';
+const CLIENT_ID = '3MVG9_kZcLde7U5pU.38e6yN9sYAv0gKC5l_jdVj8uEFQvIkKVvU6wev085aq8h1sAXZ0QOnjSLbo5D1sQFt9';
+const CLIENT_SECRET = '1C08E0486088A56CB4AB42D2945C7EBDDF0A3D58A600D2E170FCF631B6E19F2A';
 const SF_DOMAIN = 'https://fondazionelab00ets.lightning.force.com';
 
-// IMPORTANTE: Sostituisci con l'URL della tua Google Apps Script Web App
-const WEB_APP_EXEC = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+const WEB_APP_EXEC =
+  'https://script.google.com/a/macros/salesforce.com/s/AKfycbwDpVLXBOL9ioEURUmaheb6nhyvx5hJbmfMcHR1gQohbsRtZnzqx1V17G-mXVU7tWhc/exec';
 
 function getRedirectFromExec_() {
   return WEB_APP_EXEC.replace(/\/exec$/, '/usercallback');
@@ -41,6 +40,8 @@ function onOpen() {
     .addItem('Sync Tutto', 'syncAll')
     .addSeparator()
     .addItem('Valida Dati Rendicontazione', 'validateRendicontazione')
+    .addSeparator()
+    .addItem('Invia Dati a InvoiceExcelEditor', 'sendDataToInvoiceExcelEditor')
     .addToUi();
 }
 
@@ -767,433 +768,895 @@ function validateRendicontazione() {
 }
 
 /**
- * Corregge gli errori in modo interattivo usando un pattern "chain of callbacks"
- * NOTA: showModalDialog NON blocca l'esecuzione in Google Apps Script
- * Quindi usiamo CacheService per salvare lo stato e richiamare il prossimo dialog
+ * Corregge gli errori in modo interattivo, evidenziando la cella errata e mostrando un dialog
  */
 function correctErrorsInteractively_(sheet, errorCells) {
-  // Usa CacheService invece di PropertiesService (limite 100KB vs 9KB)
-  const cache = CacheService.getScriptCache();
-  
-  // Serializza gli errori (rimuovi oggetti non serializzabili e limita i suggerimenti)
-  const serializableErrors = errorCells.map(e => {
-    // Limita i suggerimenti a max 5 per ridurre la dimensione
-    let limitedSuggestion = e.suggestion;
-    if (Array.isArray(e.suggestion)) {
-      limitedSuggestion = e.suggestion.slice(0, 5).map(s => ({
-        value: s.value,
-        score: s.score
-      }));
-    }
-    return {
-      row: e.row,
-      col: e.col,
-      value: String(e.value).substring(0, 200), // Limita la lunghezza del valore
-      columnName: e.columnName,
-      validation: { type: e.validation.type, name: e.validation.name }, // Solo tipo e nome
-      suggestion: limitedSuggestion
-    };
-  });
-  
-  // Salva in cache (durata 30 minuti = 1800 secondi)
-  cache.put('validationErrors', JSON.stringify(serializableErrors), 1800);
-  cache.put('validationIndex', '0', 1800);
-  cache.put('validationCorrected', '0', 1800);
-  cache.put('validationSkipped', '0', 1800);
-  cache.put('validationSheetName', sheet.getName(), 1800);
-  
-  // Mostra il primo dialog
-  showNextErrorDialog();
-}
-
-/**
- * Mostra il dialog per il prossimo errore nella catena
- */
-function showNextErrorDialog() {
-  const cache = CacheService.getScriptCache();
+  let correctedCount = 0;
+  let skippedCount = 0;
   const ui = SpreadsheetApp.getUi();
   
-  // Leggi lo stato corrente dalla cache
-  const errorsJson = cache.get('validationErrors');
-  if (!errorsJson) {
-    Logger.log('Nessun errore da processare o cache scaduta');
-    return;
-  }
+  // Carica le liste di validazione per la rivalidazione
+  const validazioneSheet = SpreadsheetApp.getActive().getSheetByName('Validazione Dati');
+  const validationLists = validazioneSheet ? loadValidationLists_(validazioneSheet) : null;
   
-  const errors = JSON.parse(errorsJson);
-  const currentIndex = parseInt(cache.get('validationIndex') || '0');
-  const correctedCount = parseInt(cache.get('validationCorrected') || '0');
-  const skippedCount = parseInt(cache.get('validationSkipped') || '0');
-  const sheetName = cache.get('validationSheetName');
+  // Set per tracciare le celle già processate/corrette (formato: "row:col")
+  const processedCells = new Set();
   
-  // Verifica se abbiamo finito
-  if (currentIndex >= errors.length) {
-    // Mostra il riepilogo finale
-    showValidationSummary_();
-    return;
-  }
-  
-  const error = errors[currentIndex];
-  const colLetter = columnNumberToLetter_(error.col);
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  
-  // Evidenzia la cella errata
-  if (sheet) {
+  for (let i = 0; i < errorCells.length; i++) {
+    const error = errorCells[i];
+    const cellKey = `${error.row}:${error.col}`;
+    
+    // Salta le celle già processate/corrette
+    if (processedCells.has(cellKey)) {
+      continue;
+    }
+    
+    const colLetter = columnNumberToLetter_(error.col);
     const cell = sheet.getRange(error.row, error.col);
+    
+    // Evidenzia la cella errata selezionandola e scrollando verso di essa
     sheet.setActiveRange(cell);
-  }
-  
-  // Gestisci i diversi tipi di errori
-  if (error.validation.type === 'boolean') {
-    // Per i boolean, usa un prompt standard (bloccante)
-    const message = `📍 Cella ${colLetter}${error.row} - ${error.columnName}\n\n` +
-      `Valore errato: "${error.value}"\n\n` +
-      `Valori validi: TRUE o FALSE\n\n` +
-      `Inserisci il valore corretto:`;
     
-    const boolResponse = ui.prompt(
-      `Errore ${currentIndex + 1}/${errors.length} - Boolean`,
-      message,
-      ui.ButtonSet.OK_CANCEL
-    );
+    // Crea il messaggio con il valore errato e il suggerimento
+    let message = `📍 Cella ${colLetter}${error.row} - ${error.columnName}\n\n`;
+    message += `Valore errato: "${error.value}"\n\n`;
     
-    if (boolResponse.getSelectedButton() === ui.Button.OK) {
-      const inputValue = boolResponse.getResponseText().trim().toUpperCase();
-      if (inputValue === 'TRUE' || inputValue === 'FALSE') {
-        processValidationChoice(inputValue);
+    if (error.validation.type === 'boolean') {
+      // Per i boolean, chiedi all'utente di inserire TRUE o FALSE
+      message += `Valori validi: TRUE o FALSE\n\n`;
+      message += `Inserisci il valore corretto:`;
+      
+      // Evidenzia la cella prima del dialog boolean
+      const originalBoolState = {
+        isBold: cell.getFontWeight() === 'bold',
+        backgroundColor: cell.getBackground()
+      };
+      cell.setFontWeight('bold');
+      cell.setBackground('#ffff00'); // Giallo
+      
+      // Posiziona la riga della cella come prima riga visibile
+      // Strategia: selezionare la cella nella prima colonna (A) della stessa riga
+      const firstColCell = sheet.getRange(error.row, 1);
+      firstColCell.activate();
+      SpreadsheetApp.flush();
+      Utilities.sleep(150);
+      cell.activate();
+      SpreadsheetApp.flush();
+      Utilities.sleep(100);
+      sheet.setActiveRange(cell);
+      SpreadsheetApp.flush();
+      
+      // Usa un dialog HTML con pulsanti TRUE e FALSE
+      const selectedValue = showBooleanDialog_(error.value, colLetter, error.row, error.col, i + 1, errorCells.length, sheet);
+      
+      if (selectedValue === 'cancelled') {
+        // Annullato dall'utente (chiuso il dialog senza selezionare)
+        // La cella rimane errata: sfondo rosso, senza grassetto
+        cell.setBackground('#ffcccc');
+        cell.setFontWeight('normal');
+        Logger.log(`⏸️ Processo interrotto dall'utente`);
+        break; // Esci dal loop, il riepilogo verrà mostrato dopo
+      } else if (selectedValue === false) {
+        // Rifiutato - la cella rimane errata: sfondo rosso, senza grassetto
+        cell.setBackground('#ffcccc');
+        cell.setFontWeight('normal');
+        skippedCount++;
+        Logger.log(`❌ Rifiutato: ${colLetter}${error.row} - Mantenuto valore errato "${error.value}"`);
+      } else if (selectedValue && (selectedValue === 'TRUE' || selectedValue === 'FALSE')) {
+        // Valore selezionato - aggiorna tutte le celle nella stessa colonna con lo stesso valore errato
+        const updatedCount = updateAllCellsWithSameError_(
+          sheet, 
+          error.col, 
+          error.value, 
+          selectedValue, 
+          error.validation, 
+          validationLists, 
+          processedCells
+        );
+        
+        // Segna la cella corrente come processata
+        processedCells.add(cellKey);
+        
+        if (updatedCount > 0) {
+          correctedCount += updatedCount;
+          Logger.log(`✅ Corrette ${updatedCount} celle nella colonna ${colLetter} con valore "${selectedValue}"`);
+        } else {
+          // Nessuna cella aggiornata (caso imprevisto - non dovrebbe succedere)
+          skippedCount++;
+          Logger.log(`⚠️ Nessuna cella aggiornata: ${colLetter}${error.row}`);
+        }
       } else {
-        processValidationChoice(null); // Valore non valido
+        // Caso imprevisto
+        cell.setBackground('#ffcccc');
+        cell.setFontWeight('normal');
+        skippedCount++;
+        Logger.log(`⚠️ Risultato non valido dalla selezione: ${colLetter}${error.row}`);
+      }
+      continue; // Passa all'errore successivo
+    } else if (error.validation.type === 'date') {
+      // Per le date, il suggerimento è solo informativo
+      message += error.suggestion || 'Verifica il formato data (es: GG/MM/AAAA)';
+      message += '\n\nNota: Correggi manualmente il formato della data nello sheet.';
+      
+      // Evidenzia la cella prima del dialog date
+      const originalDateState = {
+        isBold: cell.getFontWeight() === 'bold',
+        backgroundColor: cell.getBackground()
+      };
+      cell.setFontWeight('bold');
+      cell.setBackground('#ffff00'); // Giallo
+      
+      // Posiziona la riga della cella come prima riga visibile
+      // Strategia: selezionare la cella nella prima colonna (A) della stessa riga
+      const firstColCell = sheet.getRange(error.row, 1);
+      firstColCell.activate();
+      SpreadsheetApp.flush();
+      Utilities.sleep(150);
+      cell.activate();
+      SpreadsheetApp.flush();
+      Utilities.sleep(100);
+      sheet.setActiveRange(cell);
+      SpreadsheetApp.flush();
+      
+      const dateResponse = ui.alert(
+        `Errore ${i + 1}/${errorCells.length} - Data`,
+        message,
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      // Ripristina lo stato: la cella rimane errata quindi sfondo rosso, senza grassetto
+      cell.setBackground('#ffcccc');
+      cell.setFontWeight('normal');
+      
+      if (dateResponse === ui.Button.OK) {
+        // L'utente ha visto il messaggio, passa al prossimo errore
+        skippedCount++;
+        Logger.log(`⏭️ Saltato: ${colLetter}${error.row} - Data richiede correzione manuale`);
+      } else {
+        // Annulla tutto
+        Logger.log(`⏸️ Processo interrotto dall'utente`);
+        break;
+      }
+      continue; // Passa all'errore successivo
+    } else if (error.suggestion) {
+      // Gestisci sia suggerimento singolo che array di candidati
+      if (Array.isArray(error.suggestion) && error.suggestion.length > 0) {
+        // Più candidati disponibili - usa HTML dialog con pulsanti
+        const selectedValue = showCandidatesDialog_(error.suggestion, error.value, colLetter, error.row, error.col, i + 1, errorCells.length, sheet);
+        
+        if (selectedValue === 'cancelled') {
+          // Annullato dall'utente (chiuso il dialog senza selezionare)
+          // La cella rimane errata: sfondo rosso, senza grassetto
+          cell.setBackground('#ffcccc');
+          cell.setFontWeight('normal');
+          Logger.log(`⏸️ Processo interrotto dall'utente`);
+          break; // Esci dal loop, il riepilogo verrà mostrato dopo
+        } else if (selectedValue === false) {
+          // Rifiutato - la cella rimane errata: sfondo rosso, senza grassetto
+          cell.setBackground('#ffcccc');
+          cell.setFontWeight('normal');
+          skippedCount++;
+          Logger.log(`❌ Rifiutato: ${colLetter}${error.row} - Mantenuto valore errato "${error.value}"`);
+        } else if (selectedValue && selectedValue !== 'pending') {
+          // Valore selezionato - aggiorna tutte le celle nella stessa colonna con lo stesso valore errato
+          const updatedCount = updateAllCellsWithSameError_(
+            sheet, 
+            error.col, 
+            error.value, 
+            selectedValue, 
+            error.validation, 
+            validationLists, 
+            processedCells
+          );
+          
+          // Segna la cella corrente come processata
+          processedCells.add(cellKey);
+          
+          if (updatedCount > 0) {
+            correctedCount += updatedCount;
+            Logger.log(`✅ Corrette ${updatedCount} celle nella colonna ${colLetter} con valore "${selectedValue}"`);
+          } else {
+            // Nessuna cella aggiornata (caso imprevisto)
+            skippedCount++;
+            Logger.log(`⚠️ Nessuna cella aggiornata: ${colLetter}${error.row}`);
+          }
+        } else {
+          // Caso imprevisto
+          skippedCount++;
+          Logger.log(`⚠️ Risultato non valido dalla selezione: ${colLetter}${error.row}`);
+        }
+      } else if (typeof error.suggestion === 'string') {
+        // Singolo suggerimento - usa lo stesso dialog HTML con un solo candidato
+        const singleCandidate = [{ value: error.suggestion, score: null }];
+        const selectedValue = showCandidatesDialog_(singleCandidate, error.value, colLetter, error.row, error.col, i + 1, errorCells.length, sheet);
+        
+        if (selectedValue === 'cancelled') {
+          // Annullato dall'utente (chiuso il dialog senza selezionare)
+          // La cella rimane errata: sfondo rosso, senza grassetto
+          cell.setBackground('#ffcccc');
+          cell.setFontWeight('normal');
+          Logger.log(`⏸️ Processo interrotto dall'utente`);
+          break; // Esci dal loop, il riepilogo verrà mostrato dopo
+        } else if (selectedValue === false) {
+          // Rifiutato - la cella rimane errata: sfondo rosso, senza grassetto
+          cell.setBackground('#ffcccc');
+          cell.setFontWeight('normal');
+          skippedCount++;
+          Logger.log(`❌ Rifiutato: ${colLetter}${error.row} - Mantenuto valore errato "${error.value}"`);
+        } else if (selectedValue && selectedValue !== 'pending') {
+          // Valore selezionato - aggiorna tutte le celle nella stessa colonna con lo stesso valore errato
+          const updatedCount = updateAllCellsWithSameError_(
+            sheet, 
+            error.col, 
+            error.value, 
+            selectedValue, 
+            error.validation, 
+            validationLists, 
+            processedCells
+          );
+          
+          // Segna la cella corrente come processata
+          processedCells.add(cellKey);
+          
+          if (updatedCount > 0) {
+            correctedCount += updatedCount;
+            Logger.log(`✅ Corrette ${updatedCount} celle nella colonna ${colLetter} con valore "${selectedValue}"`);
+          } else {
+            // Nessuna cella aggiornata (caso imprevisto)
+            skippedCount++;
+            Logger.log(`⚠️ Nessuna cella aggiornata: ${colLetter}${error.row}`);
+          }
+        } else {
+          // Caso imprevisto
+          skippedCount++;
+          Logger.log(`⚠️ Risultato non valido dalla selezione: ${colLetter}${error.row}`);
+        }
       }
     } else {
-      // Annulla tutto
-      cleanupValidationState_();
-      return;
-    }
-  } else if (error.validation.type === 'date') {
-    // Per le date, mostra solo un messaggio informativo (bloccante)
-    const message = `📍 Cella ${colLetter}${error.row} - ${error.columnName}\n\n` +
-      `Valore errato: "${error.value}"\n\n` +
-      (error.suggestion || 'Verifica il formato data (es: GG/MM/AAAA)') +
-      '\n\nNota: Correggi manualmente il formato della data nello sheet.';
-    
-    const dateResponse = ui.alert(
-      `Errore ${currentIndex + 1}/${errors.length} - Data`,
-      message,
-      ui.ButtonSet.OK_CANCEL
-    );
-    
-    if (dateResponse === ui.Button.OK) {
-      processValidationChoice(null); // Salta (richiede correzione manuale)
-    } else {
-      // Annulla tutto
-      cleanupValidationState_();
-      return;
-    }
-  } else if (error.suggestion) {
-    // Per suggerimenti lista, usa il dialog HTML (non bloccante)
-    let candidates = [];
-    if (Array.isArray(error.suggestion) && error.suggestion.length > 0) {
-      candidates = error.suggestion;
-    } else if (typeof error.suggestion === 'string') {
-      candidates = [{ value: error.suggestion, score: null }];
-    }
-    
-    if (candidates.length > 0) {
-      showCandidatesDialogChained_(candidates, error.value, colLetter, error.row, currentIndex + 1, errors.length);
-      // Non continuare qui - il callback del dialog chiamerà processValidationChoice
-      return;
-    } else {
-      processValidationChoice(null); // Nessun suggerimento
-    }
-  } else {
-    // Nessun suggerimento disponibile
-    processValidationChoice(null);
-  }
-}
-
-/**
- * Processa la scelta dell'utente e passa al prossimo errore
- * Restituisce true se ci sono altri errori da processare, false altrimenti
- */
-function processValidationChoice(selectedValue) {
-  const cache = CacheService.getScriptCache();
-  
-  // Leggi lo stato corrente dalla cache
-  const errorsJson = cache.get('validationErrors');
-  if (!errorsJson) {
-    Logger.log('Cache scaduta o vuota');
-    return false;
-  }
-  
-  const errors = JSON.parse(errorsJson);
-  const currentIndex = parseInt(cache.get('validationIndex') || '0');
-  let correctedCount = parseInt(cache.get('validationCorrected') || '0');
-  let skippedCount = parseInt(cache.get('validationSkipped') || '0');
-  const sheetName = cache.get('validationSheetName');
-  
-  const error = errors[currentIndex];
-  const colLetter = columnNumberToLetter_(error.col);
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  
-  if (selectedValue && sheet) {
-    const cell = sheet.getRange(error.row, error.col);
-    cell.setValue(selectedValue);
-    
-    // Rivalida la cella
-    const validazioneSheet = SpreadsheetApp.getActive().getSheetByName('Validazione Dati');
-    const validationLists = validazioneSheet ? loadValidationLists_(validazioneSheet) : null;
-    
-    if (revalidateCell_(cell, error.validation, validationLists)) {
-      cell.setBackground(null); // Rimuovi il colore rosso
-      correctedCount++;
-      Logger.log(`✅ Corretto: ${colLetter}${error.row} - "${error.value}" -> "${selectedValue}"`);
-    } else {
-      cell.setBackground('#ffcccc');
+      // Nessun suggerimento disponibile
+      message += `Nessun suggerimento disponibile`;
       skippedCount++;
-      Logger.log(`⚠️ Valore selezionato non valido: ${colLetter}${error.row}`);
-    }
-  } else {
-    skippedCount++;
-    Logger.log(`⏭️ Saltato: ${colLetter}${error.row}`);
-  }
-  
-  // Aggiorna lo stato nella cache (durata 30 minuti)
-  cache.put('validationIndex', String(currentIndex + 1), 1800);
-  cache.put('validationCorrected', String(correctedCount), 1800);
-  cache.put('validationSkipped', String(skippedCount), 1800);
-  
-  // Assicurati che tutte le modifiche allo spreadsheet siano state applicate
-  SpreadsheetApp.flush();
-  
-  // Verifica se ci sono altri errori da processare (per il return)
-  const hasMoreErrors = (currentIndex + 1) < errors.length;
-  
-  return hasMoreErrors;
-}
-
-/**
- * Aggiorna il contenuto del dialog corrente con il prossimo errore
- * Questa funzione viene chiamata dal client-side per aggiornare il dialog invece di aprirne uno nuovo
- */
-function updateDialogWithNextError() {
-  const cache = CacheService.getScriptCache();
-  
-  // Leggi lo stato corrente dalla cache
-  const errorsJson = cache.get('validationErrors');
-  if (!errorsJson) {
-    Logger.log('Nessun errore da processare o cache scaduta');
-    return { done: true };
-  }
-  
-  const errors = JSON.parse(errorsJson);
-  const currentIndex = parseInt(cache.get('validationIndex') || '0');
-  
-  // Verifica se abbiamo finito
-  if (currentIndex >= errors.length) {
-    // Mostra il riepilogo finale
-    showValidationSummary_();
-    return { done: true };
-  }
-  
-  const error = errors[currentIndex];
-  const colLetter = columnNumberToLetter_(error.col);
-  const sheetName = cache.get('validationSheetName');
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  
-  // Evidenzia la cella errata
-  if (sheet) {
-    const cell = sheet.getRange(error.row, error.col);
-    sheet.setActiveRange(cell);
-  }
-  
-  // Prepara i candidati per il dialog
-  let candidates = [];
-  if (error.suggestion) {
-    if (Array.isArray(error.suggestion) && error.suggestion.length > 0) {
-      candidates = error.suggestion;
-    } else if (typeof error.suggestion === 'string') {
-      candidates = [{ value: error.suggestion, score: null }];
+      Logger.log(`⏭️ Saltato: ${colLetter}${error.row} - Nessun suggerimento applicabile`);
     }
   }
   
-  return {
-    done: false,
-    errorNum: currentIndex + 1,
-    totalErrors: errors.length,
-    colLetter: colLetter,
-    row: error.row,
-    errorValue: String(error.value),
-    candidates: candidates,
-    columnName: error.columnName,
-    validationType: error.validation.type
-  };
-}
-
-/**
- * Mostra il riepilogo finale della validazione
- */
-function showValidationSummary_() {
-  const cache = CacheService.getScriptCache();
-  const ui = SpreadsheetApp.getUi();
-  
-  const errorsJson = cache.get('validationErrors');
-  const errors = errorsJson ? JSON.parse(errorsJson) : [];
-  const correctedCount = parseInt(cache.get('validationCorrected') || '0');
-  const skippedCount = parseInt(cache.get('validationSkipped') || '0');
-  
-  const summary = `Correzione completata:\n\n` +
+  // Mostra il riepilogo DOPO che il loop è completato (o interrotto)
+  const wasInterrupted = correctedCount + skippedCount < errorCells.length;
+  const summaryMessage = wasInterrupted ? `Correzione interrotta:\n\n` : `Correzione completata:\n\n`;
+  const summary = summaryMessage + 
     `✅ Corretti: ${correctedCount}\n` +
     `❌ Rifiutati/Saltati: ${skippedCount}\n` +
-    `📊 Totale errori trovati: ${errors.length}`;
+    `📊 Totale errori trovati: ${errorCells.length}` +
+    (wasInterrupted ? `\n⏸️ Processo interrotto dall'utente` : '');
   
   ui.alert('Riepilogo', summary, ui.ButtonSet.OK);
-  
-  // Pulisci lo stato
-  cleanupValidationState_();
 }
 
 /**
- * Pulisce lo stato della validazione
+ * Aggiorna tutte le celle nella stessa colonna che hanno lo stesso valore errato
+ * Restituisce il numero di celle aggiornate e aggiunge le celle processate al Set
  */
-function cleanupValidationState_() {
-  const cache = CacheService.getScriptCache();
-  cache.remove('validationErrors');
-  cache.remove('validationIndex');
-  cache.remove('validationCorrected');
-  cache.remove('validationSkipped');
-  cache.remove('validationSheetName');
+function updateAllCellsWithSameError_(sheet, col, originalErrorValue, newValue, validation, validationLists, processedCells) {
+  let updatedCount = 0;
+  const lastRow = sheet.getLastRow();
+  
+  if (lastRow < 2) return updatedCount; // Nessun dato da controllare
+  
+  // Normalizza il valore errato originale per il confronto
+  const normalizedOriginalValue = String(originalErrorValue).trim();
+  
+  // Trova tutte le celle nella stessa colonna con lo stesso valore errato
+  const dataRange = sheet.getRange(2, col, lastRow - 1, 1);
+  const values = dataRange.getValues();
+  
+  const cellsToUpdate = [];
+  
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    const cellValue = values[rowIndex][0];
+    const normalizedCellValue = String(cellValue).trim();
+    
+    // Confronta i valori normalizzati (case-sensitive per alcuni tipi)
+    if (normalizedCellValue === normalizedOriginalValue) {
+      const actualRow = rowIndex + 2; // +2 perché partiamo dalla riga 2
+      const cell = sheet.getRange(actualRow, col);
+      cellsToUpdate.push(cell);
+    }
+  }
+  
+  // Aggiorna tutte le celle trovate
+  for (const cell of cellsToUpdate) {
+    const row = cell.getRow();
+    const colNum = cell.getColumn();
+    const cellKey = `${row}:${colNum}`;
+    
+    // Segna questa cella come processata
+    processedCells.add(cellKey);
+    
+    cell.setValue(newValue);
+    
+    // Rivalida la cella
+    if (revalidateCell_(cell, validation, validationLists)) {
+      // Valore corretto: sfondo bianco, senza grassetto
+      cell.setBackground('#ffffff');
+      cell.setFontWeight('normal');
+      updatedCount++;
+    } else {
+      // Valore ancora errato: sfondo rosso, senza grassetto
+      cell.setBackground('#ffcccc');
+      cell.setFontWeight('normal');
+    }
+  }
+  
+  if (updatedCount > 0) {
+    Logger.log(`✅ Aggiornate ${updatedCount} celle nella colonna ${columnNumberToLetter_(col)} con valore "${newValue}"`);
+  }
+  
+  return updatedCount;
 }
 
 /**
- * Versione del dialog con catena di callback (per dialog HTML non bloccanti)
+ * Mostra un dialog HTML con pulsanti per ogni candidato
+ * Restituisce: valore selezionato (string), false se rifiutato, null se annullato
  */
-function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, errorNum, totalErrors) {
-  var ui = SpreadsheetApp.getUi();
+function showCandidatesDialog_(candidates, errorValue, colLetter, row, col, errorNum, totalErrors, sheet) {
+  const ui = SpreadsheetApp.getUi();
   
-  // Prepara i dati dei candidati come JSON sicuro
-  var candidatesData = candidates.map(function(c) {
-    return { value: String(c.value), score: c.score };
-  });
-  var candidatesJson = JSON.stringify(candidatesData)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026');
+  // Salva lo stato originale della cella e evidenzia con grassetto su sfondo giallo
+  let originalState = null;
+  if (sheet) {
+    const cell = sheet.getRange(row, col);
+    
+    // Salva lo stato originale della cella
+    originalState = {
+      isBold: cell.getFontWeight() === 'bold',
+      backgroundColor: cell.getBackground()
+    };
+    
+    // Evidenzia la cella: grassetto su sfondo giallo
+    cell.setFontWeight('bold');
+    cell.setBackground('#ffff00'); // Giallo
+    
+    // Posiziona la riga della cella come prima riga visibile
+    // Strategia: selezionare la cella nella prima colonna (A) della stessa riga
+    // Questo porta quella riga come prima riga visibile nello sheet
+    const firstColCell = sheet.getRange(row, 1);
+    firstColCell.activate();
+    SpreadsheetApp.flush();
+    Utilities.sleep(150);
+    
+    // Ora seleziona la cella target nella sua colonna
+    cell.activate();
+    SpreadsheetApp.flush();
+    Utilities.sleep(100);
+    
+    // Conferma la selezione con setActiveRange per assicurarsi che sia visibile
+    sheet.setActiveRange(cell);
+    SpreadsheetApp.flush(); // Forza l'aggiornamento dell'UI per assicurarsi che la cella sia evidenziata e visibile
+  }
   
-  // Escape per il valore errato
-  var safeErrorValue = String(errorValue)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  // Crea una chiave univoca per questa selezione (prima di creare l'HTML)
+  const selectionKey = `candidateSelection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  // Costruisci l'HTML usando concatenazione di stringhe (nessun template literal)
-  var htmlStr = '<!DOCTYPE html><html><head><style>' +
-    'body { font-family: Arial, sans-serif; padding: 20px; }' +
-    'h2 { margin-top: 0; }' +
-    '.error-info { background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; }' +
-    '.candidates-label { font-weight: bold; margin-bottom: 10px; }' +
-    '.candidate-button { display: block; width: 100%; padding: 12px; margin: 8px 0; background: #4285f4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; text-align: left; }' +
-    '.candidate-button:hover { background: #3367d6; }' +
-    '.candidate-button:disabled { background: #ccc; cursor: not-allowed; }' +
-    '.reject-button { display: block; width: 100%; padding: 12px; margin: 15px 0 0 0; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }' +
-    '.reject-button:hover { background: #c82333; }' +
-    '.reject-button:disabled { background: #ccc; cursor: not-allowed; }' +
-    '#buttons-container { margin-top: 10px; }' +
-    '</style></head><body>' +
-    '<h2 id="dialog-title">Errore ' + errorNum + '/' + totalErrors + '</h2>' +
-    '<div class="error-info" id="error-info">' +
-    '<strong>📍 Cella ' + colLetter + row + '</strong><br>' +
-    'Valore errato: "' + safeErrorValue + '"' +
-    '</div>' +
-    '<div class="candidates-label" id="candidates-label">Trovati ' + candidates.length + ' valori simili:</div>' +
-    '<div id="buttons-container"></div>' +
-    '<button class="reject-button" id="reject-button">Rifiuta suggerimenti</button>' +
-    '<script id="candidates-data" type="application/json">' + candidatesJson + '</script>' +
-    '<script>' +
-    '(function(){' +
-    'var candidatesData;' +
-    'try{' +
-    '  var dataEl = document.getElementById("candidates-data");' +
-    '  candidatesData = JSON.parse(dataEl.textContent);' +
-    '}catch(e){console.error("JSON parse error:",e);return;}' +
-    'var container = document.getElementById("buttons-container");' +
-    'candidatesData.forEach(function(c){' +
-    '  var btn = document.createElement("button");' +
-    '  btn.className = "candidate-button";' +
-    '  var score = c.score !== null ? " (" + Math.round(c.score*100) + "%)" : "";' +
-    '  btn.textContent = "\\"" + c.value + "\\"" + score;' +
-    '  (function(val){' +
-    '    btn.onclick = function(){window.selectCandidate(val);};' +
-    '  })(c.value);' +
-    '  container.appendChild(btn);' +
-    '});' +
-    'document.getElementById("reject-button").onclick = function(){window.rejectSuggestion();};' +
-    '})();' +
-    'window.selectCandidate = function(value){' +
-    '  var btns = document.querySelectorAll(".candidate-button, .reject-button");' +
-    '  btns.forEach(function(b){b.disabled=true;});' +
-    '  google.script.run' +
-    '    .withSuccessHandler(function(hasMore){' +
-    '      if(hasMore){window.updateDialogContent();}else{google.script.host.close();}' +
-    '    })' +
-    '    .withFailureHandler(function(err){' +
-    '      alert("Errore: "+err.message);' +
-    '      btns.forEach(function(b){b.disabled=false;});' +
-    '    })' +
-    '    .processValidationChoice(value);' +
-    '};' +
-    'window.rejectSuggestion = function(){' +
-    '  var btns = document.querySelectorAll(".candidate-button, .reject-button");' +
-    '  btns.forEach(function(b){b.disabled=true;});' +
-    '  google.script.run' +
-    '    .withSuccessHandler(function(hasMore){' +
-    '      if(hasMore){window.updateDialogContent();}else{google.script.host.close();}' +
-    '    })' +
-    '    .withFailureHandler(function(err){' +
-    '      alert("Errore: "+err.message);' +
-    '      btns.forEach(function(b){b.disabled=false;});' +
-    '    })' +
-    '    .processValidationChoice(null);' +
-    '};' +
-    'window.updateDialogContent = function(){' +
-    '  google.script.run' +
-    '    .withSuccessHandler(function(data){' +
-    '      if(!data || data.done){google.script.host.close();return;}' +
-    '      if(data.validationType==="boolean"||data.validationType==="date"){' +
-    '        google.script.host.close();' +
-    '        google.script.run.showNextErrorDialog();' +
-    '        return;' +
-    '      }' +
-    '      document.getElementById("dialog-title").textContent="Errore "+data.errorNum+"/"+data.totalErrors;' +
-    '      var safeVal = String(data.errorValue).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");' +
-    '      document.getElementById("error-info").innerHTML="<strong>📍 Cella "+data.colLetter+data.row+"</strong><br>Valore errato: \\""+safeVal+"\\"";' +
-    '      document.getElementById("candidates-label").textContent="Trovati "+data.candidates.length+" valori simili:";' +
-    '      var cont = document.getElementById("buttons-container");' +
-    '      cont.innerHTML="";' +
-    '      data.candidates.forEach(function(c){' +
-    '        var btn = document.createElement("button");' +
-    '        btn.className = "candidate-button";' +
-    '        var score = c.score !== null ? " (" + Math.round(c.score*100) + "%)" : "";' +
-    '        btn.textContent = "\\"" + c.value + "\\"" + score;' +
-    '        (function(val){btn.onclick=function(){window.selectCandidate(val);};})(c.value);' +
-    '        cont.appendChild(btn);' +
-    '      });' +
-    '      var rej = document.getElementById("reject-button");' +
-    '      rej.disabled=false;' +
-    '    })' +
-    '    .withFailureHandler(function(err){' +
-    '      alert("Errore: "+err.message);' +
-    '      google.script.host.close();' +
-    '    })' +
-    '    .updateDialogWithNextError();' +
-    '};' +
-    '</script></body></html>';
-  
-  var html = HtmlService.createHtmlOutput(htmlStr)
+  const html = HtmlService.createHtmlOutput(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <base target="_top">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            padding-top: 80px; /* Spazio per la prima riga dello sheet sopra il dialog */
+          }
+          h2 {
+            margin-top: 0;
+            color: #333;
+          }
+          .error-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+          }
+          .candidates-list {
+            margin: 15px 0;
+          }
+          .candidate-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            text-align: left;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+          }
+          .candidate-button:hover {
+            background-color: #357ae8;
+          }
+          .candidate-button:active {
+            background-color: #2a65d0;
+          }
+          .candidate-value {
+            font-weight: bold;
+          }
+          .candidate-score {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-left: 5px;
+          }
+          .reject-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 15px 0 0 0;
+            text-align: center;
+            background-color: #ea4335;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+          }
+          .reject-button:hover {
+            background-color: #d33b2c;
+          }
+          .reject-button:active {
+            background-color: #b0281a;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>Errore ${errorNum}/${totalErrors}</h2>
+        <div class="error-info">
+          <strong>📍 Cella ${colLetter}${row}</strong><br>
+          Valore errato: <strong>"${errorValue.replace(/"/g, '&quot;')}"</strong>
+        </div>
+        <div>
+          <p>Trovati ${candidates.length} valore${candidates.length > 1 ? 'i' : ''} simile${candidates.length > 1 ? 'i' : ''}:</p>
+          <div class="candidates-list">
+            ${candidates.map((candidate, idx) => {
+              const candidateValue = typeof candidate === 'object' ? candidate.value : candidate;
+              const candidateScore = typeof candidate === 'object' ? candidate.score : null;
+              const scoreText = candidateScore ? ` (${(candidateScore * 100).toFixed(0)}% similarità)` : '';
+              // Escape del valore per JavaScript e HTML
+              const escapedValue = candidateValue.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+              return `
+                <button class="candidate-button" onclick="selectCandidate('${escapedValue}', '${selectionKey}')">
+                  <span class="candidate-value">"${candidateValue.replace(/"/g, '&quot;')}"</span>
+                  ${scoreText ? `<span class="candidate-score">${scoreText}</span>` : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+          <button class="reject-button" onclick="rejectSuggestion('${selectionKey}')">Rifiuta suggerimenti</button>
+        </div>
+        <script>
+          function selectCandidate(value, key) {
+            // Disabilita i pulsanti per evitare doppi click
+            const buttons = document.querySelectorAll('.candidate-button, .reject-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Salva il valore, poi chiudi il dialog
+            // IMPORTANTE: il callback deve completare PRIMA di chiudere il dialog
+            google.script.run
+              .withSuccessHandler(function() {
+                // Dopo che il valore è stato salvato con successo, chiudi il dialog
+                // Questo assicura che il valore sia già nelle Properties quando il dialog si chiude
+                google.script.host.close();
+              })
+              .withFailureHandler(function(error) {
+                alert('Errore: ' + error.message);
+                buttons.forEach(btn => btn.disabled = false);
+              })
+              .handleCandidateSelection(value, key);
+          }
+          
+          function rejectSuggestion(key) {
+            // Disabilita i pulsanti per evitare doppi click
+            const buttons = document.querySelectorAll('.candidate-button, .reject-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Salva il rifiuto, poi chiudi il dialog
+            // IMPORTANTE: il callback deve completare PRIMA di chiudere il dialog
+            google.script.run
+              .withSuccessHandler(function() {
+                // Dopo che il rifiuto è stato salvato con successo, chiudi il dialog
+                // Questo assicura che il valore sia già nelle Properties quando il dialog si chiude
+                google.script.host.close();
+              })
+              .withFailureHandler(function(error) {
+                alert('Errore: ' + error.message);
+                buttons.forEach(btn => btn.disabled = false);
+              })
+              .handleCandidateRejection(key);
+          }
+          
+        </script>
+      </body>
+    </html>
+  `)
     .setWidth(500)
     .setHeight(Math.min(600, 300 + (candidates.length * 60)));
   
-  ui.showModalDialog(html, 'Errore ' + errorNum + '/' + totalErrors + ' - Selezione valore');
+  const properties = PropertiesService.getScriptProperties();
+  properties.setProperty(selectionKey, 'pending');
+  
+  // Mostra il dialog modale - BLOCCA completamente l'esecuzione fino alla chiusura
+  // showModalDialog è sincrono: l'esecuzione riprende solo quando il dialog è completamente chiuso
+  ui.showModalDialog(html, `Errore ${errorNum}/${totalErrors} - Selezione valore`);
+  
+  // Dopo che showModalDialog ritorna, il dialog è chiuso
+  // Ora leggiamo il risultato salvato dal callback JavaScript
+  // Il callback viene eseguito PRIMA della chiusura del dialog (nel withSuccessHandler)
+  // quindi il risultato dovrebbe essere già disponibile, ma facciamo polling per sicurezza
+  Utilities.sleep(300); // Aspetta un momento iniziale per assicurarsi che il callback sia completato
+  
+  let result = properties.getProperty(selectionKey);
+  
+  // Se ancora pending, aspetta finché il callback non completa
+  // Timeout molto lungo (5 minuti) per dare all'utente tutto il tempo necessario
+  // Il dialog è già chiuso quando showModalDialog ritorna, quindi questo polling serve solo
+  // per assicurarsi che il callback sia completato
+  let attempts = 0;
+  const maxAttempts = 1500; // 1500 * 200ms = 300 secondi = 5 minuti
+  
+  while (result === 'pending' && attempts < maxAttempts) {
+    Utilities.sleep(200);
+    result = properties.getProperty(selectionKey);
+    attempts++;
+  }
+  
+  // Se dopo tutti i tentativi è ancora pending, significa che il dialog è stato chiuso senza selezione
+  if (result === 'pending') {
+    Logger.log(`⚠️ Dialog chiuso senza selezione dopo timeout lungo, considerato come cancellato`);
+    result = 'cancelled';
+  }
+  
+  // Pulisci la proprietà
+  const finalResult = result;
+  properties.deleteProperty(selectionKey);
+  
+  // Ripristina lo stato originale della cella: rimuovi sempre il grassetto
+  // Lo sfondo verrà impostato dalla funzione chiamante in base alla validazione
+  if (sheet && originalState) {
+    const cell = sheet.getRange(row, col);
+    // Rimuovi sempre il grassetto (torna allo stato normale)
+    cell.setFontWeight('normal');
+    // Lo sfondo verrà impostato dalla funzione chiamante in base alla validazione
+    SpreadsheetApp.flush();
+  }
+  
+  // Gestisci i risultati
+  if (finalResult === 'rejected') {
+    return false; // Rifiutato - continua con il prossimo errore
+  } else if (finalResult && finalResult !== 'pending' && finalResult !== 'cancelled') {
+    return finalResult; // Valore selezionato
+  } else if (finalResult === 'cancelled') {
+    Logger.log(`⏸️ Dialog cancellato dall'utente`);
+    return 'cancelled'; // Annullato - esce completamente
+  } else {
+    // Timeout o valore non valido - considera come annullato
+    return 'cancelled';
+  }
+}
+
+/**
+ * Mostra un dialog HTML con pulsanti TRUE e FALSE per valori boolean
+ * Restituisce: 'TRUE' o 'FALSE' selezionato, false se rifiutato, 'cancelled' se annullato
+ */
+function showBooleanDialog_(errorValue, colLetter, row, col, errorNum, totalErrors, sheet) {
+  const ui = SpreadsheetApp.getUi();
+  
+  // Salva lo stato originale della cella e evidenzia con grassetto su sfondo giallo
+  let originalState = null;
+  if (sheet) {
+    const cell = sheet.getRange(row, col);
+    
+    // Salva lo stato originale della cella
+    originalState = {
+      isBold: cell.getFontWeight() === 'bold',
+      backgroundColor: cell.getBackground()
+    };
+    
+    // Evidenzia la cella: grassetto su sfondo giallo
+    cell.setFontWeight('bold');
+    cell.setBackground('#ffff00'); // Giallo
+    
+    // Posiziona la riga della cella come prima riga visibile
+    // Strategia: selezionare la cella nella prima colonna (A) della stessa riga
+    // Questo porta quella riga come prima riga visibile nello sheet
+    const firstColCell = sheet.getRange(row, 1);
+    firstColCell.activate();
+    SpreadsheetApp.flush();
+    Utilities.sleep(150);
+    
+    // Ora seleziona la cella target nella sua colonna
+    cell.activate();
+    SpreadsheetApp.flush();
+    Utilities.sleep(100);
+    
+    // Conferma la selezione con setActiveRange per assicurarsi che sia visibile
+    sheet.setActiveRange(cell);
+    SpreadsheetApp.flush(); // Forza l'aggiornamento dell'UI per assicurarsi che la cella sia evidenziata e visibile
+  }
+  
+  // Crea una chiave univoca per questa selezione
+  const selectionKey = `booleanSelection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  const html = HtmlService.createHtmlOutput(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <base target="_top">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            padding-top: 80px; /* Spazio per la prima riga dello sheet sopra il dialog */
+          }
+          h2 {
+            margin-top: 0;
+            color: #333;
+          }
+          .error-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+          }
+          .boolean-buttons {
+            margin: 15px 0;
+          }
+          .boolean-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            text-align: left;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+          }
+          .boolean-button:hover {
+            background-color: #357ae8;
+          }
+          .boolean-button:active {
+            background-color: #2a65d0;
+          }
+          .boolean-button.true-button {
+            background-color: #34a853;
+          }
+          .boolean-button.true-button:hover {
+            background-color: #2d8e47;
+          }
+          .boolean-button.false-button {
+            background-color: #ea4335;
+          }
+          .boolean-button.false-button:hover {
+            background-color: #d33b2c;
+          }
+          .boolean-value {
+            font-weight: bold;
+          }
+          .reject-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 15px 0 0 0;
+            text-align: center;
+            background-color: #ea4335;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+          }
+          .reject-button:hover {
+            background-color: #d33b2c;
+          }
+          .reject-button:active {
+            background-color: #b0281a;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>Errore ${errorNum}/${totalErrors} - Boolean</h2>
+        <div class="error-info">
+          <strong>📍 Cella ${colLetter}${row}</strong><br>
+          Valore errato: <strong>"${String(errorValue).replace(/"/g, '&quot;')}"</strong><br>
+          Seleziona il valore corretto:
+        </div>
+        <div class="boolean-buttons">
+          <button class="boolean-button true-button" onclick="selectBoolean('TRUE', '${selectionKey}')">
+            <span class="boolean-value">TRUE</span>
+          </button>
+          <button class="boolean-button false-button" onclick="selectBoolean('FALSE', '${selectionKey}')">
+            <span class="boolean-value">FALSE</span>
+          </button>
+        </div>
+        <button class="reject-button" onclick="rejectBoolean('${selectionKey}')">Rifiuta correzione</button>
+        <script>
+          function selectBoolean(value, key) {
+            // Disabilita i pulsanti per evitare doppi click
+            const buttons = document.querySelectorAll('.boolean-button, .reject-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Salva il valore, poi chiudi il dialog
+            google.script.run
+              .withSuccessHandler(function() {
+                google.script.host.close();
+              })
+              .withFailureHandler(function(error) {
+                alert('Errore: ' + error.message);
+                buttons.forEach(btn => btn.disabled = false);
+              })
+              .handleBooleanSelection(value, key);
+          }
+          
+          function rejectBoolean(key) {
+            // Disabilita i pulsanti per evitare doppi click
+            const buttons = document.querySelectorAll('.boolean-button, .reject-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Salva il rifiuto, poi chiudi il dialog
+            google.script.run
+              .withSuccessHandler(function() {
+                google.script.host.close();
+              })
+              .withFailureHandler(function(error) {
+                alert('Errore: ' + error.message);
+                buttons.forEach(btn => btn.disabled = false);
+              })
+              .handleBooleanRejection(key);
+          }
+        </script>
+      </body>
+    </html>
+  `)
+    .setWidth(400)
+    .setHeight(350);
+  
+  const properties = PropertiesService.getScriptProperties();
+  properties.setProperty(selectionKey, 'pending');
+  
+  // Mostra il dialog modale
+  ui.showModalDialog(html, `Errore ${errorNum}/${totalErrors} - Selezione Boolean`);
+  
+  // Dopo che showModalDialog ritorna, il dialog è chiuso
+  Utilities.sleep(300);
+  
+  let result = properties.getProperty(selectionKey);
+  
+  // Se ancora pending, aspetta finché il callback non completa
+  // Timeout molto lungo (5 minuti) per dare all'utente tutto il tempo necessario
+  let attempts = 0;
+  const maxAttempts = 1500; // 1500 * 200ms = 300 secondi = 5 minuti
+  
+  while (result === 'pending' && attempts < maxAttempts) {
+    Utilities.sleep(200);
+    result = properties.getProperty(selectionKey);
+    attempts++;
+  }
+  
+  // Se dopo tutti i tentativi è ancora pending, significa che il dialog è stato chiuso senza selezione
+  if (result === 'pending') {
+    Logger.log(`⚠️ Dialog boolean chiuso senza selezione dopo timeout lungo, considerato come cancellato`);
+    result = 'cancelled';
+  }
+  
+  // Pulisci la proprietà
+  const finalResult = result;
+  properties.deleteProperty(selectionKey);
+  
+  // Ripristina lo stato originale della cella: rimuovi sempre il grassetto
+  if (sheet && originalState) {
+    const cell = sheet.getRange(row, col);
+    // Rimuovi sempre il grassetto (torna allo stato normale)
+    cell.setFontWeight('normal');
+    // Lo sfondo verrà impostato dalla funzione chiamante in base alla validazione
+    SpreadsheetApp.flush();
+  }
+  
+  // Gestisci i risultati
+  if (finalResult === 'rejected') {
+    return false; // Rifiutato - continua con il prossimo errore
+  } else if (finalResult && finalResult !== 'pending' && finalResult !== 'cancelled') {
+    return finalResult; // Valore selezionato ('TRUE' o 'FALSE')
+  } else if (finalResult === 'cancelled') {
+    Logger.log(`⏸️ Dialog boolean cancellato dall'utente`);
+    return 'cancelled'; // Annullato - esce completamente
+  } else {
+    // Timeout o valore non valido - considera come annullato
+    return 'cancelled';
+  }
+}
+
+/**
+ * Gestisce la selezione di un candidato (chiamato dall'HTML)
+ * IMPORTANTE: questa funzione deve completare PRIMA che il dialog si chiuda
+ */
+function handleCandidateSelection(value, key) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(key, value);
+    // Forza il flush per assicurarsi che il valore sia salvato immediatamente
+    Utilities.sleep(10);
+  } catch (error) {
+    Logger.log(`Errore nel salvare la selezione: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Gestisce il rifiuto del suggerimento (chiamato dall'HTML)
+ * IMPORTANTE: questa funzione deve completare PRIMA che il dialog si chiuda
+ */
+function handleCandidateRejection(key) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(key, 'rejected');
+    // Forza il flush per assicurarsi che il valore sia salvato immediatamente
+    Utilities.sleep(10);
+  } catch (error) {
+    Logger.log(`Errore nel salvare il rifiuto: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Gestisce la cancellazione del dialog (chiamato quando l'utente chiude il dialog senza selezionare)
+ */
+function handleCandidateCancellation(key) {
+  const currentValue = PropertiesService.getScriptProperties().getProperty(key);
+  // Solo se è ancora pending, segna come cancelled
+  if (currentValue === 'pending') {
+    PropertiesService.getScriptProperties().setProperty(key, 'cancelled');
+  }
+}
+
+/**
+ * Gestisce la selezione di un valore boolean (chiamato dall'HTML)
+ * IMPORTANTE: questa funzione deve completare PRIMA che il dialog si chiuda
+ */
+function handleBooleanSelection(value, key) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(key, value);
+    // Forza il flush per assicurarsi che il valore sia salvato immediatamente
+    Utilities.sleep(10);
+  } catch (error) {
+    Logger.log(`Errore nel salvare la selezione boolean: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Gestisce il rifiuto della correzione boolean (chiamato dall'HTML)
+ * IMPORTANTE: questa funzione deve completare PRIMA che il dialog si chiuda
+ */
+function handleBooleanRejection(key) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(key, 'rejected');
+    // Forza il flush per assicurarsi che il valore sia salvato immediatamente
+    Utilities.sleep(10);
+  } catch (error) {
+    Logger.log(`Errore nel salvare il rifiuto boolean: ${error.message}`);
+    throw error;
+  }
 }
 
 /**
@@ -1207,19 +1670,7 @@ function revalidateCell_(cell, validation, validationLists) {
     return true;
   }
   
-  // Verifica che validation esista e abbia le proprietà necessarie
-  if (!validation) {
-    Logger.log('Validation object is undefined');
-    return true; // Considera valido se non c'è validazione
-  }
-  
   if (validation.type === 'list') {
-    // Verifica che la lista esista
-    if (!validation.list || !Array.isArray(validation.list)) {
-      Logger.log('Validation list is undefined or not an array for: ' + validation.name);
-      return true; // Considera valido se la lista non esiste
-    }
-    
     // Valida contro la lista
     const cellValueStr = String(cellValue).trim();
     
@@ -1627,6 +2078,157 @@ function columnNumberToLetter_(columnNumber) {
     columnNumber = Math.floor((columnNumber - 1) / 26);
   }
   return letter;
+}
+
+/**
+ * Legge tutte le righe dello sheet Rendicontazione (escluso l'header) e le invia al componente InvoiceExcelEditor
+ * Formatta i dati come TSV (Tab-Separated Values) come quando si copia da Excel
+ */
+function sendDataToInvoiceExcelEditor() {
+  const RENDICONTAZIONE_SHEET = 'Rendicontazione';
+  const INVOICE_EXCEL_EDITOR_URL = 'https://fondazionelab00ets--dev.sandbox.lightning.force.com/lightning/n/InvoiceExcelEditor';
+  
+  const ss = SpreadsheetApp.getActive();
+  const rendicontazioneSheet = ss.getSheetByName(RENDICONTAZIONE_SHEET);
+  
+  if (!rendicontazioneSheet) {
+    SpreadsheetApp.getUi().alert('Errore', `Sheet "${RENDICONTAZIONE_SHEET}" non trovato.`, SpreadsheetApp.getUi().ButtonSet.OK);
+    return;
+  }
+  
+  // Ottieni tutti i dati dallo sheet Rendicontazione (escludendo l'intestazione)
+  const lastRow = rendicontazioneSheet.getLastRow();
+  const lastCol = rendicontazioneSheet.getLastColumn();
+  
+  if (lastRow < 2) {
+    SpreadsheetApp.getUi().alert('Errore', 'Nessun dato da inviare nello sheet Rendicontazione.', SpreadsheetApp.getUi().ButtonSet.OK);
+    return;
+  }
+  
+  // Leggi tutti i dati (dalla riga 2 in poi, senza header)
+  const dataRange = rendicontazioneSheet.getRange(2, 1, lastRow - 1, lastCol);
+  const dataValues = dataRange.getValues();
+  
+  // Converti i dati in formato TSV (Tab-Separated Values) come quando si copia da Excel
+  const tsvLines = [];
+  for (let rowIndex = 0; rowIndex < dataValues.length; rowIndex++) {
+    const row = dataValues[rowIndex];
+    const tsvRow = [];
+    
+    for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      const value = row[colIndex];
+      
+      // Gestisci i valori null/undefined/vuoti
+      if (value === null || value === undefined || value === '') {
+        tsvRow.push('');
+      } else if (value instanceof Date) {
+        // Formatta le date come stringa nel formato GG/MM/AAAA
+        const day = String(value.getDate()).padStart(2, '0');
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const year = value.getFullYear();
+        tsvRow.push(`${day}/${month}/${year}`);
+      } else {
+        // Converti in stringa e gestisci caratteri speciali (tabs, newlines)
+        let stringValue = String(value);
+        // Sostituisci tab con spazio (per evitare problemi nel TSV)
+        stringValue = stringValue.replace(/\t/g, ' ');
+        // Sostituisci newline con spazio
+        stringValue = stringValue.replace(/\n/g, ' ').replace(/\r/g, '');
+        tsvRow.push(stringValue);
+      }
+    }
+    
+    // Unisci i valori con tab
+    tsvLines.push(tsvRow.join('\t'));
+  }
+  
+  // Unisci tutte le righe con newline
+  const tsvData = tsvLines.join('\n');
+  
+  // Passa i dati TSV tramite URL parameters con il nome c__pasteData (convenzione Lightning)
+  // I dati vengono codificati in base64 per evitare problemi con caratteri speciali nell'URL
+  const base64Data = Utilities.base64Encode(tsvData);
+  const url = `${INVOICE_EXCEL_EDITOR_URL}?c__pasteData=${encodeURIComponent(base64Data)}`;
+  
+  // Logga i dati TSV per riferimento
+  Logger.log('=== DATI TSV PER InvoiceExcelEditor ===');
+  Logger.log(`Righe inviate: ${tsvLines.length}`);
+  Logger.log(`Dimensione dati: ${tsvData.length} caratteri`);
+  Logger.log('Primi 500 caratteri:', tsvData.substring(0, 500));
+  Logger.log('=== FINE DATI TSV ===');
+  
+  // Mostra un dialog con l'URL e un pulsante per aprirlo
+  const htmlOutput = HtmlService.createHtmlOutput(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <base target="_top">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          .info-box {
+            background-color: #e8f0fe;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #4285f4;
+          }
+          .url-box {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 11px;
+            max-height: 150px;
+            overflow-y: auto;
+          }
+          button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            margin-right: 10px;
+          }
+          button:hover {
+            background-color: #357ae8;
+          }
+          button.secondary {
+            background-color: #ea4335;
+          }
+          button.secondary:hover {
+            background-color: #d33b2c;
+          }
+        </style>
+      </head>
+      <body>
+        <h3>Dati pronti per InvoiceExcelEditor</h3>
+        <div class="info-box">
+          <strong>Righe inviate:</strong> ${tsvLines.length}<br>
+          <strong>Dimensione dati:</strong> ${tsvData.length} caratteri<br>
+          <strong>Il componente aprirà automaticamente e incollerà i dati.</strong>
+        </div>
+        <p><strong>URL del componente:</strong></p>
+        <div class="url-box">${url.substring(0, 200)}...</div>
+        <button onclick="window.open('${url}', '_blank'); google.script.host.close();">
+          Apri componente in nuova scheda
+        </button>
+        <button onclick="google.script.host.close();" class="secondary">
+          Chiudi
+        </button>
+      </body>
+    </html>
+  `)
+    .setWidth(700)
+    .setHeight(400);
+  
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Invio dati a InvoiceExcelEditor');
 }
 
 function doGet(e) {

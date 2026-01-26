@@ -5217,6 +5217,58 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.showPartnerSelection = false;
         }
         
+        // Gestisci dati TSV passati da Google Sheets tramite URL
+        if (state?.c__pasteData) {
+            try {
+                console.log('Dati TSV ricevuti dall\'URL, elaborazione in corso...');
+                // Decodifica i dati base64
+                const base64Data = decodeURIComponent(state.c__pasteData);
+                const tsvData = atob(base64Data);
+                
+                console.log('Dati TSV decodificati, lunghezza:', tsvData.length);
+                
+                // Converti i dati TSV in righe (come fa pasteFromClipboard)
+                const rawLines = tsvData.split('\n');
+                const lines = rawLines
+                    .map(line => line.replace(/\r/g, ''))
+                    .filter(line => line.trim() || line.includes('\t'));
+                
+                console.log('Righe TSV processate:', lines.length);
+                
+                if (lines.length > 0) {
+                    // Trova la prima riga vuota (stessa logica di pasteFromClipboard)
+                    let firstEmptyRowIndex = -1;
+                    for (let i = 0; i < this.rows.length; i++) {
+                        if (this.isRowEmpty(this.rows[i])) {
+                            firstEmptyRowIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    // Se non ci sono righe vuote, aggiungi una nuova riga
+                    if (firstEmptyRowIndex === -1) {
+                        this.addRow();
+                        firstEmptyRowIndex = this.rows.length - 1;
+                    }
+                    
+                    console.log('Prima riga vuota trovata all\'indice:', firstEmptyRowIndex);
+                    
+                    // Incola i dati automaticamente
+                    await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
+                    console.log('Dati incollati automaticamente con successo');
+                    
+                    // Mostra un messaggio di successo
+                    this.showSuccess(`Incollati automaticamente ${lines.length} righe da Google Sheets.`);
+                } else {
+                    console.warn('Nessuna riga valida trovata nei dati TSV');
+                    this.showError('Nessun dato valido trovato nei dati ricevuti.');
+                }
+            } catch (error) {
+                console.error('Errore durante l\'elaborazione dei dati TSV dall\'URL:', error);
+                this.showError(`Errore durante l'elaborazione dei dati: ${error.message}`);
+            }
+        }
+        
         this._incomingContextApplied = true;
     }
     
