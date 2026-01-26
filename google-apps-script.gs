@@ -1344,8 +1344,19 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
                     // Aggiorna il titolo
                     h2.textContent = 'Errore ' + nextErrorData.errorNum + '/' + nextErrorData.totalErrors;
                     
-                    // Aggiorna le informazioni dell'errore
-                    errorInfo.innerHTML = '<strong>📍 Cella ' + nextErrorData.colLetter + nextErrorData.row + '</strong><br>Valore errato: "' + nextErrorData.errorValue + '"';
+                    // Funzione per escape HTML
+                    function escapeHtmlClient(str) {
+                      return String(str)
+                        .replace(/&/g, '&amp;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    }
+                    
+                    // Aggiorna le informazioni dell'errore (con escape)
+                    const escapedErrorValue = escapeHtmlClient(nextErrorData.errorValue);
+                    errorInfo.innerHTML = '<strong>📍 Cella ' + nextErrorData.colLetter + nextErrorData.row + '</strong><br>Valore errato: "' + escapedErrorValue + '"';
                     
                     // Rimuovi i vecchi pulsanti
                     const oldButtons = document.querySelectorAll('.candidate-button, .reject-button');
