@@ -1070,14 +1070,15 @@ function cleanupValidationState_() {
 function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, errorNum, totalErrors) {
   const ui = SpreadsheetApp.getUi();
   
-  // Crea HTML per i pulsanti dei candidati
+  // Crea HTML per i pulsanti dei candidati usando data attributes per evitare problemi di escape
   let buttonsHtml = '';
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     const scoreText = candidate.score !== null ? ` (${Math.round(candidate.score * 100)}%)` : '';
-    const escapedValue = candidate.value.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    // Usa data attribute invece di onclick per evitare problemi di escape
+    const escapedValue = candidate.value.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     buttonsHtml += `
-      <button class="candidate-button" onclick="selectCandidate('${escapedValue}')">
+      <button class="candidate-button" data-candidate-value="${escapedValue}">
         "${candidate.value}"${scoreText}
       </button>
     `;
@@ -1130,34 +1131,68 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
         </div>
         <div class="candidates-label">Trovati ${candidates.length} valori simili:</div>
         ${buttonsHtml}
-        <button class="reject-button" onclick="rejectSuggestion()">
+        <button class="reject-button">
           Rifiuta suggerimenti
         </button>
         
         <script>
-          function selectCandidate(value) {
-            // Disabilita i pulsanti
-            const buttons = document.querySelectorAll('.candidate-button, .reject-button');
-            buttons.forEach(btn => btn.disabled = true);
+          // Aggiungi event listener ai pulsanti quando il documento è caricato
+          document.addEventListener('DOMContentLoaded', function() {
+            // Aggiungi event listener a tutti i pulsanti candidati
+            const candidateButtons = document.querySelectorAll('.candidate-button[data-candidate-value]');
+            candidateButtons.forEach(function(button) {
+              button.addEventListener('click', function() {
+                const value = button.getAttribute('data-candidate-value');
+                // Decodifica i caratteri HTML entities
+                const decodedValue = value.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                selectCandidate(decodedValue);
+              });
+            });
             
-            // Chiama la funzione server per inserire il valore nella cella
-            google.script.run
-              .withSuccessHandler(function(hasMoreErrors) {
-                // Il valore è stato inserito nella cella
-                if (hasMoreErrors) {
-                  // Se ci sono altri errori, aggiorna il contenuto del dialog corrente
-                  // invece di chiuderlo e aprirne uno nuovo
-                  updateDialogContent();
-                } else {
-                  // Non ci sono altri errori, chiudi questo dialog
-                  google.script.host.close();
-                }
-              })
-              .withFailureHandler(function(error) {
-                alert('Errore: ' + error.message);
-                buttons.forEach(btn => btn.disabled = false);
-              })
-              .processValidationChoice_(value);
+            // Aggiungi event listener al pulsante "Rifiuta suggerimenti"
+            const rejectButton = document.querySelector('.reject-button');
+            if (rejectButton) {
+              rejectButton.addEventListener('click', rejectSuggestion);
+            }
+          });
+          
+          function selectCandidate(value) {
+            try {
+              // Disabilita i pulsanti
+              const buttons = document.querySelectorAll('.candidate-button, .reject-button');
+              buttons.forEach(btn => btn.disabled = true);
+              
+              // Chiama la funzione server per inserire il valore nella cella
+              google.script.run
+                .withSuccessHandler(function(hasMoreErrors) {
+                  try {
+                    // Il valore è stato inserito nella cella
+                    if (hasMoreErrors) {
+                      // Se ci sono altri errori, aggiorna il contenuto del dialog corrente
+                      // invece di chiuderlo e aprirne uno nuovo
+                      updateDialogContent();
+                    } else {
+                      // Non ci sono altri errori, chiudi questo dialog
+                      google.script.host.close();
+                    }
+                  } catch (e) {
+                    console.error('Errore nel success handler: ' + e.message);
+                    alert('Errore: ' + e.message);
+                    buttons.forEach(btn => btn.disabled = false);
+                  }
+                })
+                .withFailureHandler(function(error) {
+                  console.error('Errore nella chiamata server: ' + error.message);
+                  alert('Errore: ' + error.message);
+                  buttons.forEach(btn => btn.disabled = false);
+                })
+                .processValidationChoice_(value);
+            } catch (e) {
+              console.error('Errore in selectCandidate: ' + e.message);
+              alert('Errore: ' + e.message);
+              const buttons = document.querySelectorAll('.candidate-button, .reject-button');
+              buttons.forEach(btn => btn.disabled = false);
+            }
           }
           
           function rejectSuggestion() {
@@ -1185,76 +1220,115 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
           }
           
           function updateDialogContent() {
-            // Ottieni i dati del prossimo errore dal server
-            google.script.run
-              .withSuccessHandler(function(nextErrorData) {
-                if (nextErrorData.done) {
-                  // Finito, chiudi il dialog
+            try {
+              // Ottieni i dati del prossimo errore dal server
+              google.script.run
+                .withSuccessHandler(function(nextErrorData) {
+                  try {
+                    if (!nextErrorData) {
+                      console.error('Nessun dato ricevuto dal server');
+                      google.script.host.close();
+                      return;
+                    }
+                    
+                    if (nextErrorData.done) {
+                      // Finito, chiudi il dialog
+                      google.script.host.close();
+                      return;
+                    }
+                    
+                    // Se il prossimo errore è boolean o date, chiudi questo dialog
+                    // e lascia che showNextErrorDialog_() gestisca il prompt standard
+                    if (nextErrorData.validationType === 'boolean' || nextErrorData.validationType === 'date') {
+                      google.script.host.close();
+                      // Chiama showNextErrorDialog_() per gestire il prompt standard
+                      google.script.run
+                        .withSuccessHandler(function() {
+                          // Prompt gestito
+                        })
+                        .withFailureHandler(function(error) {
+                          console.error('Errore: ' + error.message);
+                        })
+                        .showNextErrorDialog_();
+                      return;
+                    }
+                    
+                    // Aggiorna il contenuto del dialog con il prossimo errore (solo per suggerimenti lista)
+                    const h2 = document.querySelector('h2');
+                    const errorInfo = document.querySelector('.error-info');
+                    const candidatesLabel = document.querySelector('.candidates-label');
+                    const buttonsContainer = document.querySelector('body');
+                    
+                    if (!h2 || !errorInfo || !candidatesLabel || !buttonsContainer) {
+                      console.error('Elementi DOM non trovati');
+                      google.script.host.close();
+                      return;
+                    }
+                    
+                    // Aggiorna il titolo
+                    h2.textContent = 'Errore ' + nextErrorData.errorNum + '/' + nextErrorData.totalErrors;
+                    
+                    // Aggiorna le informazioni dell'errore
+                    errorInfo.innerHTML = '<strong>📍 Cella ' + nextErrorData.colLetter + nextErrorData.row + '</strong><br>Valore errato: "' + nextErrorData.errorValue + '"';
+                    
+                    // Rimuovi i vecchi pulsanti
+                    const oldButtons = document.querySelectorAll('.candidate-button, .reject-button');
+                    oldButtons.forEach(btn => btn.remove());
+                    
+                    // Rimuovi anche il contenitore dei pulsanti candidati se esiste
+                    const oldContainer = document.getElementById('candidate-buttons-container');
+                    if (oldContainer) {
+                      oldContainer.remove();
+                    }
+                    
+                    // Crea i nuovi pulsanti per i candidati
+                    if (nextErrorData.candidates && nextErrorData.candidates.length > 0) {
+                      candidatesLabel.textContent = 'Trovati ' + nextErrorData.candidates.length + ' valori simili:';
+                      candidatesLabel.style.display = 'block';
+                      
+                      // Crea un contenitore per i pulsanti candidati
+                      const candidateButtonsContainer = document.createElement('div');
+                      candidateButtonsContainer.id = 'candidate-buttons-container';
+                      buttonsContainer.insertBefore(candidateButtonsContainer, candidatesLabel.nextSibling);
+                      
+                      nextErrorData.candidates.forEach(function(candidate) {
+                        const scoreText = candidate.score !== null ? ' (' + Math.round(candidate.score * 100) + '%)' : '';
+                        const button = document.createElement('button');
+                        button.className = 'candidate-button';
+                        button.textContent = '"' + candidate.value + '"' + scoreText;
+                        // Usa addEventListener invece di onclick per evitare problemi con l'escape
+                        button.addEventListener('click', function() {
+                          selectCandidate(candidate.value);
+                        });
+                        candidateButtonsContainer.appendChild(button);
+                      });
+                      
+                      // Aggiungi il pulsante "Rifiuta suggerimenti"
+                      const rejectButton = document.createElement('button');
+                      rejectButton.className = 'reject-button';
+                      rejectButton.textContent = 'Rifiuta suggerimenti';
+                      rejectButton.addEventListener('click', rejectSuggestion);
+                      buttonsContainer.appendChild(rejectButton);
+                    } else {
+                      candidatesLabel.style.display = 'none';
+                    }
+                  } catch (e) {
+                    console.error('Errore nell\'aggiornamento del contenuto: ' + e.message);
+                    alert('Errore nell\'aggiornamento: ' + e.message);
+                    google.script.host.close();
+                  }
+                })
+                .withFailureHandler(function(error) {
+                  console.error('Errore nell\'aggiornamento del dialog: ' + error.message);
+                  alert('Errore: ' + error.message);
                   google.script.host.close();
-                  return;
-                }
-                
-                // Se il prossimo errore è boolean o date, chiudi questo dialog
-                // e lascia che showNextErrorDialog_() gestisca il prompt standard
-                if (nextErrorData.validationType === 'boolean' || nextErrorData.validationType === 'date') {
-                  google.script.host.close();
-                  // Chiama showNextErrorDialog_() per gestire il prompt standard
-                  google.script.run
-                    .withSuccessHandler(function() {
-                      // Prompt gestito
-                    })
-                    .withFailureHandler(function(error) {
-                      console.error('Errore: ' + error.message);
-                    })
-                    .showNextErrorDialog_();
-                  return;
-                }
-                
-                // Aggiorna il contenuto del dialog con il prossimo errore (solo per suggerimenti lista)
-                const h2 = document.querySelector('h2');
-                const errorInfo = document.querySelector('.error-info');
-                const candidatesLabel = document.querySelector('.candidates-label');
-                const buttonsContainer = document.querySelector('body');
-                
-                // Aggiorna il titolo
-                h2.textContent = 'Errore ' + nextErrorData.errorNum + '/' + nextErrorData.totalErrors;
-                
-                // Aggiorna le informazioni dell'errore
-                errorInfo.innerHTML = '<strong>📍 Cella ' + nextErrorData.colLetter + nextErrorData.row + '</strong><br>Valore errato: "' + nextErrorData.errorValue + '"';
-                
-                // Rimuovi i vecchi pulsanti
-                const oldButtons = document.querySelectorAll('.candidate-button, .reject-button');
-                oldButtons.forEach(btn => btn.remove());
-                
-                // Crea i nuovi pulsanti per i candidati
-                if (nextErrorData.candidates && nextErrorData.candidates.length > 0) {
-                  candidatesLabel.textContent = 'Trovati ' + nextErrorData.candidates.length + ' valori simili:';
-                  candidatesLabel.style.display = 'block';
-                  
-                  nextErrorData.candidates.forEach(function(candidate) {
-                    const scoreText = candidate.score !== null ? ' (' + Math.round(candidate.score * 100) + '%)' : '';
-                    const button = document.createElement('button');
-                    button.className = 'candidate-button';
-                    button.textContent = '"' + candidate.value + '"' + scoreText;
-                    button.onclick = function() { selectCandidate(candidate.value); };
-                    buttonsContainer.insertBefore(button, candidatesLabel.nextSibling);
-                  });
-                  
-                  // Aggiungi il pulsante "Rifiuta suggerimenti"
-                  const rejectButton = document.createElement('button');
-                  rejectButton.className = 'reject-button';
-                  rejectButton.textContent = 'Rifiuta suggerimenti';
-                  rejectButton.onclick = rejectSuggestion;
-                  buttonsContainer.appendChild(rejectButton);
-                } else {
-                  candidatesLabel.style.display = 'none';
-                }
-              })
-              .withFailureHandler(function(error) {
-                console.error('Errore nell\'aggiornamento del dialog: ' + error.message);
-                google.script.host.close();
-              })
-              .updateDialogWithNextError_();
+                })
+                .updateDialogWithNextError_();
+            } catch (e) {
+              console.error('Errore in updateDialogContent: ' + e.message);
+              alert('Errore: ' + e.message);
+              google.script.host.close();
+            }
           }
         </script>
       </body>
