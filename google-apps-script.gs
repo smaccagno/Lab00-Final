@@ -1068,374 +1068,132 @@ function cleanupValidationState_() {
  * Versione del dialog con catena di callback (per dialog HTML non bloccanti)
  */
 function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, errorNum, totalErrors) {
-  const ui = SpreadsheetApp.getUi();
+  var ui = SpreadsheetApp.getUi();
   
-  // Funzione helper per escape HTML
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/`/g, '&#96;')
-      .replace(/\$/g, '&#36;');
-  }
+  // Prepara i dati dei candidati come JSON sicuro
+  var candidatesData = candidates.map(function(c) {
+    return { value: String(c.value), score: c.score };
+  });
+  var candidatesJson = JSON.stringify(candidatesData)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
   
-  // Escape del valore errato per l'HTML
-  const escapedErrorValue = escapeHtml(errorValue);
+  // Escape per il valore errato
+  var safeErrorValue = String(errorValue)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
   
-  // Crea HTML per i pulsanti dei candidati
-  // Inserisce direttamente il valore nel data attribute con escape HTML corretto
-  let buttonsHtml = '';
-  for (let i = 0; i < candidates.length; i++) {
-    const candidate = candidates[i];
-    const scoreText = candidate.score !== null ? ` (${Math.round(candidate.score * 100)}%)` : '';
-    // Escape HTML per il valore nel data attribute e nel testo
-    const escapedValue = escapeHtml(candidate.value);
-    buttonsHtml += `
-      <button class="candidate-button" data-value="${escapedValue}">
-        "${escapedValue}"${scoreText}
-      </button>
-    `;
-  }
+  // Costruisci l'HTML usando concatenazione di stringhe (nessun template literal)
+  var htmlStr = '<!DOCTYPE html><html><head><style>' +
+    'body { font-family: Arial, sans-serif; padding: 20px; }' +
+    'h2 { margin-top: 0; }' +
+    '.error-info { background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; }' +
+    '.candidates-label { font-weight: bold; margin-bottom: 10px; }' +
+    '.candidate-button { display: block; width: 100%; padding: 12px; margin: 8px 0; background: #4285f4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; text-align: left; }' +
+    '.candidate-button:hover { background: #3367d6; }' +
+    '.candidate-button:disabled { background: #ccc; cursor: not-allowed; }' +
+    '.reject-button { display: block; width: 100%; padding: 12px; margin: 15px 0 0 0; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }' +
+    '.reject-button:hover { background: #c82333; }' +
+    '.reject-button:disabled { background: #ccc; cursor: not-allowed; }' +
+    '#buttons-container { margin-top: 10px; }' +
+    '</style></head><body>' +
+    '<h2 id="dialog-title">Errore ' + errorNum + '/' + totalErrors + '</h2>' +
+    '<div class="error-info" id="error-info">' +
+    '<strong>📍 Cella ' + colLetter + row + '</strong><br>' +
+    'Valore errato: "' + safeErrorValue + '"' +
+    '</div>' +
+    '<div class="candidates-label" id="candidates-label">Trovati ' + candidates.length + ' valori simili:</div>' +
+    '<div id="buttons-container"></div>' +
+    '<button class="reject-button" id="reject-button">Rifiuta suggerimenti</button>' +
+    '<script id="candidates-data" type="application/json">' + candidatesJson + '</script>' +
+    '<script>' +
+    '(function(){' +
+    'var candidatesData;' +
+    'try{' +
+    '  var dataEl = document.getElementById("candidates-data");' +
+    '  candidatesData = JSON.parse(dataEl.textContent);' +
+    '}catch(e){console.error("JSON parse error:",e);return;}' +
+    'var container = document.getElementById("buttons-container");' +
+    'candidatesData.forEach(function(c){' +
+    '  var btn = document.createElement("button");' +
+    '  btn.className = "candidate-button";' +
+    '  var score = c.score !== null ? " (" + Math.round(c.score*100) + "%)" : "";' +
+    '  btn.textContent = "\\"" + c.value + "\\"" + score;' +
+    '  (function(val){' +
+    '    btn.onclick = function(){window.selectCandidate(val);};' +
+    '  })(c.value);' +
+    '  container.appendChild(btn);' +
+    '});' +
+    'document.getElementById("reject-button").onclick = function(){window.rejectSuggestion();};' +
+    '})();' +
+    'window.selectCandidate = function(value){' +
+    '  var btns = document.querySelectorAll(".candidate-button, .reject-button");' +
+    '  btns.forEach(function(b){b.disabled=true;});' +
+    '  google.script.run' +
+    '    .withSuccessHandler(function(hasMore){' +
+    '      if(hasMore){window.updateDialogContent();}else{google.script.host.close();}' +
+    '    })' +
+    '    .withFailureHandler(function(err){' +
+    '      alert("Errore: "+err.message);' +
+    '      btns.forEach(function(b){b.disabled=false;});' +
+    '    })' +
+    '    .processValidationChoice_(value);' +
+    '};' +
+    'window.rejectSuggestion = function(){' +
+    '  var btns = document.querySelectorAll(".candidate-button, .reject-button");' +
+    '  btns.forEach(function(b){b.disabled=true;});' +
+    '  google.script.run' +
+    '    .withSuccessHandler(function(hasMore){' +
+    '      if(hasMore){window.updateDialogContent();}else{google.script.host.close();}' +
+    '    })' +
+    '    .withFailureHandler(function(err){' +
+    '      alert("Errore: "+err.message);' +
+    '      btns.forEach(function(b){b.disabled=false;});' +
+    '    })' +
+    '    .processValidationChoice_(null);' +
+    '};' +
+    'window.updateDialogContent = function(){' +
+    '  google.script.run' +
+    '    .withSuccessHandler(function(data){' +
+    '      if(!data || data.done){google.script.host.close();return;}' +
+    '      if(data.validationType==="boolean"||data.validationType==="date"){' +
+    '        google.script.host.close();' +
+    '        google.script.run.showNextErrorDialog_();' +
+    '        return;' +
+    '      }' +
+    '      document.getElementById("dialog-title").textContent="Errore "+data.errorNum+"/"+data.totalErrors;' +
+    '      var safeVal = String(data.errorValue).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");' +
+    '      document.getElementById("error-info").innerHTML="<strong>📍 Cella "+data.colLetter+data.row+"</strong><br>Valore errato: \\""+safeVal+"\\"";' +
+    '      document.getElementById("candidates-label").textContent="Trovati "+data.candidates.length+" valori simili:";' +
+    '      var cont = document.getElementById("buttons-container");' +
+    '      cont.innerHTML="";' +
+    '      data.candidates.forEach(function(c){' +
+    '        var btn = document.createElement("button");' +
+    '        btn.className = "candidate-button";' +
+    '        var score = c.score !== null ? " (" + Math.round(c.score*100) + "%)" : "";' +
+    '        btn.textContent = "\\"" + c.value + "\\"" + score;' +
+    '        (function(val){btn.onclick=function(){window.selectCandidate(val);};})(c.value);' +
+    '        cont.appendChild(btn);' +
+    '      });' +
+    '      var rej = document.getElementById("reject-button");' +
+    '      rej.disabled=false;' +
+    '    })' +
+    '    .withFailureHandler(function(err){' +
+    '      alert("Errore: "+err.message);' +
+    '      google.script.host.close();' +
+    '    })' +
+    '    .updateDialogWithNextError_();' +
+    '};' +
+    '</script></body></html>';
   
-  const html = HtmlService.createHtmlOutput(`
-    <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          h2 { margin-top: 0; }
-          .error-info { background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
-          .candidates-label { font-weight: bold; margin-bottom: 10px; }
-          .candidate-button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            background: #4285f4;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          }
-          .candidate-button:hover { background: #3367d6; }
-          .candidate-button:disabled { background: #ccc; cursor: not-allowed; }
-          .reject-button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0 0 0;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-          }
-          .reject-button:hover { background: #c82333; }
-          .reject-button:disabled { background: #ccc; cursor: not-allowed; }
-        </style>
-      </head>
-      <body>
-        <h2>Errore ${errorNum}/${totalErrors}</h2>
-        <div class="error-info">
-          <strong>📍 Cella ${colLetter}${row}</strong><br>
-          Valore errato: "${escapedErrorValue}"
-        </div>
-        <div class="candidates-label">Trovati ${candidates.length} valori simili:</div>
-        ${buttonsHtml}
-        <button class="reject-button">
-          Rifiuta suggerimenti
-        </button>
-        
-        <script>
-          // Funzione per decodificare HTML entities
-          function decodeHtmlEntities(text) {
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = text;
-            return textarea.value;
-          }
-          
-          // Funzione per inizializzare gli event listener sui pulsanti
-          function initializeButtons() {
-            try {
-              // Aggiungi event listener a tutti i pulsanti candidati leggendo il valore dal data attribute
-              const candidateButtons = document.querySelectorAll('.candidate-button[data-value]');
-              console.log('Trovati ' + candidateButtons.length + ' pulsanti candidati');
-              
-              candidateButtons.forEach(function(button) {
-                // Rimuovi eventuali listener esistenti clonando il pulsante
-                const newButton = button.cloneNode(true);
-                button.parentNode.replaceChild(newButton, button);
-                
-                newButton.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  try {
-                    const encodedValue = newButton.getAttribute('data-value');
-                    if (!encodedValue) {
-                      console.error('Data attribute data-value non trovato');
-                      return;
-                    }
-                    // Decodifica HTML entities
-                    const value = decodeHtmlEntities(encodedValue);
-                    console.log('Valore selezionato: ' + value);
-                    selectCandidate(value);
-                  } catch (err) {
-                    console.error('Errore nel click handler: ' + err.message);
-                    alert('Errore: ' + err.message);
-                  }
-                });
-              });
-              
-              // Aggiungi event listener al pulsante "Rifiuta suggerimenti"
-              const rejectButton = document.querySelector('.reject-button');
-              if (rejectButton) {
-                const newRejectButton = rejectButton.cloneNode(true);
-                rejectButton.parentNode.replaceChild(newRejectButton, rejectButton);
-                newRejectButton.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  rejectSuggestion();
-                });
-                console.log('Pulsante rifiuta inizializzato');
-              }
-            } catch (err) {
-              console.error('Errore in initializeButtons: ' + err.message);
-              alert('Errore nell\'inizializzazione: ' + err.message);
-            }
-          }
-          
-          // Inizializza i pulsanti immediatamente e anche dopo il caricamento
-          // Prova diversi metodi per assicurarsi che funzioni
-          setTimeout(function() {
-            console.log('Inizializzazione pulsanti con setTimeout');
-            initializeButtons();
-          }, 100);
-          
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-              console.log('DOMContentLoaded - inizializzazione pulsanti');
-              initializeButtons();
-            });
-          } else {
-            console.log('DOM già caricato - inizializzazione immediata');
-            initializeButtons();
-          }
-          
-          // Fallback con window.onload
-          window.onload = function() {
-            console.log('window.onload - inizializzazione pulsanti');
-            initializeButtons();
-          };
-          
-          function selectCandidate(value) {
-            try {
-              // Disabilita i pulsanti
-              const buttons = document.querySelectorAll('.candidate-button, .reject-button');
-              buttons.forEach(btn => btn.disabled = true);
-              
-              // Chiama la funzione server per inserire il valore nella cella
-              google.script.run
-                .withSuccessHandler(function(hasMoreErrors) {
-                  try {
-                    // Il valore è stato inserito nella cella
-                    if (hasMoreErrors) {
-                      // Se ci sono altri errori, aggiorna il contenuto del dialog corrente
-                      // invece di chiuderlo e aprirne uno nuovo
-                      updateDialogContent();
-                    } else {
-                      // Non ci sono altri errori, chiudi questo dialog
-                      google.script.host.close();
-                    }
-                  } catch (e) {
-                    console.error('Errore nel success handler: ' + e.message);
-                    alert('Errore: ' + e.message);
-                    buttons.forEach(btn => btn.disabled = false);
-                  }
-                })
-                .withFailureHandler(function(error) {
-                  console.error('Errore nella chiamata server: ' + error.message);
-                  alert('Errore: ' + error.message);
-                  buttons.forEach(btn => btn.disabled = false);
-                })
-                .processValidationChoice_(value);
-            } catch (e) {
-              console.error('Errore in selectCandidate: ' + e.message);
-              alert('Errore: ' + e.message);
-              const buttons = document.querySelectorAll('.candidate-button, .reject-button');
-              buttons.forEach(btn => btn.disabled = false);
-            }
-          }
-          
-          function rejectSuggestion() {
-            // Disabilita i pulsanti
-            const buttons = document.querySelectorAll('.candidate-button, .reject-button');
-            buttons.forEach(btn => btn.disabled = true);
-            
-            // Chiama la funzione server con null (rifiutato)
-            google.script.run
-              .withSuccessHandler(function(hasMoreErrors) {
-                // Lo stato è stato aggiornato
-                if (hasMoreErrors) {
-                  // Se ci sono altri errori, aggiorna il contenuto del dialog corrente
-                  updateDialogContent();
-                } else {
-                  // Non ci sono altri errori, chiudi questo dialog
-                  google.script.host.close();
-                }
-              })
-              .withFailureHandler(function(error) {
-                alert('Errore: ' + error.message);
-                buttons.forEach(btn => btn.disabled = false);
-              })
-              .processValidationChoice_(null);
-          }
-          
-          function updateDialogContent() {
-            try {
-              // Ottieni i dati del prossimo errore dal server
-              google.script.run
-                .withSuccessHandler(function(nextErrorData) {
-                  try {
-                    if (!nextErrorData) {
-                      console.error('Nessun dato ricevuto dal server');
-                      google.script.host.close();
-                      return;
-                    }
-                    
-                    if (nextErrorData.done) {
-                      // Finito, chiudi il dialog
-                      google.script.host.close();
-                      return;
-                    }
-                    
-                    // Se il prossimo errore è boolean o date, chiudi questo dialog
-                    // e lascia che showNextErrorDialog_() gestisca il prompt standard
-                    if (nextErrorData.validationType === 'boolean' || nextErrorData.validationType === 'date') {
-                      google.script.host.close();
-                      // Chiama showNextErrorDialog_() per gestire il prompt standard
-                      google.script.run
-                        .withSuccessHandler(function() {
-                          // Prompt gestito
-                        })
-                        .withFailureHandler(function(error) {
-                          console.error('Errore: ' + error.message);
-                        })
-                        .showNextErrorDialog_();
-                      return;
-                    }
-                    
-                    // Aggiorna il contenuto del dialog con il prossimo errore (solo per suggerimenti lista)
-                    const h2 = document.querySelector('h2');
-                    const errorInfo = document.querySelector('.error-info');
-                    const candidatesLabel = document.querySelector('.candidates-label');
-                    const buttonsContainer = document.querySelector('body');
-                    
-                    if (!h2 || !errorInfo || !candidatesLabel || !buttonsContainer) {
-                      console.error('Elementi DOM non trovati');
-                      google.script.host.close();
-                      return;
-                    }
-                    
-                    // Aggiorna il titolo
-                    h2.textContent = 'Errore ' + nextErrorData.errorNum + '/' + nextErrorData.totalErrors;
-                    
-                    // Funzione per escape HTML
-                    function escapeHtmlClient(str) {
-                      return String(str)
-                        .replace(/&/g, '&amp;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                    }
-                    
-                    // Aggiorna le informazioni dell'errore (con escape)
-                    const escapedErrorValue = escapeHtmlClient(nextErrorData.errorValue);
-                    errorInfo.innerHTML = '<strong>📍 Cella ' + nextErrorData.colLetter + nextErrorData.row + '</strong><br>Valore errato: "' + escapedErrorValue + '"';
-                    
-                    // Rimuovi i vecchi pulsanti
-                    const oldButtons = document.querySelectorAll('.candidate-button, .reject-button');
-                    oldButtons.forEach(btn => btn.remove());
-                    
-                    // Rimuovi anche il contenitore dei pulsanti candidati se esiste
-                    const oldContainer = document.getElementById('candidate-buttons-container');
-                    if (oldContainer) {
-                      oldContainer.remove();
-                    }
-                    
-                    // Crea i nuovi pulsanti per i candidati
-                    if (nextErrorData.candidates && nextErrorData.candidates.length > 0) {
-                      candidatesLabel.textContent = 'Trovati ' + nextErrorData.candidates.length + ' valori simili:';
-                      candidatesLabel.style.display = 'block';
-                      
-                      // Crea un contenitore per i pulsanti candidati
-                      const candidateButtonsContainer = document.createElement('div');
-                      candidateButtonsContainer.id = 'candidate-buttons-container';
-                      buttonsContainer.insertBefore(candidateButtonsContainer, candidatesLabel.nextSibling);
-                      
-                      nextErrorData.candidates.forEach(function(candidate) {
-                        const scoreText = candidate.score !== null ? ' (' + Math.round(candidate.score * 100) + '%)' : '';
-                        const button = document.createElement('button');
-                        button.className = 'candidate-button';
-                        button.textContent = '"' + candidate.value + '"' + scoreText;
-                        // Escape HTML per il valore nel data attribute
-                        const escapedValue = String(candidate.value)
-                          .replace(/&/g, '&amp;')
-                          .replace(/"/g, '&quot;')
-                          .replace(/'/g, '&#39;')
-                          .replace(/</g, '&lt;')
-                          .replace(/>/g, '&gt;');
-                        button.setAttribute('data-value', escapedValue);
-                        // Usa addEventListener con il valore dal data attribute
-                        button.addEventListener('click', function() {
-                          const encodedValue = button.getAttribute('data-value');
-                          const value = decodeHtmlEntities(encodedValue);
-                          selectCandidate(value);
-                        });
-                        candidateButtonsContainer.appendChild(button);
-                      });
-                      
-                      // Aggiungi il pulsante "Rifiuta suggerimenti"
-                      const rejectButton = document.createElement('button');
-                      rejectButton.className = 'reject-button';
-                      rejectButton.textContent = 'Rifiuta suggerimenti';
-                      rejectButton.addEventListener('click', rejectSuggestion);
-                      buttonsContainer.appendChild(rejectButton);
-                    } else {
-                      candidatesLabel.style.display = 'none';
-                    }
-                  } catch (e) {
-                    console.error('Errore nell\'aggiornamento del contenuto: ' + e.message);
-                    alert('Errore nell\'aggiornamento: ' + e.message);
-                    google.script.host.close();
-                  }
-                })
-                .withFailureHandler(function(error) {
-                  console.error('Errore nell\'aggiornamento del dialog: ' + error.message);
-                  alert('Errore: ' + error.message);
-                  google.script.host.close();
-                })
-                .updateDialogWithNextError_();
-            } catch (e) {
-              console.error('Errore in updateDialogContent: ' + e.message);
-              alert('Errore: ' + e.message);
-              google.script.host.close();
-            }
-          }
-        </script>
-      </body>
-    </html>
-  `)
+  var html = HtmlService.createHtmlOutput(htmlStr)
     .setWidth(500)
     .setHeight(Math.min(600, 300 + (candidates.length * 60)));
   
   ui.showModalDialog(html, 'Errore ' + errorNum + '/' + totalErrors + ' - Selezione valore');
-  // NOTA: showModalDialog NON blocca - il callback chiamerà processValidationChoice_
 }
 
 /**
