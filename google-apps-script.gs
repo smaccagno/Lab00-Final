@@ -2130,10 +2130,20 @@ function sendDataToInvoiceExcelEditor() {
       } else {
         // Converti in stringa e gestisci caratteri speciali (tabs, newlines)
         let stringValue = String(value);
+        // Rimuovi spazi iniziali e finali (trim) per evitare problemi di validazione
+        stringValue = stringValue.trim();
+        // Rimuovi caratteri di controllo e caratteri non stampabili (eccetto spazi normali)
+        // Rimuovi caratteri Unicode invisibili comuni
+        stringValue = stringValue.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width spaces, zero-width non-joiner, zero-width joiner, BOM
+        stringValue = stringValue.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Caratteri di controllo
         // Sostituisci tab con spazio (per evitare problemi nel TSV)
         stringValue = stringValue.replace(/\t/g, ' ');
         // Sostituisci newline con spazio
         stringValue = stringValue.replace(/\n/g, ' ').replace(/\r/g, '');
+        // Rimuovi eventuali spazi multipli consecutivi
+        stringValue = stringValue.replace(/\s+/g, ' ');
+        // Rimuovi eventuali spazi iniziali/finali rimasti dopo le sostituzioni
+        stringValue = stringValue.trim();
         tsvRow.push(stringValue);
       }
     }

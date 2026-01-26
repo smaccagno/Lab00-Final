@@ -2167,7 +2167,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const fieldIndex = startColIndex + colIndex;
                 if (fieldIndex >= 0 && fieldIndex < fieldOrder.length) {
                     const field = fieldOrder[fieldIndex];
-                    const trimmedValue = value.trim();
+                    // Pulisci il valore da caratteri nascosti prima di processarlo
+                    const trimmedValue = this.cleanValue(value);
                     
                     if (field === 'isFree' || field === 'noInvoiceAvailable') {
                         updatedRows[rowIndex][field] = this.parseBoolean(trimmedValue);
@@ -3290,15 +3291,34 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
+     * Pulisce un valore da caratteri nascosti e caratteri di controllo
+     */
+    cleanValue(value) {
+        if (!value || typeof value !== 'string') {
+            return value;
+        }
+        let cleaned = value;
+        // Rimuovi caratteri Unicode invisibili comuni
+        cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width spaces, zero-width non-joiner, zero-width joiner, BOM
+        // Rimuovi caratteri di controllo (eccetto tab, newline, carriage return che vengono gestiti separatamente)
+        cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+        // Rimuovi spazi iniziali e finali
+        cleaned = cleaned.trim();
+        return cleaned;
+    }
+
+    /**
      * Trova il valore esatto nel dataset dato un valore inserito (case-insensitive)
      * Restituisce il valore esatto se trovato, altrimenti il valore originale
      */
     getExactValueFromDataset(field, value) {
-        if (!value || value.trim() === '') {
+        if (!value || value.toString().trim() === '') {
             return value;
         }
 
-        const trimmedValue = value.toString().trim();
+        // Pulisci il valore da caratteri nascosti prima di cercarlo nel dataset
+        const cleanedValue = this.cleanValue(value.toString());
+        const trimmedValue = cleanedValue;
         const lowerValue = trimmedValue.toLowerCase();
 
         switch (field) {
@@ -5234,7 +5254,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Converti i dati TSV in righe (come fa pasteFromClipboard)
                 const rawLines = tsvData.split('\n');
                 const lines = rawLines
-                    .map(line => line.replace(/\r/g, ''))
+                    .map(line => {
+                        // Rimuovi caratteri di controllo e caratteri non stampabili
+                        let cleanedLine = line.replace(/\r/g, '');
+                        // Rimuovi caratteri Unicode invisibili comuni
+                        cleanedLine = cleanedLine.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width spaces, zero-width non-joiner, zero-width joiner, BOM
+                        cleanedLine = cleanedLine.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Caratteri di controllo
+                        return cleanedLine;
+                    })
                     .filter(line => line.trim() || line.includes('\t'));
                 
                 console.log('Righe TSV processate:', lines.length);
