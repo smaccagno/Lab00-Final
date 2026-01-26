@@ -1084,7 +1084,12 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
   }
   
   // Serializza i candidati in JSON per passarli al JavaScript
-  const candidatesJson = JSON.stringify(candidates.map(c => c.value));
+  // Usa un metodo sicuro per evitare problemi di escape nel template string
+  const candidatesValues = candidates.map(c => c.value);
+  const candidatesJsonSafe = JSON.stringify(candidatesValues)
+    .replace(/\\/g, '\\\\')  // Escape backslash
+    .replace(/`/g, '\\`')    // Escape backtick
+    .replace(/\$/g, '\\$');  // Escape dollar sign
   
   const html = HtmlService.createHtmlOutput(`
     <html>
@@ -1137,9 +1142,25 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
           Rifiuta suggerimenti
         </button>
         
+        <!-- Dati candidati in un elemento nascosto per evitare problemi di escape -->
+        <script type="application/json" id="candidates-data">${candidatesJsonSafe}</script>
+        
         <script>
-          // Array dei valori candidati (passato dal server)
-          const candidates = ${candidatesJson};
+          // Array dei valori candidati (letti dall'elemento JSON)
+          let candidates = [];
+          try {
+            const candidatesDataElement = document.getElementById('candidates-data');
+            if (candidatesDataElement) {
+              candidates = JSON.parse(candidatesDataElement.textContent);
+            } else {
+              console.error('Elemento candidates-data non trovato');
+            }
+          } catch (e) {
+            console.error('Errore nel parsing dei candidati: ' + e.message);
+            candidates = [];
+          }
+          
+          console.log('Candidati caricati: ' + candidates.length);
           
           // Funzione per inizializzare gli event listener sui pulsanti
           function initializeButtons() {
