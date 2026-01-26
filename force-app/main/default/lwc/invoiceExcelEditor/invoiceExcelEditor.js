@@ -17,6 +17,7 @@ import getEnrolledPrograms from '@salesforce/apex/InvoiceExcelEditorController.g
 import getAvailableBudgetsForProgram from '@salesforce/apex/InvoiceExcelEditorController.getAvailableBudgetsForProgram';
 import checkBudgetForProgram from '@salesforce/apex/InvoiceExcelEditorController.checkBudgetForProgram';
 import getPartnersForProgram from '@salesforce/apex/InvoiceExcelEditorController.getPartnersForProgram';
+import getAllPartners from '@salesforce/apex/InvoiceExcelEditorController.getAllPartners';
 
 export default class InvoiceExcelEditor extends NavigationMixin(LightningElement) {
     @track rows = [];
@@ -5203,6 +5204,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 this.selectedProgramId = incomingProgramId;
                 // Carica i partner per il programma selezionato
                 await this.loadPartnersForProgram(incomingProgramId);
+            } else {
+                // Se non c'è un programma selezionato, carica tutti i partner disponibili
+                await this.loadPartnersForProgram(null);
             }
             // Nascondi la selezione programma perché il Flow l'ha già gestita
             this.showProgramSelection = false;
@@ -5328,6 +5332,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (enrolledPrograms.length === 1) {
                 await this.selectProgram(enrolledPrograms[0].Id, enrolledPrograms[0].Name);
                 this.showProgramSelection = false;
+            } else {
+                // Se ci sono più programmi o nessun programma selezionato ancora,
+                // carica tutti i partner disponibili per mostrare i suggerimenti nel dropdown
+                await this.loadPartnersForProgram(null);
             }
             
         } catch (error) {
@@ -5360,8 +5368,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     async loadPartnersForProgram(programId) {
         try {
             if (!programId) {
-                console.log('[loadPartnersForProgram] programId non fornito, reset partners');
-                this.partners = [];
+                console.log('[loadPartnersForProgram] programId non fornito, carico tutti i partner disponibili');
+                // Carica tutti i partner disponibili quando non c'è un programma selezionato
+                // Questo permette al dropdown di mostrare sempre i suggerimenti
+                const allPartners = await getAllPartners();
+                this.partners = allPartners || [];
+                console.log('[loadPartnersForProgram] Tutti i partner caricati:', this.partners.length);
+                console.log('[loadPartnersForProgram] Lista partner:', this.partners.map(p => ({ Name: p.Name, Id: p.Id })));
                 return;
             }
             
