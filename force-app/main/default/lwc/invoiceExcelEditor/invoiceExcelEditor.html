@@ -263,6 +263,13 @@
                         class="slds-m-left_small">
                     </lightning-button>
                     <lightning-button 
+                        label="Validazione" 
+                        onclick={validateAllRowsHandler}
+                        variant="neutral"
+                        icon-name="utility:check"
+                        class="slds-m-left_small validation-button">
+                    </lightning-button>
+                    <lightning-button 
                         label="Elimina Riga Selezionata" 
                         onclick={deleteSelectedRow}
                         variant="destructive"

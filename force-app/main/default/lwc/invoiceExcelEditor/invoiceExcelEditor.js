@@ -2123,6 +2123,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
     }
 
+    /**
+     * Handler per il pulsante "Validazione" che esegue la validazione completa di tutte le righe
+     */
+    validateAllRowsHandler() {
+        console.log('Validazione completa richiesta dall\'utente');
+        this.validateAllRows();
+        this.showSuccess('Validazione completa eseguita su tutte le righe.');
+    }
+
     async pasteMultipleRows(lines, startRowIndex, startColIndex) {
         const fieldOrder = [
             'partner',

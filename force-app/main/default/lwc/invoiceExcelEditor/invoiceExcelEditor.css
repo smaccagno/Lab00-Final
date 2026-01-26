@@ -857,3 +857,19 @@
     --sds-c-icon-width: 12px;
     --sds-c-icon-height: 12px;
 }
+
+/* Pulsante Validazione verde */
+.validation-button {
+    --slds-c-button-neutral-color-background: #2e844a;
+    --slds-c-button-neutral-color-background-hover: #256e3e;
+    --slds-c-button-neutral-color-background-active: #1f5a2e;
+    --slds-c-button-text-color: #ffffff;
+}
+
+.validation-button:hover {
+    background-color: #256e3e;
+}
+
+.validation-button:active {
+    background-color: #1f5a2e;
+}
