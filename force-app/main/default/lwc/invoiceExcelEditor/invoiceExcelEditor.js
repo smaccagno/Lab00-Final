@@ -2126,10 +2126,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     /**
      * Handler per il pulsante "Validazione" che esegue la validazione completa di tutte le righe
      */
-    validateAllRowsHandler() {
-        console.log('Validazione completa richiesta dall\'utente');
-        this.validateAllRows();
-        this.showSuccess('Validazione completa eseguita su tutte le righe.');
+    async validateAllRowsHandler() {
+        try {
+            console.log('Validazione completa richiesta dall\'utente');
+            // Esegui la validazione completa (la funzione gestisce già lo spinner)
+            await this.validateAllRows();
+            
+            // Mostra messaggio di successo
+            this.showSuccess('Validazione completa eseguita su tutte le righe.');
+        } catch (error) {
+            console.error('Errore durante la validazione completa:', error);
+            this.showError(`Errore durante la validazione: ${error.message}`);
+            // Assicurati che lo spinner sia disattivato in caso di errore
+            this.isValidating = false;
+        }
     }
 
     async pasteMultipleRows(lines, startRowIndex, startColIndex) {
@@ -3863,46 +3873,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
-     * Valida tutte le righe e tutti i campi validati
-     * Utile per rieseguire la validazione completa dopo il caricamento dei dataset
-     */
-    validateAllRows() {
-        const fieldsToValidate = [
-            'partner',
-            'tipoVisita',
-            'beneficiaryType',
-            'comune',
-            'provincia',
-            'regione',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory'
-        ];
-
-        this.rows.forEach((row, rowIndex) => {
-            fieldsToValidate.forEach(field => {
-                if (row[field] !== undefined) {
-                    this.validateField(row, field, row[field]);
-                }
-            });
-        });
-
-        // Aggiorna lo stato visivo di tutte le celle dopo la validazione
-        setTimeout(() => {
-            this.rows.forEach((row, rowIndex) => {
-                fieldsToValidate.forEach(field => {
-                    const cell = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"]`);
-                    if (cell) {
-                        this.updateCellValidationState(cell, row, field);
-                    }
-                });
-            });
-            // Forza un rerender per aggiornare la visualizzazione
-            this.rows = [...this.rows];
-        }, 100);
-    }
-
-    /**
      * Aggiorna lo stato visivo della cella in base alla validazione
      */
     updateCellValidationState(cell, row, field) {
@@ -5488,7 +5458,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Riesegui la validazione completa di tutte le righe
                     // Questo è necessario perché durante il paste iniziale i dataset potrebbero non essere ancora completamente caricati
                     console.log('Riesecuzione validazione completa di tutte le righe...');
-                    this.validateAllRows();
+                    await this.validateAllRows();
                     console.log('Validazione completa terminata');
                     
                     // Mostra un messaggio di successo
