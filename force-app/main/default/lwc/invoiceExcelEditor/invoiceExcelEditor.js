@@ -3302,6 +3302,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width spaces, zero-width non-joiner, zero-width joiner, BOM
         // Rimuovi caratteri di controllo (eccetto tab, newline, carriage return che vengono gestiti separatamente)
         cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+        // Rimuovi carriage return standalone (non seguito da newline)
+        cleaned = cleaned.replace(/\r(?!\n)/g, '');
+        // Normalizza spazi multipli consecutivi in un singolo spazio
+        cleaned = cleaned.replace(/[ ]+/g, ' ');
         // Rimuovi spazi iniziali e finali
         cleaned = cleaned.trim();
         return cleaned;
