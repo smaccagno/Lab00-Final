@@ -803,13 +803,13 @@ function correctErrorsInteractively_(sheet, errorCells) {
   cache.put('validationSheetName', sheet.getName(), 1800);
   
   // Mostra il primo dialog
-  showNextErrorDialog_();
+  showNextErrorDialog();
 }
 
 /**
  * Mostra il dialog per il prossimo errore nella catena
  */
-function showNextErrorDialog_() {
+function showNextErrorDialog() {
   const cache = CacheService.getScriptCache();
   const ui = SpreadsheetApp.getUi();
   
@@ -860,9 +860,9 @@ function showNextErrorDialog_() {
     if (boolResponse.getSelectedButton() === ui.Button.OK) {
       const inputValue = boolResponse.getResponseText().trim().toUpperCase();
       if (inputValue === 'TRUE' || inputValue === 'FALSE') {
-        processValidationChoice_(inputValue);
+        processValidationChoice(inputValue);
       } else {
-        processValidationChoice_(null); // Valore non valido
+        processValidationChoice(null); // Valore non valido
       }
     } else {
       // Annulla tutto
@@ -883,7 +883,7 @@ function showNextErrorDialog_() {
     );
     
     if (dateResponse === ui.Button.OK) {
-      processValidationChoice_(null); // Salta (richiede correzione manuale)
+      processValidationChoice(null); // Salta (richiede correzione manuale)
     } else {
       // Annulla tutto
       cleanupValidationState_();
@@ -900,14 +900,14 @@ function showNextErrorDialog_() {
     
     if (candidates.length > 0) {
       showCandidatesDialogChained_(candidates, error.value, colLetter, error.row, currentIndex + 1, errors.length);
-      // Non continuare qui - il callback del dialog chiamerà processValidationChoice_
+      // Non continuare qui - il callback del dialog chiamerà processValidationChoice
       return;
     } else {
-      processValidationChoice_(null); // Nessun suggerimento
+      processValidationChoice(null); // Nessun suggerimento
     }
   } else {
     // Nessun suggerimento disponibile
-    processValidationChoice_(null);
+    processValidationChoice(null);
   }
 }
 
@@ -915,7 +915,7 @@ function showNextErrorDialog_() {
  * Processa la scelta dell'utente e passa al prossimo errore
  * Restituisce true se ci sono altri errori da processare, false altrimenti
  */
-function processValidationChoice_(selectedValue) {
+function processValidationChoice(selectedValue) {
   const cache = CacheService.getScriptCache();
   
   // Leggi lo stato corrente dalla cache
@@ -975,7 +975,7 @@ function processValidationChoice_(selectedValue) {
  * Aggiorna il contenuto del dialog corrente con il prossimo errore
  * Questa funzione viene chiamata dal client-side per aggiornare il dialog invece di aprirne uno nuovo
  */
-function updateDialogWithNextError_() {
+function updateDialogWithNextError() {
   const cache = CacheService.getScriptCache();
   
   // Leggi lo stato corrente dalla cache
@@ -1140,7 +1140,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
     '      alert("Errore: "+err.message);' +
     '      btns.forEach(function(b){b.disabled=false;});' +
     '    })' +
-    '    .processValidationChoice_(value);' +
+    '    .processValidationChoice(value);' +
     '};' +
     'window.rejectSuggestion = function(){' +
     '  var btns = document.querySelectorAll(".candidate-button, .reject-button");' +
@@ -1153,7 +1153,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
     '      alert("Errore: "+err.message);' +
     '      btns.forEach(function(b){b.disabled=false;});' +
     '    })' +
-    '    .processValidationChoice_(null);' +
+    '    .processValidationChoice(null);' +
     '};' +
     'window.updateDialogContent = function(){' +
     '  google.script.run' +
@@ -1161,7 +1161,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
     '      if(!data || data.done){google.script.host.close();return;}' +
     '      if(data.validationType==="boolean"||data.validationType==="date"){' +
     '        google.script.host.close();' +
-    '        google.script.run.showNextErrorDialog_();' +
+    '        google.script.run.showNextErrorDialog();' +
     '        return;' +
     '      }' +
     '      document.getElementById("dialog-title").textContent="Errore "+data.errorNum+"/"+data.totalErrors;' +
@@ -1185,7 +1185,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
     '      alert("Errore: "+err.message);' +
     '      google.script.host.close();' +
     '    })' +
-    '    .updateDialogWithNextError_();' +
+    '    .updateDialogWithNextError();' +
     '};' +
     '</script></body></html>';
   
