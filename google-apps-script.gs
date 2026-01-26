@@ -972,26 +972,6 @@ function processValidationChoice_(selectedValue) {
 }
 
 /**
- * Recupera il valore del candidato dalla cache basandosi sull'indice
- */
-function getCandidateValueByIndex_(index) {
-  const cache = CacheService.getScriptCache();
-  const candidatesJson = cache.get('dialogCandidates');
-  if (!candidatesJson) {
-    Logger.log('Cache candidati non trovata');
-    return null;
-  }
-  
-  const candidates = JSON.parse(candidatesJson);
-  if (index >= 0 && index < candidates.length) {
-    return candidates[index];
-  }
-  
-  Logger.log('Indice non valido: ' + index);
-  return null;
-}
-
-/**
  * Aggiorna il contenuto del dialog corrente con il prossimo errore
  * Questa funzione viene chiamata dal client-side per aggiornare il dialog invece di aprirne uno nuovo
  */
@@ -1035,10 +1015,6 @@ function updateDialogWithNextError_() {
       candidates = [{ value: error.suggestion, score: null }];
     }
   }
-  
-  // Salva i candidati nella cache per poterli recuperare quando l'utente clicca
-  const candidateValues = candidates.map(c => c.value);
-  cache.put('dialogCandidates', JSON.stringify(candidateValues), 1800);
   
   return {
     done: false,
@@ -1094,20 +1070,32 @@ function cleanupValidationState_() {
 function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, errorNum, totalErrors) {
   const ui = SpreadsheetApp.getUi();
   
-  // Salva i candidati nella cache per recuperarli quando serve
-  const cache = CacheService.getScriptCache();
-  const candidateValues = candidates.map(c => c.value);
-  cache.put('dialogCandidates', JSON.stringify(candidateValues), 1800);
+  // Funzione helper per escape HTML
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/`/g, '&#96;')
+      .replace(/\$/g, '&#36;');
+  }
   
-  // Crea HTML per i pulsanti dei candidati usando solo l'indice
+  // Escape del valore errato per l'HTML
+  const escapedErrorValue = escapeHtml(errorValue);
+  
+  // Crea HTML per i pulsanti dei candidati
+  // Inserisce direttamente il valore nel data attribute con escape HTML corretto
   let buttonsHtml = '';
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     const scoreText = candidate.score !== null ? ` (${Math.round(candidate.score * 100)}%)` : '';
-    // Usa onclick inline con solo l'indice - nessun valore da escapare!
+    // Escape HTML per il valore nel data attribute e nel testo
+    const escapedValue = escapeHtml(candidate.value);
     buttonsHtml += `
-      <button class="candidate-button" onclick="selectCandidateByIndex(${i})">
-        "${candidate.value}"${scoreText}
+      <button class="candidate-button" data-value="${escapedValue}">
+        "${escapedValue}"${scoreText}
       </button>
     `;
   }
@@ -1155,39 +1143,94 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
         <h2>Errore ${errorNum}/${totalErrors}</h2>
         <div class="error-info">
           <strong>📍 Cella ${colLetter}${row}</strong><br>
-          Valore errato: "${errorValue}"
+          Valore errato: "${escapedErrorValue}"
         </div>
         <div class="candidates-label">Trovati ${candidates.length} valori simili:</div>
         ${buttonsHtml}
-        <button class="reject-button" onclick="rejectSuggestion()">
+        <button class="reject-button">
           Rifiuta suggerimenti
         </button>
         
         <script>
-          // Funzione per selezionare un candidato basandosi sull'indice
-          // Chiama il server per ottenere il valore corretto dall'indice
-          function selectCandidateByIndex(index) {
-            // Disabilita i pulsanti
-            const buttons = document.querySelectorAll('.candidate-button, .reject-button');
-            buttons.forEach(btn => btn.disabled = true);
-            
-            // Chiama il server per ottenere il valore del candidato dall'indice
-            google.script.run
-              .withSuccessHandler(function(value) {
-                if (value) {
-                  // Chiama selectCandidate con il valore recuperato
-                  selectCandidate(value);
-                } else {
-                  alert('Errore: valore non trovato per indice ' + index);
-                  buttons.forEach(btn => btn.disabled = false);
-                }
-              })
-              .withFailureHandler(function(error) {
-                alert('Errore: ' + error.message);
-                buttons.forEach(btn => btn.disabled = false);
-              })
-              .getCandidateValueByIndex_(index);
+          // Funzione per decodificare HTML entities
+          function decodeHtmlEntities(text) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
           }
+          
+          // Funzione per inizializzare gli event listener sui pulsanti
+          function initializeButtons() {
+            try {
+              // Aggiungi event listener a tutti i pulsanti candidati leggendo il valore dal data attribute
+              const candidateButtons = document.querySelectorAll('.candidate-button[data-value]');
+              console.log('Trovati ' + candidateButtons.length + ' pulsanti candidati');
+              
+              candidateButtons.forEach(function(button) {
+                // Rimuovi eventuali listener esistenti clonando il pulsante
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                newButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    const encodedValue = newButton.getAttribute('data-value');
+                    if (!encodedValue) {
+                      console.error('Data attribute data-value non trovato');
+                      return;
+                    }
+                    // Decodifica HTML entities
+                    const value = decodeHtmlEntities(encodedValue);
+                    console.log('Valore selezionato: ' + value);
+                    selectCandidate(value);
+                  } catch (err) {
+                    console.error('Errore nel click handler: ' + err.message);
+                    alert('Errore: ' + err.message);
+                  }
+                });
+              });
+              
+              // Aggiungi event listener al pulsante "Rifiuta suggerimenti"
+              const rejectButton = document.querySelector('.reject-button');
+              if (rejectButton) {
+                const newRejectButton = rejectButton.cloneNode(true);
+                rejectButton.parentNode.replaceChild(newRejectButton, rejectButton);
+                newRejectButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  rejectSuggestion();
+                });
+                console.log('Pulsante rifiuta inizializzato');
+              }
+            } catch (err) {
+              console.error('Errore in initializeButtons: ' + err.message);
+              alert('Errore nell\'inizializzazione: ' + err.message);
+            }
+          }
+          
+          // Inizializza i pulsanti immediatamente e anche dopo il caricamento
+          // Prova diversi metodi per assicurarsi che funzioni
+          setTimeout(function() {
+            console.log('Inizializzazione pulsanti con setTimeout');
+            initializeButtons();
+          }, 100);
+          
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+              console.log('DOMContentLoaded - inizializzazione pulsanti');
+              initializeButtons();
+            });
+          } else {
+            console.log('DOM già caricato - inizializzazione immediata');
+            initializeButtons();
+          }
+          
+          // Fallback con window.onload
+          window.onload = function() {
+            console.log('window.onload - inizializzazione pulsanti');
+            initializeButtons();
+          };
           
           function selectCandidate(value) {
             try {
@@ -1324,15 +1367,25 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
                       candidateButtonsContainer.id = 'candidate-buttons-container';
                       buttonsContainer.insertBefore(candidateButtonsContainer, candidatesLabel.nextSibling);
                       
-                      nextErrorData.candidates.forEach(function(candidate, index) {
+                      nextErrorData.candidates.forEach(function(candidate) {
                         const scoreText = candidate.score !== null ? ' (' + Math.round(candidate.score * 100) + '%)' : '';
                         const button = document.createElement('button');
                         button.className = 'candidate-button';
                         button.textContent = '"' + candidate.value + '"' + scoreText;
-                        // Usa onclick con l'indice - nessun valore da escapare
-                        button.onclick = function() {
-                          selectCandidateByIndex(index);
-                        };
+                        // Escape HTML per il valore nel data attribute
+                        const escapedValue = String(candidate.value)
+                          .replace(/&/g, '&amp;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#39;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                        button.setAttribute('data-value', escapedValue);
+                        // Usa addEventListener con il valore dal data attribute
+                        button.addEventListener('click', function() {
+                          const encodedValue = button.getAttribute('data-value');
+                          const value = decodeHtmlEntities(encodedValue);
+                          selectCandidate(value);
+                        });
                         candidateButtonsContainer.appendChild(button);
                       });
                       
@@ -1340,7 +1393,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
                       const rejectButton = document.createElement('button');
                       rejectButton.className = 'reject-button';
                       rejectButton.textContent = 'Rifiuta suggerimenti';
-                      rejectButton.onclick = rejectSuggestion;
+                      rejectButton.addEventListener('click', rejectSuggestion);
                       buttonsContainer.appendChild(rejectButton);
                     } else {
                       candidatesLabel.style.display = 'none';
@@ -1370,7 +1423,7 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
     .setWidth(500)
     .setHeight(Math.min(600, 300 + (candidates.length * 60)));
   
-  ui.showModalDialog(html, `Errore ${errorNum}/${totalErrors} - Selezione valore`);
+  ui.showModalDialog(html, 'Errore ' + errorNum + '/' + totalErrors + ' - Selezione valore');
   // NOTA: showModalDialog NON blocca - il callback chiamerà processValidationChoice_
 }
 
