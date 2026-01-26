@@ -1071,25 +1071,24 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
   const ui = SpreadsheetApp.getUi();
   
   // Crea HTML per i pulsanti dei candidati
-  // Usa un indice invece del valore per evitare problemi di escape
+  // Inserisce direttamente il valore nel data attribute con escape HTML corretto
   let buttonsHtml = '';
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     const scoreText = candidate.score !== null ? ` (${Math.round(candidate.score * 100)}%)` : '';
+    // Escape HTML per il valore nel data attribute
+    const escapedValue = String(candidate.value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
     buttonsHtml += `
-      <button class="candidate-button" data-index="${i}">
+      <button class="candidate-button" data-value="${escapedValue}">
         "${candidate.value}"${scoreText}
       </button>
     `;
   }
-  
-  // Serializza i candidati in JSON per passarli al JavaScript
-  // Usa un metodo sicuro per evitare problemi di escape nel template string
-  const candidatesValues = candidates.map(c => c.value);
-  const candidatesJsonSafe = JSON.stringify(candidatesValues)
-    .replace(/\\/g, '\\\\')  // Escape backslash
-    .replace(/`/g, '\\`')    // Escape backtick
-    .replace(/\$/g, '\\$');  // Escape dollar sign
   
   const html = HtmlService.createHtmlOutput(`
     <html>
@@ -1142,34 +1141,22 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
           Rifiuta suggerimenti
         </button>
         
-        <!-- Dati candidati in un elemento nascosto per evitare problemi di escape -->
-        <script type="application/json" id="candidates-data">${candidatesJsonSafe}</script>
-        
         <script>
-          // Array dei valori candidati (letti dall'elemento JSON)
-          let candidates = [];
-          try {
-            const candidatesDataElement = document.getElementById('candidates-data');
-            if (candidatesDataElement) {
-              candidates = JSON.parse(candidatesDataElement.textContent);
-            } else {
-              console.error('Elemento candidates-data non trovato');
-            }
-          } catch (e) {
-            console.error('Errore nel parsing dei candidati: ' + e.message);
-            candidates = [];
+          // Funzione per decodificare HTML entities
+          function decodeHtmlEntities(text) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
           }
-          
-          console.log('Candidati caricati: ' + candidates.length);
           
           // Funzione per inizializzare gli event listener sui pulsanti
           function initializeButtons() {
             try {
-              // Aggiungi event listener a tutti i pulsanti candidati usando l'indice
-              const candidateButtons = document.querySelectorAll('.candidate-button[data-index]');
+              // Aggiungi event listener a tutti i pulsanti candidati leggendo il valore dal data attribute
+              const candidateButtons = document.querySelectorAll('.candidate-button[data-value]');
               console.log('Trovati ' + candidateButtons.length + ' pulsanti candidati');
               
-              candidateButtons.forEach(function(button, idx) {
+              candidateButtons.forEach(function(button) {
                 // Rimuovi eventuali listener esistenti clonando il pulsante
                 const newButton = button.cloneNode(true);
                 button.parentNode.replaceChild(newButton, button);
@@ -1178,14 +1165,15 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
                   e.preventDefault();
                   e.stopPropagation();
                   try {
-                    const index = parseInt(newButton.getAttribute('data-index'));
-                    console.log('Click su pulsante indice: ' + index);
-                    if (index >= 0 && index < candidates.length) {
-                      console.log('Valore selezionato: ' + candidates[index]);
-                      selectCandidate(candidates[index]);
-                    } else {
-                      console.error('Indice non valido: ' + index);
+                    const encodedValue = newButton.getAttribute('data-value');
+                    if (!encodedValue) {
+                      console.error('Data attribute data-value non trovato');
+                      return;
                     }
+                    // Decodifica HTML entities
+                    const value = decodeHtmlEntities(encodedValue);
+                    console.log('Valore selezionato: ' + value);
+                    selectCandidate(value);
                   } catch (err) {
                     console.error('Errore nel click handler: ' + err.message);
                     alert('Errore: ' + err.message);
@@ -1374,9 +1362,19 @@ function showCandidatesDialogChained_(candidates, errorValue, colLetter, row, er
                         const button = document.createElement('button');
                         button.className = 'candidate-button';
                         button.textContent = '"' + candidate.value + '"' + scoreText;
-                        // Usa addEventListener invece di onclick per evitare problemi con l'escape
+                        // Escape HTML per il valore nel data attribute
+                        const escapedValue = String(candidate.value)
+                          .replace(/&/g, '&amp;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#39;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                        button.setAttribute('data-value', escapedValue);
+                        // Usa addEventListener con il valore dal data attribute
                         button.addEventListener('click', function() {
-                          selectCandidate(candidate.value);
+                          const encodedValue = button.getAttribute('data-value');
+                          const value = decodeHtmlEntities(encodedValue);
+                          selectCandidate(value);
                         });
                         candidateButtonsContainer.appendChild(button);
                       });
