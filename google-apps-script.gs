@@ -1207,7 +1207,19 @@ function revalidateCell_(cell, validation, validationLists) {
     return true;
   }
   
+  // Verifica che validation esista e abbia le proprietà necessarie
+  if (!validation) {
+    Logger.log('Validation object is undefined');
+    return true; // Considera valido se non c'è validazione
+  }
+  
   if (validation.type === 'list') {
+    // Verifica che la lista esista
+    if (!validation.list || !Array.isArray(validation.list)) {
+      Logger.log('Validation list is undefined or not an array for: ' + validation.name);
+      return true; // Considera valido se la lista non esiste
+    }
+    
     // Valida contro la lista
     const cellValueStr = String(cellValue).trim();
     
