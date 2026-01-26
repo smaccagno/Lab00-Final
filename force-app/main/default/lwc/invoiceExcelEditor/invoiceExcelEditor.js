@@ -3854,6 +3854,46 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
+     * Valida tutte le righe e tutti i campi validati
+     * Utile per rieseguire la validazione completa dopo il caricamento dei dataset
+     */
+    validateAllRows() {
+        const fieldsToValidate = [
+            'partner',
+            'tipoVisita',
+            'beneficiaryType',
+            'comune',
+            'provincia',
+            'regione',
+            'medicalCenter',
+            'noProfit',
+            'noProfitCategory'
+        ];
+
+        this.rows.forEach((row, rowIndex) => {
+            fieldsToValidate.forEach(field => {
+                if (row[field] !== undefined) {
+                    this.validateField(row, field, row[field]);
+                }
+            });
+        });
+
+        // Aggiorna lo stato visivo di tutte le celle dopo la validazione
+        setTimeout(() => {
+            this.rows.forEach((row, rowIndex) => {
+                fieldsToValidate.forEach(field => {
+                    const cell = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"]`);
+                    if (cell) {
+                        this.updateCellValidationState(cell, row, field);
+                    }
+                });
+            });
+            // Forza un rerender per aggiornare la visualizzazione
+            this.rows = [...this.rows];
+        }, 100);
+    }
+
+    /**
      * Aggiorna lo stato visivo della cella in base alla validazione
      */
     updateCellValidationState(cell, row, field) {
@@ -5432,6 +5472,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Incola i dati automaticamente
                     await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
                     console.log('Dati incollati automaticamente con successo');
+                    
+                    // Attendi un po' per assicurarsi che tutti i dataset siano stati caricati
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Riesegui la validazione completa di tutte le righe
+                    // Questo è necessario perché durante il paste iniziale i dataset potrebbero non essere ancora completamente caricati
+                    console.log('Riesecuzione validazione completa di tutte le righe...');
+                    this.validateAllRows();
+                    console.log('Validazione completa terminata');
                     
                     // Mostra un messaggio di successo
                     this.showSuccess(`Incollati automaticamente ${lines.length} righe da Google Sheets.`);
