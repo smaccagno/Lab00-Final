@@ -12,6 +12,10 @@ public without sharing class EmailController {
     private static final String TEMPLATE_INSERT = 'InsertTicket';
     private static final String TEMPLATE_UPDATE = 'UpdateTicket';
     private static final String TEMPLATE_PAYMENT = 'Payment';
+    
+    // Cache statiche per evitare query duplicate
+    private static Id cachedOrgWideEmailAddressId = null;
+    private static Map<String, EmailTemplate> cachedEmailTemplates = new Map<String, EmailTemplate>();
 
     /**
     * @description Generate Structure code
@@ -40,7 +44,11 @@ public without sharing class EmailController {
             if (!insertInput.isEmpty()) { sendInsertEmails(insertInput); }
             if (!buyInput.isEmpty()) { sendBuyEmails(buyInput); }
             if (!updateInput.isEmpty()) { sendUpdateEmails(updateInput); }
-            if (!paymentInput.isEmpty()) { sendPaymentEmails(paymentInput); }
+            if (!paymentInput.isEmpty()) { 
+                // Invia immediatamente le email per i pagamenti
+                // Con un trigger Apex, i pagamenti vengono già gestiti in bulk, quindi non serve accumulare
+                sendPaymentEmails(paymentInput);
+            }
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, '[EmailController]::[sendEmails]::[Message]: ' + e.getMessage());
             System.debug(LoggingLevel.ERROR, '[EmailController]::[sendEmails]::[Stack]: ' + e.getStackTraceString());
@@ -227,6 +235,9 @@ public without sharing class EmailController {
 
         String baseUrl = getBaseUrl();
         
+        // Ottieni OrgWideEmailAddressId una sola volta fuori dal loop
+        Id orgWideId = getOrgWideEmailAddressId();
+        
         for (Payment__c payment : payments) {
             Messaging.SingleEmailMessage email = new  Messaging.SingleEmailMessage();
             String body = template.HtmlValue;
@@ -254,7 +265,6 @@ public without sharing class EmailController {
                         .replace('{{date}}', dateStr)
                         .replace('{{amount}}', String.valueOf(payment.Amount__c));
             
-            Id orgWideId = getOrgWideEmailAddressId();
             if (orgWideId != null) {
                 email.setOrgWideEmailAddressId(orgWideId);
             }
@@ -289,12 +299,19 @@ public without sharing class EmailController {
     * @return EmailTemplate 
     **/
     private static EmailTemplate getEmailTemplate(String emailTemplateName){
+        // Usa cache per evitare query duplicate
+        if (cachedEmailTemplates.containsKey(emailTemplateName)) {
+            return cachedEmailTemplates.get(emailTemplateName);
+        }
+        
         List<EmailTemplate> ts = [SELECT Id, HtmlValue, Body, Subject 
                                      FROM EmailTemplate 
                                     WHERE DeveloperName = :emailTemplateName 
                                      WITH SYSTEM_MODE 
                                     LIMIT 1];
-        return ts.isEmpty() ? null : ts[0];
+        EmailTemplate template = ts.isEmpty() ? null : ts[0];
+        cachedEmailTemplates.put(emailTemplateName, template);
+        return template;
     }
 
     /**
@@ -348,8 +365,14 @@ public without sharing class EmailController {
     * @return Id 
     **/
     private static Id getOrgWideEmailAddressId() {
+        // Usa cache per evitare query duplicate
+        if (cachedOrgWideEmailAddressId != null) {
+            return cachedOrgWideEmailAddressId;
+        }
+        
         List<OrgWideEmailAddress> ow = [SELECT Id FROM OrgWideEmailAddress WITH SYSTEM_MODE LIMIT 1];
-        return ow.isEmpty() ? null : ow[0].Id;
+        cachedOrgWideEmailAddressId = ow.isEmpty() ? null : ow[0].Id;
+        return cachedOrgWideEmailAddressId;
     }
 
     /**

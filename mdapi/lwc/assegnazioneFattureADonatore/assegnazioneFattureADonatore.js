@@ -106,6 +106,10 @@ export default class AssegnazioneFattureADonatore extends LightningElement {
     return this.selectedAnno || null;
   }
 
+  get _wireEmbeddedMode() {
+    return this.embeddedMode || false;
+  }
+
   donatoriData = [];
   donatoriDataWithUpdate = [];
   originalDonatoriData = [];
@@ -281,7 +285,8 @@ export default class AssegnazioneFattureADonatore extends LightningElement {
       const result = await getAllDataForLWCWithParams({
         selectedProgram: this.programId || null,
         selectedGiftDesignation: null,
-        selectedAnno: null
+        selectedAnno: null,
+        embeddedMode: this.embeddedMode || false
       });
       // eslint-disable-next-line no-console
       console.log('[initFromInvoice] wrapper received', {
@@ -412,7 +417,8 @@ export default class AssegnazioneFattureADonatore extends LightningElement {
     {
       selectedProgram: "$_wireProgram",
       selectedGiftDesignation: "$_wireGiftDes",
-      selectedAnno: "$_wireAnno"
+      selectedAnno: "$_wireAnno",
+      embeddedMode: "$_wireEmbeddedMode"
     }
   )
   wiredData({ error, data }) {

@@ -74,7 +74,7 @@ export default class GiftAllocation extends LightningElement {
       }
     ];
     this.refreshRowOptions(); // ⬅️ nuovo
-    this.recalcTotals();
+    // buildDesignationRows() chiamerà recalcTotals() alla fine, quindi non serve chiamarlo qui
     this.buildDesignationRows();
   }
 
@@ -86,7 +86,7 @@ export default class GiftAllocation extends LightningElement {
     this.rows[idx].designationId = event.detail.value;
 
     this.refreshRowOptions(); // ⬅️ aggiorna tutte le combobox
-    this.recalcTotals();
+    // buildDesignationRows() chiamerà recalcTotals() alla fine, quindi non serve chiamarlo qui
     this.buildDesignationRows();
   }
 
@@ -99,7 +99,7 @@ export default class GiftAllocation extends LightningElement {
 
     // forza re-render
     this.rows = [...this.rows];
-    this.recalcTotals();
+    // buildDesignationRows() chiamerà recalcTotals() alla fine, quindi non serve chiamarlo qui
     this.buildDesignationRows();
   }
 
@@ -176,13 +176,118 @@ export default class GiftAllocation extends LightningElement {
 
   // helper che costruisce l'array
   buildDesignationRows() {
-    this.designationRows = this.rows
-      .filter((r) => r.designationId) // righe compilate
-      .map(
-        (r) =>
-          // formato:  Id|Percent|Amount  (pipe come delimitatore)
-          `${r.designationId}|${r.percentage}|${r.amount}`
+    const validRows = this.rows.filter((r) => r.designationId); // righe compilate
+    
+    if (validRows.length === 0) {
+      this.designationRows = [];
+      this.dispatchEvent(
+        new FlowAttributeChangeEvent("designationRows", this.designationRows)
       );
+      return;
+    }
+
+    // Controlla se tutte le percentuali sono uguali
+    const firstPercentage = validRows[0].percentage;
+    const allPercentagesEqual = validRows.every(
+      (r) => Math.abs(r.percentage - firstPercentage) < 0.01
+    );
+
+    let finalRows;
+
+    if (allPercentagesEqual && validRows.length > 0) {
+      // Se le percentuali sono uguali, dividi l'importo totale per il numero di distribuzioni
+      const amountPerAllocation = this.currentAmount / validRows.length;
+      
+      // Calcola quanti centesimi abbiamo (arrotondato)
+      const totalCents = Math.round(this.currentAmount * 100);
+      const centsPerAllocation = Math.floor(totalCents / validRows.length);
+      const remainderCents = totalCents % validRows.length;
+
+      // Distribuisci gli importi in modo che la somma sia esattamente il totale
+      finalRows = validRows.map((r, index) => {
+        // Le prime allocazioni ricevono i centesimi extra per compensare l'arrotondamento
+        const extraCent = index < remainderCents ? 0.01 : 0;
+        const finalAmount = centsPerAllocation / 100 + extraCent;
+        
+        return {
+          ...r,
+          amount: Math.round(finalAmount * 100) / 100
+        };
+      });
+    } else {
+      // Se le percentuali sono diverse, calcola gli importi proporzionalmente
+      // e distribuisci eventuali differenze di arrotondamento
+      const totalPercentage = validRows.reduce((sum, r) => sum + r.percentage, 0);
+      
+      // Calcola gli importi esatti senza arrotondamento
+      const exactAmounts = validRows.map((r) => ({
+        ...r,
+        exactAmount: (r.percentage / totalPercentage) * this.currentAmount
+      }));
+
+      // Calcola il totale in centesimi
+      const totalCents = Math.round(this.currentAmount * 100);
+      
+      // Distribuisci i centesimi proporzionalmente
+      let allocatedCents = 0;
+      const finalAmounts = exactAmounts.map((item, index) => {
+        const exactCents = item.exactAmount * 100;
+        const allocatedCentsForThis = index === exactAmounts.length - 1
+          ? totalCents - allocatedCents // L'ultima prende i centesimi rimanenti
+          : Math.round(exactCents);
+        
+        allocatedCents += allocatedCentsForThis;
+        
+        return {
+          ...item,
+          amount: allocatedCentsForThis / 100
+        };
+      });
+
+      finalRows = finalAmounts.map((item) => ({
+        designationId: item.designationId,
+        percentage: item.percentage,
+        amount: item.amount
+      }));
+    }
+
+    // Verifica che la somma sia esattamente il totale (con tolleranza per errori di floating point)
+    const finalTotal = finalRows.reduce((sum, r) => sum + r.amount, 0);
+    const difference = this.currentAmount - finalTotal;
+    
+    if (Math.abs(difference) > 0.001 && finalRows.length > 0) {
+      // Aggiusta l'ultima allocazione per compensare eventuali differenze residue
+      const lastIndex = finalRows.length - 1;
+      finalRows[lastIndex].amount = Math.round((finalRows[lastIndex].amount + difference) * 100) / 100;
+    }
+
+    // Aggiorna anche gli importi visualizzati nelle righe per corrispondere agli importi finali
+    finalRows.forEach((finalRow) => {
+      const rowIndex = this.rows.findIndex(
+        (r) => r.designationId === finalRow.designationId
+      );
+      if (rowIndex !== -1) {
+        this.rows[rowIndex].amount = finalRow.amount;
+      }
+    });
+
+    // Resetta gli importi delle righe senza designationId a 0
+    this.rows.forEach((row) => {
+      if (!row.designationId) {
+        row.amount = 0;
+      }
+    });
+
+    // Forza re-render delle righe con i nuovi importi
+    this.rows = [...this.rows];
+
+    // Ricalcola i totali DOPO aver aggiornato gli importi nelle righe
+    this.recalcTotals();
+
+    // Costruisce le stringhe nel formato: Id|Percent|Amount
+    this.designationRows = finalRows.map(
+      (r) => `${r.designationId}|${r.percentage}|${r.amount}`
+    );
 
     // notifica il Flow
     this.dispatchEvent(
@@ -190,5 +295,6 @@ export default class GiftAllocation extends LightningElement {
     );
 
     console.log("[giftAllocation] designationRows →", this.designationRows);
+    console.log("[giftAllocation] Total:", finalRows.reduce((sum, r) => sum + r.amount, 0), "Expected:", this.currentAmount);
   }
 }

@@ -24,11 +24,96 @@
         </value>
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
+    <decisions>
+        <name>Skip_If_Only_Static_Fields</name>
+        <label>Skip If Only Static Fields Changed?</label>
+        <locationX>176</locationX>
+        <locationY>80</locationY>
+        <defaultConnector>
+            <targetReference>Recupera_Transazione_Shadow</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Continue</defaultConnectorLabel>
+        <rules>
+            <name>Skip</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Allocabile__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Allocazioni_NON_Pagate__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Donato_Originale__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Numero_Allocazioni__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Totale_Allocato__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Totale_Allocato_NON_Pagato__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Totale_Allocato_Pagato__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <label>Skip</label>
+        </rules>
+    </decisions>
+    <recordLookups>
+        <name>Recupera_Transazione_Shadow</name>
+        <label>Recupera Transazione Shadow</label>
+        <locationX>176</locationX>
+        <locationY>242</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Transazione_Shadow__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
     <start>
         <locationX>50</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
+            <targetReference>Skip_If_Only_Static_Fields</targetReference>
         </connector>
         <object>Transazione_Shadow__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
@@ -39,8 +124,56 @@
         <name>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</name>
         <label>Aggiorna Valori Statici Transazione Shadow - autolaunched</label>
         <locationX>176</locationX>
-        <locationY>323</locationY>
+        <locationY>242</locationY>
         <flowName>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</flowName>
+        <inputAssignments>
+            <name>input_allocabile</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Allocabile__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_allocazioni_non_pagate</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Allocazioni_NON_Pagate__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_donato_originale</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Donato_Originale__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_numero_allocazioni</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Numero_Allocazioni__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_skip_lookup</name>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Totale_Allocato__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato_non_pagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Totale_Allocato_NON_Pagato__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato_pagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow.Totale_Allocato_Pagato__c</elementReference>
+            </value>
+        </inputAssignments>
         <inputAssignments>
             <name>recordId</name>
             <value>

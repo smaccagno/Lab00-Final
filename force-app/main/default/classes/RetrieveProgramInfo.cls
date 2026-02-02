@@ -193,6 +193,60 @@ public with sharing class RetrieveProgramInfo {
       // Non bloccare in caso di permessi insufficienti sulla GTD
     }
 
+    /* 6) Aggregato GTD Tutte (pagate + non pagate) per Donatore (master Account 15) */
+    try {
+      Map<String, Decimal> gtdAllByDonor = new Map<String, Decimal>();
+      Map<String, Decimal> gtdAllByDonorYear = new Map<String, Decimal>();
+      // mappa RY → record per ricavare Holding/Account (usiamo i record già letti)
+      Map<Id, Reporting_Year__c> ryMap = new Map<Id, Reporting_Year__c>(
+        donorRecs
+      );
+      for (AggregateResult ar : [
+        SELECT
+          Overview_Donatore_per_Anno__c ry,
+          Overview_Donatore_per_Anno__r.Year__c year,
+          Overview_Donatore_per_Anno__r.Anno__r.Name annName,
+          SUM(Amount) tot
+        FROM GiftTransactionDesignation
+        WHERE Programma__c = :recordId
+              AND Overview_Donatore_per_Anno__c != NULL
+        GROUP BY
+          Overview_Donatore_per_Anno__c,
+          Overview_Donatore_per_Anno__r.Year__c,
+          Overview_Donatore_per_Anno__r.Anno__r.Name
+      ]) {
+        Id ryId = (Id) ar.get('ry');
+        Decimal amt = (Decimal) ar.get('tot');
+        Reporting_Year__c ry = ryMap.get(ryId);
+        if (ry == null) continue;
+        String master15 = (ry.Holding__c != null)
+          ? ((String) ry.Holding__c).substring(0, 15)
+          : (ry.Account__c == null ? null : ((String) ry.Account__c).substring(0, 15));
+        if (master15 == null) continue;
+        Decimal safeAmt = (amt == null) ? 0 : amt;
+        String year = (String) ar.get('year');
+        if (String.isBlank(year)) year = (String) ar.get('annName');
+        if (String.isBlank(year) && ry.Anno_overview__c != null) year = ry.Anno_overview__c;
+        if (String.isBlank(year) && ry.Year__c != null) year = String.valueOf(ry.Year__c);
+        if (String.isBlank(year) && ry.Name != null) year = ry.Name;
+        gtdAllByDonor.put(
+          master15,
+          (gtdAllByDonor.containsKey(master15) ? gtdAllByDonor.get(master15) : 0) + safeAmt
+        );
+        if (!String.isBlank(year)) {
+          String key = master15 + '|' + year;
+          gtdAllByDonorYear.put(
+            key,
+            (gtdAllByDonorYear.containsKey(key) ? gtdAllByDonorYear.get(key) : 0) + safeAmt
+          );
+        }
+      }
+      res.put('gtdAllByDonor', gtdAllByDonor);
+      res.put('gtdAllByDonorYear', gtdAllByDonorYear);
+    } catch (Exception e) {
+      // Non bloccare in caso di permessi insufficienti sulla GTD
+    }
+
     return res;
   }
 
@@ -269,7 +323,8 @@ public with sharing class RetrieveProgramInfo {
     AssegnazioneFattureADonatore.MyWrapper wrap = AssegnazioneFattureADonatore.getAllDataForLWCWithParams(
       programId,
       budgetId,
-      annoCompetenza
+      annoCompetenza,
+      false
     );
 
     return wrap.invoiceList; // <── solo la lista che ci serve

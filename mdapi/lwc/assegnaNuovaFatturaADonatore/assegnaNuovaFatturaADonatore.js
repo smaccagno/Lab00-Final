@@ -38,8 +38,9 @@ export default class AssegnaNuovaFatturaADonatore extends LightningElement {
 
     @wire(getAllDataForLWCWithParams, {
         selectedProgram: '$selectedProgram',
-        selectedBudget: '$selectedBudget',
-        selectedAnno: '$selectedAnno'
+        selectedGiftDesignation: '$selectedBudget',
+        selectedAnno: '$selectedAnno',
+        embeddedMode: false
     })
     wiredData({ error, data }) {
         if (data) {

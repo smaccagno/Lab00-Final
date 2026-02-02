@@ -1,0 +1,40 @@
+@IsTest
+public class MiscCoverageTest {
+    private class CityValidationMock implements HttpCalloutMock {
+        public HTTPResponse respond(HTTPRequest req) {
+            HttpResponse res = new HttpResponse();
+            res.setStatusCode(200);
+            res.setBody('{"predictions":[{"description":"Roma"}]}');
+            return res;
+        }
+    }
+
+    @IsTest
+    static void testAccountDynamicTableCtrl() {
+        List<AccountDynamicTableCtrl.TableDTO> tables = AccountDynamicTableCtrl.getAccountTables();
+        System.assertNotEquals(null, tables, 'La lista tabelle non deve essere null');
+    }
+
+    @IsTest
+    static void testCityValidation() {
+        Test.setMock(HttpCalloutMock.class, new CityValidationMock());
+        List<String> result = CityValidation.validateCity(new List<String>{'Roma'});
+        System.assertEquals(1, result.size(), 'Risultato atteso');
+        System.assertEquals('Città valida', result[0], 'La città deve risultare valida');
+    }
+
+    @IsTest
+    static void testDataExportController() {
+        List<DataExportController.TableRow> rows = DataExportController.getAllTableData();
+        System.assertNotEquals(null, rows, 'Le righe non devono essere null');
+        System.assert(rows.size() > 0, 'Deve restituire almeno una riga');
+    }
+
+    @IsTest
+    static void testVisitTypeExportController() {
+        Test.setCurrentPage(Page.VisitTypeRegionChartPdf);
+        VisitTypeExportController ctrl = new VisitTypeExportController();
+        System.assertNotEquals(null, ctrl.rows, 'Rows non deve essere null');
+        System.assertNotEquals(null, ctrl.sections, 'Sections non deve essere null');
+    }
+}

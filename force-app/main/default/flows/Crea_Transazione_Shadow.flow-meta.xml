@@ -3,6 +3,42 @@
     <apiVersion>63.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <decisions>
+        <name>Skip_If_Only_Payment_Status</name>
+        <label>Skip If Only Payment Status Changed?</label>
+        <locationX>182</locationX>
+        <locationY>242</locationY>
+        <defaultConnector>
+            <targetReference>Recupera_Transazione</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Continue</defaultConnectorLabel>
+        <rules>
+            <name>Skip</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Payment_Status__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Transazione_Shadow__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Reporting_Year__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <label>Skip</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>Donatore_per_anno</name>
         <label>Donatore per anno?</label>
         <locationX>182</locationX>
@@ -47,7 +83,7 @@
                 </rightValue>
             </conditions>
             <connector>
-                <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
+                <targetReference>Recupera_Transazione_Shadow_Esistente</targetReference>
             </connector>
             <label>Esiste</label>
         </rules>
@@ -164,6 +200,27 @@
         <object>GiftTransaction</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
+    <recordLookups>
+        <name>Recupera_Transazione_Shadow_Esistente</name>
+        <label>Recupera Transazione Shadow Esistente</label>
+        <locationX>50</locationX>
+        <locationY>755</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Recupera_Transazione.Transazione_Shadow__r.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Transazione_Shadow__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
     <recordUpdates>
         <name>Aggiorna_Donatore_Anno</name>
         <label>Aggiorna Donatore Anno</label>
@@ -200,7 +257,7 @@
         <locationX>56</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Recupera_Transazione</targetReference>
+            <targetReference>Skip_If_Only_Payment_Status</targetReference>
         </connector>
         <object>GiftTransaction</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
@@ -211,8 +268,56 @@
         <name>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</name>
         <label>Aggiorna Valori Statici Transazione Shadow - autolaunched</label>
         <locationX>50</locationX>
-        <locationY>947</locationY>
+        <locationY>863</locationY>
         <flowName>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</flowName>
+        <inputAssignments>
+            <name>input_allocabile</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Allocabile__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_allocazioni_non_pagate</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Allocazioni_NON_Pagate__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_donato_originale</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Donato_Originale__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_numero_allocazioni</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Numero_Allocazioni__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_skip_lookup</name>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato_non_pagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato_NON_Pagato__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>input_totale_allocato_pagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato_Pagato__c</elementReference>
+            </value>
+        </inputAssignments>
         <inputAssignments>
             <name>recordId</name>
             <value>

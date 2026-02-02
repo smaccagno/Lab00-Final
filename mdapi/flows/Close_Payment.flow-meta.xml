@@ -15,7 +15,23 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Update_Transaction_Payment_Status</targetReference>
+            <targetReference>Add_Transaction_to_List</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Add_Transaction_to_List</name>
+        <label>Add Transaction to List</label>
+        <locationX>574</locationX>
+        <locationY>1730</locationY>
+        <assignmentItems>
+            <assignToReference>transactions_to_be_updated</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_over_allocations.GiftTransactionId</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_over_allocations</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -192,6 +208,20 @@
         </noMoreValuesConnector>
     </loops>
     <loops>
+        <name>Loop_over_Transactions</name>
+        <label>Loop over Transactions</label>
+        <locationX>182</locationX>
+        <locationY>2222</locationY>
+        <collectionReference>transactions_to_be_updated</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Update_Single_Transaction</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Update_List_of_Payments</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <loops>
         <name>Loop_over_Payments</name>
         <label>Loop over Payments</label>
         <locationX>182</locationX>
@@ -314,34 +344,24 @@
         <locationX>182</locationX>
         <locationY>2114</locationY>
         <connector>
-            <targetReference>Update_List_of_Payments</targetReference>
+            <targetReference>Loop_over_Transactions</targetReference>
         </connector>
         <inputReference>allocations_to_be_updated</inputReference>
     </recordUpdates>
     <recordUpdates>
-        <name>Update_List_of_Payments</name>
-        <label>Update List of Payments</label>
+        <name>Update_Single_Transaction</name>
+        <label>Update Single Transaction</label>
         <locationX>182</locationX>
-        <locationY>2222</locationY>
+        <locationY>2330</locationY>
         <connector>
-            <targetReference>Completato</targetReference>
-        </connector>
-        <inputReference>Payments_to_be_updated</inputReference>
-    </recordUpdates>
-    <recordUpdates>
-        <name>Update_Transaction_Payment_Status</name>
-        <label>Update Transaction Payment Status</label>
-        <locationX>446</locationX>
-        <locationY>1838</locationY>
-        <connector>
-            <targetReference>Loop_over_allocations</targetReference>
+            <targetReference>Loop_over_Transactions</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
             <field>Id</field>
             <operator>EqualTo</operator>
             <value>
-                <elementReference>Loop_over_allocations.GiftTransactionId</elementReference>
+                <elementReference>Loop_over_Transactions</elementReference>
             </value>
         </filters>
         <inputAssignments>
@@ -352,11 +372,21 @@
         </inputAssignments>
         <object>GiftTransaction</object>
     </recordUpdates>
+    <recordUpdates>
+        <name>Update_List_of_Payments</name>
+        <label>Update List of Payments</label>
+        <locationX>182</locationX>
+        <locationY>2438</locationY>
+        <connector>
+            <targetReference>Completato</targetReference>
+        </connector>
+        <inputReference>Payments_to_be_updated</inputReference>
+    </recordUpdates>
     <screens>
         <name>Completato</name>
         <label>Completato</label>
         <locationX>182</locationX>
-        <locationY>2330</locationY>
+        <locationY>2546</locationY>
         <allowBack>true</allowBack>
         <allowFinish>true</allowFinish>
         <allowPause>false</allowPause>
@@ -595,5 +625,12 @@
         <isCollection>false</isCollection>
         <isInput>true</isInput>
         <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>transactions_to_be_updated</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
 </Flow>

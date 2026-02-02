@@ -119,6 +119,9 @@ export default class ProgramDynamicOverview extends LightningElement {
   // Mappa: master Account (15) → somma GTD Pagate
   gtdPaidByDonor = {};
   gtdPaidByDonorYearKey = {};
+  // Mappa: master Account (15) → somma GTD Tutte (pagate + non pagate)
+  gtdAllByDonor = {};
+  gtdAllByDonorYearKey = {};
   wiredRelatedResult;
   perc = {
     allocabile: 0,
@@ -354,6 +357,8 @@ export default class ProgramDynamicOverview extends LightningElement {
     /* 2) dataset */
     this.gtdPaidByDonor = data.gtdPaidByDonor || {};
     this.gtdPaidByDonorYearKey = data.gtdPaidByDonorYear || {};
+    this.gtdAllByDonor = data.gtdAllByDonor || {};
+    this.gtdAllByDonorYearKey = data.gtdAllByDonorYear || {};
     this.originalYearData = this.formatDataWithLink(data.records_anno);
     this.originalBudgetData = this.formatBudgetDataWithLink(data.records_budget)
       // ▼  filtro lato-client
@@ -1037,7 +1042,8 @@ export default class ProgramDynamicOverview extends LightningElement {
 
     // Valorizza “Allocati_Pagati__c” a partire dalla mappa GTD pagate per Donatore
     Object.keys(grouped).forEach((master) => {
-      grouped[master].Allocati_Pagati__c = (this.gtdPaidByDonor && this.gtdPaidByDonor[master]) || 0;
+      // Usa gtdAllByDonor per includere tutte le distribuzioni (pagate + non pagate)
+      grouped[master].Allocati_Pagati__c = (this.gtdAllByDonor && this.gtdAllByDonor[master]) || 0;
       grouped[master].NonAllocati_calc__c =
         (grouped[master].Allocabile_formula__c || 0) -
         (grouped[master].Allocati_Pagati__c || 0);
@@ -1105,8 +1111,9 @@ export default class ProgramDynamicOverview extends LightningElement {
       const masterKey = agg.MasterKey__c;
       const yearVal = p.Anno_overview__c || "__NO_YEAR__";
       const yearKey = masterKey ? `${masterKey}|${yearVal}` : null;
+      // Usa gtdAllByDonorYearKey per includere tutte le distribuzioni (pagate + non pagate)
       const allocatiFromMap = yearKey
-        ? this.gtdPaidByDonorYearKey[yearKey] || 0
+        ? this.gtdAllByDonorYearKey[yearKey] || 0
         : 0;
       const allocatiFallback = all.reduce(
         (sum, rec) => sum + (rec.Allocati_Pagati__c || 0),

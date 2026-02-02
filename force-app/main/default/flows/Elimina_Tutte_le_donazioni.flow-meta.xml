@@ -6,12 +6,19 @@
         <name>Aggiungi_Allocazioni_a_lista</name>
         <label>Aggiungi Allocazioni a lista</label>
         <locationX>270</locationX>
-        <locationY>1382</locationY>
+        <locationY>1490</locationY>
         <assignmentItems>
             <assignToReference>AllocazioniListId</assignToReference>
             <operator>Add</operator>
             <value>
                 <elementReference>Loop_su_Allocazioni.Id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>PaymentIdList</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_su_Allocazioni.Payment__c</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -73,6 +80,56 @@
         </value>
     </customProperties>
     <decisions>
+        <name>Esistono_Pagamenti_Condivisi</name>
+        <label>Esistono Pagamenti Condivisi?</label>
+        <locationX>182</locationX>
+        <locationY>1544</locationY>
+        <defaultConnector>
+            <targetReference>Ottieni_Allocazioni_Shadow</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Pagamenti Condivisi</defaultConnectorLabel>
+        <rules>
+            <name>Si_Pagamenti_Condivisi</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Verifica_Pagamenti_Condivisi</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Errore_Pagamenti_Condivisi</targetReference>
+            </connector>
+            <label>Sì - Pagamenti Condivisi</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Esistono_Pagamenti_Pagati</name>
+        <label>Esistono Pagamenti Pagati?</label>
+        <locationX>182</locationX>
+        <locationY>1274</locationY>
+        <defaultConnector>
+            <targetReference>Loop_su_Allocazioni</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Pagamenti Pagati</defaultConnectorLabel>
+        <rules>
+            <name>Si_Pagamenti_Pagati</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Ottieni_Pagamenti_Pagati</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Errore_Pagamenti_Pagati</targetReference>
+            </connector>
+            <label>Sì - Pagamenti Pagati</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>RecordId_input</name>
         <label>RecordId?</label>
         <locationX>182</locationX>
@@ -104,14 +161,14 @@
         <name>Loop_su_Allocazioni</name>
         <label>Loop su Allocazioni</label>
         <locationX>182</locationX>
-        <locationY>1274</locationY>
+        <locationY>1382</locationY>
         <collectionReference>Ottieni_Allocazioni</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
             <targetReference>Aggiungi_Allocazioni_a_lista</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Ottieni_Allocazioni_Shadow</targetReference>
+            <targetReference>Verifica_Pagamenti_Condivisi</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
@@ -151,9 +208,9 @@
         <name>Cancella_Allocazioni</name>
         <label>Cancella Allocazioni</label>
         <locationX>182</locationX>
-        <locationY>1898</locationY>
+        <locationY>1850</locationY>
         <connector>
-            <targetReference>Cancella_Alocazioni_Shadow</targetReference>
+            <targetReference>Cancella_Transazioni_Shadow</targetReference>
         </connector>
         <inputReference>Ottieni_Allocazioni</inputReference>
     </recordDeletes>
@@ -161,19 +218,29 @@
         <name>Cancella_Alocazioni_Shadow</name>
         <label>Cancella Alocazioni Shadow</label>
         <locationX>182</locationX>
-        <locationY>2006</locationY>
+        <locationY>1796</locationY>
         <connector>
-            <targetReference>Delete_Records_1</targetReference>
+            <targetReference>Cancella_Allocazioni</targetReference>
         </connector>
         <inputReference>Ottieni_Allocazioni_Shadow</inputReference>
+    </recordDeletes>
+    <recordDeletes>
+        <name>Cancella_Pagamenti</name>
+        <label>Cancella Pagamenti Non Pagati</label>
+        <locationX>182</locationX>
+        <locationY>1742</locationY>
+        <connector>
+            <targetReference>Cancella_Alocazioni_Shadow</targetReference>
+        </connector>
+        <inputReference>Ottieni_Pagamenti_Da_Cancellare</inputReference>
     </recordDeletes>
     <recordDeletes>
         <name>Cancella_Transazioni_Shadow</name>
         <label>Cancella Transazioni Shadow</label>
         <locationX>182</locationX>
-        <locationY>1790</locationY>
+        <locationY>1904</locationY>
         <connector>
-            <targetReference>Cancella_Allocazioni</targetReference>
+            <targetReference>Cancella_tutte_le_transazioni</targetReference>
         </connector>
         <inputReference>Ottieni_Transazioni_Shadow</inputReference>
     </recordDeletes>
@@ -181,9 +248,9 @@
         <name>Cancella_tutte_le_transazioni</name>
         <label>Cancella tutte le transazioni</label>
         <locationX>182</locationX>
-        <locationY>1682</locationY>
+        <locationY>2012</locationY>
         <connector>
-            <targetReference>Cancella_Transazioni_Shadow</targetReference>
+            <targetReference>Delete_Records_1</targetReference>
         </connector>
         <inputReference>lista_transazioni.selectedRows</inputReference>
     </recordDeletes>
@@ -191,7 +258,7 @@
         <name>Delete_Records_1</name>
         <label>Cancella tutte le donazioni</label>
         <locationX>182</locationX>
-        <locationY>2114</locationY>
+        <locationY>2120</locationY>
         <inputReference>Ottieni_donazioni</inputReference>
     </recordDeletes>
     <recordLookups>
@@ -201,7 +268,7 @@
         <locationY>1166</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Loop_su_Allocazioni</targetReference>
+            <targetReference>Ottieni_Pagamenti_Pagati</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -216,13 +283,83 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
+        <name>Ottieni_Pagamenti_Pagati</name>
+        <label>Ottieni Pagamenti Pagati</label>
+        <locationX>182</locationX>
+        <locationY>1220</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Esistono_Pagamenti_Pagati</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>GiftTransactionId</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>transactionIdList</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Payment__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Paid</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>GiftTransactionDesignation</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Verifica_Pagamenti_Condivisi</name>
+        <label>Verifica Pagamenti Condivisi</label>
+        <locationX>182</locationX>
+        <locationY>1490</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Esistono_Pagamenti_Condivisi</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Payment__c</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>PaymentIdList</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Payment__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <filters>
+            <field>GiftTransactionId</field>
+            <operator>NotIn</operator>
+            <value>
+                <elementReference>transactionIdList</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>GiftTransactionDesignation</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Ottieni_Allocazioni_Shadow</name>
         <label>Ottieni Allocazioni Shadow</label>
         <locationX>182</locationX>
-        <locationY>1574</locationY>
+        <locationY>1634</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Cancella_tutte_le_transazioni</targetReference>
+            <targetReference>Ottieni_Pagamenti_Da_Cancellare</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -234,6 +371,34 @@
         </filters>
         <getFirstRecordOnly>false</getFirstRecordOnly>
         <object>Distribuzione_Shadow__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Ottieni_Pagamenti_Da_Cancellare</name>
+        <label>Ottieni Pagamenti Da Cancellare</label>
+        <locationX>182</locationX>
+        <locationY>1688</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Cancella_Pagamenti</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Da Pagare</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Id</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>PaymentIdList</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Payment__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
@@ -312,6 +477,54 @@
         <object>Transazione_Shadow__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
+    <screens>
+        <name>Errore_Pagamenti_Condivisi</name>
+        <label>Errore - Pagamenti condivisi con altre donazioni</label>
+        <locationX>446</locationX>
+        <locationY>1598</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Messaggio_Errore_Condivisi</name>
+            <fieldText>&lt;p&gt;&lt;strong style=&quot;color: rgb(194, 57, 52); font-size: 16px;&quot;&gt;⚠️ Impossibile eliminare la donazione&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Non è possibile procedere con l&apos;eliminazione perché alcuni &lt;strong&gt;pagamenti sono condivisi&lt;/strong&gt; con altre donazioni.&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;I pagamenti associati alle allocazioni di questa donazione sono collegati anche ad allocazioni di altre donazioni. Per eliminare questa donazione, è necessario prima rimuovere manualmente i collegamenti dei pagamenti alle altre donazioni.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Errore_Pagamenti_Pagati</name>
+        <label>Errore - Pagamenti già effettuati</label>
+        <locationX>446</locationX>
+        <locationY>1382</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Messaggio_Errore</name>
+            <fieldText>&lt;p&gt;&lt;strong style=&quot;color: rgb(194, 57, 52); font-size: 16px;&quot;&gt;⚠️ Impossibile eliminare la donazione&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Non è possibile procedere con l&apos;eliminazione perché esistono &lt;strong&gt;pagamenti già effettuati&lt;/strong&gt; collegati a questa transazione.&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Per eliminare la donazione, è necessario prima annullare o rimuovere manualmente i pagamenti già registrati.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
     <screens>
         <name>Mostra_le_transazioni</name>
         <label>Mostra le transazioni</label>
@@ -395,9 +608,16 @@
             <targetReference>RecordId_input</targetReference>
         </connector>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <variables>
         <name>AllocazioniListId</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>PaymentIdList</name>
         <dataType>String</dataType>
         <isCollection>true</isCollection>
         <isInput>false</isInput>

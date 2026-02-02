@@ -73,7 +73,7 @@ public with sharing class AssegnazioneFattureADonatore {
    *───────────────────────────────────────────*/
   @AuraEnabled(cacheable=true)
   public static MyWrapper getAllDataForLWC() {
-    return getAllDataForLWCWithParams(null, null, null);
+    return getAllDataForLWCWithParams(null, null, null, false);
   }
 
   /*────────────────────────────────────────────
@@ -83,7 +83,8 @@ public with sharing class AssegnazioneFattureADonatore {
   public static MyWrapper getAllDataForLWCWithParams(
     Id selectedProgram,
     Id selectedGiftDesignation,
-    String selectedAnno
+    String selectedAnno,
+    Boolean embeddedMode
   ) {
     /* wrapper di risposta */
     MyWrapper wrap = new MyWrapper();
@@ -294,8 +295,8 @@ public with sharing class AssegnazioneFattureADonatore {
         ok = false;
       }
 
-      /* filtro Pagato: accetta solo allocazioni con pagamento chiuso */
-      if (ok) {
+      /* filtro Pagato: accetta solo allocazioni con pagamento chiuso (solo se non in modalità embedded) */
+      if (ok && (embeddedMode == null || embeddedMode == false)) {
         Boolean isPaid = false;
         try {
           isPaid =
@@ -682,7 +683,8 @@ public with sharing class AssegnazioneFattureADonatore {
     MyWrapper w = getAllDataForLWCWithParams(
       programId,
       budgetId,
-      annoCompetenza
+      annoCompetenza,
+      false
     );
     return w.invoiceList;
   }

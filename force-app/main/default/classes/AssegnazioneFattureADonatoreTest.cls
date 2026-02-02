@@ -40,7 +40,8 @@ private class AssegnazioneFattureADonatoreTest {
       AssegnazioneFattureADonatore.MyWrapper emptyW = AssegnazioneFattureADonatore.getAllDataForLWCWithParams(
         null,
         null,
-        null
+        null,
+        false
       );
       Test.stopTest();
       System.assertNotEquals(null, emptyW);
@@ -75,7 +76,8 @@ private class AssegnazioneFattureADonatoreTest {
     AssegnazioneFattureADonatore.MyWrapper w = AssegnazioneFattureADonatore.getAllDataForLWCWithParams(
       progId,
       gdId,
-      anno
+      anno,
+      false
     );
     Test.stopTest();
 
@@ -117,7 +119,8 @@ private class AssegnazioneFattureADonatoreTest {
     AssegnazioneFattureADonatore.MyWrapper w = AssegnazioneFattureADonatore.getAllDataForLWCWithParams(
       ob.Programma__c,
       ob.Id,            // ⇦ passa un OB, non una GiftDesignation
-      ob.Anno__c        // ⇦ applica filtro anno
+      ob.Anno__c,       // ⇦ applica filtro anno
+      false
     );
     Test.stopTest();
 

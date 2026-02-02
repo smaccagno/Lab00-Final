@@ -24,6 +24,31 @@
         </value>
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
+    <decisions>
+        <name>Skip_Lookup</name>
+        <label>Skip Lookup?</label>
+        <locationX>176</locationX>
+        <locationY>80</locationY>
+        <defaultConnector>
+            <targetReference>Recupera_Transazione</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Esegui Lookup</defaultConnectorLabel>
+        <rules>
+            <name>Skip</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>input_skip_lookup</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Aggiorna_Valori_Da_Input</targetReference>
+            </connector>
+            <label>Skip</label>
+        </rules>
+    </decisions>
     <recordLookups>
         <name>Recupera_Transazione</name>
         <label>Recupera Transazione</label>
@@ -123,14 +148,134 @@
         </inputAssignments>
         <object>Transazione_Shadow__c</object>
     </recordUpdates>
+    <recordUpdates>
+        <name>Aggiorna_Valori_Da_Input</name>
+        <label>Aggiorna Valori Da Input</label>
+        <locationX>400</locationX>
+        <locationY>134</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Allocabile_Static__c</field>
+            <value>
+                <elementReference>input_allocabile</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Allocazioni_NON_Pagate_Static__c</field>
+            <value>
+                <elementReference>input_allocazioni_non_pagate</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Donato_Originale_Static__c</field>
+            <value>
+                <elementReference>input_donato_originale</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Numero_Allocazioni_Static__c</field>
+            <value>
+                <elementReference>input_numero_allocazioni</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Totale_Allocato_NON_Pagato_Static__c</field>
+            <value>
+                <elementReference>input_totale_allocato_non_pagato</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Totale_Allocato_Pagato_Static__c</field>
+            <value>
+                <elementReference>input_totale_allocato_pagato</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Totale_Allocato_Static__c</field>
+            <value>
+                <elementReference>input_totale_allocato</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Transazione_Shadow__c</object>
+    </recordUpdates>
     <start>
         <locationX>50</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Recupera_Transazione</targetReference>
+            <targetReference>Skip_Lookup</targetReference>
         </connector>
     </start>
     <status>Active</status>
+    <variables>
+        <name>input_allocabile</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>input_allocazioni_non_pagate</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+    <variables>
+        <name>input_donato_originale</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>input_numero_allocazioni</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+    <variables>
+        <name>input_skip_lookup</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>input_totale_allocato</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>input_totale_allocato_non_pagato</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>input_totale_allocato_pagato</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
     <variables>
         <name>recordId</name>
         <dataType>String</dataType>

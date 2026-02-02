@@ -1,27 +1,288 @@
 /**
- * === CONFIG ===
+ * =====================================================
+ * FUNZIONI PRINCIPALI
+ * =====================================================
+ * 
+ * Le costanti di configurazione sono nel file configuration.gs
+ * Modifica quel file per cambiare ambiente (DEV/PROD), credenziali, etc.
  */
-const SF_LOGIN = 'https://login.salesforce.com'; // PRODUCTION
-const SHEET_NAME = 'Validazione Dati';
-const SF_API_VERSION = 'v60.0';
-
-const CLIENT_ID = '3MVG9_kZcLde7U5pU.38e6yN9sYAv0gKC5l_jdVj8uEFQvIkKVvU6wev085aq8h1sAXZ0QOnjSLbo5D1sQFt9';
-const CLIENT_SECRET = '1C08E0486088A56CB4AB42D2945C7EBDDF0A3D58A600D2E170FCF631B6E19F2A';
-const SF_DOMAIN = 'https://fondazionelab00ets.lightning.force.com';
-
-const WEB_APP_EXEC =
-  'https://script.google.com/a/macros/salesforce.com/s/AKfycbwDpVLXBOL9ioEURUmaheb6nhyvx5hJbmfMcHR1gQohbsRtZnzqx1V17G-mXVU7tWhc/exec';
 
 function getRedirectFromExec_() {
   return WEB_APP_EXEC.replace(/\/exec$/, '/usercallback');
 }
 
+/**
+ * ESEGUI QUESTA FUNZIONE PER VERIFICARE CHE HAI IL CODICE CORRETTO
+ * Deve stampare "VERSIONE: MANUALE (senza libreria OAuth2)"
+ */
+function verificaVersione() {
+  Logger.log("===========================================");
+  Logger.log("VERSIONE: MANUALE (senza libreria OAuth2)");
+  Logger.log("Se vedi questo messaggio, hai il codice corretto.");
+  Logger.log("===========================================");
+  Logger.log("authCallback è alla riga 35 circa");
+  Logger.log("NON usa service.handleCallback()");
+  Logger.log("===========================================");
+}
+
+// ============================================================
+// OAUTH2 COMPLETAMENTE MANUALE - NON USA LA LIBRERIA OAUTH2
+// ============================================================
+
+/**
+ * Callback OAuth2 - gestisce il ritorno da Salesforce
+ * Gestione COMPLETAMENTE MANUALE dello scambio codice/token
+ */
+function authCallback(request) {
+  Logger.log('=== authCallback chiamato ===');
+  Logger.log('Request parameters: %s', JSON.stringify(request.parameter, null, 2));
+  
+  const code = request.parameter.code;
+  const errorParam = request.parameter.error;
+  
+  // Gestisci errori da Salesforce
+  if (errorParam) {
+    Logger.log('Errore da Salesforce: %s', errorParam);
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color: red;">Errore</h2><p>' + errorParam + '</p>'
+    );
+  }
+  
+  if (!code) {
+    Logger.log('Nessun codice ricevuto');
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color: red;">Errore</h2><p>Nessun codice di autorizzazione ricevuto.</p>'
+    );
+  }
+  
+  // Scambia manualmente il codice con il token (la libreria OAuth2 non funziona con le sandbox)
+  try {
+    const tokenUrl = `${SF_LOGIN}/services/oauth2/token`;
+    const redirectUri = getRedirectFromExec_();
+    
+    Logger.log('Token URL: %s', tokenUrl);
+    Logger.log('Redirect URI: %s', redirectUri);
+    
+    const payload = 
+      'grant_type=authorization_code' +
+      '&client_id=' + encodeURIComponent(CLIENT_ID) +
+      '&client_secret=' + encodeURIComponent(CLIENT_SECRET) +
+      '&redirect_uri=' + encodeURIComponent(redirectUri) +
+      '&code=' + encodeURIComponent(code);
+    
+    const response = UrlFetchApp.fetch(tokenUrl, {
+      method: 'post',
+      contentType: 'application/x-www-form-urlencoded',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    Logger.log('Response code: %s', responseCode);
+    Logger.log('Response: %s', responseText);
+    
+    if (responseCode !== 200) {
+      throw new Error('Salesforce ha restituito errore ' + responseCode + ': ' + responseText);
+    }
+    
+    const tokenData = JSON.parse(responseText);
+    
+    if (!tokenData.access_token) {
+      throw new Error('Token non ricevuto');
+    }
+    
+    // Salva il token nel formato della libreria OAuth2
+    const properties = PropertiesService.getUserProperties();
+    properties.setProperty('oauth2.Salesforce', JSON.stringify(tokenData));
+    
+    Logger.log('✅ Token salvato con successo');
+    Logger.log('Instance URL: %s', tokenData.instance_url);
+    
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color: green;">Autorizzato ✅</h2>' +
+      '<p>Puoi chiudere questa finestra e tornare a Google Sheets.</p>'
+    );
+    
+  } catch (error) {
+    Logger.log('ERRORE: %s', error.toString());
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color: red;">Errore</h2><p>' + error.toString() + '</p>'
+    );
+  }
+}
+
+/**
+ * Ottiene l'access token dal token salvato, rinfrescandolo se necessario
+ */
+function getAccessToken_() {
+  const properties = PropertiesService.getUserProperties();
+  const tokenJson = properties.getProperty('oauth2.Salesforce');
+  
+  if (!tokenJson) {
+    throw new Error('Non autorizzato. Esegui authorize().');
+  }
+  
+  const token = JSON.parse(tokenJson);
+  
+  if (!token.access_token) {
+    throw new Error('Token non valido. Esegui nukeAuth() e poi authorize().');
+  }
+  
+  // Per semplicità, non controlliamo la scadenza qui
+  // Salesforce restituirà 401 se il token è scaduto e queryAll_ gestirà il refresh
+  return token.access_token;
+}
+
+/**
+ * Ottiene il token completo salvato
+ */
+function getStoredToken_() {
+  const properties = PropertiesService.getUserProperties();
+  const tokenJson = properties.getProperty('oauth2.Salesforce');
+  
+  if (!tokenJson) {
+    return null;
+  }
+  
+  return JSON.parse(tokenJson);
+}
+
+/**
+ * Verifica se abbiamo un token valido
+ */
+function hasValidToken_() {
+  const token = getStoredToken_();
+  return token && token.access_token && token.refresh_token;
+}
+
+/**
+ * Rinfresca manualmente l'access token
+ */
+function refreshAccessToken_() {
+  const token = getStoredToken_();
+  
+  if (!token || !token.refresh_token) {
+    throw new Error('Nessun refresh token. Esegui nukeAuth() e poi authorize().');
+  }
+  
+  const tokenUrl = `${SF_LOGIN}/services/oauth2/token`;
+  
+  const payload = 
+    'grant_type=refresh_token' +
+    '&client_id=' + encodeURIComponent(CLIENT_ID) +
+    '&client_secret=' + encodeURIComponent(CLIENT_SECRET) +
+    '&refresh_token=' + encodeURIComponent(token.refresh_token);
+  
+  const response = UrlFetchApp.fetch(tokenUrl, {
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload: payload,
+    muteHttpExceptions: true
+  });
+  
+  const responseCode = response.getResponseCode();
+  const responseText = response.getContentText();
+  
+  if (responseCode !== 200) {
+    throw new Error('Refresh fallito: ' + responseText);
+  }
+  
+  const newTokenData = JSON.parse(responseText);
+  
+  // Aggiorna il token mantenendo il refresh_token originale
+  const updatedToken = {
+    access_token: newTokenData.access_token,
+    refresh_token: token.refresh_token,
+    token_type: newTokenData.token_type || 'Bearer',
+    instance_url: newTokenData.instance_url || token.instance_url,
+    id: newTokenData.id || token.id,
+    issued_at: newTokenData.issued_at || new Date().getTime().toString()
+  };
+  
+  const properties = PropertiesService.getUserProperties();
+  properties.setProperty('oauth2.Salesforce', JSON.stringify(updatedToken));
+  
+  Logger.log('Token rinfrescato con successo');
+  return updatedToken.access_token;
+}
+
+/**
+ * Esegui questa funzione per autorizzare
+ */
+function authorize() {
+  if (hasValidToken_()) {
+    Logger.log('Già autorizzato ✅');
+    Logger.log('Se vuoi riautorizzare, esegui prima nukeAuth()');
+    return;
+  }
+  
+  // Genera l'URL di autorizzazione manualmente (senza usare la libreria OAuth2)
+  const params = [
+    'response_type=code',
+    'client_id=' + encodeURIComponent(CLIENT_ID),
+    'redirect_uri=' + encodeURIComponent(getRedirectFromExec_()),
+    'scope=' + encodeURIComponent('api refresh_token'),
+    'prompt=consent'
+  ].join('&');
+  
+  const url = SF_DOMAIN + '/services/oauth2/authorize?' + params;
+  
+  Logger.log('=== AUTORIZZAZIONE SALESFORCE ===');
+  Logger.log('Apri questo URL e autorizza:');
+  Logger.log(url);
+  Logger.log('');
+  Logger.log('Dopo l\'autorizzazione, verrai reindirizzato a una pagina che mostrerà "Autorizzato ✅"');
+}
+
+/**
+ * Reset completo dell'autorizzazione
+ */
+function nukeAuth() {
+  PropertiesService.getUserProperties().deleteAllProperties();
+  
+  Logger.log("Reset OAuth completato.");
+  Logger.log("Esegui authorize() per riautorizzare.");
+}
+
+/**
+ * Debug del token
+ */
 function debugAccessToken() {
-  const service = getService_();
-  Logger.log("hasAccess=%s", service.hasAccess());
-  Logger.log("accessToken=%s", service.getAccessToken() ? "PRESENTE" : "MANCANTE");
-  const t = service.getToken();
-  Logger.log("instance_url=%s", t && t.instance_url);
+  Logger.log("=== DEBUG ACCESS TOKEN ===");
+  Logger.log("hasValidToken: %s", hasValidToken_());
+  
+  const token = getStoredToken_();
+  if (token) {
+    Logger.log("Access token presente: %s", token.access_token ? "SI" : "NO");
+    Logger.log("Refresh token presente: %s", token.refresh_token ? "SI" : "NO");
+    Logger.log("Instance URL: %s", token.instance_url);
+  } else {
+    Logger.log("Nessun token salvato. Esegui authorize().");
+  }
+  
+  Logger.log("=== FINE DEBUG ===");
+}
+
+function debugToken() {
+  const t = getStoredToken_();
+  Logger.log(JSON.stringify(t, null, 2));
+}
+
+/**
+ * Mostra la configurazione OAuth2 corrente
+ */
+function showConfig() {
+  Logger.log("=== CONFIGURAZIONE OAUTH2 ===");
+  Logger.log("SF_DOMAIN (Authorization): %s", SF_DOMAIN);
+  Logger.log("SF_LOGIN (Token URL): %s", SF_LOGIN);
+  Logger.log("Token URL: %s/services/oauth2/token", SF_LOGIN);
+  Logger.log("CLIENT_ID: %s", CLIENT_ID);
+  Logger.log("CLIENT_SECRET presente: %s", CLIENT_SECRET ? "SI" : "NO");
+  Logger.log("Redirect URI: %s", getRedirectFromExec_());
+  Logger.log("hasValidToken: %s", hasValidToken_());
+  Logger.log("=== FINE CONFIGURAZIONE ===");
 }
 
 function onOpen() {
@@ -55,80 +316,13 @@ function syncAll() {
   syncPartner();
 }
 
-function nukeAuth() {
-  const service = getService_();
-  service.reset();
-  PropertiesService.getUserProperties().deleteAllProperties();
-  Logger.log("Reset OAuth completato.");
-}
-
-function showLastOAuthError() {
-  const service = getService_();
-  Logger.log(service.getLastError());
-}
-
-/**
- * OAuth2 service
- * Libreria OAuth2: aggiungila in Apps Script Libraries (OAuth2)
- */
-
-function getService_() {
-  return OAuth2.createService('Salesforce')
-    .setAuthorizationBaseUrl(`${SF_DOMAIN}/services/oauth2/authorize`)
-    .setTokenUrl(`${SF_DOMAIN}/services/oauth2/token`)
-    .setClientId(CLIENT_ID)
-    .setClientSecret(CLIENT_SECRET)
-    .setCallbackFunction('authCallback')
-    .setPropertyStore(PropertiesService.getUserProperties())
-    .setScope('api refresh_token')
-    .setParam('prompt', 'consent')
-    .setRedirectUri(getRedirectFromExec_());
-}
-
-function authCallback(request) {
-  const service = getService_();
-  const ok = service.handleCallback(request);
-  return HtmlService.createHtmlOutput(ok ? 'Autorizzato ✅' : 'Negato ❌');
-}
-
-function resetAuth() {
-  getService_().reset();
-  Logger.log("OAuth reset fatto.");
-}
-
-function showRedirectUri() {
-  const service = getService_();
-  Logger.log("Redirect URI effettiva: %s", service.getRedirectUri());
-  Logger.log("Auth URL effettivo: %s", service.getAuthorizationUrl());
-}
-
-/**
- * 1) Esegui questa una volta: ti stampa un URL da aprire e autorizzare
- */
-function authorize() {
-  const service = getService_();
-  if (!service.hasAccess()) {
-    const url = service.getAuthorizationUrl();
-    Logger.log('Apri questo URL e autorizza: %s', url);
-  } else {
-    Logger.log('Già autorizzato ✅');
-  }
-}
-
-
-function debugToken() {
-  const service = getService_();
-  const t = service.getToken();
-  Logger.log(JSON.stringify(t, null, 2));
-}
 
 function syncComuni() {
-  const service = getService_();
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   const soql = `
     SELECT Nome_Comune__c, Provincia__c, Regione__c
@@ -137,7 +331,7 @@ function syncComuni() {
     ORDER BY Nome_Comune__c ASC
   `.trim();
 
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   const values = records.map(r => ([
     r.Nome_Comune__c ?? '',
@@ -146,8 +340,8 @@ function syncComuni() {
   ]));
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Crealo o verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Crealo o verifica il nome.`);
 
   // Intestazioni
   sh.getRange(1, 1, 1, 3).setValues([['Comune', 'Provincia', 'Regione']]);
@@ -164,18 +358,16 @@ function syncComuni() {
   }
 
   sh.autoResizeColumns(1, 3);
-  Logger.log(`✅ Sync Comuni completato: ${values.length} righe scritte su "${SHEET_NAME}" (A:C)`);
+  Logger.log(`✅ Sync Comuni completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (A:C)`);
 }
 
 function syncTipoVisita() {
   const COL_D = 4; // colonna D
-  const service = getService_();
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
-
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   const soql = `
     SELECT Tipo_Visita__c
@@ -185,14 +377,14 @@ function syncTipoVisita() {
   `.trim();
 
   // Corretto: passa service come primo parametro
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   // Una colonna sola: D
   const values = records.map(r => [r.Tipo_Visita__c ?? '']);
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazione in D1
   sh.getRange(1, COL_D).setValue('Tipo Visita');
@@ -209,18 +401,16 @@ function syncTipoVisita() {
   }
 
   sh.autoResizeColumn(COL_D);
-  Logger.log(`✅ Sync Tipo_Visita completato: ${values.length} righe scritte su "${SHEET_NAME}" (colonna D)`);
+  Logger.log(`✅ Sync Tipo_Visita completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna D)`);
 }
 
 function syncBeneficiario() {
   const COL_E = 5; // colonna E
-  const service = getService_();
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
-
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   // Ottieni i valori distinti dalla picklist Visit__c.Beneficiary_Type__c
   // Recupera tutti i record e deduplica in Apps Script
@@ -232,7 +422,7 @@ function syncBeneficiario() {
     LIMIT 10000
   `.trim();
 
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   // Deduplica usando Set e ordina
   const uniqueValues = new Set();
@@ -246,8 +436,8 @@ function syncBeneficiario() {
   const values = sortedValues.map(v => [v]);
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazione in E1
   sh.getRange(1, COL_E).setValue('Beneficiario');
@@ -264,18 +454,16 @@ function syncBeneficiario() {
   }
 
   sh.autoResizeColumn(COL_E);
-  Logger.log(`✅ Sync Beneficiario completato: ${values.length} righe scritte su "${SHEET_NAME}" (colonna E)`);
+  Logger.log(`✅ Sync Beneficiario completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna E)`);
 }
 
 function syncCentroMedico() {
   const COL_F = 6; // colonna F
-  const service = getService_();
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
-
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   // Ottieni valori distinti da Invoice__c.Medical_Center__c
   // Recupera tutti i record e deduplica in Apps Script
@@ -287,7 +475,7 @@ function syncCentroMedico() {
     LIMIT 10000
   `.trim();
 
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   // Deduplica usando Set e ordina
   const uniqueValues = new Set();
@@ -301,8 +489,8 @@ function syncCentroMedico() {
   const values = sortedValues.map(v => [v]);
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazione in F1
   sh.getRange(1, COL_F).setValue('Centro Medico');
@@ -319,19 +507,17 @@ function syncCentroMedico() {
   }
 
   sh.autoResizeColumn(COL_F);
-  Logger.log(`✅ Sync Centro Medico completato: ${values.length} righe scritte su "${SHEET_NAME}" (colonna F)`);
+  Logger.log(`✅ Sync Centro Medico completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna F)`);
 }
 
 function syncEnteNoProfit() {
   const COL_G = 7; // colonna G - Ente No Profit
   const COL_H = 8; // colonna H - No Profit Category
-  const service = getService_();
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
-
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   const soql = `
     SELECT Name, Ente_Categoria__c
@@ -340,7 +526,7 @@ function syncEnteNoProfit() {
     ORDER BY Name ASC
   `.trim();
 
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   const values = records.map(r => ([
     r.Name ?? '',
@@ -348,8 +534,8 @@ function syncEnteNoProfit() {
   ]));
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazioni in G1 e H1
   sh.getRange(1, COL_G, 1, 2).setValues([['Ente No Profit', 'No Profit Category']]);
@@ -366,21 +552,19 @@ function syncEnteNoProfit() {
   }
 
   sh.autoResizeColumns(COL_G, 2);
-  Logger.log(`✅ Sync Ente No Profit completato: ${values.length} righe scritte su "${SHEET_NAME}" (G:H)`);
+  Logger.log(`✅ Sync Ente No Profit completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (G:H)`);
 }
 
 function syncBoolean() {
   const COL_I = 9; // colonna I
-  const service = getService_();
-
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
+  // Questa funzione non richiede accesso a Salesforce, usa valori statici
 
   // Valori fissi per Boolean
   const values = [['TRUE'], ['FALSE']];
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazione in I1
   sh.getRange(1, COL_I).setValue('Boolean');
@@ -395,18 +579,16 @@ function syncBoolean() {
   sh.getRange(2, COL_I, values.length, 1).setValues(values);
 
   sh.autoResizeColumn(COL_I);
-  Logger.log(`✅ Sync Boolean completato: ${values.length} righe scritte su "${SHEET_NAME}" (colonna I)`);
+  Logger.log(`✅ Sync Boolean completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna I)`);
 }
 
 function syncPartner() {
   const COL_J = 10; // colonna J
-  const service = getService_();
+  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
 
-  if (!service.hasAccess()) throw new Error('Non autorizzato. Esegui authorize().');
-
-  const token = service.getToken();
+  const token = getStoredToken_();
   const instanceUrl = token.instance_url;
-  const accessToken = service.getAccessToken();
+  const accessToken = getAccessToken_();
 
   // Query per Account con Type = 'Investor', escludendo DEFAULT__c = true
   // Recupera tutti i record e deduplica in Apps Script
@@ -420,7 +602,7 @@ function syncPartner() {
     LIMIT 10000
   `.trim();
 
-  const records = queryAll_(service, instanceUrl, accessToken, soql);
+  const records = queryAll_(instanceUrl, accessToken, soql);
 
   // Deduplica usando Set e ordina
   const uniqueValues = new Set();
@@ -434,8 +616,8 @@ function syncPartner() {
   const values = sortedValues.map(v => [v]);
 
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) throw new Error(`Sheet "${SHEET_NAME}" non trovato. Verifica il nome.`);
+  const sh = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
+  if (!sh) throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Verifica il nome.`);
 
   // Intestazione in J1
   sh.getRange(1, COL_J).setValue('Partner');
@@ -452,13 +634,13 @@ function syncPartner() {
   }
 
   sh.autoResizeColumn(COL_J);
-  Logger.log(`✅ Sync Partner completato: ${values.length} righe scritte su "${SHEET_NAME}" (colonna J)`);
+  Logger.log(`✅ Sync Partner completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna J)`);
 }
 
 /**
  * Funzione helper per query paginate con gestione refresh token
  */
-function queryAll_(service, instanceUrl, accessToken, soql) {
+function queryAll_(instanceUrl, accessToken, soql) {
   let url = `${instanceUrl}/services/data/${SF_API_VERSION}/query?q=${encodeURIComponent(soql)}`;
   let out = [];
 
@@ -469,16 +651,12 @@ function queryAll_(service, instanceUrl, accessToken, soql) {
       muteHttpExceptions: true
     });
 
-    // 👉 Se Salesforce dice "token invalido", forziamo refresh e riproviamo UNA volta
+    // Se Salesforce dice "token invalido", forziamo refresh e riproviamo UNA volta
     if (resp.getResponseCode() === 401) {
       const body401 = resp.getContentText();
       if (body401.includes('INVALID_SESSION_ID')) {
         Logger.log('⚠️ Access token non valido. Provo refresh e ritento...');
-        const refreshed = service.refresh(); // forza refresh token flow
-        if (!refreshed) {
-          throw new Error('Refresh fallito. Riesegui authorize() per riottenere refresh token.');
-        }
-        accessToken = service.getAccessToken(); // nuovo token
+        accessToken = refreshAccessToken_();
         resp = UrlFetchApp.fetch(url, {
           method: 'get',
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -501,15 +679,14 @@ function queryAll_(service, instanceUrl, accessToken, soql) {
 }
 
 function testIdentity() {
-  const service = getService_();
-  if (!service.hasAccess()) throw new Error("Non autorizzato: esegui authorize()");
+  if (!hasValidToken_()) throw new Error("Non autorizzato: esegui authorize()");
 
-  const token = service.getToken();
+  const token = getStoredToken_();
   Logger.log("instance_url: %s", token.instance_url);
   Logger.log("id endpoint: %s", token.id);
 
   const resp = UrlFetchApp.fetch(token.id, {
-    headers: { Authorization: `Bearer ${service.getAccessToken()}` },
+    headers: { Authorization: `Bearer ${getAccessToken_()}` },
     muteHttpExceptions: true
   });
 
@@ -522,19 +699,18 @@ function testIdentity() {
  * Colora in rosso le celle con valori errati e permette la correzione interattiva
  */
 function validateRendicontazione() {
-  const RENDICONTAZIONE_SHEET = 'Rendicontazione';
-  const VALIDAZIONE_SHEET = 'Validazione Dati';
+  // Usa le costanti dal file configuration.gs
   
   const ss = SpreadsheetApp.getActive();
-  const rendicontazioneSheet = ss.getSheetByName(RENDICONTAZIONE_SHEET);
-  const validazioneSheet = ss.getSheetByName(VALIDAZIONE_SHEET);
+  const rendicontazioneSheet = ss.getSheetByName(SHEET_RENDICONTAZIONE);
+  const validazioneSheet = ss.getSheetByName(SHEET_VALIDAZIONE_DATI);
   
   if (!rendicontazioneSheet) {
-    throw new Error(`Sheet "${RENDICONTAZIONE_SHEET}" non trovato.`);
+    throw new Error(`Sheet "${SHEET_RENDICONTAZIONE}" non trovato.`);
   }
   
   if (!validazioneSheet) {
-    throw new Error(`Sheet "${VALIDAZIONE_SHEET}" non trovato. Esegui prima la sincronizzazione dei dati.`);
+    throw new Error(`Sheet "${SHEET_VALIDAZIONE_DATI}" non trovato. Esegui prima la sincronizzazione dei dati.`);
   }
   
   // Carica le liste di validazione dallo sheet "Validazione Dati"
@@ -776,7 +952,7 @@ function correctErrorsInteractively_(sheet, errorCells) {
   const ui = SpreadsheetApp.getUi();
   
   // Carica le liste di validazione per la rivalidazione
-  const validazioneSheet = SpreadsheetApp.getActive().getSheetByName('Validazione Dati');
+  const validazioneSheet = SpreadsheetApp.getActive().getSheetByName(SHEET_VALIDAZIONE_DATI);
   const validationLists = validazioneSheet ? loadValidationLists_(validazioneSheet) : null;
   
   // Set per tracciare le celle già processate/corrette (formato: "row:col")
@@ -2085,14 +2261,13 @@ function columnNumberToLetter_(columnNumber) {
  * Formatta i dati come TSV (Tab-Separated Values) come quando si copia da Excel
  */
 function sendDataToInvoiceExcelEditor() {
-  const RENDICONTAZIONE_SHEET = 'Rendicontazione';
-  const INVOICE_EXCEL_EDITOR_URL = 'https://fondazionelab00ets.lightning.force.com/lightning/n/InvoiceExcelEditor';
+  // Usa le costanti dal file configuration.gs
   
   const ss = SpreadsheetApp.getActive();
-  const rendicontazioneSheet = ss.getSheetByName(RENDICONTAZIONE_SHEET);
+  const rendicontazioneSheet = ss.getSheetByName(SHEET_RENDICONTAZIONE);
   
   if (!rendicontazioneSheet) {
-    SpreadsheetApp.getUi().alert('Errore', `Sheet "${RENDICONTAZIONE_SHEET}" non trovato.`, SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert('Errore', `Sheet "${SHEET_RENDICONTAZIONE}" non trovato.`, SpreadsheetApp.getUi().ButtonSet.OK);
     return;
   }
   
