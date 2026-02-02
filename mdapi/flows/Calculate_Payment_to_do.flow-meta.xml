@@ -147,6 +147,13 @@
                 <elementReference>select_allocations.selectedRows</elementReference>
             </value>
         </assignmentItems>
+        <assignmentItems>
+            <assignToReference>create_payment_per_allocation</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>toggle_create_payment_per_allocation.value</elementReference>
+            </value>
+        </assignmentItems>
         <connector>
             <targetReference>Check_Create_Payment_Per_Allocation</targetReference>
         </connector>
