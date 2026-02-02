@@ -115,8 +115,15 @@
                 <stringValue>Payment in Progress</stringValue>
             </value>
         </assignmentItems>
+        <assignmentItems>
+            <assignToReference>updated_allocations</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation</elementReference>
+            </value>
+        </assignmentItems>
         <connector>
-            <targetReference>Assign_Payment_To_Allocation</targetReference>
+            <targetReference>Add_Payment_Id_To_List</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -370,7 +377,7 @@
             <targetReference>Get_Budget_For_Allocation</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Get_Payments_Created</targetReference>
+            <targetReference>Batch_Update_Allocations</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
@@ -744,14 +751,14 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordUpdates>
-        <name>Assign_Payment_To_Allocation</name>
-        <label>Assign Payment To Allocation</label>
+        <name>Batch_Update_Allocations</name>
+        <label>Batch Update Allocations</label>
         <locationX>666</locationX>
-        <locationY>1802</locationY>
+        <locationY>1994</locationY>
         <connector>
-            <targetReference>Add_Payment_Id_To_List</targetReference>
+            <targetReference>Get_Payments_Created</targetReference>
         </connector>
-        <inputReference>Loop_Create_Payments_Per_Allocation</inputReference>
+        <inputReference>updated_allocations</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>update_allocation</name>
@@ -1422,5 +1429,13 @@
         <isInput>false</isInput>
         <isOutput>false</isOutput>
         <objectType>Payment__c</objectType>
+    </variables>
+    <variables>
+        <name>updated_allocations</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>GiftTransactionDesignation</objectType>
     </variables>
 </Flow>
