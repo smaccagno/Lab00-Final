@@ -97,6 +97,29 @@
         </connector>
     </assignments>
     <assignments>
+        <name>assign_payment_to_allocation_multiple</name>
+        <label>assign payment to allocation multiple</label>
+        <locationX>666</locationX>
+        <locationY>1754</locationY>
+        <assignmentItems>
+            <assignToReference>Loop_Create_Payments_Per_Allocation.Payment__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>current_payment_id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>Loop_Create_Payments_Per_Allocation.Status__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Payment in Progress</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Assign_Payment_To_Allocation</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Create_Collection_of_Allocation_selected</name>
         <label>Create Collection of Allocation selected</label>
         <locationX>666</locationX>
@@ -109,7 +132,7 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Assign_Budget</targetReference>
+            <targetReference>Check_Create_Payment_Per_Allocation</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -179,10 +202,60 @@
         </rules>
     </decisions>
     <decisions>
+        <name>Check_Create_Payment_Per_Allocation</name>
+        <label>Check Create Payment Per Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1418</locationY>
+        <defaultConnector>
+            <targetReference>Assign_Budget</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Singolo Pagamento</defaultConnectorLabel>
+        <rules>
+            <name>Pagamento_Per_Allocazione</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>create_payment_per_allocation</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
+            </connector>
+            <label>Pagamento Per Allocazione</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Check_Payment_Type_For_Message</name>
+        <label>Check Payment Type For Message</label>
+        <locationX>424</locationX>
+        <locationY>2954</locationY>
+        <defaultConnector>
+            <targetReference>Pagamento_da_chiudere</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Singolo Pagamento</defaultConnectorLabel>
+        <rules>
+            <name>Pagamenti_Multipli</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>create_payment_per_allocation</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Pagamento_da_chiudere</targetReference>
+            </connector>
+            <label>Pagamenti Multipli</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>Pagamento_da_chiudere</name>
         <label>Pagamento da chiudere?</label>
         <locationX>424</locationX>
-        <locationY>2954</locationY>
+        <locationY>3062</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>effettuato</name>
@@ -264,6 +337,20 @@
     <interviewLabel>Calculate Payment to do {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Calculate Payment to do</label>
     <loops>
+        <name>Loop_Create_Payments_Per_Allocation</name>
+        <label>Loop Create Payments Per Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1538</locationY>
+        <collectionReference>selected_allocations</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Get_Budget_Anno_For_Allocation</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>done</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <loops>
         <name>Loop_over_allocations_to_assign_payment</name>
         <label>Loop over allocations to assign payment</label>
         <locationX>424</locationX>
@@ -343,6 +430,41 @@
             <field>Overview_Budget_per_Anno__c</field>
             <value>
                 <elementReference>Recupera_Budget_Anno.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Da Pagare</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Payment__c</object>
+    </recordCreates>
+    <recordCreates>
+        <name>create_payment_for_each_allocation</name>
+        <label>create payment for each allocation</label>
+        <locationX>666</locationX>
+        <locationY>1754</locationY>
+        <assignRecordIdToReference>current_payment_id</assignRecordIdToReference>
+        <connector>
+            <targetReference>assign_payment_to_allocation_multiple</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>Amount__c</field>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation.Amount</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Budget__c</field>
+            <value>
+                <elementReference>Get_Budget_For_Allocation.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Overview_Budget_per_Anno__c</field>
+            <value>
+                <elementReference>Get_Budget_Anno_For_Allocation.Id</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -466,6 +588,55 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
+        <name>Get_Budget_For_Allocation</name>
+        <label>Get Budget For Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1658</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Get_Budget_Anno_For_Allocation</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation.GiftDesignationId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>GiftDesignation</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Budget_Anno_For_Allocation</name>
+        <label>Get Budget Anno For Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1706</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>create_payment_for_each_allocation</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Budget__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Get_Budget_For_Allocation.Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Anno__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation.Anno_Distribuzione__c</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Overview_Budget_per_Anno__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Recupera_enrollments</name>
         <label>Recupera enrollments</label>
         <locationX>666</locationX>
@@ -529,6 +700,16 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordUpdates>
+        <name>Assign_Payment_To_Allocation</name>
+        <label>Assign Payment To Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1802</locationY>
+        <connector>
+            <targetReference>Create_Payment_Shadow_For_Multiple</targetReference>
+        </connector>
+        <inputReference>Loop_Create_Payments_Per_Allocation</inputReference>
+    </recordUpdates>
+    <recordUpdates>
         <name>update_allocation</name>
         <label>update allocation</label>
         <locationX>512</locationX>
@@ -547,7 +728,7 @@
         <allowFinish>true</allowFinish>
         <allowPause>false</allowPause>
         <connector>
-            <targetReference>Pagamento_da_chiudere</targetReference>
+            <targetReference>Check_Payment_Type_For_Message</targetReference>
         </connector>
         <fields>
             <name>payment_created</name>
@@ -707,6 +888,46 @@
             <targetReference>Create_Collection_of_Allocation_selected</targetReference>
         </connector>
         <fields>
+            <name>toggle_create_payment_per_allocation</name>
+            <extensionName>flowruntime:toggle</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>label</name>
+                <value>
+                    <stringValue>Crea un pagamento per ogni distribuzione selezionata</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>messageToggleActive</name>
+                <value>
+                    <stringValue>Attivo</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>messageToggleInactive</name>
+                <value>
+                    <stringValue>Disattivo</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>value</name>
+                <value>
+                    <elementReference>create_payment_per_allocation</elementReference>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <storeOutputAutomatically>true</storeOutputAutomatically>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <fields>
             <name>select_allocations</name>
             <dataTypeMappings>
                 <typeName>T</typeName>
@@ -845,6 +1066,28 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </subflows>
     <subflows>
+        <name>Create_Payment_Shadow_For_Multiple</name>
+        <label>Create Payment Shadow For Multiple</label>
+        <locationX>666</locationX>
+        <locationY>1898</locationY>
+        <connector>
+            <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
+        </connector>
+        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
+        <inputAssignments>
+            <name>recordId</name>
+            <value>
+                <elementReference>current_payment_id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>totali_budget_anno_id</name>
+            <value>
+                <elementReference>Get_Budget_Anno_For_Allocation.Totali_Budget_Anno__c</elementReference>
+            </value>
+        </inputAssignments>
+    </subflows>
+    <subflows>
         <name>Crea_Pagamento_Shadow_autolaunched</name>
         <label>Crea Pagamento Shadow - autolaunched</label>
         <locationX>424</locationX>
@@ -942,5 +1185,19 @@
         <isInput>false</isInput>
         <isOutput>false</isOutput>
         <scale>2</scale>
+    </variables>
+    <variables>
+        <name>create_payment_per_allocation</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>current_payment_id</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
 </Flow>
