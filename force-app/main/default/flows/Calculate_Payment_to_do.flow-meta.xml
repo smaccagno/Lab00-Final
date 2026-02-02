@@ -120,6 +120,22 @@
         </connector>
     </assignments>
     <assignments>
+        <name>Add_Payment_Id_To_List</name>
+        <label>Add Payment Id To List</label>
+        <locationX>666</locationX>
+        <locationY>1946</locationY>
+        <assignmentItems>
+            <assignToReference>created_payment_ids</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>current_payment_id</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Create_Payment_Shadow_For_Multiple</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Create_Collection_of_Allocation_selected</name>
         <label>Create Collection of Allocation selected</label>
         <locationX>666</locationX>
@@ -344,10 +360,10 @@
         <collectionReference>selected_allocations</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
-            <targetReference>Get_Budget_Anno_For_Allocation</targetReference>
+            <targetReference>Get_Budget_For_Allocation</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>done</targetReference>
+            <targetReference>Get_Payments_Created</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
@@ -637,6 +653,27 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
+        <name>Get_Payments_Created</name>
+        <label>Get Payments Created</label>
+        <locationX>666</locationX>
+        <locationY>1994</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Mostra_Pagamenti_Creati</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>created_payment_ids</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Payment__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Recupera_enrollments</name>
         <label>Recupera enrollments</label>
         <locationX>666</locationX>
@@ -705,7 +742,7 @@
         <locationX>666</locationX>
         <locationY>1802</locationY>
         <connector>
-            <targetReference>Create_Payment_Shadow_For_Multiple</targetReference>
+            <targetReference>Add_Payment_Id_To_List</targetReference>
         </connector>
         <inputReference>Loop_Create_Payments_Per_Allocation</inputReference>
     </recordUpdates>
@@ -853,6 +890,88 @@
                 <name>columns</name>
                 <value>
                     <stringValue>[{&quot;apiName&quot;:&quot;Donation_Transaction_Name__c&quot;,&quot;guid&quot;:&quot;column-50c4&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Donazione&quot;,&quot;type&quot;:&quot;customRichText&quot;},{&quot;apiName&quot;:&quot;Name&quot;,&quot;guid&quot;:&quot;column-8d0f&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Nome&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;Amount&quot;,&quot;guid&quot;:&quot;column-1d5c&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Importo Pagamento&quot;,&quot;type&quot;:&quot;currency&quot;}]</stringValue>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
+            <storeOutputAutomatically>false</storeOutputAutomatically>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Mostra_Pagamenti_Creati</name>
+        <label>Mostra Pagamenti Creati</label>
+        <locationX>666</locationX>
+        <locationY>2042</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>done</targetReference>
+        </connector>
+        <fields>
+            <name>info_pagamenti_creati</name>
+            <fieldText>&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Sono stati creati i seguenti pagamenti:&lt;/span&gt;&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <fields>
+            <name>lista_pagamenti_creati</name>
+            <dataTypeMappings>
+                <typeName>T</typeName>
+                <typeValue>Payment__c</typeValue>
+            </dataTypeMappings>
+            <extensionName>flowruntime:datatable</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>label</name>
+                <value>
+                    <stringValue>Pagamenti creati</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>selectionMode</name>
+                <value>
+                    <stringValue>NO_SELECT</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>minRowSelection</name>
+                <value>
+                    <numberValue>0.0</numberValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>shouldDisplayLabel</name>
+                <value>
+                    <booleanValue>true</booleanValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>tableData</name>
+                <value>
+                    <elementReference>Get_Payments_Created</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>columns</name>
+                <value>
+                    <stringValue>[{&quot;apiName&quot;:&quot;Name&quot;,&quot;guid&quot;:&quot;column-name&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Nome Pagamento&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;Amount__c&quot;,&quot;guid&quot;:&quot;column-amount&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Importo&quot;,&quot;type&quot;:&quot;currency&quot;},{&quot;apiName&quot;:&quot;Budget__c&quot;,&quot;guid&quot;:&quot;column-budget&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Budget&quot;,&quot;type&quot;:&quot;reference&quot;},{&quot;apiName&quot;:&quot;Status__c&quot;,&quot;guid&quot;:&quot;column-status&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:3,&quot;label&quot;:&quot;Stato&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
                 </value>
             </inputParameters>
             <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
@@ -1281,5 +1400,20 @@
         <isCollection>false</isCollection>
         <isInput>false</isInput>
         <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>created_payment_ids</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>created_payments</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Payment__c</objectType>
     </variables>
 </Flow>
