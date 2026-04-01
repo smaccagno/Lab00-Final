@@ -7,8 +7,77 @@
  * Modifica quel file per cambiare ambiente (DEV/PROD), credenziali, etc.
  */
 
+// ============================================================
+// SISTEMA DI TOKEN CENTRALIZZATO
+// ============================================================
+// I token vengono salvati nel MASTER e possono essere recuperati
+// dalle copie tramite chiamata HTTP. Questo permette di avere
+// UN SOLO deployment che gestisce tutti gli utenti.
+// ============================================================
+
+/**
+ * Ottiene l'URL di callback per OAuth.
+ * Usa WEB_APP_CALLBACK se definito (deployment "Utente che accede"), altrimenti WEB_APP_EXEC.
+ * L'URL in configuration.gs deve già essere nel formato corretto:
+ *   - Google Workspace: https://script.google.com/a/macros/{domain}/s/{ID}/exec
+ *   - Gmail personale:  https://script.google.com/macros/s/{ID}/exec
+ */
 function getRedirectFromExec_() {
-  return WEB_APP_EXEC.replace(/\/exec$/, '/usercallback');
+  const base = (typeof WEB_APP_CALLBACK !== 'undefined' && WEB_APP_CALLBACK) ? WEB_APP_CALLBACK : WEB_APP_EXEC;
+  return base.replace(/\/(exec|dev)$/, '/usercallback');
+}
+
+/**
+ * Ottiene l'email dell'utente corrente
+ * Fallback a getEffectiveUser() se getActiveUser() è vuoto (alcuni domini/copie)
+ */
+function getCurrentUserEmail_() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (email) return email;
+  } catch (e) {}
+  try {
+    return Session.getEffectiveUser().getEmail() || '';
+  } catch (e) {}
+  return '';
+}
+
+/**
+ * Genera la chiave per salvare il token di un utente
+ */
+function getTokenKey_(email) {
+  return 'token_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+/**
+ * Salva il token nel sistema centralizzato (ScriptProperties)
+ * Indicizzato per email utente
+ */
+function saveTokenCentralized_(email, tokenData) {
+  const key = getTokenKey_(email);
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(key, JSON.stringify(tokenData));
+  Logger.log('Token salvato centralmente per: ' + email + ' (chiave: ' + key + ')');
+}
+
+/**
+ * Recupera il token dal sistema centralizzato
+ */
+function getTokenCentralized_(email) {
+  const key = getTokenKey_(email);
+  const props = PropertiesService.getScriptProperties();
+  const tokenJson = props.getProperty(key);
+  if (tokenJson) {
+    return JSON.parse(tokenJson);
+  }
+  return null;
+}
+
+/**
+ * Aggiorna il token nel sistema centralizzato
+ */
+function updateTokenCentralized_(email, tokenData) {
+  saveTokenCentralized_(email, tokenData);
 }
 
 /**
@@ -25,6 +94,44 @@ function verificaVersione() {
   Logger.log("===========================================");
 }
 
+/**
+ * ESEGUI QUESTA FUNZIONE PER FORZARE L'AUTORIZZAZIONE DI TUTTI I SERVIZI
+ * Questo richiederà i permessi per tutti i servizi usati dallo script
+ */
+function forzaAutorizzazione() {
+  // Questi accessi forzano la richiesta di autorizzazione
+  Logger.log("=== FORZATURA AUTORIZZAZIONE ===");
+  
+  // SpreadsheetApp
+  Logger.log("SpreadsheetApp: " + SpreadsheetApp.getActive().getName());
+  
+  // PropertiesService
+  Logger.log("UserProperties: OK");
+  PropertiesService.getUserProperties().getProperty('test');
+  
+  Logger.log("ScriptProperties: OK");
+  PropertiesService.getScriptProperties().getProperty('test');
+  
+  // Session
+  Logger.log("Email: " + Session.getActiveUser().getEmail());
+  
+  // UrlFetchApp (questo è quello che probabilmente manca)
+  Logger.log("UrlFetchApp: testing...");
+  try {
+    UrlFetchApp.fetch('https://www.google.com', {muteHttpExceptions: true});
+    Logger.log("UrlFetchApp: OK");
+  } catch (e) {
+    Logger.log("UrlFetchApp error: " + e.message);
+  }
+  
+  // HtmlService
+  Logger.log("HtmlService: OK");
+  HtmlService.createHtmlOutput('<p>test</p>');
+  
+  Logger.log("=== AUTORIZZAZIONE COMPLETATA ===");
+}
+
+
 // ============================================================
 // OAUTH2 COMPLETAMENTE MANUALE - NON USA LA LIBRERIA OAUTH2
 // ============================================================
@@ -35,82 +142,134 @@ function verificaVersione() {
  */
 function authCallback(request) {
   Logger.log('=== authCallback chiamato ===');
-  Logger.log('Request parameters: %s', JSON.stringify(request.parameter, null, 2));
+  const params = request.parameter || {};
+  const queryString = request.queryString || '(non disponibile)';
+  Logger.log('queryString: %s', queryString);
+  Logger.log('parameter: %s', JSON.stringify(params, null, 2));
   
-  const code = request.parameter.code;
-  const errorParam = request.parameter.error;
+  const code = params.code;
+  const errorParam = params.error;
   
   // Gestisci errori da Salesforce
   if (errorParam) {
     Logger.log('Errore da Salesforce: %s', errorParam);
+    const callbackUrl = getRedirectFromExec_();
+    let extra = '';
+    if ((errorParam || '').indexOf('redirect_uri') >= 0) {
+      extra = '<p style="margin-top:16px;background:#fff3cd;padding:12px;border-radius:4px;">' +
+        '<strong>Configura in Salesforce questo URL esatto:</strong><br>' +
+        '<code style="word-break:break-all;font-size:12px;">' + callbackUrl + '</code><br>' +
+        'Setup → App Manager → External Client App → Edit → Callback URL.<br>' +
+        'Salva e attendi 2-10 minuti.</p>';
+    }
+    let errDesc = params.error_description || errorParam;
+    try {
+      if (errDesc) errDesc = decodeURIComponent(String(errDesc).replace(/\+/g, ' '));
+    } catch (e) {}
     return HtmlService.createHtmlOutput(
-      '<h2 style="color: red;">Errore</h2><p>' + errorParam + '</p>'
+      '<h2 style="color: red;">Errore</h2><p>' + (errDesc || errorParam) + '</p>' + extra
     );
   }
   
   if (!code) {
-    Logger.log('Nessun codice ricevuto');
+    Logger.log('Nessun codice ricevuto. queryString: ' + queryString);
+    const paramsStr = Object.keys(params).length ? JSON.stringify(params) : 'nessuno. queryString=' + queryString;
     return HtmlService.createHtmlOutput(
-      '<h2 style="color: red;">Errore</h2><p>Nessun codice di autorizzazione ricevuto.</p>'
+      '<h2 style="color: red;">Errore</h2>' +
+      '<p>Nessun codice di autorizzazione ricevuto.</p>' +
+      '<p style="font-size:12px;color:#666;">Parametri ricevuti: ' + paramsStr + '</p>' +
+      '<p style="font-size:12px;margin-top:20px;">Possibili cause:<br>' +
+      '• Hai aperto questo URL direttamente? Devi completare il flusso da "Autorizza" nel foglio.<br>' +
+      '• redirect_uri_mismatch: verifica che il Callback URL in Salesforce corrisponda esattamente.</p>'
     );
   }
   
-  // Scambia manualmente il codice con il token (la libreria OAuth2 non funziona con le sandbox)
+  // Scambio codice/token direttamente server-side (evita google.script.run che
+  // richiede un'autorizzazione Google separata e blocca gli utenti esterni)
   try {
-    const tokenUrl = `${SF_LOGIN}/services/oauth2/token`;
-    const redirectUri = getRedirectFromExec_();
-    
-    Logger.log('Token URL: %s', tokenUrl);
-    Logger.log('Redirect URI: %s', redirectUri);
-    
-    const payload = 
-      'grant_type=authorization_code' +
-      '&client_id=' + encodeURIComponent(CLIENT_ID) +
-      '&client_secret=' + encodeURIComponent(CLIENT_SECRET) +
-      '&redirect_uri=' + encodeURIComponent(redirectUri) +
-      '&code=' + encodeURIComponent(code);
-    
-    const response = UrlFetchApp.fetch(tokenUrl, {
-      method: 'post',
-      contentType: 'application/x-www-form-urlencoded',
-      payload: payload,
-      muteHttpExceptions: true
-    });
-    
-    const responseCode = response.getResponseCode();
-    const responseText = response.getContentText();
-    
-    Logger.log('Response code: %s', responseCode);
-    Logger.log('Response: %s', responseText);
-    
-    if (responseCode !== 200) {
-      throw new Error('Salesforce ha restituito errore ' + responseCode + ': ' + responseText);
-    }
-    
-    const tokenData = JSON.parse(responseText);
-    
-    if (!tokenData.access_token) {
-      throw new Error('Token non ricevuto');
-    }
-    
-    // Salva il token nel formato della libreria OAuth2
-    const properties = PropertiesService.getUserProperties();
-    properties.setProperty('oauth2.Salesforce', JSON.stringify(tokenData));
-    
-    Logger.log('✅ Token salvato con successo');
-    Logger.log('Instance URL: %s', tokenData.instance_url);
-    
+    const userEmail = exchangeCodeAndSaveToken(code);
     return HtmlService.createHtmlOutput(
-      '<h2 style="color: green;">Autorizzato ✅</h2>' +
-      '<p>Puoi chiudere questa finestra e tornare a Google Sheets.</p>'
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+      'body{font-family:Arial,sans-serif;padding:40px;text-align:center;}' +
+      '.ok{color:green;}' +
+      '</style></head><body>' +
+      '<div class="ok"><h2>Autorizzato &#10004;</h2>' +
+      '<p>Completato per: ' + userEmail + '</p>' +
+      '<p>Chiudi questa scheda e torna al foglio.</p></div>' +
+      '</body></html>'
     );
-    
-  } catch (error) {
-    Logger.log('ERRORE: %s', error.toString());
+  } catch (err) {
+    Logger.log('Errore exchange token: ' + err.message);
     return HtmlService.createHtmlOutput(
-      '<h2 style="color: red;">Errore</h2><p>' + error.toString() + '</p>'
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+      'body{font-family:Arial,sans-serif;padding:40px;text-align:center;}' +
+      '.err{color:red;}' +
+      '</style></head><body>' +
+      '<div class="err"><h2>Errore</h2>' +
+      '<p>' + err.message + '</p>' +
+      '<p>Chiudi questa scheda e riprova dal foglio.</p></div>' +
+      '</body></html>'
     );
   }
+}
+
+/**
+ * Scambia il codice OAuth con il token e salva nel sistema centralizzato.
+ * Chiamata direttamente da authCallback() (server-side).
+ * Recupera l'email dell'utente da Session o dal profilo Salesforce come fallback.
+ */
+function exchangeCodeAndSaveToken(code) {
+  if (!code) throw new Error('Codice mancante');
+  
+  const tokenUrl = `${SF_LOGIN}/services/oauth2/token`;
+  const redirectUri = getRedirectFromExec_();
+  const payload = 
+    'grant_type=authorization_code' +
+    '&client_id=' + encodeURIComponent(CLIENT_ID) +
+    '&client_secret=' + encodeURIComponent(CLIENT_SECRET) +
+    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+    '&code=' + encodeURIComponent(code);
+  
+  const response = UrlFetchApp.fetch(tokenUrl, {
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload: payload,
+    muteHttpExceptions: true
+  });
+  
+  const responseCode = response.getResponseCode();
+  const responseText = response.getContentText();
+  
+  if (responseCode !== 200) {
+    throw new Error('Salesforce: ' + responseCode + ' - ' + responseText);
+  }
+  
+  const tokenData = JSON.parse(responseText);
+  if (!tokenData.access_token) throw new Error('Token non ricevuto');
+  
+  // Prova a ottenere l'email: Session > Salesforce identity > fallback
+  let userEmail = getCurrentUserEmail_();
+  
+  if (!userEmail && tokenData.id) {
+    try {
+      const idResp = UrlFetchApp.fetch(tokenData.id, {
+        headers: { Authorization: 'Bearer ' + tokenData.access_token },
+        muteHttpExceptions: true
+      });
+      if (idResp.getResponseCode() === 200) {
+        const idData = JSON.parse(idResp.getContentText());
+        userEmail = idData.email || idData.username || '';
+      }
+    } catch (e) {
+      Logger.log('Impossibile ottenere email da Salesforce identity: ' + e.message);
+    }
+  }
+  
+  if (!userEmail) userEmail = 'default_user';
+  
+  saveTokenCentralized_(userEmail, tokenData);
+  Logger.log('Token salvato per: ' + userEmail);
+  return userEmail;
 }
 
 /**
@@ -139,14 +298,97 @@ function getAccessToken_() {
  * Ottiene il token completo salvato
  */
 function getStoredToken_() {
-  const properties = PropertiesService.getUserProperties();
-  const tokenJson = properties.getProperty('oauth2.Salesforce');
-  
-  if (!tokenJson) {
-    return null;
+  // 1. Prova prima le UserProperties locali (più veloce)
+  try {
+    const properties = PropertiesService.getUserProperties();
+    const localTokenJson = properties.getProperty('oauth2.Salesforce');
+    
+    if (localTokenJson) {
+      return JSON.parse(localTokenJson);
+    }
+  } catch (e) {
+    Logger.log('Errore accesso UserProperties: ' + e.message);
   }
   
-  return JSON.parse(tokenJson);
+  // 2. Prova il sistema centralizzato (ScriptProperties - stessa istanza script)
+  try {
+    const userEmail = getCurrentUserEmail_();
+    if (userEmail) {
+      const centralToken = getTokenCentralized_(userEmail);
+      if (centralToken) {
+        try {
+          PropertiesService.getUserProperties().setProperty('oauth2.Salesforce', JSON.stringify(centralToken));
+        } catch (e) { /* ignora */ }
+        Logger.log('Token recuperato dal sistema centralizzato per: ' + userEmail);
+        return centralToken;
+      }
+      
+      // 3. Copie: recupera dal master via HTTP (token salvato sul master)
+      const masterToken = fetchTokenFromMaster_(userEmail);
+      if (masterToken) {
+        try {
+          PropertiesService.getUserProperties().setProperty('oauth2.Salesforce', JSON.stringify(masterToken));
+        } catch (e) { /* ignora */ }
+        Logger.log('Token recuperato dal master per: ' + userEmail);
+        return masterToken;
+      }
+    }
+  } catch (e) {
+    Logger.log('Errore recupero token: ' + e.message);
+  }
+  
+  return null;
+}
+
+/**
+ * Prova a sincronizzare il token dal master (chiamata esplicita)
+ * Usato quando il token locale non esiste
+ */
+function syncTokenFromMaster_() {
+  try {
+    const userEmail = getCurrentUserEmail_();
+    if (!userEmail) return false;
+    
+    const masterToken = fetchTokenFromMaster_(userEmail);
+    if (masterToken) {
+      // Salva localmente
+      PropertiesService.getUserProperties().setProperty('oauth2.Salesforce', JSON.stringify(masterToken));
+      Logger.log('Token sincronizzato dal master per: ' + userEmail);
+      return true;
+    }
+  } catch (e) {
+    Logger.log('Impossibile sincronizzare token dal master: ' + e.message);
+  }
+  return false;
+}
+
+/**
+ * Recupera il token dal master via HTTP
+ * Usato dalle copie per ottenere il token salvato nel master
+ */
+function fetchTokenFromMaster_(email) {
+  const url = WEB_APP_EXEC + '?action=getToken&email=' + encodeURIComponent(email) +
+    (typeof AUTH_SHARED_SECRET !== 'undefined' ? '&secret=' + encodeURIComponent(AUTH_SHARED_SECRET) : '');
+  
+  const opts = { method: 'get', muteHttpExceptions: true, followRedirects: true };
+  
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = UrlFetchApp.fetch(url, opts);
+      if (response.getResponseCode() === 200) {
+        const result = JSON.parse(response.getContentText());
+        if (result.success && result.token) return result.token;
+      }
+    } catch (e) {
+      const msg = (e.message || '').toString();
+      if (msg.indexOf('Address unavailable') >= 0 && WEB_APP_EXEC.indexOf('/dev') >= 0) {
+        Logger.log('ATTENZIONE: WEB_APP_EXEC usa /dev - le copie non possono raggiungerlo. Usa deployment pubblicato (/exec).');
+      }
+      Logger.log('Errore fetch token dal master (tentativo ' + attempt + '): ' + msg);
+      if (attempt < 2) Utilities.sleep(1000);  // retry dopo 1s
+    }
+  }
+  return null;
 }
 
 /**
@@ -201,46 +443,128 @@ function refreshAccessToken_() {
     issued_at: newTokenData.issued_at || new Date().getTime().toString()
   };
   
+  // Salva localmente
   const properties = PropertiesService.getUserProperties();
   properties.setProperty('oauth2.Salesforce', JSON.stringify(updatedToken));
+  
+  // Salva anche nel sistema centralizzato
+  const userEmail = getCurrentUserEmail_();
+  if (userEmail) {
+    try {
+      saveTokenCentralized_(userEmail, updatedToken);
+    } catch (e) {
+      Logger.log('Impossibile aggiornare token centralizzato: ' + e.message);
+    }
+  }
   
   Logger.log('Token rinfrescato con successo');
   return updatedToken.access_token;
 }
 
 /**
+ * Verifica l'autorizzazione e apre automaticamente il dialog se non autorizzato
+ * Restituisce true se autorizzato, false altrimenti
+ */
+function checkAuthOrPrompt_() {
+  // hasValidToken_ -> getStoredToken_ prova anche fetch dal master per le copie
+  if (hasValidToken_()) {
+    return true;
+  }
+  
+  // Prova esplicita sync dal master (per le copie)
+  try {
+    if (syncTokenFromMaster_()) {
+      if (hasValidToken_()) return true;
+    }
+  } catch (e) {
+    Logger.log('Errore sync token: ' + e.message);
+  }
+  
+  // Ultimo tentativo: getStoredToken_ potrebbe aver popolato il token nel frattempo
+  if (hasValidToken_()) return true;
+  
+  // Non autorizzato: mostra dialog (evita loop chiamando authorize() una volta sola)
+  authorize();
+  return false;
+}
+
+/**
  * Esegui questa funzione per autorizzare
  */
 function authorize() {
+  const ui = SpreadsheetApp.getUi();
+  
   if (hasValidToken_()) {
-    Logger.log('Già autorizzato ✅');
-    Logger.log('Se vuoi riautorizzare, esegui prima nukeAuth()');
+    ui.alert('Già autorizzato', 'Sei già autorizzato ✅\n\nSe vuoi riautorizzare, esegui prima "Reset Autorizzazione" dal menu.', ui.ButtonSet.OK);
     return;
   }
   
-  // Genera l'URL di autorizzazione manualmente (senza usare la libreria OAuth2)
-  const params = [
-    'response_type=code',
-    'client_id=' + encodeURIComponent(CLIENT_ID),
-    'redirect_uri=' + encodeURIComponent(getRedirectFromExec_()),
-    'scope=' + encodeURIComponent('api refresh_token'),
-    'prompt=consent'
-  ].join('&');
+  // Tutti (master e copie) passano dal master per l'autorizzazione
+  // Così il master può associare lo state random all'email utente
+  const userEmail = getCurrentUserEmail_() || '';
+  const startAuthUrl = WEB_APP_EXEC + '?action=startAuth&email=' + encodeURIComponent(userEmail);
   
-  const url = SF_DOMAIN + '/services/oauth2/authorize?' + params;
+  // Mostra un dialog con link al master (startAuth) - lì verrà generato lo state e si andrà a Salesforce
+  const htmlContent = `
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h3 { color: #333; }
+          .btn {
+            background: #1a73e8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+          }
+          .btn:hover { background: #1557b0; }
+        </style>
+      </head>
+      <body>
+        <h3>🔐 Autorizzazione Salesforce</h3>
+        <p>Clicca il pulsante per autorizzare l'accesso a Salesforce con il tuo account:</p>
+        <a href="${startAuthUrl}" target="_blank" class="btn">Apri per Autorizzare</a>
+        <p style="margin-top: 20px; color: #666; font-size: 12px;">
+          Si aprirà una nuova scheda. Autorizza su Salesforce, poi chiudi e torna qui.
+        </p>
+      </body>
+    </html>
+  `;
   
-  Logger.log('=== AUTORIZZAZIONE SALESFORCE ===');
-  Logger.log('Apri questo URL e autorizza:');
-  Logger.log(url);
-  Logger.log('');
-  Logger.log('Dopo l\'autorizzazione, verrai reindirizzato a una pagina che mostrerà "Autorizzato ✅"');
+  const htmlOutput = HtmlService.createHtmlOutput(htmlContent)
+    .setWidth(500)
+    .setHeight(250);
+  
+  ui.showModalDialog(htmlOutput, 'Autorizzazione Salesforce');
+  
+  Logger.log('=== AUTORIZZAZIONE - startAuth URL ===');
+  Logger.log('URL: %s', startAuthUrl);
 }
 
 /**
  * Reset completo dell'autorizzazione
  */
 function nukeAuth() {
+  // Cancella token locali
   PropertiesService.getUserProperties().deleteAllProperties();
+  
+  // Cancella anche dal sistema centralizzato
+  const userEmail = getCurrentUserEmail_();
+  if (userEmail) {
+    try {
+      const key = getTokenKey_(userEmail);
+      PropertiesService.getScriptProperties().deleteProperty(key);
+      Logger.log("Token centralizzato cancellato per: " + userEmail);
+    } catch (e) {
+      Logger.log("Impossibile cancellare token centralizzato: " + e.message);
+    }
+  }
   
   Logger.log("Reset OAuth completato.");
   Logger.log("Esegui authorize() per riautorizzare.");
@@ -288,7 +612,7 @@ function showConfig() {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Salesforce')
-    .addItem('Autorizza', 'authorize')
+    .addItem('🔐 Autorizza', 'authorize')
     .addSeparator()
     .addItem('Sync Comuni (A:C)', 'syncComuni')
     .addItem('Sync Tipo Visita (D)', 'syncTipoVisita')
@@ -303,22 +627,78 @@ function onOpen() {
     .addItem('Valida Dati Rendicontazione', 'validateRendicontazione')
     .addSeparator()
     .addItem('Invia Dati a InvoiceExcelEditor', 'sendDataToInvoiceExcelEditor')
+    .addSeparator()
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('🔧 Avanzate')
+      .addItem('📋 URL Callback per Salesforce', 'showCallbackUrlDialog')
+      .addItem('🔍 Diagnostica Completa', 'diagnosticaCompleta')
+      .addItem('Reset Autorizzazione', 'nukeAuthWithConfirm')
+      .addItem('Verifica Versione', 'verificaVersione'))
     .addToUi();
 }
 
+/**
+ * Mostra il dialog con l'URL callback esatto da configurare in Salesforce
+ */
+function showCallbackUrlDialog() {
+  const url = getRedirectFromExec_();
+  const html = HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;}' +
+    'h3{margin-top:0;}' +
+    '.url{background:#f0f0f0;padding:12px;border-radius:4px;word-break:break-all;font-size:13px;margin:16px 0;border:1px solid #ccc;}' +
+    '.warn{color:#c00;font-size:12px;margin-top:12px;}' +
+    'ol{margin:8px 0;padding-left:20px;} li{margin:6px 0;}' +
+    '</style></head><body>' +
+    '<h3>📋 URL Callback per Salesforce</h3>' +
+    '<p>Copia <b>esattamente</b> questo URL (nessuno spazio, nessun carattere in più):</p>' +
+    '<div class="url">' + url + '</div>' +
+    '<p><strong>In Salesforce:</strong></p>' +
+    '<ol>' +
+    '<li>Setup → App Manager → External Client App → Edit</li>' +
+    '<li>Callback URL: incolla l\'URL sopra (sostituisci eventuali URL esistenti o aggiungi alla lista)</li>' +
+    '<li>Salva</li>' +
+    '<li>Attendi 2-10 minuti prima di riprovare l\'autorizzazione</li>' +
+    '</ol>' +
+    '<p class="warn">Se vedi redirect_uri_mismatch: verifica che l\'URL sia identico. Controlla http/https, presenza di / alla fine, dominio.</p>' +
+    '</body></html>'
+  ).setWidth(550).setHeight(380);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Configurazione Callback Salesforce');
+}
+
+/**
+ * Reset autorizzazione con conferma
+ */
+function nukeAuthWithConfirm() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert(
+    'Reset Autorizzazione',
+    'Sei sicuro di voler resettare l\'autorizzazione Salesforce?\n\nDovrai riautorizzare per usare le funzioni.',
+    ui.ButtonSet.YES_NO
+  );
+  
+  if (response === ui.Button.YES) {
+    nukeAuth();
+    ui.alert('Reset completato', 'Autorizzazione resettata.\n\nClicca su "Autorizza" per riautorizzare.', ui.ButtonSet.OK);
+  }
+}
+
 function syncAll() {
-  syncComuni();
-  syncTipoVisita();
-  syncBeneficiario();
-  syncCentroMedico();
-  syncEnteNoProfit();
-  syncBoolean();
-  syncPartner();
+  // Check autorizzazione una volta sola per tutto il sync
+  if (!checkAuthOrPrompt_()) return;
+  
+  // Chiama le funzioni con skipAuthCheck=true per evitare check multipli
+  syncComuni(true);
+  syncTipoVisita(true);
+  syncBeneficiario(true);
+  syncCentroMedico(true);
+  syncEnteNoProfit(true);
+  syncBoolean();  // Questa non richiede autorizzazione
+  syncPartner(true);
 }
 
 
-function syncComuni() {
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+function syncComuni(skipAuthCheck) {
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -361,9 +741,9 @@ function syncComuni() {
   Logger.log(`✅ Sync Comuni completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (A:C)`);
 }
 
-function syncTipoVisita() {
+function syncTipoVisita(skipAuthCheck) {
   const COL_D = 4; // colonna D
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -404,9 +784,9 @@ function syncTipoVisita() {
   Logger.log(`✅ Sync Tipo_Visita completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna D)`);
 }
 
-function syncBeneficiario() {
+function syncBeneficiario(skipAuthCheck) {
   const COL_E = 5; // colonna E
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -457,9 +837,9 @@ function syncBeneficiario() {
   Logger.log(`✅ Sync Beneficiario completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna E)`);
 }
 
-function syncCentroMedico() {
+function syncCentroMedico(skipAuthCheck) {
   const COL_F = 6; // colonna F
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -510,10 +890,10 @@ function syncCentroMedico() {
   Logger.log(`✅ Sync Centro Medico completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna F)`);
 }
 
-function syncEnteNoProfit() {
+function syncEnteNoProfit(skipAuthCheck) {
   const COL_G = 7; // colonna G - Ente No Profit
   const COL_H = 8; // colonna H - No Profit Category
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -582,9 +962,9 @@ function syncBoolean() {
   Logger.log(`✅ Sync Boolean completato: ${values.length} righe scritte su "${SHEET_VALIDAZIONE_DATI}" (colonna I)`);
 }
 
-function syncPartner() {
+function syncPartner(skipAuthCheck) {
   const COL_J = 10; // colonna J
-  if (!hasValidToken_()) throw new Error('Non autorizzato. Esegui authorize().');
+  if (!skipAuthCheck && !checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   const instanceUrl = token.instance_url;
@@ -679,7 +1059,7 @@ function queryAll_(instanceUrl, accessToken, soql) {
 }
 
 function testIdentity() {
-  if (!hasValidToken_()) throw new Error("Non autorizzato: esegui authorize()");
+  if (!checkAuthOrPrompt_()) return;
 
   const token = getStoredToken_();
   Logger.log("instance_url: %s", token.instance_url);
@@ -840,8 +1220,10 @@ function validateRendicontazione() {
       // Validazione in base al tipo
       if (validation.type === 'list') {
         // Valida contro la lista
-        const cellValueStr = String(cellValue).trim();
-        const normalizedValue = cellValueStr.toLowerCase();
+        // IMPORTANTE: usiamo il valore ORIGINALE per rilevare spazi extra
+        const cellValueOriginal = String(cellValue);
+        const cellValueTrimmed = cellValueOriginal.trim();
+        const normalizedValue = cellValueTrimmed.toLowerCase();
         
         // Verifica che la lista esista e non sia vuota
         if (!validation.list || validation.list.length === 0) {
@@ -849,43 +1231,52 @@ function validateRendicontazione() {
           continue; // Salta questa colonna se la lista è vuota
         }
         
-        // Validazione case-sensitive: il valore deve essere ESATTAMENTE uguale (case-sensitive)
-        // per colonne come Tipo Beneficiario
-        const isCaseSensitive = validation.name === 'Tipo Beneficiario' || 
-                                 validation.name === 'Tipologia Prestazione' ||
-                                 validation.name === 'Provincia' ||
-                                 validation.name === 'Regione' ||
-                                 validation.name === 'Comune';
+        // Validazione STRICT: il valore deve essere ESATTAMENTE uguale
+        // - Case-sensitive
+        // - Senza spazi extra (iniziali o finali)
         
-        if (isCaseSensitive) {
-          // Validazione case-sensitive: confronto esatto
-          isValid = validation.list.some(item => 
-            String(item).trim() === cellValueStr
-          );
+        // Prima verifica se ci sono spazi extra
+        const hasExtraSpaces = cellValueOriginal !== cellValueTrimmed;
+        
+        // Validazione case-sensitive: confronto esatto (senza spazi extra)
+        const exactMatch = validation.list.find(item => 
+          String(item).trim() === cellValueTrimmed
+        );
+        
+        if (exactMatch && !hasExtraSpaces) {
+          // Match esatto e nessuno spazio extra: valido
+          isValid = true;
+        } else {
+          // Non valido - cerca il motivo e proponi suggerimento
+          isValid = false;
           
-          // Se non valido, cerca anche case-insensitive per vedere se è solo un problema di case
-          if (!isValid) {
+          if (hasExtraSpaces && exactMatch) {
+            // Il valore è corretto ma ha spazi extra
+            suggestion = exactMatch;
+            Logger.log(`🔍 Spazi extra rilevati: "${cellValueOriginal}" -> "${exactMatch}"`);
+          } else {
+            // Cerca match case-insensitive per vedere se è solo un problema di case
             const caseInsensitiveMatch = validation.list.find(item => 
               String(item).trim().toLowerCase() === normalizedValue
             );
+            
             if (caseInsensitiveMatch) {
-              // Trovato un match case-insensitive: suggerisci il valore corretto con il case giusto
+              // Trovato un match case-insensitive: suggerisci il valore corretto
               suggestion = caseInsensitiveMatch;
-              Logger.log(`🔍 Trovato match case-insensitive: "${cellValueStr}" -> "${caseInsensitiveMatch}"`);
+              if (hasExtraSpaces) {
+                Logger.log(`🔍 Case errato + spazi extra: "${cellValueOriginal}" -> "${caseInsensitiveMatch}"`);
+              } else {
+                Logger.log(`🔍 Case errato: "${cellValueTrimmed}" -> "${caseInsensitiveMatch}"`);
+              }
             }
           }
-        } else {
-          // Validazione case-insensitive per altre colonne
-          isValid = validation.list.some(item => 
-            String(item).trim().toLowerCase() === normalizedValue
-          );
         }
         
         // Se non valido, trova i suggerimenti più simili
         if (!isValid) {
           // Trova i suggerimenti più simili usando l'algoritmo generale
           if (!suggestion) {
-            const candidates = findBestMatches_(cellValueStr, normalizedValue, validation.list, validation.name);
+            const candidates = findBestMatches_(cellValueTrimmed, normalizedValue, validation.list, validation.name);
             if (candidates && candidates.length > 0) {
               // Se c'è un solo candidato o il primo ha score molto alto, usa quello
               if (candidates.length === 1 || candidates[0].score >= 0.9) {
@@ -905,12 +1296,47 @@ function validateRendicontazione() {
           suggestion = 'Verifica il formato data (es: GG/MM/AAAA)';
         }
       } else if (validation.type === 'boolean') {
-        // Valida boolean (TRUE/FALSE)
-        const normalizedValue = String(cellValue).trim().toUpperCase();
-        isValid = normalizedValue === 'TRUE' || normalizedValue === 'FALSE';
-        if (!isValid) {
-          // Per i boolean, suggeriamo TRUE o FALSE
-          suggestion = 'TRUE o FALSE';
+        // Valida boolean (TRUE/FALSE) - STRICT: case-sensitive e senza spazi extra
+        // NOTA: Google Sheets può restituire boolean nativi (true/false JavaScript)
+        //       oppure stringhe ("TRUE"/"FALSE")
+        
+        // Se è un boolean nativo JavaScript, è sempre valido
+        if (typeof cellValue === 'boolean') {
+          isValid = true;
+        } else {
+          // È una stringa: validazione strict
+          const cellValueOriginal = String(cellValue);
+          const cellValueTrimmed = cellValueOriginal.trim();
+          const hasExtraSpaces = cellValueOriginal !== cellValueTrimmed;
+          
+          // Validazione strict: deve essere esattamente "TRUE" o "FALSE"
+          const isExactMatch = cellValueTrimmed === 'TRUE' || cellValueTrimmed === 'FALSE';
+          
+          if (isExactMatch && !hasExtraSpaces) {
+            isValid = true;
+          } else {
+            isValid = false;
+            
+            // Trova il suggerimento corretto
+            const upperValue = cellValueTrimmed.toUpperCase();
+            if (upperValue === 'TRUE') {
+              suggestion = 'TRUE';
+              if (hasExtraSpaces) {
+                Logger.log(`🔍 Boolean con spazi extra: "${cellValueOriginal}" -> "TRUE"`);
+              } else {
+                Logger.log(`🔍 Boolean case errato: "${cellValueTrimmed}" -> "TRUE"`);
+              }
+            } else if (upperValue === 'FALSE') {
+              suggestion = 'FALSE';
+              if (hasExtraSpaces) {
+                Logger.log(`🔍 Boolean con spazi extra: "${cellValueOriginal}" -> "FALSE"`);
+              } else {
+                Logger.log(`🔍 Boolean case errato: "${cellValueTrimmed}" -> "FALSE"`);
+              }
+            } else {
+              suggestion = 'TRUE o FALSE';
+            }
+          }
         }
       }
       
@@ -1847,34 +2273,44 @@ function revalidateCell_(cell, validation, validationLists) {
   }
   
   if (validation.type === 'list') {
-    // Valida contro la lista
-    const cellValueStr = String(cellValue).trim();
+    // Valida contro la lista - STRICT: case-sensitive e senza spazi extra
+    const cellValueOriginal = String(cellValue);
+    const cellValueTrimmed = cellValueOriginal.trim();
+    const hasExtraSpaces = cellValueOriginal !== cellValueTrimmed;
     
-    // Validazione case-sensitive per colonne specifiche
-    const isCaseSensitive = validation.name === 'Tipo Beneficiario' || 
-                             validation.name === 'Tipologia Prestazione' ||
-                             validation.name === 'Provincia' ||
-                             validation.name === 'Regione' ||
-                             validation.name === 'Comune';
-    
-    if (isCaseSensitive) {
-      // Validazione case-sensitive: confronto esatto
-      return validation.list.some(item => 
-        String(item).trim() === cellValueStr
-      );
-    } else {
-      // Validazione case-insensitive per altre colonne
-      return validation.list.some(item => 
-        String(item).trim().toLowerCase() === cellValueStr.toLowerCase()
-      );
+    // Se ci sono spazi extra, non è valido
+    if (hasExtraSpaces) {
+      return false;
     }
+    
+    // Validazione case-sensitive: confronto esatto
+    return validation.list.some(item => 
+      String(item).trim() === cellValueTrimmed
+    );
   } else if (validation.type === 'date') {
     // Valida formato data
     return isValidDate_(cellValue);
   } else if (validation.type === 'boolean') {
-    // Valida boolean (TRUE/FALSE)
-    const normalizedValue = String(cellValue).trim().toUpperCase();
-    return normalizedValue === 'TRUE' || normalizedValue === 'FALSE';
+    // Valida boolean (TRUE/FALSE) - STRICT: case-sensitive e senza spazi extra
+    // NOTA: Google Sheets può restituire boolean nativi (true/false JavaScript)
+    
+    // Se è un boolean nativo JavaScript, è sempre valido
+    if (typeof cellValue === 'boolean') {
+      return true;
+    }
+    
+    // È una stringa: validazione strict
+    const cellValueOriginal = String(cellValue);
+    const cellValueTrimmed = cellValueOriginal.trim();
+    const hasExtraSpaces = cellValueOriginal !== cellValueTrimmed;
+    
+    // Se ci sono spazi extra, non è valido
+    if (hasExtraSpaces) {
+      return false;
+    }
+    
+    // Deve essere esattamente "TRUE" o "FALSE"
+    return cellValueTrimmed === 'TRUE' || cellValueTrimmed === 'FALSE';
   }
   
   return false;
@@ -2331,93 +2767,398 @@ function sendDataToInvoiceExcelEditor() {
   // Unisci tutte le righe con newline
   const tsvData = tsvLines.join('\n');
   
-  // Passa i dati TSV tramite URL parameters con il nome c__pasteData (convenzione Lightning)
-  // I dati vengono codificati in base64 per evitare problemi con caratteri speciali nell'URL
   const base64Data = Utilities.base64Encode(tsvData);
-  const url = `${INVOICE_EXCEL_EDITOR_URL}?c__pasteData=${encodeURIComponent(base64Data)}`;
+  const url = INVOICE_EXCEL_EDITOR_URL;
   
-  // Logga i dati TSV per riferimento
   Logger.log('=== DATI TSV PER InvoiceExcelEditor ===');
   Logger.log(`Righe inviate: ${tsvLines.length}`);
   Logger.log(`Dimensione dati: ${tsvData.length} caratteri`);
-  Logger.log('Primi 500 caratteri:', tsvData.substring(0, 500));
+  Logger.log(`Dimensione base64: ${base64Data.length} caratteri`);
   Logger.log('=== FINE DATI TSV ===');
   
-  // Mostra un dialog con l'URL e un pulsante per aprirlo
+  // I dati vengono salvati in localStorage del dominio Salesforce tramite una pagina ponte,
+  // poi il componente LWC li legge da localStorage. Questo evita il limite di dimensione degli URL.
+  const sfOrigin = INVOICE_EXCEL_EDITOR_URL.match(/^https?:\/\/[^/]+/)[0];
+  
   const htmlOutput = HtmlService.createHtmlOutput(`
     <!DOCTYPE html>
     <html>
       <head>
         <base target="_top">
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          .info-box {
-            background-color: #e8f0fe;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 10px 0;
-            border-left: 4px solid #4285f4;
-          }
-          .url-box {
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            word-break: break-all;
-            font-size: 11px;
-            max-height: 150px;
-            overflow-y: auto;
-          }
-          button {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
-            margin-right: 10px;
-          }
-          button:hover {
-            background-color: #357ae8;
-          }
-          button.secondary {
-            background-color: #ea4335;
-          }
-          button.secondary:hover {
-            background-color: #d33b2c;
-          }
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .info-box { background-color: #e8f0fe; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #4285f4; }
+          button { background-color: #4285f4; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 10px; margin-right: 10px; }
+          button:hover { background-color: #357ae8; }
+          button.secondary { background-color: #ea4335; }
+          button.secondary:hover { background-color: #d33b2c; }
+          #status { margin-top: 12px; font-size: 13px; color: #666; }
         </style>
       </head>
       <body>
         <h3>Dati pronti per InvoiceExcelEditor</h3>
         <div class="info-box">
-          <strong>Righe inviate:</strong> ${tsvLines.length}<br>
-          <strong>Dimensione dati:</strong> ${tsvData.length} caratteri<br>
-          <strong>Il componente aprirà automaticamente e incollerà i dati.</strong>
+          <strong>Righe:</strong> ${tsvLines.length}<br>
+          <strong>Dimensione dati:</strong> ${Math.round(base64Data.length / 1024)} KB
         </div>
-        <p><strong>URL del componente:</strong></p>
-        <div class="url-box">${url.substring(0, 200)}...</div>
-        <button onclick="window.open('${url}', '_blank'); google.script.host.close();">
-          Apri componente in nuova scheda
-        </button>
-        <button onclick="google.script.host.close();" class="secondary">
-          Chiudi
-        </button>
+        <button id="sendBtn" onclick="sendData()">Apri e invia dati a Salesforce</button>
+        <button onclick="google.script.host.close();" class="secondary">Chiudi</button>
+        <p id="status"></p>
+        <script>
+          var base64Data = ${JSON.stringify(base64Data)};
+          var targetUrl = ${JSON.stringify(url)};
+          
+          function sendData() {
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('status').textContent = 'Apertura Salesforce...';
+            var w = window.open(targetUrl + '?c__pasteDataPending=1', '_blank');
+            
+            // Invia i dati via postMessage quando la finestra è pronta
+            var attempts = 0;
+            var maxAttempts = 60;
+            var interval = setInterval(function() {
+              attempts++;
+              try {
+                w.postMessage({ type: 'gsheetsData', pasteData: base64Data }, '*');
+                document.getElementById('status').textContent = 'Dati inviati (tentativo ' + attempts + '). Se il componente non li riceve, riprova.';
+              } catch(e) {}
+              if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                document.getElementById('status').textContent = 'Invio completato. Puoi chiudere questa finestra.';
+                document.getElementById('sendBtn').disabled = false;
+              }
+            }, 1000);
+          }
+        </script>
       </body>
     </html>
   `)
-    .setWidth(700)
-    .setHeight(400);
+    .setWidth(500)
+    .setHeight(300);
   
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Invio dati a InvoiceExcelEditor');
 }
 
 function doGet(e) {
-  // Questo serve quando la web app viene chiamata su /exec o /usercallback
-  return authCallback(e);
+  try {
+    Logger.log('=== doGet chiamato ===');
+    Logger.log('Parameters: ' + JSON.stringify(e.parameter));
+    
+    const action = (typeof e.parameter.action === 'string') ? e.parameter.action : (Array.isArray(e.parameter.action) ? e.parameter.action[0] : '');
+    
+    // Test semplice: se nessun parametro, mostra pagina di test
+    if (!e.parameter || Object.keys(e.parameter).length === 0) {
+      return HtmlService.createHtmlOutput(
+        '<h2>Deployment attivo ✅</h2>' +
+        '<p>Il deployment funziona correttamente.</p>' +
+        '<p>Email: ' + Session.getEffectiveUser().getEmail() + '</p>'
+      );
+    }
+    
+    // Gestisce richieste di recupero token dalle copie
+    if (action === 'getToken') {
+      return handleGetTokenRequest_(e);
+    }
+    
+    // Gestisce avvio OAuth: genera state, associa a email, redirect a Salesforce
+    if (action === 'startAuth') {
+      return handleStartAuth_(e);
+    }
+    
+    // Mostra l'URL di callback da configurare in Salesforce
+    if (action === 'showCallback') {
+      return handleShowCallback_();
+    }
+    
+    // Diagnostica: restituisce il redirect_uri usato (apri in browser per verificare il deployment live)
+    if (action === 'checkCallback') {
+      const uri = getRedirectFromExec_();
+      return ContentService.createTextOutput(uri).setMimeType(ContentService.MimeType.TEXT);
+    }
+    
+    // Gestisce il callback OAuth da Salesforce
+    return authCallback(e);
+    
+  } catch (error) {
+    Logger.log('ERRORE in doGet: ' + error.toString());
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color:red;">Errore</h2>' +
+      '<p>' + error.toString() + '</p>'
+    );
+  }
+}
+
+/**
+ * Gestisce l'avvio OAuth: genera state random, associa all'email, redirect a Salesforce
+ * Endpoint: ?action=startAuth&email=xxx
+ */
+function handleStartAuth_(e) {
+  let email = (e.parameter.email || '').trim();
+  if (!email) {
+    // Fallback se l'email non è disponibile (alcune org Google)
+    try {
+      email = Session.getEffectiveUser().getEmail();
+    } catch (e2) {}
+  }
+  if (!email) {
+    return HtmlService.createHtmlOutput(
+      '<h2 style="color:red;">Errore</h2><p>Impossibile determinare l\'email. Assicurati di avviare l\'autorizzazione dal menu Salesforce nel foglio.</p>'
+    );
+  }
+  
+  // NOTA: Il parametro state viene rifiutato da Salesforce ("token state non valido").
+  // Lo omettiamo per far funzionare l'OAuth. Il callback usa getEffectiveUser().
+  const params = [
+    'response_type=code',
+    'client_id=' + encodeURIComponent(CLIENT_ID),
+    'redirect_uri=' + encodeURIComponent(getRedirectFromExec_()),
+    'scope=' + encodeURIComponent('api refresh_token'),
+    'prompt=consent'
+  ].join('&');
+  
+  // Usa SF_LOGIN (login.salesforce.com) per OAuth - SF_DOMAIN/my.salesforce.com può rifiutare la connessione
+  const salesforceUrl = SF_LOGIN + '/services/oauth2/authorize?' + params;
+  
+  Logger.log('startAuth: email=' + email + ', redirect_uri=' + getRedirectFromExec_());
+  
+  // Pagina con link cliccabile (no meta-refresh: evita "refused to connect")
+  const safeUrl = salesforceUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head><style>' +
+    'body{font-family:Arial,sans-serif;padding:40px;text-align:center;}' +
+    '.btn{display:inline-block;background:#0176d3;color:white;padding:14px 28px;text-decoration:none;border-radius:4px;font-size:16px;margin:20px 0;cursor:pointer;border:none;}' +
+    '.btn:hover{background:#014a8c;}' +
+    'p{color:#666;}' +
+    '</style></head><body>' +
+    '<h2>Autorizzazione Salesforce</h2>' +
+    '<p>Clicca il pulsante qui sotto per continuare su Salesforce:</p>' +
+    '<button onclick="window.open(\'' + safeUrl + '\', \'_blank\', \'noopener,noreferrer\');" class="btn">Vai a Salesforce per autorizzare</button>' +
+    '<p style="font-size:12px;">Si aprirà una nuova scheda con la pagina di login/autorizzazione di Salesforce.</p>' +
+    '</body></html>'
+  );
+}
+
+/**
+ * Mostra la pagina con l'URL callback da configurare in Salesforce
+ */
+function handleShowCallback_() {
+  const callbackUrl = getRedirectFromExec_();
+  return HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head><style>' +
+    'body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;}' +
+    'h2{color:#333;}' +
+    '.url-box{background:#f5f5f5;padding:15px;border-radius:4px;word-break:break-all;font-size:13px;margin:20px 0;border:1px solid #ddd;}' +
+    '.steps{background:#e8f4f8;padding:20px;border-radius:4px;margin-top:20px;}' +
+    'ol{margin:10px 0;padding-left:20px;}' +
+    'li{margin:8px 0;}' +
+    '</style></head><body>' +
+    '<h2>Configurazione Callback URL</h2>' +
+    '<p>Copia questo URL e incollalo nella Connected App in Salesforce:</p>' +
+    '<div class="url-box">' + callbackUrl + '</div>' +
+    '<div class="steps">' +
+    '<strong>Passi (servono 2 deployment sul master):</strong><ol>' +
+    '<li><b>Deploy 1</b> (getToken, startAuth): Esegui come = ME, Chi può accedere = Chiunque</li>' +
+    '<li><b>Deploy 2</b> (callback): Esegui come = Utente che accede, Chi può accedere = Chiunque con account Google</li>' +
+    '<li>In configuration.gs: WEB_APP_EXEC = URL deploy 1, WEB_APP_CALLBACK = URL deploy 2</li>' +
+    '<li>Salesforce Setup → App Manager → External Client App → Edit</li>' +
+    '<li>Callback URL: incolla l\'URL sopra</li>' +
+    '<li>Salva e attendi 1-2 minuti</li>' +
+    '</ol></div>' +
+    '</body></html>'
+  );
+}
+
+/**
+ * Gestisce la richiesta di recupero token dalle copie
+ * Endpoint: ?action=getToken&email=xxx
+ */
+function handleGetTokenRequest_(e) {
+  const email = e.parameter.email;
+  const secret = e.parameter.secret;
+  
+  if (typeof AUTH_SHARED_SECRET !== 'undefined' && AUTH_SHARED_SECRET) {
+    if (secret !== AUTH_SHARED_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Autenticazione richiesta non valida'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  if (!email) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Email non specificata'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  try {
+    const token = getTokenCentralized_(email);
+    
+    if (token) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        token: token
+      })).setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Token non trovato per questo utente'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * DIAGNOSTICA COMPLETA - Esegui questa funzione per verificare tutto
+ */
+function diagnosticaCompleta() {
+  Logger.log('========================================');
+  Logger.log('DIAGNOSTICA COMPLETA AUTORIZZAZIONE');
+  Logger.log('========================================');
+  
+  // 1. Configurazione base
+  Logger.log('\n1. CONFIGURAZIONE BASE:');
+  Logger.log('   SF_LOGIN: ' + SF_LOGIN);
+  Logger.log('   SF_DOMAIN: ' + SF_DOMAIN);
+  Logger.log('   CLIENT_ID: ' + CLIENT_ID);
+  Logger.log('   CLIENT_SECRET presente: ' + (CLIENT_SECRET ? 'SI (' + CLIENT_SECRET.substring(0, 10) + '...)' : 'NO'));
+  Logger.log('   WEB_APP_EXEC: ' + WEB_APP_EXEC);
+  if (WEB_APP_EXEC.indexOf('/dev') >= 0) {
+    Logger.log('   ⚠️ WEB_APP_EXEC usa /dev. Le copie NON possono raggiungerlo. Usa /exec.');
+  }
+  if (typeof WEB_APP_CALLBACK !== 'undefined' && WEB_APP_CALLBACK) {
+    Logger.log('   WEB_APP_CALLBACK: ' + WEB_APP_CALLBACK);
+  }
+  
+  // 2. URL di callback
+  Logger.log('\n2. URL CALLBACK (dove Salesforce reindirizza dopo OAuth):');
+  const redirectUri = getRedirectFromExec_();
+  Logger.log('   Da WEB_APP_EXEC si ricava .../usercallback (stesso host, path OAuth)');
+  Logger.log('   Callback URL: ' + redirectUri);
+  Logger.log('   Encoded: ' + encodeURIComponent(redirectUri));
+  
+  // 3. URL di autorizzazione
+  Logger.log('\n3. URL AUTORIZZAZIONE:');
+  const authParams = [
+    'response_type=code',
+    'client_id=' + encodeURIComponent(CLIENT_ID),
+    'redirect_uri=' + encodeURIComponent(redirectUri),
+    'scope=' + encodeURIComponent('api refresh_token'),
+    'prompt=consent'
+  ].join('&');
+  const authUrl = SF_LOGIN + '/services/oauth2/authorize?' + authParams;
+  Logger.log('   URL completo: ' + authUrl);
+  
+  // 4. Token esistenti
+  Logger.log('\n4. TOKEN ESISTENTI:');
+  Logger.log('   hasValidToken: ' + (hasValidToken_() ? 'SI' : 'NO'));
+  try {
+    const token = getStoredToken_();
+    if (token) {
+      Logger.log('   Token presente: SI');
+      Logger.log('   Access token: ' + (token.access_token ? 'SI (' + token.access_token.substring(0, 20) + '...)' : 'NO'));
+      Logger.log('   Refresh token: ' + (token.refresh_token ? 'SI' : 'NO'));
+      Logger.log('   Instance URL: ' + (token.instance_url || 'N/A'));
+    } else {
+      Logger.log('   Token presente: NO');
+    }
+  } catch (e) {
+    Logger.log('   Errore lettura token: ' + e.message);
+  }
+  
+  // 5. Verifica deployment
+  Logger.log('\n5. DEPLOYMENT:');
+  try {
+    const scriptUrl = ScriptApp.getService().getUrl();
+    Logger.log('   Script URL (questo foglio): ' + (scriptUrl || 'NON DISPONIBILE'));
+    if (scriptUrl) {
+      const expectedCallback = scriptUrl.replace(/\/(exec|dev)$/, '/usercallback');
+      Logger.log('   Callback di questo foglio: ' + expectedCallback);
+      const configCallback = redirectUri;
+      const isCopy = (expectedCallback !== configCallback);
+      if (isCopy) {
+        Logger.log('   Rilevata COPIA: usa callback del MASTER (config WEB_APP_EXEC) - normale ✅');
+        Logger.log('   Callback OAuth (master): ' + configCallback);
+      } else {
+        Logger.log('   MASTER: callback coincidono ✅');
+      }
+    }
+  } catch (e) {
+    Logger.log('   Errore verifica deployment: ' + e.message);
+  }
+  
+  // 5b. Verifica che i deployment in config siano attivi (non archivistati)
+  Logger.log('\n5b. VERIFICA DEPLOYMENT CONFIG (attivi = non archivistati):');
+  const urlsToCheck = [[ 'WEB_APP_EXEC', WEB_APP_EXEC ], [ 'WEB_APP_CALLBACK', typeof WEB_APP_CALLBACK !== 'undefined' && WEB_APP_CALLBACK ? WEB_APP_CALLBACK : null ]];
+  for (const [name, url] of urlsToCheck) {
+    if (!url) { Logger.log('   ' + name + ': non configurato (usa WEB_APP_EXEC)'); continue; }
+    try {
+      const r = UrlFetchApp.fetch(url, { method: 'get', muteHttpExceptions: true, followRedirects: false });
+      const c = r.getResponseCode();
+      const loc = (r.getHeaders()['Location'] || '').toString();
+      let status;
+      if (c === 200) status = 'Attivo ✅';
+      else if (c === 302 && loc.indexOf('accounts.google.com') >= 0) status = 'Redirect a login (ok per callback)';
+      else if (c === 404 || c === 410) status = '⚠️ ARCHIVIATO o URL errato - crea nuovo deployment!';
+      else if (c === 302) status = 'Redirect → ' + (loc ? loc.substring(0, 50) + '...' : '');
+      else status = 'HTTP ' + c;
+      Logger.log('   ' + name + ': ' + status);
+    } catch (e3) {
+      Logger.log('   ' + name + ': Errore - ' + (e3.message || e3));
+    }
+  }
+  
+  // 6. Test connessione al master (per le copie)
+  let scriptUrlForTest = '';
+  try {
+    scriptUrlForTest = ScriptApp.getService().getUrl() || '';
+  } catch (e) {}
+  const configCallbackForTest = getRedirectFromExec_();
+  if (scriptUrlForTest && scriptUrlForTest.replace(/\/(exec|dev)$/, '/usercallback') !== configCallbackForTest) {
+    Logger.log('\n6. TEST CONNESSIONE AL MASTER (copia):');
+    const testEmail = getCurrentUserEmail_();
+    Logger.log('   Email utente: ' + (testEmail || '(vuota - impossibile recuperare)'));
+    if (testEmail) {
+      try {
+        const testUrl = WEB_APP_EXEC + '?action=getToken&email=' + encodeURIComponent(testEmail) +
+          (typeof AUTH_SHARED_SECRET !== 'undefined' ? '&secret=' + encodeURIComponent(AUTH_SHARED_SECRET || '') : '');
+        Logger.log('   Chiamata a: ' + WEB_APP_EXEC + '?action=getToken&email=...');
+        const resp = UrlFetchApp.fetch(testUrl, { method: 'get', muteHttpExceptions: true });
+        const code = resp.getResponseCode();
+        const body = resp.getContentText();
+        Logger.log('   HTTP ' + code + ': ' + (body.length > 200 ? body.substring(0, 200) + '...' : body));
+        if (code === 200) {
+          const j = JSON.parse(body);
+          if (j.success && j.token) {
+            Logger.log('   Token recuperato dal master: SI ✅');
+          } else {
+            Logger.log('   Token recuperato: NO - ' + (j.error || 'risposta inattesa'));
+            if ((j.error || '').indexOf('non trovato') >= 0) {
+              Logger.log('   → Esegui "Autorizza" dal menu e completa OAuth. Loggati come: ' + testEmail);
+            }
+          }
+        } else if (code === 302) {
+          Logger.log('   ⚠️ HTTP 302: WEB_APP_EXEC richiede login. Serve deployment con "Chiunque".');
+          Logger.log('      "Chiunque" appare solo con "Esegui come: ME". Soluzione: 2 deployment.');
+          Logger.log('      Deploy 1 (ME + Chiunque) per getToken/startAuth. Deploy 2 (Utente + Chiunque con account) per callback.');
+        } else {
+          Logger.log('   Errore: master ha risposto ' + code);
+        }
+      } catch (e2) {
+        Logger.log('   Errore fetch: ' + (e2.message || e2.toString()));
+      }
+    }
+  }
+  
+  Logger.log('\n========================================');
+  Logger.log('COPIA QUESTO OUTPUT E INCOLLALO IN SALESFORCE');
+  Logger.log('Callback URL da configurare:');
+  Logger.log(redirectUri);
+  Logger.log('========================================');
 }

@@ -1,0 +1,95 @@
+---
+description: Salesforce deploy workflow with mandatory GitHub/DEV/PROD alignment
+globs: force-app/**/*, mdapi/**/*, .cursor/rules/**/*
+alwaysApply: true
+---
+
+# Regole obbligatorie deploy Salesforce (DEV/PROD)
+
+Queste regole valgono sempre, senza che l'utente debba richiederlo esplicitamente.
+
+## 1) Prima di ogni modifica: allineamento locale con GitHub
+
+Prima di toccare codice o metadata:
+
+1. Verificare branch corrente e stato working tree.
+2. Fare fetch remoto.
+3. Verificare se il branch locale e' allineato al tracking branch remoto.
+4. Se non e' allineato, evidenziare differenze e riallineare (`pull --rebase` o strategia concordata).
+
+Comandi tipici:
+```bash
+git status -sb
+git fetch --all --prune
+git branch -vv
+git log --oneline --decorate --graph --left-right HEAD...@{u}
+git diff --stat HEAD...@{u}
+```
+
+## 2) Ogni deploy DEV deve allineare GitHub
+
+Ogni volta che si deploya in DEV, il repository GitHub deve essere coerente con cio' che viene deployato.
+
+Flusso obbligatorio:
+1. Verifica allineamento locale ↔ GitHub (come sopra).
+2. Deploy su DEV.
+3. Verifica post-deploy.
+4. Aggiornamento branch remoto GitHub (se ci sono cambi locali relativi al deploy) in modo che GitHub rappresenti lo stato deployato.
+
+Org DEV: `smaccagno@lab00.dev`
+
+Comando deploy file modificati:
+```bash
+sf project deploy start -d force-app/main/default/classes/<ClasseModificata>.cls -d force-app/main/default/lwc/<ComponenteModificato> --target-org smaccagno@lab00.dev --wait 15
+```
+
+Comando deploy completo:
+```bash
+sf project deploy start -d force-app/main/default --target-org smaccagno@lab00.dev --wait 15
+```
+
+Se il deploy fallisce per job async in corso:
+```bash
+sf apex run --file /dev/stdin --target-org smaccagno@lab00.dev <<'APEX'
+for (AsyncApexJob j : [SELECT Id FROM AsyncApexJob WHERE Status IN ('Queued','Preparing','Processing','Holding')]) {
+  System.abortJob(j.Id);
+}
+APEX
+```
+Poi riprovare il deploy.
+
+## 3) Verifica allineamento triplo: GitHub, locale e DEV
+
+La verifica di allineamento deve includere sempre:
+- locale vs GitHub
+- DEV vs GitHub
+- DEV vs locale
+
+Se ci sono divergenze:
+1. evidenziare chiaramente le differenze trovate;
+2. proporre e applicare il riallineamento completo;
+3. confermare a fine procedura che tutti e tre gli stati sono coerenti.
+
+Per il confronto DEV vs repository, usare retrieval mirato o deploy validate/check-only e confronto metadata quando utile.
+
+## 4) Funzione su richiesta: diff GitHub vs PROD
+
+Questa operazione **non e' automatica**. Va eseguita solo quando richiesta esplicita dell'utente.
+
+Quando richiesta:
+1. cercare differenze tra repository GitHub e org PROD;
+2. elencare in modo chiaro le differenze;
+3. chiedere conferma esplicita prima di qualsiasi allineamento verso PROD.
+
+## 5) PROD su branch dedicato e sempre allineato
+
+I deploy PROD devono usare un branch Git dedicato (default: `prod`, salvo diverso accordo esplicito).
+
+Flusso obbligatorio deploy PROD:
+1. checkout branch PROD;
+2. sync branch PROD con remoto;
+3. verifica differenze con stato da deployare;
+4. deploy su PROD;
+5. update del branch PROD remoto per riflettere esattamente il deploy PROD.
+
+Non deployare su PROD da branch non dedicati.
