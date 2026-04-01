@@ -297,6 +297,7 @@
             </div>
 
             <!-- Tabella tipo Excel -->
+            <template if:false={isSorrisoSospeso}>
             <div class="excel-table-container">
                 <table class="excel-table" role="grid">
                     <thead>
@@ -998,6 +999,357 @@
                     </tbody>
                 </table>
             </div>
+            </template>
+
+            <template if:true={isSorrisoSospeso}>
+            <div class="excel-table-container">
+                <table class="excel-table" role="grid">
+                    <thead>
+                        <tr>
+                            <th class="row-number-header">#</th>
+                            <th class="editable-cell-header">Partner</th>
+                            <th class="editable-cell-header">Data Fattura</th>
+                            <th class="editable-cell-header">Data di Competenza Fattura</th>
+                            <th class="editable-cell-header">Numero Fattura</th>
+                            <th class="editable-cell-header">Tipologia</th>
+                            <th class="editable-cell-header">Fornitore</th>
+                            <th class="editable-cell-header">Nome spettacolo</th>
+                            <th class="editable-cell-header">Tipologia Spettacolo</th>
+                            <th class="editable-cell-header">Data Spettacolo</th>
+                            <th class="editable-cell-header">Ora Spettacolo</th>
+                            <th class="editable-cell-header">Fattura Non Disponibile</th>
+                            <th class="editable-cell-header">Quantita beneficiari Totale</th>
+                            <th class="editable-cell-header">Valore Commerciale Totale (EUR)</th>
+                            <th class="editable-cell-header">Valore Scontato Totale (EUR)</th>
+                            <th class="editable-cell-header">Comune</th>
+                            <th class="editable-cell-header">Provincia</th>
+                            <th class="editable-cell-header">Regione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="row" for:index="rowIndex">
+                            <tr key={row.id}
+                                data-row-index={rowIndex}
+                                class={row.selectedClass}
+                                onkeydown={handleKeyDown}>
+                                <td class="row-number-cell"
+                                    data-row-index={rowIndex}
+                                    onclick={selectRow}>
+                                    <div class="row-number-container">
+                                        <span>{row.rowNumber}</span>
+                                        <template if:true={row.hasErrors}>
+                                            <div class="invoice-number-error-message">Questa riga contiene errori</div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="editable-cell dropdown-cell"
+                                    data-field="partner"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.partner}
+                                    <template if:true={row.partner}>
+                                        <button type="button" class="cell-clear-button" data-field="partner" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.partner}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell"
+                                    data-field="invoiceDate"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.invoiceDate}
+                                    <template if:true={row.invoiceDate}>
+                                        <button type="button" class="cell-clear-button" data-field="invoiceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell"
+                                    data-field="competenceDate"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.competenceDate}
+                                    <template if:true={row.competenceDate}>
+                                        <button type="button" class="cell-clear-button" data-field="competenceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell {row.validationErrors.invoiceNumber ? 'invalid-cell' : ''}"
+                                    data-field="invoiceNumber"
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellFocus}>
+                                    <div class="invoice-number-container">
+                                        <template if:false={row.isEditingInvoiceNumber}>
+                                            <span class="invoice-number-value">{row.invoiceNumber}</span>
+                                            <template if:true={row.validationErrors.invoiceNumber}>
+                                                <div class="invoice-number-error-message">Numero fattura gia presente a sistema, verificare</div>
+                                            </template>
+                                            <template if:true={row.invoiceNumber}>
+                                                <button type="button" class="cell-clear-button" data-field="invoiceNumber" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingInvoiceNumber}>
+                                            <div class="invoice-number-edit-box">
+                                                <input type="text" class="invoice-number-edit-input" value={invoiceNumberModalValue} oninput={handleInvoiceNumberModalInput} onkeydown={handleInvoiceNumberModalKeyDown} onclick={handleInvoiceNumberEditBoxClick} placeholder="Inserisci il numero fattura" />
+                                                <button type="button" class="invoice-number-confirm-button" onclick={confirmInvoiceNumberModal} title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button type="button" class="invoice-number-cancel-button" onclick={closeInvoiceNumberModal} title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        <template if:true={row.isValidating.invoiceNumber}>
+                                            <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.tipologia ? 'invalid-cell' : ''}"
+                                    data-field="tipologia"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.tipologia}
+                                    <template if:true={row.tipologia}>
+                                        <button type="button" class="cell-clear-button" data-field="tipologia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.tipologia}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.fornitore ? 'invalid-cell' : ''}"
+                                    data-field="fornitore"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.fornitore}
+                                    <template if:true={row.fornitore}>
+                                        <button type="button" class="cell-clear-button" data-field="fornitore" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.fornitore}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell"
+                                    data-field="nomeSpettacolo"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.nomeSpettacolo}
+                                    <template if:true={row.nomeSpettacolo}>
+                                        <button type="button" class="cell-clear-button" data-field="nomeSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell {row.validationErrors.tipologiaSpettacolo ? 'invalid-cell' : ''}"
+                                    data-field="tipologiaSpettacolo"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDropdown}>
+                                    {row.tipologiaSpettacolo}
+                                    <template if:true={row.tipologiaSpettacolo}>
+                                        <button type="button" class="cell-clear-button" data-field="tipologiaSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.tipologiaSpettacolo}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell date-cell"
+                                    data-field="dataSpettacolo"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}
+                                    onclick={openDatePicker}>
+                                    {row.dataSpettacolo}
+                                    <template if:true={row.dataSpettacolo}>
+                                        <button type="button" class="cell-clear-button" data-field="dataSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell"
+                                    data-field="oraSpettacolo"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.oraSpettacolo}
+                                    <template if:true={row.oraSpettacolo}>
+                                        <button type="button" class="cell-clear-button" data-field="oraSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell checkbox-cell"
+                                    data-field="noInvoiceAvailable"
+                                    data-row-index={rowIndex}
+                                    onclick={toggleCheckbox}>
+                                    <template if:true={row.noInvoiceAvailable}>
+                                        <span class="checkbox-checked">✓</span>
+                                    </template>
+                                    <template if:false={row.noInvoiceAvailable}>
+                                        <span class="checkbox-unchecked"></span>
+                                    </template>
+                                </td>
+                                <td class="editable-cell"
+                                    data-field="numeroVisite"
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingNumeroVisite}>
+                                            <span class="numeric-field-value">{row.numeroVisite}</span>
+                                            <template if:true={row.hasNumeroVisite}>
+                                                <button type="button" class="cell-clear-button" data-field="numeroVisite" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingNumeroVisite}>
+                                            <div class="numeric-field-edit-box">
+                                                <input type="text" class="numeric-field-edit-input" value={numeroVisiteModalValue} data-field="numeroVisite" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} placeholder="Inserisci la quantita beneficiari" />
+                                                <button type="button" class="numeric-field-confirm-button" data-field="numeroVisite" onclick={handleNumericFieldConfirmClick} title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button type="button" class="numeric-field-cancel-button" data-field="numeroVisite" onclick={handleNumericFieldCancelClick} title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="editable-cell"
+                                    data-field="amount"
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingAmount}>
+                                            <span class="numeric-field-value">{row.amount}</span>
+                                            <template if:true={row.hasAmount}>
+                                                <button type="button" class="cell-clear-button" data-field="amount" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingAmount}>
+                                            <div class="numeric-field-edit-box">
+                                                <input type="text" class="numeric-field-edit-input" value={amountModalValue} data-field="amount" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} placeholder="Inserisci il valore commerciale totale" />
+                                                <button type="button" class="numeric-field-confirm-button" data-field="amount" onclick={handleNumericFieldConfirmClick} title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button type="button" class="numeric-field-cancel-button" data-field="amount" onclick={handleNumericFieldCancelClick} title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="editable-cell"
+                                    data-field="valoreScontato"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.valoreScontato}
+                                    <template if:true={row.hasValoreScontato}>
+                                        <button type="button" class="cell-clear-button" data-field="valoreScontato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell"
+                                    data-field="comune"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.comune}
+                                    <template if:true={row.comune}>
+                                        <button type="button" class="cell-clear-button" data-field="comune" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.comune}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell"
+                                    data-field="provincia"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.provincia}
+                                    <template if:true={row.provincia}>
+                                        <button type="button" class="cell-clear-button" data-field="provincia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.provincia}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                                <td class="editable-cell dropdown-cell"
+                                    data-field="regione"
+                                    data-row-index={rowIndex}
+                                    contenteditable="true"
+                                    onclick={openDropdown}
+                                    onblur={handleCellBlur}
+                                    onfocus={handleCellFocus}
+                                    oninput={handleCellInput}
+                                    onkeydown={handleKeyDown}
+                                    onpaste={handlePaste}>
+                                    {row.regione}
+                                    <template if:true={row.regione}>
+                                        <button type="button" class="cell-clear-button" data-field="regione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    </template>
+                                    <template if:true={row.isValidating.regione}>
+                                        <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            </template>
 
             <!-- Dropdown Menu -->
             <template if:true={isDropdownOpen}>

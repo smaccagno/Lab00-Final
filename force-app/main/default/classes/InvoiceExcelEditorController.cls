@@ -1355,6 +1355,29 @@ public with sharing class InvoiceExcelEditorController {
                 }
             }
         }
+
+        // Fornitore/Struttura (Structure__c) - lookup Account RecordType Structure
+        if (invoiceData.containsKey('fornitoreId') && invoiceData.get('fornitoreId') != null) {
+            String fornitoreIdStr = String.valueOf(invoiceData.get('fornitoreId')).trim();
+            if (String.isNotBlank(fornitoreIdStr) && fornitoreIdStr != 'null') {
+                try {
+                    invoice.Structure__c = Id.valueOf(fornitoreIdStr);
+                } catch (Exception e) {
+                    System.debug('Errore nel parsing del fornitoreId: ' + e.getMessage());
+                }
+            }
+        }
+
+        // Geografia fattura (City/Province/Region) per compatibilità con caricamenti Sorriso Sospeso
+        if (invoiceData.containsKey('comune') && invoiceData.get('comune') != null) {
+            invoice.City__c = String.valueOf(invoiceData.get('comune'));
+        }
+        if (invoiceData.containsKey('provincia') && invoiceData.get('provincia') != null) {
+            invoice.Province__c = String.valueOf(invoiceData.get('provincia'));
+        }
+        if (invoiceData.containsKey('regione') && invoiceData.get('regione') != null) {
+            invoice.Region__c = String.valueOf(invoiceData.get('regione'));
+        }
         
         // Budget__c - obbligatorio, seguendo la logica del flow Insert_a_new_Invoice
         Id budgetId = getBudgetForInvoice(
@@ -1474,6 +1497,25 @@ public with sharing class InvoiceExcelEditorController {
             throw new AuraHandledException('Errore nel recupero dei programmi: ' + e.getMessage());
         }
     }
+
+    @AuraEnabled(cacheable=true)
+    public static String getProgramNameById(String programId) {
+        try {
+            if (String.isBlank(programId)) {
+                return null;
+            }
+            List<Program> programs = [
+                SELECT Name
+                FROM Program
+                WHERE Id = :programId
+                LIMIT 1
+            ];
+            return programs.isEmpty() ? null : programs[0].Name;
+        } catch (Exception e) {
+            System.debug('Errore nel recupero del nome programma: ' + e.getMessage());
+            return null;
+        }
+    }
     
     /**
      * Recupera i partner (donatori) con Program Enrollment attivo per un programma
@@ -1556,6 +1598,63 @@ public with sharing class InvoiceExcelEditorController {
         } catch (Exception e) {
             System.debug('Errore nel recupero di tutti i partner: ' + e.getMessage());
             throw new AuraHandledException('Errore nel recupero dei partner: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getTicketTypeValues() {
+        List<String> values = new List<String>();
+        try {
+            for (Schema.PicklistEntry entry : Ticket__c.Type__c.getDescribe().getPicklistValues()) {
+                values.add(entry.getLabel());
+            }
+            values.sort();
+            return values;
+        } catch (Exception e) {
+            System.debug('Errore nel recupero tipologie Ticket__c: ' + e.getMessage());
+            return values;
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getShowTypeValues() {
+        List<String> values = new List<String>();
+        try {
+            for (Schema.PicklistEntry entry : Show__c.Type__c.getDescribe().getPicklistValues()) {
+                values.add(entry.getLabel());
+            }
+            values.sort();
+            return values;
+        } catch (Exception e) {
+            System.debug('Errore nel recupero tipologie Show__c: ' + e.getMessage());
+            return values;
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Account> getStructureSuppliers() {
+        try {
+            List<RecordType> structureRT = [
+                SELECT Id
+                FROM RecordType
+                WHERE SObjectType = 'Account'
+                AND Name = 'Structure'
+                LIMIT 1
+            ];
+            if (structureRT.isEmpty()) {
+                return new List<Account>();
+            }
+            return [
+                SELECT Id, Name
+                FROM Account
+                WHERE RecordTypeId = :structureRT[0].Id
+                AND Name != null
+                ORDER BY Name ASC
+                LIMIT 10000
+            ];
+        } catch (Exception e) {
+            System.debug('Errore nel recupero fornitori Structure: ' + e.getMessage());
+            return new List<Account>();
         }
     }
     
@@ -1888,6 +1987,12 @@ public with sharing class InvoiceExcelEditorController {
      * Verifica se ci sono dati per le visite mediche
      */
     private static Boolean hasVisitData(Map<String, Object> invoiceData) {
+        if (invoiceData != null && invoiceData.containsKey('skipVisitCreation')) {
+            Object skipVisitObj = invoiceData.get('skipVisitCreation');
+            if (skipVisitObj != null && Boolean.valueOf(String.valueOf(skipVisitObj))) {
+                return false;
+            }
+        }
         return (invoiceData.containsKey('tipoVisita') && invoiceData.get('tipoVisita') != null) ||
                (invoiceData.containsKey('beneficiaryType') && invoiceData.get('beneficiaryType') != null) ||
                (invoiceData.containsKey('numeroVisite') && invoiceData.get('numeroVisite') != null) ||

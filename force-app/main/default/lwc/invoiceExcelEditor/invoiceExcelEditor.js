@@ -18,6 +18,10 @@ import getAvailableBudgetsForProgram from '@salesforce/apex/InvoiceExcelEditorCo
 import checkBudgetForProgram from '@salesforce/apex/InvoiceExcelEditorController.checkBudgetForProgram';
 import getPartnersForProgram from '@salesforce/apex/InvoiceExcelEditorController.getPartnersForProgram';
 import getAllPartners from '@salesforce/apex/InvoiceExcelEditorController.getAllPartners';
+import getProgramNameById from '@salesforce/apex/InvoiceExcelEditorController.getProgramNameById';
+import getTicketTypeValues from '@salesforce/apex/InvoiceExcelEditorController.getTicketTypeValues';
+import getShowTypeValues from '@salesforce/apex/InvoiceExcelEditorController.getShowTypeValues';
+import getStructureSuppliers from '@salesforce/apex/InvoiceExcelEditorController.getStructureSuppliers';
 
 export default class InvoiceExcelEditor extends NavigationMixin(LightningElement) {
     @track rows = [];
@@ -36,6 +40,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     @track nonProfits = []; // Lista di oggetti {Name, Ente_Categoria__c}
     @track categoryOptions = []; // Opzioni per le categorie degli enti no profit
     @track partners = []; // Lista di partner (donatori) con Program Enrollment attivo per il programma selezionato
+    @track ticketTypeOptions = [];
+    @track showTypeOptions = [];
+    @track structureSuppliers = [];
     nextRowId = 1;
     selectedRowIndex = -1;
     isPasting = false;
@@ -105,6 +112,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     get isConfigurationComplete() {
         return Boolean(this.selectedProgramId && this.selectedPartnerBudgetId);
+    }
+
+    get isTempoSospeso() {
+        return Boolean(
+            this.selectedProgramName &&
+            this.selectedProgramName.toLowerCase().includes('tempo sospeso')
+        );
+    }
+
+    get isSorrisoSospeso() {
+        return Boolean(
+            this.selectedProgramName &&
+            this.selectedProgramName.toLowerCase().includes('sorriso sospeso')
+        );
     }
 
 
@@ -286,6 +307,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     isRowEmpty(row) {
+        if (this.isSorrisoSospeso) {
+            return !row.partner &&
+                !row.invoiceDate &&
+                !row.competenceDate &&
+                !row.invoiceNumber &&
+                !row.tipologia &&
+                !row.fornitore &&
+                !row.nomeSpettacolo &&
+                !row.tipologiaSpettacolo &&
+                !row.dataSpettacolo &&
+                !row.oraSpettacolo &&
+                !row.noInvoiceAvailable &&
+                !row.numeroVisite &&
+                !row.amount &&
+                !row.valoreScontato &&
+                !row.comune &&
+                !row.provincia &&
+                !row.regione;
+        }
         return !row.partner &&
                !row.invoiceDate && 
                !row.competenceDate && 
@@ -312,6 +352,78 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             return false;
         }
         return Object.values(row.validationErrors).some(error => error === true);
+    }
+
+    getCurrentFieldOrder() {
+        if (this.isSorrisoSospeso) {
+            return [
+                'partner',
+                'invoiceDate',
+                'competenceDate',
+                'invoiceNumber',
+                'tipologia',
+                'fornitore',
+                'nomeSpettacolo',
+                'tipologiaSpettacolo',
+                'dataSpettacolo',
+                'oraSpettacolo',
+                'noInvoiceAvailable',
+                'numeroVisite',
+                'amount',
+                'valoreScontato',
+                'comune',
+                'provincia',
+                'regione'
+            ];
+        }
+
+        return [
+            'partner',
+            'invoiceDate',
+            'competenceDate',
+            'invoiceNumber',
+            'medicalCenter',
+            'noProfit',
+            'noProfitCategory',
+            'isFree',
+            'noInvoiceAvailable',
+            'tipoVisita',
+            'beneficiaryType',
+            'numeroVisite',
+            'totaleMinuti',
+            'amount',
+            'dataVisita',
+            'comune',
+            'provincia',
+            'regione'
+        ];
+    }
+
+    getCurrentValidatableFields() {
+        if (this.isSorrisoSospeso) {
+            return [
+                'partner',
+                'tipologia',
+                'fornitore',
+                'tipologiaSpettacolo',
+                'comune',
+                'provincia',
+                'regione',
+                'invoiceNumber'
+            ];
+        }
+        return [
+            'partner',
+            'tipoVisita',
+            'beneficiaryType',
+            'comune',
+            'provincia',
+            'regione',
+            'medicalCenter',
+            'noProfit',
+            'noProfitCategory',
+            'invoiceNumber'
+        ];
     }
 
     /**
@@ -408,12 +520,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         } else if (field === 'isFree' || field === 'noInvoiceAvailable') {
             // Per i checkbox, imposta a false
             row[field] = false;
-        } else if (field === 'partnerId') {
-            // Per partnerId, cancella anche partner
+        } else if (field === 'partnerId' || field === 'partner') {
+            // Per partnerId/partner, cancella entrambi
             row.partner = '';
             row.partnerId = '';
             if (row.validationErrors) {
                 row.validationErrors.partner = false;
+            }
+        } else if (field === 'fornitoreId' || field === 'fornitore') {
+            row.fornitore = '';
+            row.fornitoreId = '';
+            if (row.validationErrors) {
+                row.validationErrors.fornitore = false;
             }
         } else if (field === 'tipoVisitaId') {
             // Per tipoVisitaId, cancella anche tipoVisita
@@ -477,6 +595,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             competenceDate: '',
             invoiceNumber: '',
             previousInvoiceNumber: '', // Valore precedente del numero fattura (prima della generazione automatica)
+            // Campi Sorriso Sospeso
+            tipologia: '',
+            fornitore: '',
+            fornitoreId: '',
+            nomeSpettacolo: '',
+            tipologiaSpettacolo: '',
+            dataSpettacolo: '',
+            oraSpettacolo: '',
+            valoreScontato: '',
             medicalCenter: '',
             noProfit: '',
             noProfitCategory: '',
@@ -502,6 +629,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Stato validazione campi
             validationErrors: {
                 partner: false,
+                tipologia: false,
+                fornitore: false,
+                tipologiaSpettacolo: false,
                 tipoVisita: false,
                 beneficiaryType: false,
                 comune: false,
@@ -550,6 +680,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(newRow, 'hasValoreScontato', {
+            get: function() {
+                return this.valoreScontato !== null && this.valoreScontato !== undefined && this.valoreScontato !== '';
+            },
+            enumerable: true,
+            configurable: true
+        });
         this.rows = [...this.rows, newRow];
         
         // Formatta le date dopo l'aggiunta della riga (con un timeout più lungo per assicurarsi che il DOM sia pronto)
@@ -563,7 +700,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     formatDatesInTable() {
         this.rows.forEach((row, rowIndex) => {
-            ['invoiceDate', 'competenceDate', 'dataVisita'].forEach(field => {
+            ['invoiceDate', 'competenceDate', 'dataVisita', 'dataSpettacolo'].forEach(field => {
                 const cell = this.template.querySelector(
                     `td[data-field="${field}"][data-row-index="${rowIndex}"]`
                 );
@@ -693,6 +830,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 enumerable: true,
                 configurable: true
             });
+            Object.defineProperty(updatedRow, 'hasValoreScontato', {
+                get: function() {
+                    return this.valoreScontato !== null && this.valoreScontato !== undefined && this.valoreScontato !== '';
+                },
+                enumerable: true,
+                configurable: true
+            });
             Object.defineProperty(updatedRow, 'hasPartnerContent', {
                 get: function() { return this.partner && this.partner.trim() !== ''; },
                 enumerable: true, configurable: true
@@ -707,18 +851,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (!this.rows || this.rows.length === 0) return;
 
         // Lista di tutti i campi validabili per assicurarsi di aggiornare tutti i bordi
-        const validatableFields = [
-            'partner',
-            'tipoVisita',
-            'beneficiaryType',
-            'comune',
-            'provincia',
-            'regione',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory',
-            'invoiceNumber'
-        ];
+        const validatableFields = this.getCurrentValidatableFields();
 
         this.rows.forEach((row, rowIndex) => {
             // Aggiorna tutti i campi validabili, non solo quelli con errori già registrati
@@ -1467,7 +1600,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const row = updatedRows[rowIndex];
 
         // Gestione dei diversi tipi di campo (stessa logica di handleCellBlur)
-        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
             // Validazione data
             const dateValue = this.parseDate(value);
             if (dateValue) {
@@ -1485,7 +1618,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Validazione numeri interi
             const numValue = this.parseInteger(value);
             row[field] = numValue !== null ? numValue : value;
-        } else if (field === 'amount') {
+        } else if (field === 'amount' || field === 'valoreScontato') {
             // Validazione currency (rimuove simbolo €)
             const currencyValue = this.parseCurrency(value);
             row[field] = currencyValue !== null ? currencyValue : value;
@@ -1497,23 +1630,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const oldValueHadError = row.validationErrors && row.validationErrors[field] === true;
             row[field] = exactValue;
             
-            // Per il campo partner, imposta anche partnerId se trovato
-            if (field === 'partner' && exactValue) {
-                const partner = this.partners.find(
-                    p => p.Name && p.Name.toLowerCase() === exactValue.toLowerCase()
-                );
-                if (partner && partner.Id) {
-                    row.partnerId = partner.Id;
-                } else {
-                    const partnerOriginal = this.partners.find(
-                        p => p.Name && p.Name.toLowerCase() === value.trim().toLowerCase()
-                    );
-                    if (partnerOriginal && partnerOriginal.Id) {
-                        row.partnerId = partnerOriginal.Id;
-                    } else {
-                        row.partnerId = null;
-                    }
-                }
+            if (exactValue && (field === 'partner' || field === 'fornitore')) {
+                this.syncLookupId(row, field, exactValue, value);
             }
             
             // Per comune, provincia e regione, NON fare correzione automatica delle altre celle
@@ -1672,7 +1790,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         
         // Formatta le date dopo la modifica
-        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
             setTimeout(() => {
                 this.formatDatesInTable();
             }, 0);
@@ -1746,7 +1864,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const row = updatedRows[rowIndex];
 
             // Gestione dei diversi tipi di campo
-            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
                 // Validazione data
                 const dateValue = this.parseDate(value);
                 if (dateValue) {
@@ -1765,7 +1883,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Validazione numeri interi
                 const numValue = this.parseInteger(value);
                 row[field] = numValue !== null ? numValue : value;
-            } else if (field === 'amount') {
+            } else if (field === 'amount' || field === 'valoreScontato') {
                 // Validazione currency (rimuove simbolo €)
                 const currencyValue = this.parseCurrency(value);
                 row[field] = currencyValue !== null ? currencyValue : value;
@@ -1778,27 +1896,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const oldValueHadError = row.validationErrors && row.validationErrors[field] === true;
                 row[field] = exactValue;
                 
-                // Per il campo partner, imposta anche partnerId se trovato
-                if (field === 'partner' && exactValue) {
-                    const partner = this.partners.find(
-                        p => p.Name && p.Name.toLowerCase() === exactValue.toLowerCase()
-                    );
-                    if (partner && partner.Id) {
-                        row.partnerId = partner.Id;
-                        console.log('[handleCellChange] Partner trovato durante modifica manuale:', partner.Name, 'ID:', partner.Id);
-                    } else {
-                        // Se non trovato con exactValue, prova con il valore originale
-                        const partnerOriginal = this.partners.find(
-                            p => p.Name && p.Name.toLowerCase() === value.trim().toLowerCase()
-                        );
-                        if (partnerOriginal && partnerOriginal.Id) {
-                            row.partnerId = partnerOriginal.Id;
-                            console.log('[handleCellChange] Partner trovato durante modifica manuale (con valore originale):', partnerOriginal.Name, 'ID:', partnerOriginal.Id);
-                        } else {
-                            row.partnerId = null;
-                            console.log('[handleCellChange] Partner NON trovato durante modifica manuale per valore:', exactValue);
-                        }
-                    }
+                if (exactValue && (field === 'partner' || field === 'fornitore')) {
+                    this.syncLookupId(row, field, exactValue, value);
                 }
                 
                 // Per comune, provincia e regione, NON fare correzione automatica delle altre celle
@@ -1962,7 +2061,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Formatta le date dopo la modifica
-            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
                 setTimeout(() => {
                     this.formatDatesInTable();
                 }, 0);
@@ -2154,26 +2253,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     async pasteMultipleRows(lines, startRowIndex, startColIndex) {
-        const fieldOrder = [
-            'partner',
-            'invoiceDate',
-            'competenceDate', 
-            'invoiceNumber',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory',
-            'isFree',
-            'noInvoiceAvailable',
-            'tipoVisita',
-            'beneficiaryType',
-            'numeroVisite',
-            'totaleMinuti',
-            'amount',
-            'dataVisita',
-            'comune',
-            'provincia',
-            'regione'
-        ];
+        const fieldOrder = this.getCurrentFieldOrder();
 
         // Assicurati di avere abbastanza righe
         const neededRows = startRowIndex + lines.length;
@@ -2202,7 +2282,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     
                     if (field === 'isFree' || field === 'noInvoiceAvailable') {
                         updatedRows[rowIndex][field] = this.parseBoolean(trimmedValue);
-                    } else if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+                    } else if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
                         // Prova sempre a parsare la data, anche se è già in formato visualizzato
                         let parsedDate = this.parseDate(trimmedValue);
                         if (!parsedDate && trimmedValue) {
@@ -2218,7 +2298,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     } else if (field === 'numeroVisite' || field === 'totaleMinuti') {
                         const numValue = this.parseInteger(trimmedValue);
                         updatedRows[rowIndex][field] = numValue !== null ? numValue : trimmedValue;
-                    } else if (field === 'amount') {
+                    } else if (field === 'amount' || field === 'valoreScontato') {
                         // Validazione currency (rimuove simbolo €)
                         const currencyValue = this.parseCurrency(trimmedValue);
                         updatedRows[rowIndex][field] = currencyValue !== null ? currencyValue : trimmedValue;
@@ -2227,8 +2307,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         const exactValue = this.getExactValueFromDataset(field, trimmedValue);
                         updatedRows[rowIndex][field] = exactValue;
                         
-                        // Per il campo partner, imposta anche partnerId se trovato
-                        if (field === 'partner' && exactValue) {
+                        if ((field === 'partner' || field === 'fornitore') && exactValue) {
                             console.log('[pasteMultipleRows] Cercando partner per valore:', exactValue);
                             console.log('[pasteMultipleRows] Numero partner disponibili:', this.partners ? this.partners.length : 0);
                             if (this.partners && this.partners.length > 0) {
@@ -2238,42 +2317,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 console.log('[pasteMultipleRows] Partner che contengono "Sorgenia":', sorgeniaPartners.map(p => ({ Name: p.Name, Id: p.Id })));
                             }
                             
-                            // Cerca il partner nella lista usando il valore esatto trovato
-                            const partner = this.partners.find(
-                                p => p.Name && p.Name.toLowerCase() === exactValue.toLowerCase()
-                            );
-                            console.log('[pasteMultipleRows] Partner trovato con exactValue:', partner ? { Name: partner.Name, Id: partner.Id } : 'null');
-                            
-                            if (partner && partner.Id) {
-                                updatedRows[rowIndex].partnerId = partner.Id;
-                                console.log('[pasteMultipleRows] Partner trovato durante paste:', partner.Name, 'ID:', partner.Id);
-                            } else {
-                                // Se non trovato con exactValue, prova con trimmedValue originale
-                                const partnerOriginal = this.partners.find(
-                                    p => p.Name && p.Name.toLowerCase() === trimmedValue.toLowerCase()
-                                );
-                                console.log('[pasteMultipleRows] Partner trovato con trimmedValue:', partnerOriginal ? { Name: partnerOriginal.Name, Id: partnerOriginal.Id } : 'null');
-                                
-                                if (partnerOriginal && partnerOriginal.Id) {
-                                    updatedRows[rowIndex].partnerId = partnerOriginal.Id;
-                                    console.log('[pasteMultipleRows] Partner trovato durante paste (con valore originale):', partnerOriginal.Name, 'ID:', partnerOriginal.Id);
-                                } else {
-                                    updatedRows[rowIndex].partnerId = '';
-                                    console.log('[pasteMultipleRows] Partner NON trovato durante paste per valore:', exactValue || trimmedValue);
-                                    console.log('[pasteMultipleRows] Tentativo di match con tutti i partner disponibili:');
-                                    if (this.partners) {
-                                        this.partners.forEach(p => {
-                                            if (p.Name) {
-                                                const nameLower = p.Name.toLowerCase();
-                                                const searchLower = (exactValue || trimmedValue || '').toLowerCase();
-                                                if (nameLower.includes(searchLower) || searchLower.includes(nameLower)) {
-                                                    console.log('[pasteMultipleRows] Match parziale trovato:', p.Name, 'vs', exactValue || trimmedValue);
-                                                }
-                                            }
-                                        });
-                                    }
-                                }
-                            }
+                            this.syncLookupId(updatedRows[rowIndex], field, exactValue, trimmedValue);
                         }
                     }
                     
@@ -2283,7 +2327,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             });
             
             // Dopo aver processato tutte le colonne della riga, popola automaticamente la categoria se necessario
-            if (updatedRows[rowIndex].noProfit && updatedRows[rowIndex].noProfit.trim() !== '') {
+            if (!this.isSorrisoSospeso && updatedRows[rowIndex].noProfit && updatedRows[rowIndex].noProfit.trim() !== '') {
                 const enteValue = updatedRows[rowIndex].noProfit.trim();
                 const matchingEnte = this.nonProfits && this.nonProfits.length > 0 
                     ? this.nonProfits.find(ente => 
@@ -2309,7 +2353,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                     this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory || '');
                 }
-            } else if (updatedRows[rowIndex].noProfitCategory && updatedRows[rowIndex].noProfitCategory.trim() !== '') {
+            } else if (!this.isSorrisoSospeso && updatedRows[rowIndex].noProfitCategory && updatedRows[rowIndex].noProfitCategory.trim() !== '') {
                 // Se c'è una categoria ma non c'è ente, valida comunque
                 this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory);
             }
@@ -2317,7 +2361,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Se isFree o noInvoiceAvailable è true (da paste Excel), applica override partner e numero fattura come nel toggle manuale
             const isFree = !!updatedRows[rowIndex].isFree;
             const noInvoiceAvailable = !!updatedRows[rowIndex].noInvoiceAvailable;
-            if (isFree || noInvoiceAvailable) {
+            if (!this.isSorrisoSospeso && (isFree || noInvoiceAvailable)) {
                 // Override partner: quando isFree è true, imposta "Prestazioni Gratuite"
                 if (isFree) {
                     if (!updatedRows[rowIndex].previousPartner && updatedRows[rowIndex].partner) {
@@ -2362,7 +2406,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const rowElement = this.template.querySelector(`tr[data-row-index="${rowIdx}"]`);
             if (rowElement) {
                 // Aggiorna campi normali (inclusi partner e invoiceNumber per override da flag Gratuita/Non disponibile)
-                ['partner', 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory', 'invoiceNumber'].forEach(field => {
+                const fieldsToRefresh = this.isSorrisoSospeso
+                    ? ['partner', 'tipologia', 'fornitore', 'tipologiaSpettacolo', 'nomeSpettacolo', 'oraSpettacolo', 'comune', 'provincia', 'regione', 'invoiceNumber', 'valoreScontato']
+                    : ['partner', 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory', 'invoiceNumber'];
+                fieldsToRefresh.forEach(field => {
                     const cell = rowElement.querySelector(`td[data-field="${field}"]`);
                     if (cell && row[field] !== undefined) {
                         // Per invoiceNumber, aggiorna lo span interno se presente
@@ -2388,7 +2435,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 });
                 
                 // Formatta le date per la visualizzazione
-                ['invoiceDate', 'competenceDate', 'dataVisita'].forEach(field => {
+                ['invoiceDate', 'competenceDate', 'dataVisita', 'dataSpettacolo'].forEach(field => {
                     const cell = rowElement.querySelector(`td[data-field="${field}"]`);
                     if (cell) {
                         if (row[field]) {
@@ -2425,25 +2472,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     updateCellValue(rowIndex, colIndex, value) {
-        const fieldOrder = [
-            'invoiceDate',
-            'competenceDate',
-            'invoiceNumber', 
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory',
-            'isFree',
-            'noInvoiceAvailable',
-            'tipoVisita',
-            'beneficiaryType',
-            'numeroVisite',
-            'totaleMinuti',
-            'amount',
-            'dataVisita',
-            'comune',
-            'provincia',
-            'regione'
-        ];
+        const fieldOrder = this.getCurrentFieldOrder();
         
         if (colIndex >= 0 && colIndex < fieldOrder.length && rowIndex >= 0 && rowIndex < this.rows.length) {
             const field = fieldOrder[colIndex];
@@ -2451,7 +2480,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             
             if (field === 'isFree' || field === 'noInvoiceAvailable') {
                 updatedRows[rowIndex][field] = this.parseBoolean(value);
-            } else if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            } else if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
                 const parsedDate = this.parseDate(value);
                 if (parsedDate) {
                     updatedRows[rowIndex][field] = parsedDate;
@@ -2461,7 +2490,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             } else if (field === 'numeroVisite' || field === 'totaleMinuti') {
                 const numValue = this.parseInteger(value);
                 updatedRows[rowIndex][field] = numValue !== null ? numValue : value;
-            } else if (field === 'amount') {
+            } else if (field === 'amount' || field === 'valoreScontato') {
                 // Validazione currency (rimuove simbolo €)
                 const currencyValue = this.parseCurrency(value);
                 updatedRows[rowIndex][field] = currencyValue !== null ? currencyValue : value;
@@ -2472,7 +2501,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Se è stato inserito un Ente No Profit, cerca automaticamente la categoria
-            if (field === 'noProfit' && updatedRows[rowIndex][field]) {
+            if (!this.isSorrisoSospeso && field === 'noProfit' && updatedRows[rowIndex][field]) {
                 const matchingEnte = this.nonProfits.find(ente => 
                     ente.Name && ente.Name.toLowerCase() === updatedRows[rowIndex][field].toLowerCase()
                 );
@@ -2495,7 +2524,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Se è stato modificato noProfit, valida anche noProfitCategory
-            if (field === 'noProfit') {
+            if (!this.isSorrisoSospeso && field === 'noProfit') {
                 if (this.hasValidation('noProfitCategory')) {
                     this.setCellValidating(rowIndex, 'noProfitCategory', true);
                 }
@@ -2523,7 +2552,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Formatta le date dopo la modifica
-            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita') {
+            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
                 setTimeout(() => {
                     this.formatDatesInTable();
                 }, 100);
@@ -2532,27 +2561,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     getColumnIndex(field) {
-        const fieldOrder = [
-            'partner',
-            'invoiceDate',
-            'competenceDate',
-            'invoiceNumber',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory',
-            'isFree',
-            'noInvoiceAvailable',
-            'tipoVisita',
-            'beneficiaryType',
-            'numeroVisite',
-            'totaleMinuti',
-            'amount',
-            'dataVisita',
-            'comune',
-            'provincia',
-            'regione'
-        ];
-        return fieldOrder.indexOf(field);
+        return this.getCurrentFieldOrder().indexOf(field);
     }
 
     /**
@@ -3276,6 +3285,42 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
     }
 
+    @wire(getTicketTypeValues)
+    wiredTicketTypeValues({ error, data }) {
+        if (data) {
+            this.ticketTypeOptions = data.map((value) => ({
+                label: value,
+                value: value
+            }));
+        } else if (error) {
+            console.error('Errore nel caricamento tipologie Ticket__c:', error);
+            this.ticketTypeOptions = [];
+        }
+    }
+
+    @wire(getShowTypeValues)
+    wiredShowTypeValues({ error, data }) {
+        if (data) {
+            this.showTypeOptions = data.map((value) => ({
+                label: value,
+                value: value
+            }));
+        } else if (error) {
+            console.error('Errore nel caricamento tipologie Show__c:', error);
+            this.showTypeOptions = [];
+        }
+    }
+
+    @wire(getStructureSuppliers)
+    wiredStructureSuppliers({ error, data }) {
+        if (data) {
+            this.structureSuppliers = Array.isArray(data) ? data : [];
+        } else if (error) {
+            console.error('Errore nel caricamento fornitori Structure:', error);
+            this.structureSuppliers = [];
+        }
+    }
+
     @wire(getComune)
     wiredComuni({ error, data }) {
         if (data) {
@@ -3366,6 +3411,38 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         return cleaned;
     }
 
+    getLookupConfig(field) {
+        if (field === 'partner') {
+            return { dataset: this.partners || [], labelField: 'Name', idField: 'partnerId' };
+        }
+        if (field === 'fornitore') {
+            return { dataset: this.structureSuppliers || [], labelField: 'Name', idField: 'fornitoreId' };
+        }
+        return null;
+    }
+
+    syncLookupId(row, field, exactValue, rawValue = '') {
+        const config = this.getLookupConfig(field);
+        if (!config) return;
+
+        const { dataset, labelField, idField } = config;
+        const normalizedExact = (exactValue || '').toString().trim().toLowerCase();
+        const normalizedRaw = (rawValue || '').toString().trim().toLowerCase();
+
+        const foundByExact = dataset.find(
+            item => item[labelField] && item[labelField].toLowerCase() === normalizedExact
+        );
+        if (foundByExact && foundByExact.Id) {
+            row[idField] = foundByExact.Id;
+            return;
+        }
+
+        const foundByRaw = dataset.find(
+            item => item[labelField] && item[labelField].toLowerCase() === normalizedRaw
+        );
+        row[idField] = foundByRaw && foundByRaw.Id ? foundByRaw.Id : null;
+    }
+
     /**
      * Trova il valore esatto nel dataset dato un valore inserito (case-insensitive)
      * Restituisce il valore esatto se trovato, altrimenti il valore originale
@@ -3390,6 +3467,36 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 );
                 return partner ? partner.Name : trimmedValue;
+
+            case 'tipologia':
+                const tipologia = this.ticketTypeOptions.find(
+                    option => {
+                        if (!option.value) return false;
+                        const cleanedOptionValue = this.cleanValue(option.value);
+                        return cleanedOptionValue.toLowerCase() === lowerValue;
+                    }
+                );
+                return tipologia ? tipologia.value : trimmedValue;
+
+            case 'fornitore':
+                const fornitore = this.structureSuppliers.find(
+                    supplier => {
+                        if (!supplier.Name) return false;
+                        const cleanedSupplierName = this.cleanValue(supplier.Name);
+                        return cleanedSupplierName.toLowerCase() === lowerValue;
+                    }
+                );
+                return fornitore ? fornitore.Name : trimmedValue;
+
+            case 'tipologiaSpettacolo':
+                const tipologiaSpettacolo = this.showTypeOptions.find(
+                    option => {
+                        if (!option.value) return false;
+                        const cleanedOptionValue = this.cleanValue(option.value);
+                        return cleanedOptionValue.toLowerCase() === lowerValue;
+                    }
+                );
+                return tipologiaSpettacolo ? tipologiaSpettacolo.value : trimmedValue;
 
             case 'tipoVisita':
                 const tipoVisita = this.tipoVisite.find(
@@ -3483,17 +3590,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Verifica se un campo ha validazione
      */
     hasValidation(field) {
-        const fieldsWithValidation = [
-            'partner',
-            'tipoVisita',
-            'beneficiaryType',
-            'comune',
-            'provincia',
-            'regione',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory'
-        ];
+        const fieldsWithValidation = this.isSorrisoSospeso
+            ? ['partner', 'tipologia', 'fornitore', 'tipologiaSpettacolo', 'comune', 'provincia', 'regione']
+            : ['partner', 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory'];
         return fieldsWithValidation.includes(field);
     }
 
@@ -3516,6 +3615,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         if (!partner.Name) return false;
                         const cleanedPartnerName = this.cleanValue(partner.Name);
                         return cleanedPartnerName.toLowerCase() === lowerValue;
+                    }
+                );
+
+            case 'tipologia':
+                return this.ticketTypeOptions.some(
+                    option => {
+                        if (!option.value) return false;
+                        const cleanedOptionValue = this.cleanValue(option.value);
+                        return cleanedOptionValue.toLowerCase() === lowerValue;
+                    }
+                );
+
+            case 'fornitore':
+                return this.structureSuppliers.some(
+                    supplier => {
+                        if (!supplier.Name) return false;
+                        const cleanedSupplierName = this.cleanValue(supplier.Name);
+                        return cleanedSupplierName.toLowerCase() === lowerValue;
+                    }
+                );
+
+            case 'tipologiaSpettacolo':
+                return this.showTypeOptions.some(
+                    option => {
+                        if (!option.value) return false;
+                        const cleanedOptionValue = this.cleanValue(option.value);
+                        return cleanedOptionValue.toLowerCase() === lowerValue;
                     }
                 );
 
@@ -3604,6 +3730,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (!row.validationErrors) {
             row.validationErrors = {
                 partner: false,
+                tipologia: false,
+                fornitore: false,
+                tipologiaSpettacolo: false,
                 tipoVisita: false,
                 beneficiaryType: false,
                 comune: false,
@@ -3632,6 +3761,39 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         }
                     );
                     row.validationErrors.partner = !partnerValid;
+                }
+                break;
+
+            case 'tipologia':
+                if (trimmedValue === '') {
+                    row.validationErrors.tipologia = false;
+                } else {
+                    const tipologiaValid = this.ticketTypeOptions.some(
+                        option => option.value && this.cleanValue(option.value).toLowerCase() === trimmedValue.toLowerCase()
+                    );
+                    row.validationErrors.tipologia = !tipologiaValid;
+                }
+                break;
+
+            case 'fornitore':
+                if (trimmedValue === '') {
+                    row.validationErrors.fornitore = false;
+                } else {
+                    const fornitoreValid = this.structureSuppliers.some(
+                        supplier => supplier.Name && this.cleanValue(supplier.Name).toLowerCase() === trimmedValue.toLowerCase()
+                    );
+                    row.validationErrors.fornitore = !fornitoreValid;
+                }
+                break;
+
+            case 'tipologiaSpettacolo':
+                if (trimmedValue === '') {
+                    row.validationErrors.tipologiaSpettacolo = false;
+                } else {
+                    const tipologiaSpettacoloValid = this.showTypeOptions.some(
+                        option => option.value && this.cleanValue(option.value).toLowerCase() === trimmedValue.toLowerCase()
+                    );
+                    row.validationErrors.tipologiaSpettacolo = !tipologiaSpettacoloValid;
                 }
                 break;
 
@@ -3949,6 +4111,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Verifica se un campo ha un dropdown
      */
     hasDropdown(field) {
+        if (this.isSorrisoSospeso) {
+            return ['partner', 'tipologia', 'fornitore', 'tipologiaSpettacolo', 'comune', 'provincia', 'regione'].includes(field);
+        }
         return ['partner', 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory'].includes(field);
     }
 
@@ -3984,6 +4149,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     value: partner.Name,
                     id: partner.Id
                 }));
+            case 'tipologia':
+                return this.ticketTypeOptions;
+            case 'fornitore':
+                return this.structureSuppliers.map(supplier => ({
+                    label: supplier.Name,
+                    value: supplier.Name,
+                    id: supplier.Id
+                }));
+            case 'tipologiaSpettacolo':
+                return this.showTypeOptions;
             case 'tipoVisita':
                 return this.tipoVisite.map(tipo => ({
                     label: tipo.Name,
@@ -4157,6 +4332,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     partner.Name && partner.Name.toLowerCase() === trimmedValue.toLowerCase()
                 );
 
+            case 'tipologia':
+                return this.ticketTypeOptions.some(opt =>
+                    opt.value && opt.value.toLowerCase() === trimmedValue.toLowerCase()
+                );
+
+            case 'fornitore':
+                return this.structureSuppliers.some(supplier =>
+                    supplier.Name && supplier.Name.toLowerCase() === trimmedValue.toLowerCase()
+                );
+
+            case 'tipologiaSpettacolo':
+                return this.showTypeOptions.some(opt =>
+                    opt.value && opt.value.toLowerCase() === trimmedValue.toLowerCase()
+                );
+
             default:
                 return true;
         }
@@ -4244,7 +4434,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Verifica se un campo è una data
      */
     isDateField(field) {
-        return field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita';
+        return field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo';
     }
 
     /**
@@ -5129,28 +5319,32 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 row.noProfitCategoryIsNew = false;
                 // Valida il campo
                 this.validateField(row, 'noProfitCategory', value);
-            } else if (field === 'partner') {
-                // Aggiorna il partner
-                row.partner = value;
+            } else if (field === 'partner' || field === 'fornitore') {
+                row[field] = value;
                 const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
                 if (option && option.id) {
-                    row.partnerId = option.id;
+                    if (field === 'partner') {
+                        row.partnerId = option.id;
+                    } else {
+                        row.fornitoreId = option.id;
+                    }
+                } else {
+                    this.syncLookupId(row, field, value, value);
                 }
-                // Valida il campo
-                this.validateField(row, 'partner', value);
+                this.validateField(row, field, value);
                 
                 // Chiudi il dropdown prima di aggiornare il DOM
                 this.closeDropdown();
                 
                 // Aggiorna il DOM della cella corrente
                 setTimeout(() => {
-                    const partnerCell = this.template.querySelector(
-                        `td[data-field="partner"][data-row-index="${rowIndex}"]`
+                    const lookupCell = this.template.querySelector(
+                        `td[data-field="${field}"][data-row-index="${rowIndex}"]`
                     );
                     const updatedRow = this.rows[rowIndex];
-                    if (partnerCell && updatedRow) {
-                        partnerCell.textContent = updatedRow.partner || '';
-                        this.updateCellValidationState(partnerCell, updatedRow, 'partner');
+                    if (lookupCell && updatedRow) {
+                        lookupCell.textContent = updatedRow[field] || '';
+                        this.updateCellValidationState(lookupCell, updatedRow, field);
                     }
                 }, 0);
                 return; // Esci subito dopo aver aggiornato il DOM
@@ -5253,11 +5447,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 }
                             }
                             
-                            // Se è partner, salva anche l'ID
-                            if (field === 'partner') {
+                            // Se è partner/fornitore, salva anche l'ID
+                            if (field === 'partner' || field === 'fornitore') {
                                 const option = this.dropdownFilteredOptions.find(opt => opt.value === value);
                                 if (option && option.id) {
-                                    otherRow.partnerId = option.id;
+                                    if (field === 'partner') {
+                                        otherRow.partnerId = option.id;
+                                    } else {
+                                        otherRow.fornitoreId = option.id;
+                                    }
+                                } else {
+                                    this.syncLookupId(otherRow, field, value, value);
                                 }
                             }
                         }
@@ -5430,6 +5630,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Se è vuoto/null, la selezione resta obbligatoria nel componente.
         if (incomingProgramId) {
             this.selectedProgramId = incomingProgramId;
+            await this.ensureSelectedProgramName(incomingProgramId);
             // Carica i partner per il programma selezionato
             await this.loadPartnersForProgram(incomingProgramId);
             this.showProgramSelection = false;
@@ -5539,6 +5740,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Se abbiamo già un Programma (da Flow/URL), non mostrare la UI e passa al budget
             if (this.selectedProgramId) {
                 this.showProgramSelection = false;
+                await this.ensureSelectedProgramName(this.selectedProgramId);
                 // Carica i partner per il programma selezionato
                 await this.loadPartnersForProgram(this.selectedProgramId);
                 // Recupera l'Account Partner per il check del budget
@@ -5572,6 +5774,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 ...program,
                 variant: this.selectedProgramId == program.Id ? 'brand' : 'neutral'
             }));
+            if (this.selectedProgramId && !this.selectedProgramName) {
+                const selectedProgram = this.programs.find(program => program.Id === this.selectedProgramId);
+                if (selectedProgram && selectedProgram.Name) {
+                    this.selectedProgramName = selectedProgram.Name;
+                }
+            }
             
             // Mostra la sezione di selezione programma solo se ci sono più programmi tra cui scegliere
             this.showProgramSelection = enrolledPrograms.length > 1;
@@ -5619,6 +5827,26 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Verifica se serve selezionare un partner
         await this.checkPartnerSelection();
+    }
+
+    async ensureSelectedProgramName(programId) {
+        if (!programId) return;
+        if (this.selectedProgramName) return;
+
+        const inLocalList = (this.programs || []).find(p => p.Id === programId);
+        if (inLocalList && inLocalList.Name) {
+            this.selectedProgramName = inLocalList.Name;
+            return;
+        }
+
+        try {
+            const resolvedName = await getProgramNameById({ programId });
+            if (resolvedName) {
+                this.selectedProgramName = resolvedName;
+            }
+        } catch (error) {
+            console.error('Errore nel recupero nome programma:', error);
+        }
     }
     
     async loadPartnersForProgram(programId) {
@@ -5802,6 +6030,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             console.log(`[saveAllInvoices] Recuperati ${foundCount} partnerId su ${rowsWithPartnerButNoId.length} righe`);
         }
 
+        if (this.isSorrisoSospeso) {
+            const rowsWithSupplierButNoId = validRows.filter(row => row.fornitore && !row.fornitoreId);
+            rowsWithSupplierButNoId.forEach(row => {
+                const foundSupplier = (this.structureSuppliers || []).find(
+                    supplier => supplier.Name && supplier.Name.toLowerCase() === row.fornitore.toLowerCase()
+                );
+                if (foundSupplier && foundSupplier.Id) {
+                    row.fornitoreId = foundSupplier.Id;
+                }
+            });
+        }
+
         // Prepara i dati per il controller Apex
         const invoiceData = validRows.map((row, index) => {
             const rowData = {
@@ -5822,7 +6062,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 numeroVisite: row.numeroVisite ? parseInt(row.numeroVisite, 10) : null,
                 totaleMinuti: row.totaleMinuti ? parseInt(row.totaleMinuti, 10) : null,
                 amount: row.amount ? parseFloat(row.amount.toString().replace(',', '.')) : null,
+                valoreScontato: row.valoreScontato ? parseFloat(row.valoreScontato.toString().replace(',', '.')) : null,
                 dataVisita: row.dataVisita || null,
+                dataSpettacolo: row.dataSpettacolo || null,
+                oraSpettacolo: row.oraSpettacolo || null,
+                tipologia: row.tipologia || null,
+                fornitore: row.fornitore || null,
+                fornitoreId: (row.fornitoreId && row.fornitoreId.trim() !== '') ? row.fornitoreId : null,
+                nomeSpettacolo: row.nomeSpettacolo || null,
+                tipologiaSpettacolo: row.tipologiaSpettacolo || null,
                 comune: row.comune || null,
                 provincia: row.provincia || null,
                 regione: row.regione || null,
@@ -5830,7 +6078,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 medicalCenterIsNew: row.medicalCenterIsNew || false, // Flag per indicare se il centro medico è nuovo
                 noProfitIsNew: row.noProfitIsNew || false, // Flag per indicare se l'ente no profit è nuovo
                 noProfitCategoryIsNew: row.noProfitCategoryIsNew || false, // Flag per indicare se la categoria ente è nuova
-                tipoVisitaIsNew: row.tipoVisitaIsNew || false // Flag per indicare se il tipo visita è nuovo
+                tipoVisitaIsNew: row.tipoVisitaIsNew || false, // Flag per indicare se il tipo visita è nuovo
+                skipVisitCreation: this.isSorrisoSospeso
             };
             console.log(`[saveAllInvoices] Riga ${index + 1} - partnerId:`, rowData.partnerId, 'partner:', rowData.partner);
             return rowData;
@@ -6261,6 +6510,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
         // Filtra solo le righe che hanno almeno un numero fattura o una visita
         const validRows = this.rows.filter(row => {
+            if (this.isSorrisoSospeso) {
+                return row.invoiceNumber || row.tipologia || row.dataSpettacolo || row.nomeSpettacolo;
+            }
             return row.invoiceNumber || row.tipoVisita || row.dataVisita;
         });
         
@@ -6277,13 +6529,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             
             if (!invoiceMap.has(invoiceNumber)) {
                 // Crea una nuova entry per questa fattura con errori di validazione
-                const invoiceErrors = {
-                    invoiceNumber: row.validationErrors && row.validationErrors.invoiceNumber === true,
-                    invoiceDate: false, // Le date non hanno validazione specifica
-                    medicalCenter: row.validationErrors && row.validationErrors.medicalCenter === true,
-                    noProfit: row.validationErrors && row.validationErrors.noProfit === true,
-                    noProfitCategory: row.validationErrors && row.validationErrors.noProfitCategory === true
-                };
+                const invoiceErrors = this.isSorrisoSospeso
+                    ? {
+                        invoiceNumber: row.validationErrors && row.validationErrors.invoiceNumber === true,
+                        invoiceDate: false,
+                        tipologia: row.validationErrors && row.validationErrors.tipologia === true,
+                        fornitore: row.validationErrors && row.validationErrors.fornitore === true,
+                        tipologiaSpettacolo: row.validationErrors && row.validationErrors.tipologiaSpettacolo === true
+                    }
+                    : {
+                        invoiceNumber: row.validationErrors && row.validationErrors.invoiceNumber === true,
+                        invoiceDate: false, // Le date non hanno validazione specifica
+                        medicalCenter: row.validationErrors && row.validationErrors.medicalCenter === true,
+                        noProfit: row.validationErrors && row.validationErrors.noProfit === true,
+                        noProfitCategory: row.validationErrors && row.validationErrors.noProfitCategory === true
+                    };
                 
                 invoiceMap.set(invoiceNumber, {
                     invoice: {
@@ -6294,6 +6554,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         medicalCenter: row.medicalCenter || '',
                         noProfit: row.noProfit || '',
                         noProfitCategory: row.noProfitCategory || '',
+                        tipologia: row.tipologia || '',
+                        fornitore: row.fornitore || '',
+                        nomeSpettacolo: row.nomeSpettacolo || '',
+                        tipologiaSpettacolo: row.tipologiaSpettacolo || '',
+                        dataSpettacolo: row.dataSpettacolo || '',
+                        oraSpettacolo: row.oraSpettacolo || '',
+                        valoreScontato: row.valoreScontato || '',
                         amount: 0, // Sarà calcolato come somma delle visite
                         isFree: row.isFree || false,
                         noInvoiceAvailable: row.noInvoiceAvailable || false,
@@ -6315,17 +6582,32 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     currentInvoice.invoice.errors.invoiceNumber = true;
                     currentInvoice.invoice.hasErrors = true;
                 }
-                if (row.validationErrors.medicalCenter === true) {
-                    currentInvoice.invoice.errors.medicalCenter = true;
-                    currentInvoice.invoice.hasErrors = true;
-                }
-                if (row.validationErrors.noProfit === true) {
-                    currentInvoice.invoice.errors.noProfit = true;
-                    currentInvoice.invoice.hasErrors = true;
-                }
-                if (row.validationErrors.noProfitCategory === true) {
-                    currentInvoice.invoice.errors.noProfitCategory = true;
-                    currentInvoice.invoice.hasErrors = true;
+                if (this.isSorrisoSospeso) {
+                    if (row.validationErrors.tipologia === true) {
+                        currentInvoice.invoice.errors.tipologia = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
+                    if (row.validationErrors.fornitore === true) {
+                        currentInvoice.invoice.errors.fornitore = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
+                    if (row.validationErrors.tipologiaSpettacolo === true) {
+                        currentInvoice.invoice.errors.tipologiaSpettacolo = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
+                } else {
+                    if (row.validationErrors.medicalCenter === true) {
+                        currentInvoice.invoice.errors.medicalCenter = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
+                    if (row.validationErrors.noProfit === true) {
+                        currentInvoice.invoice.errors.noProfit = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
+                    if (row.validationErrors.noProfitCategory === true) {
+                        currentInvoice.invoice.errors.noProfitCategory = true;
+                        currentInvoice.invoice.hasErrors = true;
+                    }
                 }
             }
             
@@ -6348,9 +6630,30 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (row.noProfitCategory && !currentInvoice.invoice.noProfitCategory) {
                 currentInvoice.invoice.noProfitCategory = row.noProfitCategory;
             }
+            if (row.tipologia && !currentInvoice.invoice.tipologia) {
+                currentInvoice.invoice.tipologia = row.tipologia;
+            }
+            if (row.fornitore && !currentInvoice.invoice.fornitore) {
+                currentInvoice.invoice.fornitore = row.fornitore;
+            }
+            if (row.nomeSpettacolo && !currentInvoice.invoice.nomeSpettacolo) {
+                currentInvoice.invoice.nomeSpettacolo = row.nomeSpettacolo;
+            }
+            if (row.tipologiaSpettacolo && !currentInvoice.invoice.tipologiaSpettacolo) {
+                currentInvoice.invoice.tipologiaSpettacolo = row.tipologiaSpettacolo;
+            }
+            if (row.dataSpettacolo && !currentInvoice.invoice.dataSpettacolo) {
+                currentInvoice.invoice.dataSpettacolo = row.dataSpettacolo;
+            }
+            if (row.oraSpettacolo && !currentInvoice.invoice.oraSpettacolo) {
+                currentInvoice.invoice.oraSpettacolo = row.oraSpettacolo;
+            }
+            if (row.valoreScontato && !currentInvoice.invoice.valoreScontato) {
+                currentInvoice.invoice.valoreScontato = row.valoreScontato;
+            }
             
             // Aggiungi la visita se presente
-            if (row.tipoVisita || row.dataVisita || row.beneficiaryType || row.comune) {
+            if (!this.isSorrisoSospeso && (row.tipoVisita || row.dataVisita || row.beneficiaryType || row.comune)) {
                 const visitAmount = this.parseDecimal(row.amount) || 0;
                 const visitMinutes = this.parseInteger(row.totaleMinuti) || 0;
                 
@@ -6392,6 +6695,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const visitNumber = row.numeroVisite ? parseInt(row.numeroVisite, 10) : 0;
                 invoiceMap.get(invoiceNumber).totalVisitsNumber = 
                     (invoiceMap.get(invoiceNumber).totalVisitsNumber || 0) + visitNumber;
+            } else if (this.isSorrisoSospeso) {
+                const rowAmount = this.parseDecimal(row.amount) || 0;
+                const rowNumber = row.numeroVisite ? parseInt(row.numeroVisite, 10) : 0;
+                invoiceMap.get(invoiceNumber).totalVisitsAmount =
+                    (invoiceMap.get(invoiceNumber).totalVisitsAmount || 0) + rowAmount;
+                invoiceMap.get(invoiceNumber).totalVisitsNumber =
+                    (invoiceMap.get(invoiceNumber).totalVisitsNumber || 0) + rowNumber;
             }
         });
         
@@ -6478,18 +6788,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         await new Promise(resolve => setTimeout(resolve, 50));
         
         // Lista di tutti i campi validabili
-        const validatableFields = [
-            'partner',
-            'tipoVisita',
-            'beneficiaryType',
-            'comune',
-            'provincia',
-            'regione',
-            'medicalCenter',
-            'noProfit',
-            'noProfitCategory',
-            'invoiceNumber'
-        ];
+        const validatableFields = this.getCurrentValidatableFields();
         
         // Attiva gli spinner per invoiceNumber (unica validazione asincrona)
         const rowsWithInvoiceNumber = [];
