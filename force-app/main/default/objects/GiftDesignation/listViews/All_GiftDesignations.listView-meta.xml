@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All_GiftDesignations</fullName>
+    <columns>Name</columns>
+    <columns>IsActive</columns>
+    <columns>IsDefault</columns>
+    <columns>DEFAULT_PRG__c</columns>
+    <columns>TotalTransactionAmount</columns>
+    <columns>CreatedDate</columns>
+    <columns>Partner__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All Budgets</label>
+</ListView>

@@ -1,43 +1,149 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>Check_Skip_Bulk</name>
+        <label>Check Skip Bulk</label>
+        <locationX>182</locationX>
+        <locationY>323</locationY>
+        <actionName>ShouldSkipTransazioneShadowInvocable</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Skip_Bulk</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>recordId</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>ShouldSkipTransazioneShadowInvocable</nameSegment>
+        <offset>0</offset>
+        <outputParameters>
+            <assignToReference>var_should_skip</assignToReference>
+            <name>shouldSkip</name>
+        </outputParameters>
+    </actionCalls>
+    <actionCalls>
+        <name>Defer_Transazione_Shadow_Static_Update</name>
+        <label>Defer Transazione Shadow Static Update</label>
+        <locationX>50</locationX>
+        <locationY>863</locationY>
+        <actionName>UpdateTransazioneShadowStaticInvocable</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>recordId</name>
+            <value>
+                <elementReference>Recupera_Transazione.Transazione_Shadow__r.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>allocabile</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Allocabile__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>allocazioniNonPagate</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Allocazioni_NON_Pagate__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>donatoOriginale</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Donato_Originale__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>numeroAllocazioni</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Numero_Allocazioni__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocatoNonPagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato_NON_Pagato__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocatoPagato</name>
+            <value>
+                <elementReference>Recupera_Transazione_Shadow_Esistente.Totale_Allocato_Pagato__c</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>UpdateTransazioneShadowStaticInvocable</nameSegment>
+        <offset>0</offset>
+    </actionCalls>
+    <actionCalls>
+        <name>Defer_Transazione_Shadow_Static_Update_New</name>
+        <label>Defer Transazione Shadow Static Update (New)</label>
+        <locationX>314</locationX>
+        <locationY>1163</locationY>
+        <actionName>UpdateTransazioneShadowStaticInvocable</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>recordId</name>
+            <value>
+                <elementReference>transazione_shadow_id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>allocabile</name>
+            <value>
+                <elementReference>Recupera_Transazione.CurrentAmount</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>allocazioniNonPagate</name>
+            <value>
+                <elementReference>Recupera_Transazione.Allocation_not_paid__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>donatoOriginale</name>
+            <value>
+                <elementReference>Recupera_Transazione.Original_Donation_Amount__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>numeroAllocazioni</name>
+            <value>
+                <elementReference>Recupera_Transazione.Total_Allocations__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocato</name>
+            <value>
+                <elementReference>Recupera_Transazione.Totale_Allocato__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocatoNonPagato</name>
+            <value>
+                <elementReference>Recupera_Transazione.Totale_Allocato_NON_Pagato__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>totaleAllocatoPagato</name>
+            <value>
+                <elementReference>Recupera_Transazione.Totale_Allocato_Pagato__c</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>UpdateTransazioneShadowStaticInvocable</nameSegment>
+        <offset>0</offset>
+    </actionCalls>
     <apiVersion>63.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
-    <decisions>
-        <name>Skip_If_Only_Payment_Status</name>
-        <label>Skip If Only Payment Status Changed?</label>
-        <locationX>182</locationX>
-        <locationY>242</locationY>
-        <defaultConnector>
-            <targetReference>Recupera_Transazione</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>Continue</defaultConnectorLabel>
-        <rules>
-            <name>Skip</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>$Record.Payment_Status__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>true</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Transazione_Shadow__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Reporting_Year__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <label>Skip</label>
-        </rules>
-    </decisions>
     <decisions>
         <name>Donatore_per_anno</name>
         <label>Donatore per anno?</label>
@@ -88,7 +194,70 @@
             <label>Esiste</label>
         </rules>
     </decisions>
+    <decisions>
+        <name>Skip_Bulk</name>
+        <label>Skip Bulk?</label>
+        <locationX>182</locationX>
+        <locationY>404</locationY>
+        <defaultConnector>
+            <targetReference>Recupera_Transazione</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Continue</defaultConnectorLabel>
+        <rules>
+            <name>Skip_Bulk_Outcome</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>var_should_skip</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <label>Skip</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Skip_If_Only_Payment_Status</name>
+        <label>Skip If Only Payment Status Changed?</label>
+        <locationX>182</locationX>
+        <locationY>242</locationY>
+        <defaultConnector>
+            <targetReference>Check_Skip_Bulk</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Continue</defaultConnectorLabel>
+        <rules>
+            <name>Skip</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Payment_Status__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Transazione_Shadow__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Reporting_Year__c</leftValueReference>
+                <operator>IsChanged</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <label>Skip</label>
+        </rules>
+    </decisions>
     <environments>Default</environments>
+    <formulas>
+        <name>totali_donatore_anno_id</name>
+        <dataType>String</dataType>
+        <expression>BLANKVALUE({!Recupera_Transazione.Reporting_Year__r.Totali_Donatore_Anno__r.Id}, {!Recupera_Donatore_Anno.Totali_Donatore_Anno__c})</expression>
+    </formulas>
     <formulas>
         <name>transaction_shadow_name</name>
         <dataType>String</dataType>
@@ -133,7 +302,7 @@
         <inputAssignments>
             <field>Totali_Donatore_Anno__c</field>
             <value>
-                <elementReference>Recupera_Transazione.Reporting_Year__r.Totali_Donatore_Anno__r.Id</elementReference>
+                <elementReference>totali_donatore_anno_id</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -207,7 +376,7 @@
         <locationY>755</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
+            <targetReference>Defer_Transazione_Shadow_Static_Update</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -243,7 +412,7 @@
         <locationX>314</locationX>
         <locationY>1055</locationY>
         <connector>
-            <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_New_autolaunched</targetReference>
+            <targetReference>Defer_Transazione_Shadow_Static_Update_New</targetReference>
         </connector>
         <inputAssignments>
             <field>Transazione_Shadow__c</field>
@@ -341,6 +510,13 @@
     <variables>
         <name>transazione_shadow_id</name>
         <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_should_skip</name>
+        <dataType>Boolean</dataType>
         <isCollection>false</isCollection>
         <isInput>false</isInput>
         <isOutput>false</isOutput>

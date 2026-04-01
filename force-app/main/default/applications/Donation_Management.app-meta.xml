@@ -409,6 +409,7 @@
     <tabs>standard-ProgramEnrollment</tabs>
     <tabs>standard-report</tabs>
     <tabs>Configurazioni__c</tabs>
+    <tabs>DonationTableEditor</tabs>
     <uiType>Lightning</uiType>
     <utilityBar>Donation_Management_UtilityBar</utilityBar>
     <workspaceConfig>
@@ -420,6 +421,9 @@
         </mappings>
         <mappings>
             <tab>Configurazioni__c</tab>
+        </mappings>
+        <mappings>
+            <tab>DonationTableEditor</tab>
         </mappings>
         <mappings>
             <tab>Donazioni</tab>

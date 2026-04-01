@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Acquisto Offerta</name>
+    <style>none</style>
+    <subject>Notifica prenotazione/acquisto</subject>
+    <textOnly>Ciao {{structure}},
+
+il {{ticketType}} con codice {{ticketName}} è stato {{offerType}} da {{partner}}.
+
+Puoi contattare l&apos;ente tramite i seguenti recapiti:
+
+Telefono: {{phone}}
+Email: {{email}}
+
+{{other}}
+
+Grazie.
+
+Il team di progetto
+info@lab00.org</textOnly>
+    <type>custom</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>

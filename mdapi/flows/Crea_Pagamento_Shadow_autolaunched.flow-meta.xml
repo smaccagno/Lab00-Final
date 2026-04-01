@@ -189,7 +189,7 @@
             <targetReference>Recupera_Pagamento</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Obsolete</status>
     <subflows>
         <name>Aggiorna_Valori_Statici_Pagamento_Shadow_autolaunched</name>
         <label>Aggiorna Valori Statici Pagamento Shadow - autolaunched</label>

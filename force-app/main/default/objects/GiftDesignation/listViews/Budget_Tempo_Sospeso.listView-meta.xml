@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Budget_Tempo_Sospeso</fullName>
+    <columns>Name</columns>
+    <columns>IsActive</columns>
+    <columns>Available_Budget__c</columns>
+    <columns>Ammontare_Pagamenti_Fatti__c</columns>
+    <columns>Ammontare_Pagamenti_Da_Pagare__c</columns>
+    <columns>Totale_Fatture__c</columns>
+    <columns>Totale_Visite_Fatte__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>IsDefault</field>
+        <operation>equals</operation>
+        <value>0</value>
+    </filters>
+    <filters>
+        <field>Program__c</field>
+        <operation>equals</operation>
+        <value>Tempo Sospeso</value>
+    </filters>
+    <label>Budget Tempo Sospeso</label>
+</ListView>

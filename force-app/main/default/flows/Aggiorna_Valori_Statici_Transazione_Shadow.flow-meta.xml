@@ -24,75 +24,11 @@
         </value>
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
-    <decisions>
-        <name>Skip_If_Only_Static_Fields</name>
-        <label>Skip If Only Static Fields Changed?</label>
-        <locationX>176</locationX>
-        <locationY>80</locationY>
-        <defaultConnector>
-            <targetReference>Recupera_Transazione_Shadow</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>Continue</defaultConnectorLabel>
-        <rules>
-            <name>Skip</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>$Record.Allocabile__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Allocazioni_NON_Pagate__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Donato_Originale__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Numero_Allocazioni__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Totale_Allocato__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Totale_Allocato_NON_Pagato__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>$Record.Totale_Allocato_Pagato__c</leftValueReference>
-                <operator>IsChanged</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <label>Skip</label>
-        </rules>
-    </decisions>
     <recordLookups>
         <name>Recupera_Transazione_Shadow</name>
         <label>Recupera Transazione Shadow</label>
         <locationX>176</locationX>
-        <locationY>242</locationY>
+        <locationY>134</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Aggiorna_Valori_Statici_Transazione_Shadow_autolaunched</targetReference>
@@ -113,7 +49,7 @@
         <locationX>50</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Skip_If_Only_Static_Fields</targetReference>
+            <targetReference>Recupera_Transazione_Shadow</targetReference>
         </connector>
         <object>Transazione_Shadow__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>

@@ -102,9 +102,10 @@
         <connector>
             <targetReference>Set_Active_Status</targetReference>
         </connector>
+        <filterFormula>ISNEW() || ISCHANGED({!$Record.Status}) || ISCHANGED({!$Record.StartDate}) || ISCHANGED({!$Record.EndDate})</filterFormula>
         <object>ProgramEnrollment</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
-        <triggerType>RecordAfterSave</triggerType>
+        <triggerType>RecordBeforeSave</triggerType>
     </start>
     <status>Active</status>
     <triggerOrder>500</triggerOrder>

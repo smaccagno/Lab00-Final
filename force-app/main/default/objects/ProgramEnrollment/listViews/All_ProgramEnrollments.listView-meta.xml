@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All_ProgramEnrollments</fullName>
+    <columns>Name</columns>
+    <columns>Program</columns>
+    <columns>Tipo_Stakeholder__c</columns>
+    <columns>Account</columns>
+    <columns>Contact</columns>
+    <columns>Contact.Email</columns>
+    <columns>IsActive</columns>
+    <columns>ApplicationDate</columns>
+    <columns>StartDate</columns>
+    <columns>EndDate</columns>
+    <filterScope>Everything</filterScope>
+    <label>All Program Enrollments</label>
+</ListView>

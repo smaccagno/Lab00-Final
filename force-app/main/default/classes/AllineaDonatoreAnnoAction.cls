@@ -286,6 +286,20 @@ public without sharing class AllineaDonatoreAnnoAction {
     if (!repYearsToPatch.isEmpty())
       update repYearsToPatch;
 
+    /* Aggiorna Fattura_Shadow PRIMA dei campi statici RY.
+     * I rollup su Totali_Donatore_Anno__c dipendono da Fattura_Shadow.
+     */
+    Set<Id> affectedReportingYearIds = new Set<Id>();
+    for (PairKey pk : pairs) {
+      if (pk.reportingYearRecord != null && pk.reportingYearRecord.Id != null) {
+        affectedReportingYearIds.add(pk.reportingYearRecord.Id);
+      }
+    }
+    if (!affectedReportingYearIds.isEmpty())
+      InvoiceStaticValuesUpdater.updateStaticValuesByReportingYearIds(
+        affectedReportingYearIds
+      );
+
     /*==================================================================
      *  LOGICA SUB-FLOW Aggiorna_Valori_Statici_Donatore_Anno
      *  (solo sugli Overview_Anno già esistenti)
@@ -320,8 +334,36 @@ public without sharing class AllineaDonatoreAnnoAction {
           )
         );
       }
-      if (!ryStaticUpdate.isEmpty())
-        update ryStaticUpdate; // 5° DML
+      if (!ryStaticUpdate.isEmpty()) {
+        try {
+          // Gestisci gli errori DML per evitare che l'intero processo fallisca
+          // quando ci sono problemi con il Flow "Aggiorna Valori Statici Donatore Anno"
+          Database.SaveResult[] results = Database.update(ryStaticUpdate, false);
+          Integer successCount = 0;
+          Integer errorCount = 0;
+          for (Database.SaveResult result : results) {
+            if (result.isSuccess()) {
+              successCount++;
+            } else {
+              errorCount++;
+              // Log degli errori per debugging
+              for (Database.Error error : result.getErrors()) {
+                System.debug(LoggingLevel.ERROR, 'Errore nell\'aggiornamento di Reporting_Year__c: ' + 
+                  error.getMessage() + ' (Fields: ' + error.getFields() + ')');
+              }
+            }
+          }
+          if (errorCount > 0) {
+            System.debug(LoggingLevel.WARN, 'AllineaDonatoreAnnoAction: ' + errorCount + 
+              ' aggiornamenti di Reporting_Year__c falliti su ' + ryStaticUpdate.size() + 
+              ' totali. Gli errori sono stati loggati.');
+          }
+        } catch (Exception e) {
+          // Gestisci eccezioni non previste senza bloccare l'intero processo
+          System.debug(LoggingLevel.ERROR, 'Errore imprevisto nell\'aggiornamento di Reporting_Year__c: ' + 
+            e.getMessage() + ' | StackTrace: ' + e.getStackTraceString());
+        }
+      }
     }
 
     /*---------- OUTPUT FINALE ----------------------------------------*/

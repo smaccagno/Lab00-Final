@@ -3,6 +3,22 @@
     <apiVersion>62.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
+        <name>Add_Payment_Id_To_List</name>
+        <label>Add Payment Id To List</label>
+        <locationX>666</locationX>
+        <locationY>1946</locationY>
+        <assignmentItems>
+            <assignToReference>created_payment_ids</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>current_payment_id</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Aggiungi_AccountId</name>
         <label>Aggiungi AccountId</label>
         <locationX>754</locationX>
@@ -97,6 +113,22 @@
         </connector>
     </assignments>
     <assignments>
+        <name>Assign_Payment_Done_From_Toggle</name>
+        <label>Assign Payment Done From Toggle</label>
+        <locationX>424</locationX>
+        <locationY>2954</locationY>
+        <assignmentItems>
+            <assignToReference>payment_done</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>payment_done_toggle</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Check_Payment_Type_For_Message</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>assign_payment_to_allocation_multiple</name>
         <label>assign payment to allocation multiple</label>
         <locationX>666</locationX>
@@ -124,22 +156,6 @@
         </assignmentItems>
         <connector>
             <targetReference>Add_Payment_Id_To_List</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
-        <name>Add_Payment_Id_To_List</name>
-        <label>Add Payment Id To List</label>
-        <locationX>666</locationX>
-        <locationY>1946</locationY>
-        <assignmentItems>
-            <assignToReference>created_payment_ids</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <elementReference>current_payment_id</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Create_Payment_Shadow_For_Multiple</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -181,56 +197,6 @@
             <targetReference>Loop_over_selected</targetReference>
         </connector>
     </assignments>
-    <decisions>
-        <name>is_paid</name>
-        <label>is paid?</label>
-        <locationX>182</locationX>
-        <locationY>350</locationY>
-        <defaultConnector>
-            <targetReference>transazione_paid</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
-        <rules>
-            <name>not_paid</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>get_Transaction_allocation.Status__c</leftValueReference>
-                <operator>EqualTo</operator>
-                <rightValue>
-                    <stringValue>Distributed</stringValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>assign_allocation_to_list</targetReference>
-            </connector>
-            <label>not paid</label>
-        </rules>
-    </decisions>
-    <decisions>
-        <name>is_RecordId</name>
-        <label>is RecordId?</label>
-        <locationX>424</locationX>
-        <locationY>134</locationY>
-        <defaultConnector>
-            <targetReference>Seleziona_il_Programma</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
-        <rules>
-            <name>Yes</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>recordId</leftValueReference>
-                <operator>IsNull</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>get_Transaction_allocation</targetReference>
-            </connector>
-            <label>Yes</label>
-        </rules>
-    </decisions>
     <decisions>
         <name>Check_Create_Payment_Per_Allocation</name>
         <label>Check Create Payment Per Allocation</label>
@@ -282,11 +248,89 @@
         </rules>
     </decisions>
     <decisions>
+        <name>Decide_Single_Or_Multiple_For_Close</name>
+        <label>Singolo o multiplo per chiusura?</label>
+        <locationX>424</locationX>
+        <locationY>3170</locationY>
+        <defaultConnector>
+            <targetReference>Conferma_Pagamento_Flow_1</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Singolo pagamento</defaultConnectorLabel>
+        <rules>
+            <name>Chiudi_Pagamenti_Multipli</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>create_payment_per_allocation</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Loop_Close_Each_Payment</targetReference>
+            </connector>
+            <label>Chiudi pagamenti multipli</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>is_paid</name>
+        <label>is paid?</label>
+        <locationX>182</locationX>
+        <locationY>350</locationY>
+        <defaultConnector>
+            <targetReference>transazione_paid</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>not_paid</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>get_Transaction_allocation.Status__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Distributed</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>assign_allocation_to_list</targetReference>
+            </connector>
+            <label>not paid</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>is_RecordId</name>
+        <label>is RecordId?</label>
+        <locationX>424</locationX>
+        <locationY>134</locationY>
+        <defaultConnector>
+            <targetReference>Seleziona_il_Programma</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Yes</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>recordId</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>get_Transaction_allocation</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>Pagamento_da_chiudere</name>
         <label>Pagamento da chiudere?</label>
         <locationX>424</locationX>
         <locationY>3062</locationY>
-        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <defaultConnector>
+            <targetReference>Fatto</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Non chiudere</defaultConnectorLabel>
         <rules>
             <name>effettuato</name>
             <conditionLogic>and</conditionLogic>
@@ -298,7 +342,7 @@
                 </rightValue>
             </conditions>
             <connector>
-                <targetReference>Conferma_Pagamento_Flow_1</targetReference>
+                <targetReference>Decide_Single_Or_Multiple_For_Close</targetReference>
             </connector>
             <label>effettuato</label>
         </rules>
@@ -367,6 +411,20 @@
     <interviewLabel>Calculate Payment to do {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Calculate Payment to do</label>
     <loops>
+        <name>Loop_Close_Each_Payment</name>
+        <label>Loop Close Each Payment</label>
+        <locationX>424</locationX>
+        <locationY>3278</locationY>
+        <collectionReference>created_payment_ids</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Conferma_Pagamento_Flow_2</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Fatto</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <loops>
         <name>Loop_Create_Payments_Per_Allocation</name>
         <label>Loop Create Payments Per Allocation</label>
         <locationX>666</locationX>
@@ -391,7 +449,7 @@
             <targetReference>assign_payment</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Crea_Pagamento_Shadow_autolaunched</targetReference>
+            <targetReference>done</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
@@ -506,6 +564,55 @@
         <object>Payment__c</object>
     </recordCreates>
     <recordLookups>
+        <name>Get_Budget_Anno_For_Allocation</name>
+        <label>Get Budget Anno For Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1706</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>create_payment_for_each_allocation</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Budget__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Get_Budget_For_Allocation.Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Anno__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation.Anno_Distribuzione__c</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Overview_Budget_per_Anno__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Budget_For_Allocation</name>
+        <label>Get Budget For Allocation</label>
+        <locationX>666</locationX>
+        <locationY>1658</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Get_Budget_Anno_For_Allocation</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Loop_Create_Payments_Per_Allocation.GiftDesignationId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>GiftDesignation</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>get_Budgets</name>
         <label>get Budgets</label>
         <locationX>666</locationX>
@@ -545,6 +652,27 @@
         </filters>
         <getFirstRecordOnly>false</getFirstRecordOnly>
         <object>GiftDesignation</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Payments_Created</name>
+        <label>Get Payments Created</label>
+        <locationX>666</locationX>
+        <locationY>1994</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Mostra_Pagamenti_Creati</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>created_payment_ids</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Payment__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
@@ -615,76 +743,6 @@
         </filters>
         <getFirstRecordOnly>true</getFirstRecordOnly>
         <object>Overview_Budget_per_Anno__c</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Get_Budget_For_Allocation</name>
-        <label>Get Budget For Allocation</label>
-        <locationX>666</locationX>
-        <locationY>1658</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Get_Budget_Anno_For_Allocation</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Id</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>Loop_Create_Payments_Per_Allocation.GiftDesignationId</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>true</getFirstRecordOnly>
-        <object>GiftDesignation</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Get_Budget_Anno_For_Allocation</name>
-        <label>Get Budget Anno For Allocation</label>
-        <locationX>666</locationX>
-        <locationY>1706</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>create_payment_for_each_allocation</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Budget__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>Get_Budget_For_Allocation.Id</elementReference>
-            </value>
-        </filters>
-        <filters>
-            <field>Anno__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>Loop_Create_Payments_Per_Allocation.Anno_Distribuzione__c</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>true</getFirstRecordOnly>
-        <object>Overview_Budget_per_Anno__c</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Get_Payments_Created</name>
-        <label>Get Payments Created</label>
-        <locationX>666</locationX>
-        <locationY>1994</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Mostra_Pagamenti_Creati</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Id</field>
-            <operator>In</operator>
-            <value>
-                <elementReference>created_payment_ids</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>false</getFirstRecordOnly>
-        <object>Payment__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
@@ -771,74 +829,6 @@
         <inputReference>Loop_over_allocations_to_assign_payment</inputReference>
     </recordUpdates>
     <screens>
-        <name>done</name>
-        <label>done</label>
-        <locationX>424</locationX>
-        <locationY>2846</locationY>
-        <allowBack>false</allowBack>
-        <allowFinish>true</allowFinish>
-        <allowPause>false</allowPause>
-        <connector>
-            <targetReference>Check_Payment_Type_For_Message</targetReference>
-        </connector>
-        <fields>
-            <name>payment_created</name>
-            <fieldText>&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;E&apos; stato creato un elemento di tipo Pagamento &lt;/span&gt;&lt;span style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;di &lt;/span&gt;&lt;strong style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;EUR {!total_amount} &lt;/strong&gt;&lt;span style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;a favore di &lt;/span&gt;&lt;strong style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;{!Recupera_Budget.Name}.&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Puoi trovarlo nella sezione Pagamenti, nella lista &quot;Pagamenti da effettuare&quot;.&lt;/span&gt;&lt;/p&gt;</fieldText>
-            <fieldType>DisplayText</fieldType>
-            <styleProperties>
-                <verticalAlignment>
-                    <stringValue>top</stringValue>
-                </verticalAlignment>
-                <width>
-                    <stringValue>12</stringValue>
-                </width>
-            </styleProperties>
-        </fields>
-        <fields>
-            <name>payment_status</name>
-            <extensionName>flowruntime:toggle</extensionName>
-            <fieldType>ComponentInstance</fieldType>
-            <inputParameters>
-                <name>label</name>
-                <value>
-                    <stringValue>Seleziona se vuoi chiudere automaticamente il pagamento (marcandolo come fatto)</stringValue>
-                </value>
-            </inputParameters>
-            <inputParameters>
-                <name>messageToggleActive</name>
-                <value>
-                    <stringValue>Pagamento Effettuato</stringValue>
-                </value>
-            </inputParameters>
-            <inputParameters>
-                <name>messageToggleInactive</name>
-                <value>
-                    <stringValue>Pagamento da Fare</stringValue>
-                </value>
-            </inputParameters>
-            <inputParameters>
-                <name>value</name>
-                <value>
-                    <elementReference>payment_done</elementReference>
-                </value>
-            </inputParameters>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
-            <isRequired>true</isRequired>
-            <storeOutputAutomatically>true</storeOutputAutomatically>
-            <styleProperties>
-                <verticalAlignment>
-                    <stringValue>top</stringValue>
-                </verticalAlignment>
-                <width>
-                    <stringValue>12</stringValue>
-                </width>
-            </styleProperties>
-        </fields>
-        <nextOrFinishButtonLabel>Avanti</nextOrFinishButtonLabel>
-        <showFooter>true</showFooter>
-        <showHeader>true</showHeader>
-    </screens>
-    <screens>
         <name>Conferma_Pagamenti_Multipli</name>
         <label>Conferma Pagamenti Multipli</label>
         <locationX>666</locationX>
@@ -907,7 +897,99 @@
                 </value>
             </inputParameters>
             <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
-            <storeOutputAutomatically>false</storeOutputAutomatically>
+            <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>done</name>
+        <label>done</label>
+        <locationX>424</locationX>
+        <locationY>2846</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Assign_Payment_Done_From_Toggle</targetReference>
+        </connector>
+        <fields>
+            <name>payment_created</name>
+            <fieldText>&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;E&apos; stato creato un elemento di tipo Pagamento &lt;/span&gt;&lt;span style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;di &lt;/span&gt;&lt;strong style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;EUR {!total_amount} &lt;/strong&gt;&lt;span style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;a favore di &lt;/span&gt;&lt;strong style=&quot;font-size: 16px; color: rgb(68, 68, 68); background-color: rgb(255, 255, 255);&quot;&gt;{!Recupera_Budget.Name}.&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;Puoi trovarlo nella sezione Pagamenti, nella lista &quot;Pagamenti da effettuare&quot;.&lt;/span&gt;&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <fields>
+            <name>payment_status</name>
+            <extensionName>flowruntime:toggle</extensionName>
+            <fieldType>ComponentInstance</fieldType>
+            <inputParameters>
+                <name>label</name>
+                <value>
+                    <stringValue>Seleziona se vuoi chiudere automaticamente il pagamento (marcandolo come fatto)</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>messageToggleActive</name>
+                <value>
+                    <stringValue>Pagamento Effettuato</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>messageToggleInactive</name>
+                <value>
+                    <stringValue>Pagamento da Fare</stringValue>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>value</name>
+                <value>
+                    <elementReference>payment_done_toggle</elementReference>
+                </value>
+            </inputParameters>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+            <storeOutputAutomatically>true</storeOutputAutomatically>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <nextOrFinishButtonLabel>Avanti</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Fatto</name>
+        <label>Fatto</label>
+        <locationX>424</locationX>
+        <locationY>3494</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>operazione_completata</name>
+            <fieldText>&lt;p&gt;Operazione completata.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
             <styleProperties>
                 <verticalAlignment>
                     <stringValue>top</stringValue>
@@ -989,7 +1071,7 @@
                 </value>
             </inputParameters>
             <inputsOnNextNavToAssocScrn>ResetValues</inputsOnNextNavToAssocScrn>
-            <storeOutputAutomatically>false</storeOutputAutomatically>
+            <isRequired>true</isRequired>
             <styleProperties>
                 <verticalAlignment>
                     <stringValue>top</stringValue>
@@ -1270,7 +1352,10 @@
         <name>Conferma_Pagamento_Flow_1</name>
         <label>Conferma Pagamento Flow 1</label>
         <locationX>292</locationX>
-        <locationY>3062</locationY>
+        <locationY>3170</locationY>
+        <connector>
+            <targetReference>Fatto</targetReference>
+        </connector>
         <flowName>Close_Payment</flowName>
         <inputAssignments>
             <name>recordId</name>
@@ -1281,48 +1366,18 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </subflows>
     <subflows>
-        <name>Create_Payment_Shadow_For_Multiple</name>
-        <label>Create Payment Shadow For Multiple</label>
-        <locationX>666</locationX>
-        <locationY>1898</locationY>
-        <connector>
-            <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
-        </connector>
-        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
-        <inputAssignments>
-            <name>recordId</name>
-            <value>
-                <elementReference>current_payment_id</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>totali_budget_anno_id</name>
-            <value>
-                <elementReference>Get_Budget_Anno_For_Allocation.Totali_Budget_Anno__c</elementReference>
-            </value>
-        </inputAssignments>
-    </subflows>
-    <subflows>
-        <name>Crea_Pagamento_Shadow_autolaunched</name>
-        <label>Crea Pagamento Shadow - autolaunched</label>
+        <name>Conferma_Pagamento_Flow_2</name>
+        <label>Conferma Pagamento Flow 2 (loop)</label>
         <locationX>424</locationX>
-        <locationY>2738</locationY>
-        <connector>
-            <targetReference>done</targetReference>
-        </connector>
-        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
+        <locationY>3386</locationY>
+        <flowName>Close_Payment</flowName>
         <inputAssignments>
             <name>recordId</name>
             <value>
-                <elementReference>pagamentoId</elementReference>
+                <elementReference>Loop_Close_Each_Payment</elementReference>
             </value>
         </inputAssignments>
-        <inputAssignments>
-            <name>totali_budget_anno_id</name>
-            <value>
-                <elementReference>Recupera_Budget_Anno.Totali_Budget_Anno__c</elementReference>
-            </value>
-        </inputAssignments>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
     </subflows>
     <variables>
         <name>accountIdEnrolled</name>
@@ -1347,6 +1402,35 @@
         <value>
             <elementReference>Seleziona_il_Budget</elementReference>
         </value>
+    </variables>
+    <variables>
+        <name>create_payment_per_allocation</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>created_payment_ids</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>created_payments</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Payment__c</objectType>
+    </variables>
+    <variables>
+        <name>current_payment_id</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
     <variables>
         <name>final_id_donation</name>
@@ -1378,6 +1462,13 @@
         <isOutput>true</isOutput>
     </variables>
     <variables>
+        <name>payment_done_toggle</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
         <description>Stores the ID of the gift commitment or gift transaction record that’s passed into the flow.</description>
         <name>recordId</name>
         <dataType>String</dataType>
@@ -1400,35 +1491,6 @@
         <isInput>false</isInput>
         <isOutput>false</isOutput>
         <scale>2</scale>
-    </variables>
-    <variables>
-        <name>create_payment_per_allocation</name>
-        <dataType>Boolean</dataType>
-        <isCollection>false</isCollection>
-        <isInput>false</isInput>
-        <isOutput>false</isOutput>
-    </variables>
-    <variables>
-        <name>current_payment_id</name>
-        <dataType>String</dataType>
-        <isCollection>false</isCollection>
-        <isInput>false</isInput>
-        <isOutput>false</isOutput>
-    </variables>
-    <variables>
-        <name>created_payment_ids</name>
-        <dataType>String</dataType>
-        <isCollection>true</isCollection>
-        <isInput>false</isInput>
-        <isOutput>false</isOutput>
-    </variables>
-    <variables>
-        <name>created_payments</name>
-        <dataType>SObject</dataType>
-        <isCollection>true</isCollection>
-        <isInput>false</isInput>
-        <isOutput>false</isOutput>
-        <objectType>Payment__c</objectType>
     </variables>
     <variables>
         <name>updated_allocations</name>

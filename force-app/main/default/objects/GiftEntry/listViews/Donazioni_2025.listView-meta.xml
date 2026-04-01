@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Donazioni_2025</fullName>
+    <columns>Name</columns>
+    <columns>GiftBatch</columns>
+    <columns>GiftTransaction</columns>
+    <columns>GiftCommitment</columns>
+    <columns>Donor</columns>
+    <columns>Campaign</columns>
+    <columns>PaymentMethod</columns>
+    <columns>GiftAmount</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Anno_di_Competenza__c</field>
+        <operation>equals</operation>
+        <value>2025</value>
+    </filters>
+    <label>Donazioni 2025</label>
+</ListView>

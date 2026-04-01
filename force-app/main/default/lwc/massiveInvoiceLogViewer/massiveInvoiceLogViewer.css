@@ -1,0 +1,12 @@
+.log-entry-header {
+    cursor: pointer;
+    background-color: #f3f3f3;
+}
+
+.log-entry-header:hover {
+    background-color: #e5e5e5;
+}
+
+.visit-detail {
+    background-color: #fafaf9;
+}

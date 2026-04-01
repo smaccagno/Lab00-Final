@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Numero_Totale_di_Visite__c</fullName>
+    <label>Numero Totale di Visite</label>
+    <summarizedField>Anno_Reportistica__c.Totale_Visite_Budgets__c</summarizedField>
+    <summaryForeignKey>Anno_Reportistica__c.Programma__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <type>Summary</type>
+</CustomField>

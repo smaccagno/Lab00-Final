@@ -18,6 +18,24 @@
         <type>Flexipage</type>
         <pageOrSobjectType>Invoice__c</pageOrSobjectType>
     </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Log_Caricamento_Massivo_Fatture_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>MassiveInvoiceLog__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Log_Caricamento_Massivo_Fatture_Record_Page</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>MassiveInvoiceLog__c</pageOrSobjectType>
+    </actionOverrides>
     <brand>
         <headerColor>#0070D2</headerColor>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
@@ -51,6 +69,7 @@
     <tabs>Visit__c</tabs>
     <tabs>Ticket__c</tabs>
     <tabs>Configurazioni__c</tabs>
+    <tabs>MassiveInvoiceLog__c</tabs>
     <uiType>Lightning</uiType>
     <utilityBar>Amministrazione_UtilityBar</utilityBar>
     <workspaceConfig>
@@ -74,6 +93,9 @@
         </mappings>
         <mappings>
             <tab>Invoice__c</tab>
+        </mappings>
+        <mappings>
+            <tab>MassiveInvoiceLog__c</tab>
         </mappings>
         <mappings>
             <tab>Overview_Budget_per_Anno__c</tab>

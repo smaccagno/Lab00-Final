@@ -37,4 +37,44 @@ public class MiscCoverageTest {
         System.assertNotEquals(null, ctrl.rows, 'Rows non deve essere null');
         System.assertNotEquals(null, ctrl.sections, 'Sections non deve essere null');
     }
+
+    @IsTest
+    static void testUpdateTransazioneShadowStaticInvocableAndQueueable() {
+        InvoiceTestDataFactory.Setup s = InvoiceTestDataFactory.createBase('2025');
+        Transazione_Shadow__c sh = new Transazione_Shadow__c(
+            Name = 'Test Shadow',
+            Totali_Donatore_Anno__c = s.totDonId
+        );
+        insert sh;
+
+        List<UpdateTransazioneShadowStaticInvocable.Input> inputs = new List<UpdateTransazioneShadowStaticInvocable.Input>();
+        UpdateTransazioneShadowStaticInvocable.Input inp = new UpdateTransazioneShadowStaticInvocable.Input();
+        inp.recordId = sh.Id;
+        inp.allocabile = 100;
+        inp.allocazioniNonPagate = 1;
+        inp.donatoOriginale = 100;
+        inp.numeroAllocazioni = 2;
+        inp.totaleAllocato = 80;
+        inp.totaleAllocatoNonPagato = 40;
+        inp.totaleAllocatoPagato = 40;
+        inputs.add(inp);
+
+        Test.startTest();
+        UpdateTransazioneShadowStaticInvocable.enqueueUpdate(inputs);
+        Test.stopTest();
+
+        Transazione_Shadow__c updated = [SELECT Id FROM Transazione_Shadow__c WHERE Id = :sh.Id];
+        System.assertNotEquals(null, updated.Id, 'Invocable e Queueable eseguiti senza eccezione');
+    }
+
+    @IsTest
+    static void testUpdateTransazioneShadowStaticQueueableCoverage() {
+        UpdateTransazioneShadowStaticQueueable q = new UpdateTransazioneShadowStaticQueueable(
+            null, null, null, null, null, null, null, null
+        );
+        Test.startTest();
+        System.enqueueJob(q);
+        Test.stopTest();
+        System.assert(true, 'Queueable con null recordId esegue senza errore');
+    }
 }

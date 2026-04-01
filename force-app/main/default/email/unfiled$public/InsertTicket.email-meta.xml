@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Inserimento Offerta</name>
+    <style>none</style>
+    <subject>Nuova offerta disponibile</subject>
+    <textOnly>Ciao {{partner}},
+
+È stata inserita una nuova offerta di {{quantity}} {{type}} da {{structure}} con scadenza il {{expireDate}}.
+
+Puoi procedere all&apos;acquisto/prenotazione tramite l&apos;azione dedicata presente in dashboard.
+
+Grazie.
+
+Il team di progetto
+info@lab00.org</textOnly>
+    <type>custom</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>

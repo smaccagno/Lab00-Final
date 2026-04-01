@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Nuova Struttura</name>
+    <style>none</style>
+    <subject>Sorriso Sospeso - Benvenuto</subject>
+    <textOnly>Email di Benvenuto
+
+Ciao {{Account.Name}},
+
+benvenuto nel progetto SorrisoSospeso.org.
+
+Ti chiediamo gentilmente di accedere al nostro portale tramite il codice di accesso {{Account.StructureCode__c}}
+
+Questo codice è associato alla tua utenza, non perderlo e non diffonderlo.
+
+Grazie.
+
+Il team di progetto
+info@lab00.org</textOnly>
+    <type>custom</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>

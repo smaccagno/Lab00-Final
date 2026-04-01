@@ -11,10 +11,9 @@
         <label>Abbonamento</label>
     </customValue>
     <customValue>
-        <fullName>TicketIssuedToBePaidDiscount</fullName>
+        <fullName>Esperienza</fullName>
         <default>false</default>
-        <isActive>false</isActive>
-        <label>Biglietto Emesso - Da pagare (a prezzo scontato)</label>
+        <label>Esperienza</label>
     </customValue>
     <customValue>
         <fullName>TicketNotIssuedDonated</fullName>
@@ -41,16 +40,16 @@
         <label>Abbonamento Emesso - Donato</label>
     </customValue>
     <customValue>
+        <fullName>SubscriptionIssuedToBePaidFull</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Abbonamento Emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <customValue>
         <fullName>TicketIssuedDonated</fullName>
         <default>false</default>
         <isActive>false</isActive>
         <label>Biglietto Emesso - Donato</label>
-    </customValue>
-    <customValue>
-        <fullName>SubscriptionIssuedToBePaidDiscount</fullName>
-        <default>false</default>
-        <isActive>false</isActive>
-        <label>Abbonamento Emesso - Da pagare (a prezzo scontato)</label>
     </customValue>
     <customValue>
         <fullName>SubscriptionNotIssuedDonated</fullName>
@@ -77,16 +76,22 @@
         <label>Biglietti Multipli</label>
     </customValue>
     <customValue>
-        <fullName>SubscriptionIssuedToBePaidFull</fullName>
+        <fullName>SubscriptionIssuedToBePaidDiscount</fullName>
         <default>false</default>
         <isActive>false</isActive>
-        <label>Abbonamento Emesso - Da pagare (a prezzo pieno)</label>
+        <label>Abbonamento Emesso - Da pagare (a prezzo scontato)</label>
     </customValue>
     <customValue>
         <fullName>TicketIssuedToBePaidFull</fullName>
         <default>false</default>
         <isActive>false</isActive>
         <label>Biglietto Emesso - Da pagare (a prezzo pieno)</label>
+    </customValue>
+    <customValue>
+        <fullName>TicketIssuedToBePaidDiscount</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Biglietto Emesso - Da pagare (a prezzo scontato)</label>
     </customValue>
     <masterLabel>Tipologia Biglietto</masterLabel>
     <sorted>false</sorted>

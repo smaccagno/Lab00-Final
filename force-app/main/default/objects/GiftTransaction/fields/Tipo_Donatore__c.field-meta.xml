@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tipo_Donatore__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(
+    ISPICKVAL(Donation__r.Tipo_Donatore__c, &quot;grande_donatore&quot;),
+    &quot;Grande Donatore&quot;,
+    IF(
+        ISPICKVAL(Donation__r.Tipo_Donatore__c, &quot;piccolo_donatore&quot;),
+        &quot;Piccolo Donatore&quot;, &quot;&quot;
+						)
+			)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Tipo Donatore</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

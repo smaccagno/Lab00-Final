@@ -1,0 +1,344 @@
+<template>
+    <lightning-card title="Inserisci Donazioni Multiple" icon-name="standard:donations">
+        <div class="slds-p-around_medium">
+            <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                <div class="slds-col">
+                    <lightning-button 
+                        label="Aggiungi Riga" 
+                        onclick={addRow}
+                        variant="neutral"
+                        icon-name="utility:add">
+                    </lightning-button>
+                    <lightning-button 
+                        label="Inserisci Valori Copiati" 
+                        onclick={pasteFromClipboard}
+                        variant="neutral"
+                        icon-name="utility:paste"
+                        class="slds-m-left_small">
+                    </lightning-button>
+                    <lightning-button 
+                        label="Elimina Riga Selezionata" 
+                        onclick={deleteSelectedRow}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isNoRowSelected}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Elimina Intera Donazione" 
+                        onclick={deleteEntireDonation}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isNoRowSelected}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Elimina tutte le righe" 
+                        onclick={deleteAllRows}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isTableEmpty}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col slds-text-align_right">
+                    <lightning-button 
+                        label="Crea Donazioni" 
+                        onclick={handleCreateDonations}
+                        variant="brand"
+                        icon-name="utility:save"
+                        disabled={isCreatingDisabled}>
+                    </lightning-button>
+                </div>
+            </div>
+            
+            <!-- Tabella tipo Excel -->
+            <div class="excel-table-container">
+                <table class="excel-table" role="grid">
+                    <thead>
+                        <tr>
+                            <th class="row-number-header">#</th>
+                            <th class="editable-cell-header">Programma</th>
+                            <th class="editable-cell-header">Donatore</th>
+                            <th class="editable-cell-header">Descrizione</th>
+                            <th class="editable-cell-header">Data di ricezione</th>
+                            <th class="editable-cell-header">Trattenuta %</th>
+                            <th class="editable-cell-header">Ammontare</th>
+                            <th class="editable-cell-header">Data di Competenza</th>
+                            <th class="editable-cell-header">Metodo di pagamento</th>
+                            <th class="editable-cell-header">Distribuzione al Partner</th>
+                            <th class="editable-cell-header">Percentuale %</th>
+                            <th class="editable-cell-header">Valore Distribuito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={rows} for:item="row" for:index="rowIndex">
+                            <tr key={row.id} 
+                                data-row-index={rowIndex}
+                                class={row.rowClass}>
+                                <td class="row-number-cell"
+                                    data-row-index={rowIndex}
+                                    onclick={selectRow}>
+                                    <div class="row-number-container">
+                                        <span>{row.rowNumber}</span>
+                                    </div>
+                                </td>
+                                <template if:true={row.isFirstInGroup}>
+                                    <td class={row.programmaClass} 
+                                        data-field="Programma"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="cell-content-wrapper" data-field="Programma" data-row-index={rowIndex}>
+                                            <span class={row.programmaTextClass}>{row.ProgrammaName}</span>
+                                            <template if:true={row.ProgrammaName}>
+                                                <button type="button" class="cell-clear-button" data-field="Programma" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.donatoreClass} 
+                                        data-field="Donatore"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="cell-content-wrapper" data-field="Donatore" data-row-index={rowIndex}>
+                                            <span class={row.donatoreTextClass}>{row.DonatoreName}</span>
+                                            <template if:true={row.DonatoreName}>
+                                                <button type="button" class="cell-clear-button" data-field="Donatore" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.descrizioneClass} 
+                                        data-field="Nome_della_Donazione"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="numeric-field-container" data-field="Nome_della_Donazione" data-row-index={rowIndex}>
+                                            <template if:false={row.isEditingDescrizione}>
+                                                <span class="numeric-field-value">{row.Nome_della_Donazione}</span>
+                                                <template if:true={row.Nome_della_Donazione}>
+                                                    <button type="button" class="cell-clear-button" data-field="Nome_della_Donazione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                                </template>
+                                            </template>
+                                            <template if:true={row.isEditingDescrizione}>
+                                                <div class="numeric-field-edit-box text-field-edit-box">
+                                                    <input type="text" class="text-field-edit-input" value={descrizioneModalValue} data-field="Nome_della_Donazione" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} placeholder="Descrizione donazione" />
+                                                    <button type="button" class="cell-action-copy" data-field="Nome_della_Donazione" onclick={handleCellCopyClick} title="Copia"><lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon></button>
+                                                    <button type="button" class="cell-action-paste" data-field="Nome_della_Donazione" onclick={handleCellPasteClick} title="Incolla"><lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-confirm-button" data-field="Nome_della_Donazione" onclick={handleNumericFieldConfirmClick} title="Conferma"><lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-cancel-button" data-field="Nome_della_Donazione" onclick={handleNumericFieldCancelClick} title="Annulla"><lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon></button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.dataRicezioneClass} 
+                                        data-field="Data_di_ricezione"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="cell-content-wrapper" data-field="Data_di_ricezione" data-row-index={rowIndex}>
+                                            <span onblur={handleCellBlur} oninput={handleCellInput}>{row.Data_di_ricezione}</span>
+                                            <template if:true={row.Data_di_ricezione}>
+                                                <button type="button" class="cell-clear-button" data-field="Data_di_ricezione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class="editable-cell" 
+                                        data-field="Trattenuta"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="numeric-field-container" data-field="Trattenuta" data-row-index={rowIndex}>
+                                            <template if:false={row.isEditingTrattenuta}>
+                                                <span class="numeric-field-value">{row.Trattenuta}</span>
+                                                <template if:true={row.Trattenuta}>
+                                                    <button type="button" class="cell-clear-button" data-field="Trattenuta" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                                </template>
+                                            </template>
+                                            <template if:true={row.isEditingTrattenuta}>
+                                                <div class="numeric-field-edit-box">
+                                                    <input type="text" class="numeric-field-edit-input" value={trattenutaModalValue} data-field="Trattenuta" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} />
+                                                    <button type="button" class="cell-action-copy" data-field="Trattenuta" onclick={handleCellCopyClick} title="Copia"><lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon></button>
+                                                    <button type="button" class="cell-action-paste" data-field="Trattenuta" onclick={handleCellPasteClick} title="Incolla"><lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-confirm-button" data-field="Trattenuta" onclick={handleNumericFieldConfirmClick} title="Conferma"><lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-cancel-button" data-field="Trattenuta" onclick={handleNumericFieldCancelClick} title="Annulla"><lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon></button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.ammontareClass} 
+                                        data-field="Ammontare"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="numeric-field-container" data-field="Ammontare" data-row-index={rowIndex}>
+                                            <template if:false={row.isEditingAmmontare}>
+                                                <span class="numeric-field-value">{row.AmmontareVisual}</span>
+                                                <template if:true={row.Ammontare}>
+                                                    <button type="button" class="cell-clear-button" data-field="Ammontare" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                                </template>
+                                            </template>
+                                            <template if:true={row.isEditingAmmontare}>
+                                                <div class="numeric-field-edit-box">
+                                                    <input type="text" class="numeric-field-edit-input" value={ammontareModalValue} data-field="Ammontare" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} />
+                                                    <button type="button" class="cell-action-copy" data-field="Ammontare" onclick={handleCellCopyClick} title="Copia"><lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon></button>
+                                                    <button type="button" class="cell-action-paste" data-field="Ammontare" onclick={handleCellPasteClick} title="Incolla"><lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-confirm-button" data-field="Ammontare" onclick={handleNumericFieldConfirmClick} title="Conferma"><lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon></button>
+                                                    <button type="button" class="numeric-field-cancel-button" data-field="Ammontare" onclick={handleNumericFieldCancelClick} title="Annulla"><lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon></button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.dataCompetenzaClass} 
+                                        data-field="Data_di_Competenza"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="cell-content-wrapper" data-field="Data_di_Competenza" data-row-index={rowIndex}>
+                                            <span onblur={handleCellBlur} oninput={handleCellInput}>{row.Data_di_Competenza}</span>
+                                            <template if:true={row.Data_di_Competenza}>
+                                                <button type="button" class="cell-clear-button" data-field="Data_di_Competenza" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class={row.metodoPagamentoClass} 
+                                        data-field="Metodo_di_pagamento"
+                                        data-row-index={rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}
+                                        rowspan={row.rowSpan}>
+                                        <div class="cell-content-wrapper" data-field="Metodo_di_pagamento" data-row-index={rowIndex}>
+                                            <span>{row.Metodo_di_pagamento}</span>
+                                            <template if:true={row.Metodo_di_pagamento}>
+                                                <button type="button" class="cell-clear-button" data-field="Metodo_di_pagamento" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                </template>
+                                <template if:false={row.isFirstInGroup}>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                    <td class="hidden-cell" style="display:none;"></td>
+                                </template>
+                                <td class={row.partnerClass} 
+                                    data-field="Partner_Allocato"
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellClick}
+                                    ondblclick={handleCellDblClick}>
+                                    <div class="cell-content-wrapper" data-field="Partner_Allocato" data-row-index={rowIndex}>
+                                        <span class={row.partnerTextClass}>{row.Partner_AllocatoName}</span>
+                                        <template if:true={row.Partner_AllocatoName}>
+                                            <button type="button" class="cell-clear-button" data-field="Partner_Allocato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class={row.percentualeClassFull}
+                                    data-field="Percentuale_Allocazione"
+                                    data-row-index={rowIndex}
+                                    onclick={handleCellClick}
+                                    ondblclick={handleCellDblClick}>
+                                    <div class="numeric-field-container" data-field="Percentuale_Allocazione" data-row-index={rowIndex}>
+                                        <template if:false={row.isEditingPercentuale}>
+                                            <span class="numeric-field-value">{row.Percentuale_Allocazione}</span>
+                                            <template if:true={row.Percentuale_Allocazione}>
+                                                <button type="button" class="cell-clear-button" data-field="Percentuale_Allocazione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </template>
+                                        <template if:true={row.isEditingPercentuale}>
+                                            <div class="numeric-field-edit-box">
+                                                <input type="text" class="numeric-field-edit-input" value={percentualeModalValue} data-field="Percentuale_Allocazione" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} />
+                                                <button type="button" class="cell-action-copy" data-field="Percentuale_Allocazione" onclick={handleCellCopyClick} title="Copia"><lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon></button>
+                                                <button type="button" class="cell-action-paste" data-field="Percentuale_Allocazione" onclick={handleCellPasteClick} title="Incolla"><lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon></button>
+                                                <button type="button" class="numeric-field-confirm-button" data-field="Percentuale_Allocazione" onclick={handleNumericFieldConfirmClick} title="Conferma"><lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon></button>
+                                                <button type="button" class="numeric-field-cancel-button" data-field="Percentuale_Allocazione" onclick={handleNumericFieldCancelClick} title="Annulla"><lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon></button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                    <td class={row.valoreDistribuitoClassFull}
+                                        data-field="Valore_Distribuito"
+                                        data-row-index={rowIndex}>
+                                        {row.Valore_Distribuito}
+                                    </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Custom Dropdown Menu -->
+            <template if:true={dropdownOpen}>
+                <div class="dropdown-menu" style={dropdownStyle}>
+                    <div class="dropdown-header">
+                        <input type="text" 
+                               class="dropdown-filter" 
+                               placeholder="Cerca..." 
+                               value={dropdownFilter}
+                               oninput={handleDropdownFilter}
+                               onkeydown={handleDropdownKeyDown}
+                               onblur={handleDropdownBlur} />
+                    </div>
+                    <div class="dropdown-list">
+                        <template if:true={dropdownFilteredOptions.length}>
+                            <template for:each={dropdownFilteredOptions} for:item="option">
+                                <div key={option.value} 
+                                     class="dropdown-item" 
+                                     data-value={option.value}
+                                     onmousedown={selectDropdownOption}>
+                                    {option.label}
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={dropdownFilteredOptions.length}>
+                            <div class="dropdown-item dropdown-item-empty">Nessun risultato trovato</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Menu Azioni Cella (Copia/Incolla) - appare al click sulla cella -->
+            <template if:true={cellActionMenuOpen}>
+                <div class="cell-action-menu" style={cellActionMenuStyle}>
+                    <button type="button" class="cell-action-menu-btn" onclick={handleCellCopyClick} title="Copia valore cella">
+                        <lightning-icon icon-name="utility:copy" size="x-small" alternative-text="Copia"></lightning-icon>
+                        <span>Copia</span>
+                    </button>
+                    <button type="button" class="cell-action-menu-btn" onclick={handleCellPasteClick} title="Incolla nella cella">
+                        <lightning-icon icon-name="utility:paste" size="x-small" alternative-text="Incolla"></lightning-icon>
+                        <span>Incolla</span>
+                    </button>
+                </div>
+            </template>
+            
+            <!-- Date Picker -->
+            <template if:true={isDatePickerOpen}>
+                <input 
+                    type="date" 
+                    class="date-picker-input"
+                    value={currentDatePickerValue}
+                    data-field={currentDatePickerField}
+                    onchange={handleDateChange}
+                    onblur={closeDatePicker}
+                />
+            </template>
+            
+            <template if:true={isLoading}>
+                <div class="slds-m-top_medium">
+                    <lightning-spinner alternative-text="Caricamento..."></lightning-spinner>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -276,10 +276,22 @@ public without sharing class AllineaBudgetAnnoAction {
     if (!obaPatch.isEmpty())
       update obaPatch;
 
-    /* 12. Aggiorna campi statici -------------------------------- */
+    /* 12. Aggiorna Fattura_Shadow PRIMA dei campi statici OBA.
+     *    I rollup su Totali_Budget_Anno__c dipendono da Fattura_Shadow.
+     */
+    Set<Id> affectedObaIds = new Set<Id>();
+    for (PairKey p : pairs) {
+      if (p.oba != null && p.oba.Id != null) {
+        affectedObaIds.add(p.oba.Id);
+      }
+    }
+    if (!affectedObaIds.isEmpty())
+      InvoiceStaticValuesUpdater.updateStaticValuesByOverviewBudgetIds(affectedObaIds);
+
+    /* 13. Aggiorna campi statici OBA da formule ----------------- */
     updateStaticFields(existing);
 
-    /* 13. Output */
+    /* 14. Output */
     return wrap(
       'Budget elaborati: ' +
         budgetIds.size() +

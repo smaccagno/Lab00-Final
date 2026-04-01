@@ -3,7 +3,7 @@ public with sharing class Transazioni {
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getRelatedRecords(String year, String program, String status) {
         
-        String baseQuery = 'SELECT Id, Name, Allocation_not_paid__c, CampaignId, Campaign.Name, CurrentAmount, Data_di_Competenza__c, DonorId, Nome_Donatore__c, ' +
+        String baseQuery = 'SELECT Id, Name, Description, Allocation_not_paid__c, CampaignId, Campaign.Name, CurrentAmount, Data_di_Competenza__c, DonorId, Nome_Donatore__c, ' +
                           'Programma__r.Name, Original_Donation_Amount__c, PaymentMethod, Payment_Status__c, Programma__c, Status, ' +
                           'Total_Allocations__c, Withholding__c, TransactionDate, Totale_Allocato_NON_Pagato__c, ' +
                           'Totale_Allocato_Pagato__c, Totale_Allocato__c FROM GiftTransaction';

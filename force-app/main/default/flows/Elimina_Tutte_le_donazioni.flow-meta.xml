@@ -283,6 +283,76 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
+        <name>Ottieni_Allocazioni_Shadow</name>
+        <label>Ottieni Allocazioni Shadow</label>
+        <locationX>182</locationX>
+        <locationY>1634</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Ottieni_Pagamenti_Da_Cancellare</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Donation_Transaction_Allocation__c</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>AllocazioniListId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Distribuzione_Shadow__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Ottieni_donazioni</name>
+        <label>Ottieni donazioni</label>
+        <locationX>182</locationX>
+        <locationY>950</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Ottieni_Transazioni_Shadow</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>GiftTransactionId</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>transactionIdList</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>GiftEntry</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Ottieni_Pagamenti_Da_Cancellare</name>
+        <label>Ottieni Pagamenti Da Cancellare</label>
+        <locationX>182</locationX>
+        <locationY>1688</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Cancella_Pagamenti</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Da Pagare</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Id</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>PaymentIdList</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Payment__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Ottieni_Pagamenti_Pagati</name>
         <label>Ottieni Pagamenti Pagati</label>
         <locationX>182</locationX>
@@ -315,111 +385,6 @@
         </filters>
         <getFirstRecordOnly>false</getFirstRecordOnly>
         <object>GiftTransactionDesignation</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Verifica_Pagamenti_Condivisi</name>
-        <label>Verifica Pagamenti Condivisi</label>
-        <locationX>182</locationX>
-        <locationY>1490</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Esistono_Pagamenti_Condivisi</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Payment__c</field>
-            <operator>In</operator>
-            <value>
-                <elementReference>PaymentIdList</elementReference>
-            </value>
-        </filters>
-        <filters>
-            <field>Payment__c</field>
-            <operator>IsNull</operator>
-            <value>
-                <booleanValue>false</booleanValue>
-            </value>
-        </filters>
-        <filters>
-            <field>GiftTransactionId</field>
-            <operator>NotIn</operator>
-            <value>
-                <elementReference>transactionIdList</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>false</getFirstRecordOnly>
-        <object>GiftTransactionDesignation</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Ottieni_Allocazioni_Shadow</name>
-        <label>Ottieni Allocazioni Shadow</label>
-        <locationX>182</locationX>
-        <locationY>1634</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Ottieni_Pagamenti_Da_Cancellare</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Donation_Transaction_Allocation__c</field>
-            <operator>In</operator>
-            <value>
-                <elementReference>AllocazioniListId</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>false</getFirstRecordOnly>
-        <object>Distribuzione_Shadow__c</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Ottieni_Pagamenti_Da_Cancellare</name>
-        <label>Ottieni Pagamenti Da Cancellare</label>
-        <locationX>182</locationX>
-        <locationY>1688</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Cancella_Pagamenti</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Status__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Da Pagare</stringValue>
-            </value>
-        </filters>
-        <filters>
-            <field>Id</field>
-            <operator>In</operator>
-            <value>
-                <elementReference>PaymentIdList</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>false</getFirstRecordOnly>
-        <object>Payment__c</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
-        <name>Ottieni_donazioni</name>
-        <label>Ottieni donazioni</label>
-        <locationX>182</locationX>
-        <locationY>950</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Ottieni_Transazioni_Shadow</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>GiftTransactionId</field>
-            <operator>In</operator>
-            <value>
-                <elementReference>transactionIdList</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>false</getFirstRecordOnly>
-        <object>GiftEntry</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
@@ -475,6 +440,41 @@
         </filters>
         <getFirstRecordOnly>false</getFirstRecordOnly>
         <object>Transazione_Shadow__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Verifica_Pagamenti_Condivisi</name>
+        <label>Verifica Pagamenti Condivisi</label>
+        <locationX>182</locationX>
+        <locationY>1490</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Esistono_Pagamenti_Condivisi</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Payment__c</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>PaymentIdList</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Payment__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <filters>
+            <field>GiftTransactionId</field>
+            <operator>NotIn</operator>
+            <value>
+                <elementReference>transactionIdList</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>GiftTransactionDesignation</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <screens>
@@ -617,13 +617,6 @@
         <isOutput>false</isOutput>
     </variables>
     <variables>
-        <name>PaymentIdList</name>
-        <dataType>String</dataType>
-        <isCollection>true</isCollection>
-        <isInput>false</isInput>
-        <isOutput>false</isOutput>
-    </variables>
-    <variables>
         <name>donazioni_da_cancellare</name>
         <dataType>SObject</dataType>
         <isCollection>true</isCollection>
@@ -646,6 +639,13 @@
         <isInput>false</isInput>
         <isOutput>false</isOutput>
         <objectType>GiftTransaction</objectType>
+    </variables>
+    <variables>
+        <name>PaymentIdList</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
     <variables>
         <name>recordId</name>

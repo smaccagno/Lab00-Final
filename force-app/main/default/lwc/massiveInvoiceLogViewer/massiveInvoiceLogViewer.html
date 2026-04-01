@@ -1,0 +1,104 @@
+<template>
+    <lightning-card title="Dettaglio Log Caricamento Massivo" icon-name="standard:log_a_call">
+        <div class="slds-p-around_medium">
+            <template lwc:if={error}>
+                <div class="slds-m-bottom_medium">
+                    <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                        <span class="slds-assistive-text">Errore</span>
+                        <h2>Errore nel caricamento del log: {errorMessage}</h2>
+                    </div>
+                </div>
+            </template>
+            
+            <template lwc:if={data}>
+                <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_large">
+                    <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                        <div class="slds-text-title">Data</div>
+                        <div class="slds-text-body_regular">{formattedData}</div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                        <div class="slds-text-title">Utente</div>
+                        <div class="slds-text-body_regular">{utente}</div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                        <div class="slds-text-title">Numero Fatture</div>
+                        <div class="slds-text-body_regular">{numeroFatture}</div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                        <div class="slds-text-title">Numero Visite</div>
+                        <div class="slds-text-body_regular">{numeroVisite}</div>
+                    </div>
+                </div>
+                
+                <template lwc:if={hasLogEntries}>
+                    <div class="slds-text-heading_small slds-m-bottom_small">Fatture e Visite Caricate</div>
+                    <div class="log-entries">
+                        <template for:each={entriesWithIndex} for:item="entry">
+                            <div key={entry.index} class="log-entry slds-box slds-m-bottom_small">
+                                <div 
+                                    class="log-entry-header slds-grid slds-grid_vertical-align-center slds-p-around_small slds-border_bottom"
+                                    data-index={entry.index}
+                                    onclick={toggleSection}
+                                    role="button"
+                                    tabindex="0"
+                                >
+                                    <div class="slds-col slds-grow">
+                                        <strong>Riga {entry.rowNumber}</strong>
+                                        <span class="slds-m-left_small">- {entry.invoiceNumber}</span>
+                                        <span class={entry.badgeClass}>
+                                            {entry.status}
+                                        </span>
+                                        <span lwc:if={entry.visitsCreated} class="slds-m-left_small">
+                                            ({entry.visitsCreated} visita/e)
+                                        </span>
+                                    </div>
+                                    <lightning-icon 
+                                        icon-name={entry.expandIcon}
+                                        alternative-text="Espandi"
+                                        size="x-small"
+                                        class="slds-m-left_small">
+                                    </lightning-icon>
+                                </div>
+                                <template lwc:if={entry.isExpanded}>
+                                    <div class="log-entry-body slds-p-around_small">
+                                        <template lwc:if={entry.visitError}>
+                                            <div class="slds-m-bottom_small slds-p-around_small slds-box slds-box_x-small slds-theme_error">
+                                                <div class="slds-text-heading_small slds-m-bottom_x-small">Errori nella creazione delle visite</div>
+                                                <div class="slds-text-body_small" style="white-space: pre-wrap;">{entry.visitError}</div>
+                                            </div>
+                                        </template>
+                                        <div class="slds-grid slds-wrap slds-gutters_small">
+                                            <template for:each={entry.invoiceFieldsDisplay} for:item="field">
+                                                <div key={field.key} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_x-small">
+                                                    <span class="slds-text-title slds-m-right_x-small">{field.label}:</span>
+                                                    <span class="slds-text-body_regular">{field.formattedValue}</span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <template lwc:if={entry.visitDetails}>
+                                            <div class="slds-m-top_medium">
+                                                <div class="slds-text-title slds-m-bottom_x-small">Visite associate</div>
+                                                            <template for:each={entry.visitDetails} for:item="visit">
+                                                    <div key={visit.id} class={visit.boxClass}>
+                                                        <div class="slds-grid slds-wrap slds-gutters_x-small">
+                                                            <template for:each={visit.visitFieldsDisplay} for:item="vfield">
+                                                                <div key={vfield.key} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                                                    <span class="slds-text-title">{vfield.label}:</span>
+                                                                    <span class="slds-m-left_x-small">{vfield.formattedValue}</span>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__FlowScreen</target>
+        <target>lightning__Tab</target>
+        <target>lightning__AppPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="availableProgramsJson" type="String" label="Available Programs JSON" description="Lista dei programmi disponibili come JSON string" />
+            <property name="availablePaymentMethodsJson" type="String" label="Available Payment Methods JSON" description="Lista dei metodi di pagamento disponibili come JSON string" />
+            <property name="availableDonorTypesJson" type="String" label="Available Donor Types JSON" description="Lista dei tipi donatore disponibili come JSON string" />
+            <property name="programId" type="String" label="Program ID" description="ID del programma (opzionale)" />
+            <property name="recordTypeId" type="String" label="Record Type ID" description="ID del record type del donatore (opzionale)" />
+            <property name="populatedRowsCount" type="String" label="Populated Rows Count" description="Numero di righe popolate" />
+            <property name="createdDonationIds" type="String" label="Created Donation IDs" description="Lista degli ID delle donazioni create (JSON)" />
+            <property name="firstCreatedDonationId" type="String" label="First Created Donation ID" description="ID della prima donazione creata" />
+            <property name="donationsCreated" type="String" label="Donations Created" description="Flag che indica se le donazioni sono state create" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

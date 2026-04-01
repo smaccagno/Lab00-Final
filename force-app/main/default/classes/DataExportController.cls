@@ -90,20 +90,31 @@ public with sharing class DataExportController {
         // 6. Boolean - sempre "TRUE" e "FALSE"
         List<String> booleanValues = new List<String>{'TRUE', 'FALSE'};
         
-        // 7. Partner - nomi da Account con Type = 'Investor', campo Nome_Donatore__c
+        // 7. Partner - account con enrollment attivo sul programma "Tempo Sospeso"
         // Escludi gli Account con DEFAULT__c = true (Default for invoice)
-        // Ottimizzazione: usa Set per deduplicazione e query con ORDER BY
-        Set<String> partnersSet = new Set<String>();
-        for (Account acc : [
-            SELECT Nome_Donatore__c 
-            FROM Account 
-            WHERE Type = 'Investor' 
-            AND Nome_Donatore__c != null
-            AND (DEFAULT__c = false OR DEFAULT__c = null)
-            ORDER BY Nome_Donatore__c
-            LIMIT 10000
+        // Mantieni il campo Nome_Donatore__c come nel componente originale
+        Set<Id> enrolledPartnerIds = new Set<Id>();
+        for (ProgramEnrollment pe : [
+            SELECT AccountId
+            FROM ProgramEnrollment
+            WHERE Program.Name = :ProgramEnrollmentService.TEMPO_SOSPESO
+            AND IsActive = TRUE
+            AND AccountId != null
         ]) {
-            if (acc.Nome_Donatore__c != null) {
+            enrolledPartnerIds.add(pe.AccountId);
+        }
+
+        Set<String> partnersSet = new Set<String>();
+        if (!enrolledPartnerIds.isEmpty()) {
+            for (Account acc : [
+                SELECT Nome_Donatore__c
+                FROM Account
+                WHERE Id IN :enrolledPartnerIds
+                AND Nome_Donatore__c != null
+                AND (DEFAULT__c = false OR DEFAULT__c = null)
+                ORDER BY Nome_Donatore__c
+                LIMIT 10000
+            ]) {
                 partnersSet.add(acc.Nome_Donatore__c);
             }
         }

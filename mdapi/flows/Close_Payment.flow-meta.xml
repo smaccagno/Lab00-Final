@@ -138,6 +138,29 @@
         </connector>
     </assignments>
     <assignments>
+        <name>Set_Transaction_Payment_Status</name>
+        <label>Set Transaction Payment Status</label>
+        <locationX>182</locationX>
+        <locationY>2438</locationY>
+        <assignmentItems>
+            <assignToReference>Loop_Update_Transaction_Status.Payment_Status__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Payment Done</stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>transactions_sobject_to_update</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_Update_Transaction_Status</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_Update_Transaction_Status</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Update_Payment</name>
         <label>Update Payment</label>
         <locationX>358</locationX>
@@ -208,20 +231,6 @@
         </noMoreValuesConnector>
     </loops>
     <loops>
-        <name>Loop_over_Transactions</name>
-        <label>Loop over Transactions</label>
-        <locationX>182</locationX>
-        <locationY>2222</locationY>
-        <collectionReference>transactions_to_be_updated</collectionReference>
-        <iterationOrder>Asc</iterationOrder>
-        <nextValueConnector>
-            <targetReference>Update_Single_Transaction</targetReference>
-        </nextValueConnector>
-        <noMoreValuesConnector>
-            <targetReference>Update_List_of_Payments</targetReference>
-        </noMoreValuesConnector>
-    </loops>
-    <loops>
         <name>Loop_over_Payments</name>
         <label>Loop over Payments</label>
         <locationX>182</locationX>
@@ -233,6 +242,20 @@
         </nextValueConnector>
         <noMoreValuesConnector>
             <targetReference>Update_Allocations</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <loops>
+        <name>Loop_Update_Transaction_Status</name>
+        <label>Loop Update Transaction Status</label>
+        <locationX>182</locationX>
+        <locationY>2330</locationY>
+        <collectionReference>Get_Transactions_To_Update</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Set_Transaction_Payment_Status</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Update_Transactions_Bulk</targetReference>
         </noMoreValuesConnector>
     </loops>
     <processMetadataValues>
@@ -338,39 +361,46 @@
         <object>Overview_Budget_per_Anno__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
+    <recordLookups>
+        <name>Get_Transactions_To_Update</name>
+        <label>Get Transactions To Update</label>
+        <locationX>182</locationX>
+        <locationY>2222</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Loop_Update_Transaction_Status</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>transactions_to_be_updated</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>GiftTransaction</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
     <recordUpdates>
         <name>Update_Allocations</name>
         <label>Update Allocations</label>
         <locationX>182</locationX>
         <locationY>2114</locationY>
         <connector>
-            <targetReference>Loop_over_Transactions</targetReference>
+            <targetReference>Get_Transactions_To_Update</targetReference>
         </connector>
         <inputReference>allocations_to_be_updated</inputReference>
     </recordUpdates>
     <recordUpdates>
-        <name>Update_Single_Transaction</name>
-        <label>Update Single Transaction</label>
+        <name>Update_Transactions_Bulk</name>
+        <label>Update Transactions Bulk</label>
         <locationX>182</locationX>
-        <locationY>2330</locationY>
+        <locationY>2546</locationY>
         <connector>
-            <targetReference>Loop_over_Transactions</targetReference>
+            <targetReference>Update_List_of_Payments</targetReference>
         </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Id</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>Loop_over_Transactions</elementReference>
-            </value>
-        </filters>
-        <inputAssignments>
-            <field>Payment_Status__c</field>
-            <value>
-                <stringValue>Payment Done</stringValue>
-            </value>
-        </inputAssignments>
-        <object>GiftTransaction</object>
+        <inputReference>transactions_sobject_to_update</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_List_of_Payments</name>
@@ -632,5 +662,13 @@
         <isCollection>true</isCollection>
         <isInput>false</isInput>
         <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>transactions_sobject_to_update</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>GiftTransaction</objectType>
     </variables>
 </Flow>

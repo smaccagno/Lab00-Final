@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tipo_Donatore__c</fullName>
+    <label>Tipo Donatore</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>grande_donatore</fullName>
+                <default>false</default>
+                <label>Grande Donatore</label>
+            </value>
+            <value>
+                <fullName>piccolo_donatore</fullName>
+                <default>false</default>
+                <label>Piccolo Donatore</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

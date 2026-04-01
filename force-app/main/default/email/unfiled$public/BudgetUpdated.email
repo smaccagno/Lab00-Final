@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4; /* Colore di sfondo delicato */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff; /* Sfondo bianco per il contenuto dell'email */
+            border-radius: 8px; /* Angoli arrotondati */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Ombra per effetto di profondità */
+            padding: 20px;
+            max-width: 600px; /* Larghezza massima */
+            margin: auto; /* Centra il contenuto */
+        }
+        h1 {
+            color: #333333; /* Colore del testo dell'intestazione */
+            font-size: 24px; /* Dimensione del testo dell'intestazione */
+            margin-bottom: 10px; /* Spazio sotto l'intestazione */
+        }
+        p {
+            color: #666666; /* Colore del testo */
+            line-height: 1.6; /* Spaziatura tra le righe */
+        }
+        a {
+            color: #007BFF; /* Colore del link */
+            text-decoration: none; /* Rimuove la sottolineatura */
+        }
+        a:hover {
+            text-decoration: underline; /* Sottolinea al passaggio del mouse */
+        }
+        .footer {
+            margin-top: 20px; /* Spazio sopra il footer */
+            font-size: 14px; /* Dimensione del testo del footer */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://fondazionelab00ets--dev.sandbox.my.salesforce.com/servlet/servlet.ImageServer?id=015MA000004eaKD&oid=00D7a0000005FFo&lastMod=1750756237000" alt="Logo" style="max-width: 300px; height: auto;">
+        </div>
+        <h1>Ciao {{partner}},</h1>
+<p>E' stato effettuato il pagamento di <b>€ {{!Payment__c.Amount__c}}</b> a favore del tuo budget relativo al Programma <b>{{!Payment__c.Programma__r.Name}}.</b></p>
+        <p>Grazie.</p>
+        <div class="footer">
+            <p>Il team di progetto <br/> 
+            <a href="mailto:info@lab00.org">info@lab00.org</a></p>
+        </div>
+    </div>
+
+</body>
+</html>

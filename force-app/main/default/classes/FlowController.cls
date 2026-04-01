@@ -70,4 +70,5 @@ public with sharing class FlowController {
         Integer index = Math.mod(Math.abs(Crypto.getRandomInteger()), source.length());
         return String.fromCharArray(new Integer[]{source.charAt(index)});
     }
+    
 }

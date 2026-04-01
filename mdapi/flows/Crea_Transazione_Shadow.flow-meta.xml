@@ -69,7 +69,7 @@
         <locationX>182</locationX>
         <locationY>839</locationY>
         <defaultConnector>
-            <targetReference>Crea_Shadow</targetReference>
+            <targetReference>Ha_Totali_Donatore_Anno</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -88,7 +88,34 @@
             <label>Esiste</label>
         </rules>
     </decisions>
+    <decisions>
+        <name>Ha_Totali_Donatore_Anno</name>
+        <label>Ha Totali Donatore Anno?</label>
+        <locationX>314</locationX>
+        <locationY>947</locationY>
+        <defaultConnectorLabel>Skip (no Totali)</defaultConnectorLabel>
+        <rules>
+            <name>Ha_Totali</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>totali_donatore_anno_id</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Crea_Shadow</targetReference>
+            </connector>
+            <label>Ha Totali</label>
+        </rules>
+    </decisions>
     <environments>Default</environments>
+    <formulas>
+        <name>totali_donatore_anno_id</name>
+        <dataType>String</dataType>
+        <expression>BLANKVALUE({!Recupera_Transazione.Reporting_Year__r.Totali_Donatore_Anno__r.Id}, {!Recupera_Donatore_Anno.Totali_Donatore_Anno__c})</expression>
+    </formulas>
     <formulas>
         <name>transaction_shadow_name</name>
         <dataType>String</dataType>
@@ -133,7 +160,7 @@
         <inputAssignments>
             <field>Totali_Donatore_Anno__c</field>
             <value>
-                <elementReference>Recupera_Transazione.Reporting_Year__r.Totali_Donatore_Anno__r.Id</elementReference>
+                <elementReference>totali_donatore_anno_id</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>

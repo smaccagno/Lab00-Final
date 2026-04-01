@@ -57,6 +57,12 @@
             </value>
         </inputAssignments>
         <inputAssignments>
+            <field>Description</field>
+            <value>
+                <elementReference>Ottieni_Donazione.Title__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <field>Donation__c</field>
             <value>
                 <elementReference>Ottieni_Donazione.Id</elementReference>

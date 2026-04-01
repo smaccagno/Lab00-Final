@@ -3,16 +3,6 @@
     <apiVersion>63.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <environments>Default</environments>
-    <formulas>
-        <name>anno_pagamento</name>
-        <dataType>String</dataType>
-        <expression>TEXT(YEAR({!$Record.Data_di_Pagamento__c}))</expression>
-    </formulas>
-    <formulas>
-        <name>pagamento_shadow_name</name>
-        <dataType>String</dataType>
-        <expression>{!$Record.Name} &amp; &quot; - Shadow&quot;</expression>
-    </formulas>
     <interviewLabel>Crea Pagamento Shadow {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Crea Pagamento Shadow</label>
     <processMetadataValues>
@@ -37,27 +27,8 @@
     <start>
         <locationX>50</locationX>
         <locationY>0</locationY>
-        <connector>
-            <targetReference>Crea_Pagamento_Shadow_autolaunched</targetReference>
-        </connector>
-        <object>Payment__c</object>
-        <recordTriggerType>Update</recordTriggerType>
-        <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Active</status>
-    <subflows>
-        <name>Crea_Pagamento_Shadow_autolaunched</name>
-        <label>Crea Pagamento Shadow - autolaunched</label>
-        <locationX>176</locationX>
-        <locationY>323</locationY>
-        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
-        <inputAssignments>
-            <name>recordId</name>
-            <value>
-                <elementReference>$Record.Id</elementReference>
-            </value>
-        </inputAssignments>
-    </subflows>
+    <status>Obsolete</status>
     <variables>
         <name>pagamento_shadow_id</name>
         <dataType>String</dataType>

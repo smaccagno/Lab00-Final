@@ -218,14 +218,13 @@
                                         </div>
                                     </template>
                                 </div>
-                                <div class="slds-m-top_small">
-                                    <lightning-button 
-                                        label="Nessun Partner (usa budget di default)"
-                                        onclick={cancelPartnerSelection}
-                                        variant="neutral">
-                                    </lightning-button>
-                                </div>
                             </template>
+                        </div>
+                    </template>
+                    <template if:false={isConfigurationComplete}>
+                        <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-top_small" role="alert">
+                            <span class="slds-assistive-text">warning</span>
+                            <h2>Per continuare, seleziona Programma e Partner/Budget.</h2>
                         </div>
                     </template>
                 </div>
@@ -235,6 +234,7 @@
     
     <!-- Vista Tabella Originale -->
     <template if:false={showOrganizedView}>
+    <template if:true={isConfigurationComplete}>
     <lightning-card icon-name="standard:invoice">
         <div class="slds-m-around_medium">
             <!-- Istruzioni -->
@@ -1075,6 +1075,7 @@
             </template>
         </div>
     </lightning-card>
+    </template>
     </template>
     
     <!-- Vista Organizzata Fatture e Visite -->

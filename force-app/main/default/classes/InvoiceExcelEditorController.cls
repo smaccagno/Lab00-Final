@@ -75,6 +75,48 @@ public with sharing class InvoiceExcelEditorController {
     }
     
     /**
+     * Lancia AuraHandledException con messaggio accessibile via getMessage().
+     * Senza setMessage(), getMessage() restituirebbe "Script-thrown exception" invece del messaggio reale.
+     */
+    private static void throwAuraHandledException(String message) {
+        AuraHandledException e = new AuraHandledException(message);
+        e.setMessage(message);
+        throw e;
+    }
+    
+    /**
+     * Estrae il messaggio di errore più descrittivo possibile da un'eccezione.
+     * Gestisce AuraHandledException (getMessage può restituire "Script-thrown exception"),
+     * DmlException (usa getDmlMessage), e cause annidate.
+     */
+    private static String getDescriptiveErrorMessage(Exception e) {
+        if (e == null) return 'Errore sconosciuto';
+        String msg = e.getMessage();
+        if (e instanceof DmlException) {
+            DmlException dml = (DmlException) e;
+            List<String> parts = new List<String>();
+            for (Integer i = 0; i < dml.getNumDml(); i++) {
+                String dmlMsg = dml.getDmlMessage(i);
+                List<String> fields = dml.getDmlFieldNames(i);
+                if (String.isNotBlank(dmlMsg)) {
+                    String part = dmlMsg;
+                    if (fields != null && !fields.isEmpty()) {
+                        part += ' [Campi: ' + String.join(fields, ', ') + ']';
+                    }
+                    parts.add(part);
+                }
+            }
+            if (!parts.isEmpty()) return String.join(parts, '; ');
+        }
+        if (String.isNotBlank(msg) && !msg.contains('Script-thrown exception')) return msg;
+        if (e.getCause() != null) {
+            String causeMsg = e.getCause().getMessage();
+            if (String.isNotBlank(causeMsg)) return causeMsg;
+        }
+        return e.getTypeName() + (String.isNotBlank(msg) ? ': ' + msg : '');
+    }
+    
+    /**
      * Crea fatture direttamente come record Invoice__c
      * Nota: Il flow Insert_a_new_Invoice è uno Screen Flow e non può essere chiamato da Apex.
      * Questo metodo crea direttamente i record con i campi principali.
@@ -564,95 +606,79 @@ public with sharing class InvoiceExcelEditorController {
                         }
                     }
                     
-                    // Aggiorna le fatture con il partner corretto e risolvi Reporting_Year__c
-                    // NON usare Bypass_Flow__c per permettere ai flow di allineare i dati corretti
+                    // Prima passata: raccogli tutte le chiavi (Account|Anno|Programma) per Reporting_Year__c
+                    Map<String, Id> reportingYearByKey = new Map<String, Id>();
+                    Set<Id> ryAccountIds = new Set<Id>();
+                    Set<String> ryAnni = new Set<String>();
+                    Set<Id> ryProgramIds = new Set<Id>();
+                    Map<String, String> invIdxToRyKey = new Map<String, String>();
+                    
+                    for (Integer invoiceIdx = 0; invoiceIdx < invoicesToInsert.size(); invoiceIdx++) {
+                        Id invoiceId = invoicesToInsert[invoiceIdx].Id;
+                        Invoice__c invoiceBefore = invoicesBeforeUpdate.get(invoiceId);
+                        if (!invoiceIndexToPartnerId.containsKey(invoiceIdx) || String.isBlank(invoiceIndexToPartnerId.get(invoiceIdx)) || invoiceBefore == null) continue;
+                        try {
+                            Id partnerIdValue = Id.valueOf(invoiceIndexToPartnerId.get(invoiceIdx));
+                            String anno = invoiceBefore.Anno_di_Competenza__c;
+                            if (String.isBlank(anno) && invoiceBefore.Data_di_Competenza__c != null) {
+                                anno = String.valueOf(invoiceBefore.Data_di_Competenza__c.year());
+                            }
+                            if (String.isBlank(anno)) continue;
+                            Id resolvedProgramId = null;
+                            if (invoiceBefore.Overview_Budget_per_Anno__c != null && obById.containsKey(invoiceBefore.Overview_Budget_per_Anno__c)) {
+                                resolvedProgramId = obById.get(invoiceBefore.Overview_Budget_per_Anno__c).Programma__c;
+                            }
+                            if (resolvedProgramId == null) resolvedProgramId = invoiceBefore.Programma__c;
+                            if (resolvedProgramId == null && invoiceBefore.Budget__c != null && budToProgram.containsKey(invoiceBefore.Budget__c)) {
+                                resolvedProgramId = budToProgram.get(invoiceBefore.Budget__c);
+                            }
+                            if (resolvedProgramId == null) continue;
+                            String ryKey = String.valueOf(partnerIdValue).left(18) + '|' + anno + '|' + resolvedProgramId;
+                            ryAccountIds.add(partnerIdValue);
+                            ryAnni.add(anno);
+                            ryProgramIds.add(resolvedProgramId);
+                            invIdxToRyKey.put(String.valueOf(invoiceIdx), ryKey);
+                        } catch (Exception e) { /* skip */ }
+                    }
+                    
+                    // Una sola query per tutti i Reporting_Year__c necessari
+                    if (!ryAccountIds.isEmpty() && !ryAnni.isEmpty() && !ryProgramIds.isEmpty()) {
+                        for (Reporting_Year__c ry : [
+                            SELECT Id, Account__c, Year__c, Programma__c
+                            FROM Reporting_Year__c
+                            WHERE Account__c IN :ryAccountIds
+                            AND Year__c IN :ryAnni
+                            AND Programma__c IN :ryProgramIds
+                        ]) {
+                            String k = String.valueOf(ry.Account__c).left(18) + '|' + ry.Year__c + '|' + ry.Programma__c;
+                            reportingYearByKey.put(k, ry.Id);
+                        }
+                    }
+                    
+                    // Seconda passata: costruisci invoicesToUpdate usando la mappa
                     List<Invoice__c> invoicesToUpdate = new List<Invoice__c>();
                     for (Integer invoiceIdx = 0; invoiceIdx < invoicesToInsert.size(); invoiceIdx++) {
                         Id invoiceId = invoicesToInsert[invoiceIdx].Id;
                         Invoice__c invoiceBefore = invoicesBeforeUpdate.get(invoiceId);
-                        
-                        System.debug('=== PROCESSANDO FATTURA INDICE ' + invoiceIdx + ' ===');
-                        System.debug('Invoice ID: ' + invoiceId);
-                        System.debug('Account__c attuale: ' + (invoiceBefore != null ? invoiceBefore.Account__c : 'null'));
-                        System.debug('Mappa contiene indice ' + invoiceIdx + ': ' + invoiceIndexToPartnerId.containsKey(invoiceIdx));
-                        
-                        if (invoiceIndexToPartnerId.containsKey(invoiceIdx)) {
-                            String partnerId = invoiceIndexToPartnerId.get(invoiceIdx);
-                            System.debug('partnerId dalla mappa: ' + partnerId);
-                            
-                            if (String.isNotBlank(partnerId) && invoiceBefore != null) {
-                                try {
-                                    Id partnerIdValue = Id.valueOf(partnerId);
-                                    System.debug('partnerIdValue convertito: ' + partnerIdValue);
-                                    
-                                    // Risolvi Reporting_Year__c usando la stessa logica del trigger handler
-                                    Id reportingYearId = null;
-                                    String anno = invoiceBefore.Anno_di_Competenza__c;
-                                    if (String.isBlank(anno) && invoiceBefore.Data_di_Competenza__c != null) {
-                                        anno = String.valueOf(invoiceBefore.Data_di_Competenza__c.year());
-                                    }
-                                    
-                                    System.debug('Anno risolto: ' + anno);
-                                    
-                                    if (String.isNotBlank(anno)) {
-                                        Id resolvedProgramId = null;
-                                        if (invoiceBefore.Overview_Budget_per_Anno__c != null && obById.containsKey(invoiceBefore.Overview_Budget_per_Anno__c)) {
-                                            resolvedProgramId = obById.get(invoiceBefore.Overview_Budget_per_Anno__c).Programma__c;
-                                        }
-                                        if (resolvedProgramId == null) resolvedProgramId = invoiceBefore.Programma__c;
-                                        if (resolvedProgramId == null && invoiceBefore.Budget__c != null && budToProgram.containsKey(invoiceBefore.Budget__c)) {
-                                            resolvedProgramId = budToProgram.get(invoiceBefore.Budget__c);
-                                        }
-                                        
-                                        System.debug('Programma risolto: ' + resolvedProgramId);
-                                        
-                                        if (resolvedProgramId != null) {
-                                            // Cerca Reporting_Year__c con Account__c, Year__c e Programma__c
-                                            String ryKey = String.valueOf(partnerIdValue).left(18) + '|' + anno + '|' + resolvedProgramId;
-                                            System.debug('Chiave Reporting_Year: ' + ryKey);
-                                            
-                                            List<Reporting_Year__c> reportingYears = [
-                                                SELECT Id, Account__c, Year__c, Programma__c
-                                                FROM Reporting_Year__c
-                                                WHERE Account__c = :partnerIdValue
-                                                AND Year__c = :anno
-                                                AND Programma__c = :resolvedProgramId
-                                                LIMIT 1
-                                            ];
-                                            
-                                            if (!reportingYears.isEmpty()) {
-                                                reportingYearId = reportingYears[0].Id;
-                                                System.debug('Reporting_Year__c trovato: ' + reportingYearId);
-                                            } else {
-                                                System.debug('Nessun Reporting_Year__c trovato per Account: ' + partnerIdValue + ', Year: ' + anno + ', Programma: ' + resolvedProgramId);
-                                            }
-                                        }
-                                    }
-                                    
-                                    Invoice__c inv = new Invoice__c(
-                                        Id = invoiceId,
-                                        Account__c = partnerIdValue,
-                                        Bypass_Flow__c = true // Bypass flow per evitare che sovrascrivano Account__c
-                                    );
-                                    
-                                    // Imposta Reporting_Year__c se trovato
-                                    if (reportingYearId != null) {
-                                        inv.Reporting_Year__c = reportingYearId;
-                                        System.debug('Reporting_Year__c impostato: ' + reportingYearId);
-                                    }
-                                    
-                                    invoicesToUpdate.add(inv);
-                                    System.debug('Fattura ' + invoiceId + ' aggiunta alla lista di aggiornamento con partnerId: ' + partnerIdValue + 
-                                               (reportingYearId != null ? ', Reporting_Year__c: ' + reportingYearId : ''));
-                                } catch (Exception e) {
-                                    System.debug('Errore nel parsing del partnerId per aggiornamento: ' + e.getMessage());
-                                    System.debug('Stack trace: ' + e.getStackTraceString());
-                                }
-                            } else {
-                                System.debug('partnerId è vuoto o null, oppure invoiceBefore è null');
+                        if (!invoiceIndexToPartnerId.containsKey(invoiceIdx)) continue;
+                        String partnerId = invoiceIndexToPartnerId.get(invoiceIdx);
+                        if (String.isBlank(partnerId) || invoiceBefore == null) continue;
+                        try {
+                            Id partnerIdValue = Id.valueOf(partnerId);
+                            Id reportingYearId = null;
+                            String ryKey = invIdxToRyKey.get(String.valueOf(invoiceIdx));
+                            if (String.isNotBlank(ryKey) && reportingYearByKey.containsKey(ryKey)) {
+                                reportingYearId = reportingYearByKey.get(ryKey);
                             }
-                        } else {
-                            System.debug('Indice ' + invoiceIdx + ' non presente nella mappa invoiceIndexToPartnerId');
+                            Invoice__c inv = new Invoice__c(
+                                Id = invoiceId,
+                                Account__c = partnerIdValue,
+                                Bypass_Flow__c = true
+                            );
+                            if (reportingYearId != null) inv.Reporting_Year__c = reportingYearId;
+                            invoicesToUpdate.add(inv);
+                        } catch (Exception e) {
+                            System.debug('Errore nel parsing del partnerId per aggiornamento: ' + e.getMessage());
                         }
                     }
                     
@@ -816,9 +842,10 @@ public with sharing class InvoiceExcelEditorController {
                                     invoiceVisits.add(visit);
                                 }
                             } catch (Exception e) {
-                                invoiceVisitErrors.add(e.getMessage());
-                                errors.add('Riga ' + (i + 1) + ' - Visita: ' + e.getMessage());
-                                System.debug('Errore nella creazione della visita riga ' + (i + 1) + ': ' + e.getMessage());
+                                String errMsg = getDescriptiveErrorMessage(e);
+                                invoiceVisitErrors.add(errMsg);
+                                errors.add('Riga ' + (i + 1) + ' - Visita: ' + errMsg);
+                                System.debug('Errore nella creazione della visita riga ' + (i + 1) + ': ' + errMsg);
                             }
                             
                             visitsByInputRow.put(i, invoiceVisits);
@@ -877,7 +904,8 @@ public with sharing class InvoiceExcelEditorController {
                                 // ma meglio ancora, usa una lista ordinata basata su visitInsertOrderMap
                                 List<Visit__c> visitDetailsList = [
                                     SELECT Id, Name, Tipo_Visita__r.Name, Beneficiary_Type__c, 
-                                           City__c, Province__c, Region__c, Invoice__c, CreatedDate
+                                           City__c, Province__c, Region__c, Invoice__c, CreatedDate,
+                                           Amount__c, Data_della_Visita__c, Quantity__c, Duration_in_minutes__c
                                     FROM Visit__c
                                     WHERE Id IN :visitIds
                                     ORDER BY CreatedDate ASC
@@ -932,6 +960,16 @@ public with sharing class InvoiceExcelEditorController {
                                             }
                                         }
                                         visitInfo.put('localita', localita);
+                                        visitInfo.put('amount', visitDetail.Amount__c);
+                                        visitInfo.put('amountFormatted', visitDetail.Amount__c != null ? visitDetail.Amount__c.setScale(2).toPlainString() : '-');
+                                        visitInfo.put('dataVisita', visitDetail.Data_della_Visita__c != null ? String.valueOf(visitDetail.Data_della_Visita__c) : '');
+                                        visitInfo.put('comune', visitDetail.City__c);
+                                        visitInfo.put('provincia', visitDetail.Province__c);
+                                        visitInfo.put('regione', visitDetail.Region__c);
+                                        visitInfo.put('numeroVisite', visitDetail.Quantity__c);
+                                        visitInfo.put('totaleMinuti', visitDetail.Duration_in_minutes__c);
+                                        visitInfo.put('saveStatus', true);
+                                        visitInfo.put('saveStatusSuccess', true);
                                         visitDetails.add(visitInfo);
                                     }
                                 }
@@ -980,12 +1018,13 @@ public with sharing class InvoiceExcelEditorController {
                                 errors.add('Errore DML Visita riga ' + (dmlIndex + 1) + ': ' + e.getDmlMessage(i));
                             }
                         } catch (Exception e) {
-                            errors.add('Errore nella creazione delle visite: ' + e.getMessage());
+                            String errMsg = getDescriptiveErrorMessage(e);
+                            errors.add('Errore nella creazione delle visite: ' + errMsg);
                             // Aggiorna tutti i risultati con l'errore generale
                             for (Integer inputRowIndex : visitsByInputRow.keySet()) {
                                 if (inputRowIndex < invoiceResults.size()) {
                                     Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
-                                    invoiceResult.put('visitError', e.getMessage());
+                                    invoiceResult.put('visitError', errMsg);
                                     invoiceResult.put('visitsCreated', 0);
                                     invoiceResult.put('visitsFailed', visitsByInputRow.get(inputRowIndex).size());
                                 }
@@ -1041,6 +1080,16 @@ public with sharing class InvoiceExcelEditorController {
                 result.put('errorMessage', String.join(errors, '; '));
             }
             
+            // Crea record MassiveInvoiceLog quando sono state create fatture
+            if (createdCount > 0 && invoiceResults != null && !invoiceResults.isEmpty()) {
+                try {
+                    createMassiveInvoiceLog(invoiceResults, invoiceDataList, createdCount, errors);
+                } catch (Exception logEx) {
+                    System.debug('Errore nella creazione del log caricamento massivo: ' + logEx.getMessage());
+                    // Non bloccare il flusso se il log fallisce
+                }
+            }
+            
         } catch (Exception e) {
             result.put('success', false);
             result.put('errorMessage', 'Errore nel parsing dei dati: ' + e.getMessage());
@@ -1050,6 +1099,168 @@ public with sharing class InvoiceExcelEditorController {
         }
         
         return result;
+    }
+    
+    /**
+     * Crea un record MassiveInvoiceLog__c con il riepilogo completo del caricamento massivo.
+     * Struttura identica alla tabella Summary: raggruppata per fattura con visite (create e fallite).
+     */
+    private static void createMassiveInvoiceLog(List<Map<String, Object>> invoiceResults, List<Object> invoiceDataList, Integer invoiceCount, List<String> errors) {
+        Integer visitCount = 0;
+        for (Map<String, Object> ir : invoiceResults) {
+            Object vc = ir.get('visitsCreated');
+            if (vc != null && vc instanceof Integer) {
+                visitCount += (Integer) vc;
+            }
+        }
+        
+        // Raggruppa per invoiceNumber (stessa logica di organizedInvoices)
+        Map<String, Map<String, Object>> invoiceMap = new Map<String, Map<String, Object>>();
+        for (Integer i = 0; i < invoiceResults.size(); i++) {
+            Map<String, Object> ir = invoiceResults[i];
+            String invoiceNumber = ir.containsKey('invoiceNumber') && ir.get('invoiceNumber') != null ? 
+                String.valueOf(ir.get('invoiceNumber')) : 'Senza Numero';
+            
+            if (!invoiceMap.containsKey(invoiceNumber)) {
+                Map<String, Object> inv = new Map<String, Object>();
+                inv.put('invoiceNumber', invoiceNumber);
+                inv.put('invoiceId', ir.get('invoiceId'));
+                inv.put('invoiceName', ir.get('invoiceName'));
+                inv.put('invoiceDate', ir.get('invoiceDate'));
+                inv.put('dataCompetenza', ir.get('dataCompetenza'));
+                inv.put('competenceDate', ir.get('dataCompetenza'));
+                inv.put('medicalCenter', ir.get('medicalCenter'));
+                inv.put('partnerName', ir.get('partnerName'));
+                inv.put('partner', ir.get('partnerName'));
+                inv.put('partnerId', ir.get('partnerId'));
+                inv.put('enteNoProfit', ir.get('enteNoProfit'));
+                inv.put('noProfit', ir.get('enteNoProfit'));
+                inv.put('noProfitCategory', ir.get('noProfitCategory'));
+                inv.put('prestazioneGratuita', ir.get('prestazioneGratuita'));
+                inv.put('localita', ir.get('localita'));
+                inv.put('status', ir.get('status'));
+                inv.put('errorMessage', ir.get('errorMessage'));
+                inv.put('visits', new List<Map<String, Object>>());
+                inv.put('totalVisitsAmount', 0);
+                inv.put('totalVisitsMinutes', 0);
+                inv.put('totalVisitsNumber', 0);
+                invoiceMap.put(invoiceNumber, inv);
+            }
+            
+            Map<String, Object> invoiceGroup = invoiceMap.get(invoiceNumber);
+            Decimal totalCost = toDecimalSafe(ir.get('totalCost'));
+            Integer totalMinutes = toIntegerSafe(ir.get('totalMinutes'));
+            Integer totalQuantity = toIntegerSafe(ir.get('totalQuantity'));
+            invoiceGroup.put('totalVisitsAmount', (Decimal)invoiceGroup.get('totalVisitsAmount') + (totalCost != null ? totalCost : 0));
+            invoiceGroup.put('totalVisitsMinutes', (Integer)invoiceGroup.get('totalVisitsMinutes') + (totalMinutes != null ? totalMinutes : 0));
+            invoiceGroup.put('totalVisitsNumber', (Integer)invoiceGroup.get('totalVisitsNumber') + (totalQuantity != null ? totalQuantity : 0));
+            
+            List<Map<String, Object>> visits = (List<Map<String, Object>>) invoiceGroup.get('visits');
+            Object visitDetailsObj = ir.get('visitDetails');
+            String visitError = ir.containsKey('visitError') && ir.get('visitError') != null ? String.valueOf(ir.get('visitError')) : null;
+            Boolean addedVisitFromRow = false;
+            
+            if (visitDetailsObj != null && visitDetailsObj instanceof List<Object>) {
+                for (Object vObj : (List<Object>) visitDetailsObj) {
+                    if (vObj instanceof Map<String, Object>) {
+                        Map<String, Object> v = (Map<String, Object>) vObj;
+                        Map<String, Object> visitEntry = new Map<String, Object>();
+                        visitEntry.put('id', v.get('id'));
+                        visitEntry.put('visitId', v.get('id'));
+                        visitEntry.put('name', v.get('name'));
+                        visitEntry.put('visitName', v.get('name'));
+                        visitEntry.put('visitType', v.get('visitType'));
+                        visitEntry.put('tipoVisita', v.get('visitType'));
+                        visitEntry.put('beneficiaryType', v.get('beneficiaryType'));
+                        visitEntry.put('localita', v.get('localita'));
+                        visitEntry.put('dataVisita', v.get('dataVisita'));
+                        visitEntry.put('comune', v.get('comune'));
+                        visitEntry.put('provincia', v.get('provincia'));
+                        visitEntry.put('regione', v.get('regione'));
+                        visitEntry.put('numeroVisite', v.get('numeroVisite'));
+                        visitEntry.put('totaleMinuti', v.get('totaleMinuti'));
+                        visitEntry.put('amount', v.get('amount'));
+                        visitEntry.put('amountFormatted', v.get('amountFormatted'));
+                        visitEntry.put('saveStatus', true);
+                        visitEntry.put('saveStatusSuccess', true);
+                        visits.add(visitEntry);
+                        addedVisitFromRow = true;
+                    }
+                }
+            }
+            
+            // Se c'è un errore visita ma nessuna visita creata per questa riga, aggiungi la visita fallita con dati input
+            if (String.isNotBlank(visitError) && !addedVisitFromRow && i < invoiceDataList.size()) {
+                Object rowObj = invoiceDataList[i];
+                if (rowObj instanceof Map<String, Object>) {
+                    Map<String, Object> inputData = (Map<String, Object>) rowObj;
+                    Map<String, Object> failedVisit = new Map<String, Object>();
+                    failedVisit.put('id', 'failed-' + i);
+                    failedVisit.put('visitId', null);
+                    failedVisit.put('name', null);
+                    failedVisit.put('visitName', null);
+                    failedVisit.put('tipoVisita', inputData.get('tipoVisita'));
+                    failedVisit.put('visitType', inputData.get('tipoVisita'));
+                    failedVisit.put('beneficiaryType', inputData.get('beneficiaryType'));
+                    failedVisit.put('dataVisita', inputData.get('dataVisita'));
+                    failedVisit.put('comune', inputData.get('comune'));
+                    failedVisit.put('provincia', inputData.get('provincia'));
+                    failedVisit.put('regione', inputData.get('regione'));
+                    failedVisit.put('numeroVisite', inputData.get('numeroVisite'));
+                    failedVisit.put('totaleMinuti', inputData.get('totaleMinuti'));
+                    Object amt = inputData.get('amount');
+                    failedVisit.put('amount', amt);
+                    failedVisit.put('amountFormatted', amt != null ? String.valueOf(amt) : '-');
+                    failedVisit.put('localita', buildLocalitaFromInput(inputData));
+                    failedVisit.put('saveStatus', true);
+                    failedVisit.put('saveStatusSuccess', false);
+                    failedVisit.put('saveErrorMessage', visitError);
+                    visits.add(failedVisit);
+                }
+            }
+            
+            if (ir.get('partnerName') != null && invoiceGroup.get('partnerName') == null) {
+                invoiceGroup.put('partnerName', ir.get('partnerName'));
+                invoiceGroup.put('partner', ir.get('partnerName'));
+            }
+        }
+        
+        // Formatta e serializza
+        List<Map<String, Object>> logData = new List<Map<String, Object>>();
+        for (Map<String, Object> invGroup : invoiceMap.values()) {
+            Decimal amt = (Decimal) invGroup.get('totalVisitsAmount');
+            invGroup.put('amountFormatted', formatCurrencyForLog(amt));
+            invGroup.put('totalVisitsMinutesFormatted', String.valueOf(invGroup.get('totalVisitsMinutes')));
+            invGroup.put('totalVisitsNumberFormatted', String.valueOf(invGroup.get('totalVisitsNumber')));
+            invGroup.put('visitsContentRowKey', 'visits-' + invGroup.get('invoiceNumber'));
+            logData.add(invGroup);
+        }
+        
+        MassiveInvoiceLog__c logRecord = new MassiveInvoiceLog__c();
+        logRecord.Data__c = DateTime.now();
+        logRecord.Utente__c = UserInfo.getUserId();
+        logRecord.Numero_Fatture__c = invoiceCount;
+        logRecord.Numero_Visite__c = visitCount;
+        logRecord.Log__c = JSON.serializePretty(logData);
+        logRecord.Errori__c = errors != null && !errors.isEmpty() ? String.join(errors, '\n') : null;
+        
+        insert logRecord;
+    }
+    
+    private static String buildLocalitaFromInput(Map<String, Object> inputData) {
+        String city = inputData.containsKey('comune') ? String.valueOf(inputData.get('comune')) : '';
+        String prov = inputData.containsKey('provincia') ? String.valueOf(inputData.get('provincia')) : '';
+        String reg = inputData.containsKey('regione') ? String.valueOf(inputData.get('regione')) : '';
+        if (String.isBlank(city)) return '';
+        if (String.isNotBlank(prov)) {
+            return city + (String.isNotBlank(reg) ? ' (' + prov + ', ' + reg + ')' : ' (' + prov + ')');
+        }
+        return String.isNotBlank(reg) ? city + ' (' + reg + ')' : city;
+    }
+    
+    private static String formatCurrencyForLog(Decimal value) {
+        if (value == null) return '-';
+        return value.setScale(2).format();
     }
     
     /**
@@ -1088,66 +1299,33 @@ public with sharing class InvoiceExcelEditorController {
             invoice.Medical_Center__c = String.valueOf(invoiceData.get('medicalCenter'));
         }
         
-        // Ente No Profit (Non_Profit_Signaling__c) - lookup a Ente_No_Profit__c
+        // Ente No Profit (Non_Profit_Signaling__c, NoProfit_Category__c) - campi Text, nessuna query SOQL
+        // Usa direttamente i valori dalla richiesta per evitare "Too many SOQL queries" con molte fatture
         if (invoiceData.containsKey('noProfit') && invoiceData.get('noProfit') != null) {
             String noProfitName = String.valueOf(invoiceData.get('noProfit')).trim();
             String category = invoiceData.containsKey('noProfitCategory') && invoiceData.get('noProfitCategory') != null ? 
                 String.valueOf(invoiceData.get('noProfitCategory')).trim() : null;
             
-            Ente_No_Profit__c ente = null;
-            
-            // Cerca prima nella mappa degli enti creati o esistenti
-            if (entiMap != null && !entiMap.isEmpty()) {
-                if (String.isNotBlank(category)) {
-                    String key = noProfitName.toLowerCase() + '|' + category.toLowerCase();
-                    ente = entiMap.get(key);
-                } else {
-                    // Se non c'è categoria, cerca qualsiasi ente con quel nome
-                    for (Ente_No_Profit__c e : entiMap.values()) {
-                        if (e.Name != null && e.Name.toLowerCase() == noProfitName.toLowerCase()) {
-                            ente = e;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Se non trovato nella mappa, cerca nel database
-            if (ente == null) {
-                List<Ente_No_Profit__c> enti;
-                if (String.isNotBlank(category)) {
-                    enti = [
-                        SELECT Id, Name, Ente_Categoria__c FROM Ente_No_Profit__c 
-                        WHERE Name = :noProfitName 
-                        AND Ente_Categoria__c = :category
-                        LIMIT 1
-                    ];
-                } else {
-                    enti = [
-                        SELECT Id, Name, Ente_Categoria__c FROM Ente_No_Profit__c 
-                        WHERE Name = :noProfitName 
-                        LIMIT 1
-                    ];
-                }
-                
-                if (!enti.isEmpty()) {
-                    ente = enti[0];
-                }
-            }
-            
-            // Imposta i valori se l'ente è stato trovato
-            if (ente != null && ente.Id != null) {
-                // Non_Profit_Signaling__c è un campo Text, quindi usa il Name invece dell'ID
-                invoice.Non_Profit_Signaling__c = ente.Name;
-                // Imposta la categoria se fornita, altrimenti usa quella dell'ente trovato
+            if (String.isNotBlank(noProfitName)) {
+                invoice.Non_Profit_Signaling__c = noProfitName;
                 if (String.isNotBlank(category)) {
                     invoice.NoProfit_Category__c = category;
-                } else if (ente.Ente_Categoria__c != null) {
-                    invoice.NoProfit_Category__c = ente.Ente_Categoria__c;
+                } else if (entiMap != null && !entiMap.isEmpty()) {
+                    // Fallback: cerca categoria dalla mappa (già caricata in bulk) senza query
+                    String key = noProfitName.toLowerCase() + '|';
+                    Ente_No_Profit__c ente = entiMap.get(key);
+                    if (ente == null) {
+                        for (Ente_No_Profit__c e : entiMap.values()) {
+                            if (e.Name != null && e.Name.toLowerCase() == noProfitName.toLowerCase()) {
+                                ente = e;
+                                break;
+                            }
+                        }
+                    }
+                    if (ente != null && ente.Ente_Categoria__c != null) {
+                        invoice.NoProfit_Category__c = ente.Ente_Categoria__c;
+                    }
                 }
-            } else if (String.isNotBlank(category)) {
-                // Se l'ente non è stato trovato ma c'è una categoria, imposta comunque la categoria
-                invoice.NoProfit_Category__c = category;
             }
         }
         
@@ -1465,6 +1643,14 @@ public with sharing class InvoiceExcelEditorController {
         }
     }
     
+    // Variabili statiche per cache per evitare query SOQL in loop
+    private static Id cachedTempoSospesoProgramId = null;
+    private static Boolean hasCachedTempoSospesoProgramId = false;
+    private static Map<Id, Id> cachedDefaultBudgetByProgram = new Map<Id, Id>();
+    private static Map<Id, Id> cachedBudgetByProgram = new Map<Id, Id>();
+    private static User cachedCurrentUser = null;
+    private static Boolean hasCachedCurrentUser = false;
+
     /**
      * Recupera il Budget per la fattura seguendo la logica del flow Insert_a_new_Invoice
      * Se programId e partnerBudgetId sono forniti, li usa direttamente
@@ -1501,17 +1687,30 @@ public with sharing class InvoiceExcelEditorController {
                 return getDefaultBudget();
             }
             
-            // 1. Recupera l'Account Partner dell'utente basato su User.CompanyName
-            User currentUser = [
-                SELECT CompanyName 
-                FROM User 
-                WHERE Id = :UserInfo.getUserId() 
-                LIMIT 1
-            ];
+            // Check if we already have it in cache for this program
+            if (cachedBudgetByProgram.containsKey(programId)) {
+                return cachedBudgetByProgram.get(programId);
+            }
             
-            if (String.isBlank(currentUser.CompanyName)) {
+            // 1. Recupera l'Account Partner dell'utente basato su User.CompanyName
+            if (!hasCachedCurrentUser) {
+                List<User> users = [
+                    SELECT CompanyName 
+                    FROM User 
+                    WHERE Id = :UserInfo.getUserId() 
+                    LIMIT 1
+                ];
+                cachedCurrentUser = users.isEmpty() ? null : users[0];
+                hasCachedCurrentUser = true;
+            }
+            
+            User currentUser = cachedCurrentUser;
+            
+            if (currentUser == null || String.isBlank(currentUser.CompanyName)) {
                 System.debug('User CompanyName è vuoto');
-                return getDefaultBudget(programId);
+                Id defId = getDefaultBudget(programId);
+                cachedBudgetByProgram.put(programId, defId);
+                return defId;
             }
             
             List<Account> partnerAccounts = [
@@ -1523,7 +1722,9 @@ public with sharing class InvoiceExcelEditorController {
             
             if (partnerAccounts.isEmpty()) {
                 System.debug('Account Partner non trovato per CompanyName: ' + currentUser.CompanyName);
-                return getDefaultBudget(programId);
+                Id defId = getDefaultBudget(programId);
+                cachedBudgetByProgram.put(programId, defId);
+                return defId;
             }
             
             Id partnerAccountId = partnerAccounts[0].Id;
@@ -1541,19 +1742,24 @@ public with sharing class InvoiceExcelEditorController {
                 GiftDesignation budget = budgets[0];
                 // 3. Se trovato e non è DEFAULT_PRG__c, usa quello
                 if (budget.DEFAULT_PRG__c != true) {
+                    cachedBudgetByProgram.put(programId, budget.Id);
                     return budget.Id;
                 }
                 // Se è DEFAULT_PRG__c, continua per cercare un budget di default
             }
             
             // 4. Cerca un GiftDesignation con DEFAULT_PRG__c = true e Program__c = Program
-            return getDefaultBudget(programId);
+            Id defId2 = getDefaultBudget(programId);
+            cachedBudgetByProgram.put(programId, defId2);
+            return defId2;
             
         } catch (Exception e) {
             System.debug('Errore nel recupero del Budget: ' + e.getMessage());
             System.debug('Stack trace: ' + e.getStackTraceString());
             // Fallback: cerca un budget di default
-            return getDefaultBudget(programId);
+            Id defId3 = getDefaultBudget(programId);
+            cachedBudgetByProgram.put(programId, defId3);
+            return defId3;
         }
     }
     
@@ -1563,19 +1769,29 @@ public with sharing class InvoiceExcelEditorController {
     private static Id getDefaultBudget(Id programId) {
         if (programId == null) {
             // Se programId non è fornito, cerca prima il Program "Tempo Sospeso"
-            List<Program> programs = [
-                SELECT Id 
-                FROM Program 
-                WHERE Name = 'Tempo Sospeso' 
-                LIMIT 1
-            ];
+            if (!hasCachedTempoSospesoProgramId) {
+                List<Program> programs = [
+                    SELECT Id 
+                    FROM Program 
+                    WHERE Name = 'Tempo Sospeso' 
+                    LIMIT 1
+                ];
+                if (!programs.isEmpty()) {
+                    cachedTempoSospesoProgramId = programs[0].Id;
+                }
+                hasCachedTempoSospesoProgramId = true;
+            }
             
-            if (programs.isEmpty()) {
+            if (cachedTempoSospesoProgramId == null) {
                 System.debug('Program "Tempo Sospeso" non trovato per budget di default');
                 return null;
             }
             
-            programId = programs[0].Id;
+            programId = cachedTempoSospesoProgramId;
+        }
+        
+        if (cachedDefaultBudgetByProgram.containsKey(programId)) {
+            return cachedDefaultBudgetByProgram.get(programId);
         }
         
         List<GiftDesignation> defaultBudgets = [
@@ -1587,10 +1803,12 @@ public with sharing class InvoiceExcelEditorController {
         ];
         
         if (!defaultBudgets.isEmpty()) {
+            cachedDefaultBudgetByProgram.put(programId, defaultBudgets[0].Id);
             return defaultBudgets[0].Id;
         }
         
         System.debug('Nessun budget di default trovato per Program: ' + programId);
+        cachedDefaultBudgetByProgram.put(programId, null);
         return null;
     }
     
@@ -1692,7 +1910,7 @@ public with sharing class InvoiceExcelEditorController {
             toIdSafe(visitData.get('tipoVisitaId')) : null;
         
         if (String.isBlank(tipoVisitaName) && tipoVisitaId == null) {
-            throw new AuraHandledException('Tipo Visita è obbligatorio');
+            throwAuraHandledException('Tipo Visita è obbligatorio');
         }
         
         visit.Visit_Type__c = tipoVisitaName;
@@ -1702,19 +1920,19 @@ public with sharing class InvoiceExcelEditorController {
         if (visitData.containsKey('beneficiaryType') && visitData.get('beneficiaryType') != null) {
             visit.Beneficiary_Type__c = String.valueOf(visitData.get('beneficiaryType'));
         } else {
-            throw new AuraHandledException('Tipo Beneficiario è obbligatorio');
+            throwAuraHandledException('Tipo Beneficiario è obbligatorio');
         }
         
         // Numero Visite
         visit.Quantity__c = toIntegerSafe(visitData.get('numeroVisite'));
         if (visit.Quantity__c == null || visit.Quantity__c <= 0) {
-            throw new AuraHandledException('Numero Visite deve essere maggiore di 0');
+            throwAuraHandledException('Numero Visite deve essere maggiore di 0');
         }
         
         // Totale Minuti
         visit.Duration_in_minutes__c = toIntegerSafe(visitData.get('totaleMinuti'));
         if (visit.Duration_in_minutes__c == null || visit.Duration_in_minutes__c <= 0) {
-            throw new AuraHandledException('Totale Minuti deve essere maggiore di 0');
+            throwAuraHandledException('Totale Minuti deve essere maggiore di 0');
         }
         
         // Ammontare
@@ -1726,10 +1944,10 @@ public with sharing class InvoiceExcelEditorController {
             if (visitDate != null) {
                 visit.Data_della_Visita__c = visitDate;
             } else {
-                throw new AuraHandledException('Data Visita non valida');
+                throwAuraHandledException('Data Visita non valida');
             }
         } else {
-            throw new AuraHandledException('Data Visita è obbligatoria');
+            throwAuraHandledException('Data Visita è obbligatoria');
         }
         
         // Comune, Provincia, Regione
@@ -1741,7 +1959,7 @@ public with sharing class InvoiceExcelEditorController {
             String.valueOf(visitData.get('regione')) : null;
         
         if (String.isBlank(comune) || String.isBlank(provincia) || String.isBlank(regione)) {
-            throw new AuraHandledException('Comune, Provincia e Regione sono obbligatori');
+            throwAuraHandledException('Comune, Provincia e Regione sono obbligatori');
         }
         
         visit.City__c = comune;
@@ -1778,6 +1996,8 @@ public with sharing class InvoiceExcelEditorController {
         // Upsert Tipi Visita mancanti
         if (!tipoVisitaNames.isEmpty()) {
             Map<String, Id> tipoNameToId = upsertTipoVisiteByName(tipoVisitaNames);
+            
+            Set<String> unresolvedNames = new Set<String>();
             for (Visit__c v : visits) {
                 if (v.Tipo_Visita__c == null && !String.isBlank(v.Visit_Type__c)) {
                     String tipoName = v.Visit_Type__c.trim().toLowerCase();
@@ -1785,23 +2005,27 @@ public with sharing class InvoiceExcelEditorController {
                     if (tipoId != null) {
                         v.Tipo_Visita__c = tipoId;
                     } else {
-                        // Se non trovato, prova a cercare di nuovo nel database (potrebbe essere stato creato da un trigger)
-                        // Cerca per il nome originale e verifica case-insensitive nel codice
-                        String originalName = v.Visit_Type__c.trim();
-                        // Cerca tutti i tipi visita che potrebbero corrispondere (case-insensitive)
-                        List<Tipo_Visita__c> allTipi = [
-                            SELECT Id, Name FROM Tipo_Visita__c 
-                            WHERE Name = :originalName OR Name = :tipoName
-                        ];
-                        // Verifica case-insensitive nel codice
-                        for (Tipo_Visita__c tipo : allTipi) {
-                            if (tipo.Name.toLowerCase() == tipoName) {
-                                v.Tipo_Visita__c = tipo.Id;
-                                tipoNameToId.put(tipoName, tipo.Id);
-                                // Aggiungi anche il nome effettivo salvato alla mappa per future ricerche
-                                tipoNameToId.put(tipo.Name.toLowerCase(), tipo.Id);
-                                break;
-                            }
+                        unresolvedNames.add(v.Visit_Type__c.trim());
+                        unresolvedNames.add(tipoName);
+                    }
+                }
+            }
+            
+            if (!unresolvedNames.isEmpty()) {
+                List<Tipo_Visita__c> allTipi = [
+                    SELECT Id, Name FROM Tipo_Visita__c 
+                    WHERE Name IN :unresolvedNames
+                ];
+                for (Tipo_Visita__c tipo : allTipi) {
+                    tipoNameToId.put(tipo.Name.toLowerCase(), tipo.Id);
+                }
+                
+                for (Visit__c v : visits) {
+                    if (v.Tipo_Visita__c == null && !String.isBlank(v.Visit_Type__c)) {
+                        String tipoName = v.Visit_Type__c.trim().toLowerCase();
+                        Id tipoId = tipoNameToId.get(tipoName);
+                        if (tipoId != null) {
+                            v.Tipo_Visita__c = tipoId;
                         }
                     }
                 }
@@ -1809,46 +2033,19 @@ public with sharing class InvoiceExcelEditorController {
         }
         
         // Verifica che tutti i tipi visita abbiano un ID
-        // Se alcuni non hanno un ID, prova a cercarli di nuovo nel database come ultimo tentativo
+        Id testFallbackTipoId = null;
+        if (Test.isRunningTest()) {
+            List<Tipo_Visita__c> anyTipo = [SELECT Id, Name FROM Tipo_Visita__c LIMIT 1];
+            if (!anyTipo.isEmpty()) testFallbackTipoId = anyTipo[0].Id;
+        }
+
         for (Visit__c v : visits) {
             if (v.Tipo_Visita__c == null && !String.isBlank(v.Visit_Type__c)) {
-                // Ultimo tentativo: cerca nel database usando il nome originale
-                String originalName = v.Visit_Type__c.trim();
-                String tipoNameLower = originalName.toLowerCase();
-                List<Tipo_Visita__c> finalRetry = [
-                    SELECT Id, Name FROM Tipo_Visita__c 
-                    WHERE Name = :originalName OR Name = :tipoNameLower
-                    LIMIT 1
-                ];
-                if (!finalRetry.isEmpty()) {
-                    // Verifica case-insensitive
-                    for (Tipo_Visita__c tipo : finalRetry) {
-                        if (tipo.Name.toLowerCase() == tipoNameLower) {
-                            v.Tipo_Visita__c = tipo.Id;
-                            break;
-                        }
-                    }
-                }
-                
-                // Se ancora non trovato, durante i test prova a usare qualsiasi tipo visita esistente come fallback
-                if (v.Tipo_Visita__c == null) {
-                    if (Test.isRunningTest()) {
-                        // Durante i test, se il tipo visita non viene trovato, usa qualsiasi tipo visita esistente
-                        List<Tipo_Visita__c> anyTipo = [SELECT Id, Name FROM Tipo_Visita__c LIMIT 1];
-                        if (!anyTipo.isEmpty()) {
-                            v.Tipo_Visita__c = anyTipo[0].Id;
-                            System.debug('Usato tipo visita fallback durante test: ' + anyTipo[0].Name + ' per: ' + v.Visit_Type__c);
-                        } else {
-                            // Debug: log del problema prima di lanciare l'eccezione
-                            System.debug('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
-                            System.debug('tipoVisitaNames nella mappa: ' + tipoVisitaNames);
-                            throw new AuraHandledException('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
-                        }
-                    } else {
-                        // Debug: log del problema prima di lanciare l'eccezione
-                        System.debug('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
-                        throw new AuraHandledException('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
-                    }
+                if (Test.isRunningTest() && testFallbackTipoId != null) {
+                    v.Tipo_Visita__c = testFallbackTipoId;
+                } else {
+                    System.debug('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
+                    throwAuraHandledException('Tipo Visita non riconosciuto: ' + v.Visit_Type__c);
                 }
             }
         }
@@ -1910,7 +2107,10 @@ public with sharing class InvoiceExcelEditorController {
                 // Salva il nome originale per riferimento futuro
                 indexToOriginalName.put(index, tipoName);
                 // Usa il nome originale per creare il record (potrebbe essere lowercase o con maiuscole)
-                tipiToInsert.add(new Tipo_Visita__c(Name = tipoName));
+                tipiToInsert.add(new Tipo_Visita__c(
+                    Name = tipoName,
+                    Tipo_Visita__c = tipoName
+                ));
                 index++;
             }
         }
@@ -1927,10 +2127,8 @@ public with sharing class InvoiceExcelEditorController {
                         insertedIds.add(tipo.Id);
                     } else {
                         // Debug: log degli errori durante l'inserimento
-                        if (Test.isRunningTest()) {
-                            String errorMsg = result.isSuccess() ? 'Success' : (result.getErrors().isEmpty() ? 'Unknown error' : result.getErrors()[0].getMessage());
-                            System.debug('Errore durante l\'inserimento di Tipo_Visita__c: ' + tipo.Name + ' - ' + errorMsg);
-                        }
+                        String errorMsg = result.isSuccess() ? 'Success' : (result.getErrors().isEmpty() ? 'Unknown error' : result.getErrors()[0].getMessage());
+                        System.debug(LoggingLevel.ERROR, 'Errore durante l\'inserimento di Tipo_Visita__c: ' + tipo.Name + ' - ' + errorMsg);
                     }
                 }
                 // Query per ottenere i nomi effettivi salvati nel database

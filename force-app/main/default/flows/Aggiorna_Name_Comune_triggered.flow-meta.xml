@@ -43,9 +43,10 @@
         <connector>
             <targetReference>Update_Name</targetReference>
         </connector>
+        <filterFormula>ISNEW() || ISCHANGED({!$Record.Nome_Comune__c})</filterFormula>
         <object>Comune__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
-        <triggerType>RecordAfterSave</triggerType>
+        <triggerType>RecordBeforeSave</triggerType>
     </start>
     <status>Active</status>
 </Flow>

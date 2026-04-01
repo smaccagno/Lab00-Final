@@ -2,28 +2,6 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>63.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
-    <environments>Default</environments>
-    <interviewLabel>Aggiorna Valori Statici Transazione Shadow - autolaunched {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Aggiorna Valori Statici Transazione Shadow - autolaunched</label>
-    <processMetadataValues>
-        <name>BuilderType</name>
-        <value>
-            <stringValue>LightningFlowBuilder</stringValue>
-        </value>
-    </processMetadataValues>
-    <processMetadataValues>
-        <name>CanvasMode</name>
-        <value>
-            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
-        </value>
-    </processMetadataValues>
-    <processMetadataValues>
-        <name>OriginBuilderType</name>
-        <value>
-            <stringValue>LightningFlowBuilder</stringValue>
-        </value>
-    </processMetadataValues>
-    <processType>AutoLaunchedFlow</processType>
     <decisions>
         <name>Skip_Lookup</name>
         <label>Skip Lookup?</label>
@@ -49,6 +27,28 @@
             <label>Skip</label>
         </rules>
     </decisions>
+    <environments>Default</environments>
+    <interviewLabel>Aggiorna Valori Statici Transazione Shadow - autolaunched {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Aggiorna Valori Statici Transazione Shadow - autolaunched</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
     <recordLookups>
         <name>Recupera_Transazione</name>
         <label>Recupera Transazione</label>

@@ -648,7 +648,7 @@
         </connector>
         <fields>
             <name>InfoSection</name>
-            <fieldText>Scelta Biglietto / Abbonamento</fieldText>
+            <fieldText>Scelta Biglietto / Abbonamento / Esperienza</fieldText>
             <fieldType>RegionContainer</fieldType>
             <fields>
                 <name>InfoSection_Column1</name>
@@ -660,7 +660,7 @@
                     <inputParameters>
                         <name>label</name>
                         <value>
-                            <stringValue>Inserisci Biglietto/Abbonamento manualmente</stringValue>
+                            <stringValue>Inserisci Biglietto/Abbonamento/Esperienza manualmente</stringValue>
                         </value>
                     </inputParameters>
                     <inputParameters>

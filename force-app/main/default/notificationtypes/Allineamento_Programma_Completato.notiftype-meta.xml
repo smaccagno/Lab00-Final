@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomNotificationType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customNotifTypeName>Allineamento_Programma_Completato</customNotifTypeName>
+    <description>Notifica di completamento allineamento programma</description>
+    <desktop>true</desktop>
+    <masterLabel>Allineamento Programma Completato</masterLabel>
+    <mobile>false</mobile>
+    <slack>false</slack>
+</CustomNotificationType>

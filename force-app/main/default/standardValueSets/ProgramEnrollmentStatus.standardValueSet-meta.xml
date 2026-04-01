@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StandardValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <sorted>false</sorted>
+    <standardValue>
+        <fullName>In corso</fullName>
+        <default>true</default>
+        <label>In corso</label>
+    </standardValue>
+    <standardValue>
+        <fullName>Completato</fullName>
+        <default>false</default>
+        <label>Completato</label>
+    </standardValue>
+    <standardValue>
+        <fullName>Annullato</fullName>
+        <default>false</default>
+        <label>Annullato</label>
+    </standardValue>
+</StandardValueSet>

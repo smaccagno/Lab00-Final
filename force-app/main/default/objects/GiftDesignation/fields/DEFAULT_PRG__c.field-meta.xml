@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DEFAULT_PRG__c</fullName>
+    <formula>Partner__r.Default_per_Budgets__c</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Default per Programma</label>
+    <trackHistory>false</trackHistory>
+    <type>Checkbox</type>
+</CustomField>

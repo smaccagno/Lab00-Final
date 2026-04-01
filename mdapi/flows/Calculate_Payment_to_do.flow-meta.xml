@@ -139,7 +139,7 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Create_Payment_Shadow_For_Multiple</targetReference>
+            <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -391,7 +391,7 @@
             <targetReference>assign_payment</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Crea_Pagamento_Shadow_autolaunched</targetReference>
+            <targetReference>done</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
@@ -1279,50 +1279,6 @@
             </value>
         </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>
-    </subflows>
-    <subflows>
-        <name>Create_Payment_Shadow_For_Multiple</name>
-        <label>Create Payment Shadow For Multiple</label>
-        <locationX>666</locationX>
-        <locationY>1898</locationY>
-        <connector>
-            <targetReference>Loop_Create_Payments_Per_Allocation</targetReference>
-        </connector>
-        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
-        <inputAssignments>
-            <name>recordId</name>
-            <value>
-                <elementReference>current_payment_id</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>totali_budget_anno_id</name>
-            <value>
-                <elementReference>Get_Budget_Anno_For_Allocation.Totali_Budget_Anno__c</elementReference>
-            </value>
-        </inputAssignments>
-    </subflows>
-    <subflows>
-        <name>Crea_Pagamento_Shadow_autolaunched</name>
-        <label>Crea Pagamento Shadow - autolaunched</label>
-        <locationX>424</locationX>
-        <locationY>2738</locationY>
-        <connector>
-            <targetReference>done</targetReference>
-        </connector>
-        <flowName>Crea_Pagamento_Shadow_autolaunched</flowName>
-        <inputAssignments>
-            <name>recordId</name>
-            <value>
-                <elementReference>pagamentoId</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>totali_budget_anno_id</name>
-            <value>
-                <elementReference>Recupera_Budget_Anno.Totali_Budget_Anno__c</elementReference>
-            </value>
-        </inputAssignments>
     </subflows>
     <variables>
         <name>accountIdEnrolled</name>

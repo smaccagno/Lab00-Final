@@ -93,12 +93,20 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Donatore_Anno__c</fieldItem>
                 <identifier>RecordDonatore_Anno__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Anno_di_Competenza__c</fieldItem>
                 <identifier>RecordAnno_di_Competenza__cField</identifier>
             </fieldInstance>

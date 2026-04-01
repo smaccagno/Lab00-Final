@@ -10,7 +10,7 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
-    <masterLabel>Lista Valori per Template</masterLabel>
+    <masterLabel>Lista Valori - Tempo Sospeso</masterLabel>
     <template>
         <name>flexipage:defaultAppHomeTemplate</name>
     </template>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email di Benvenuto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4; /* Colore di sfondo delicato */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff; /* Sfondo bianco per il contenuto dell'email */
+            border-radius: 8px; /* Angoli arrotondati */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Ombra per effetto di profondità */
+            padding: 20px;
+            max-width: 600px; /* Larghezza massima */
+            margin: auto; /* Centra il contenuto */
+        }
+        h1 {
+            color: #333333; /* Colore del testo dell'intestazione */
+            font-size: 24px; /* Dimensione del testo dell'intestazione */
+            margin-bottom: 10px; /* Spazio sotto l'intestazione */
+        }
+        p {
+            color: #666666; /* Colore del testo */
+            line-height: 1.6; /* Spaziatura tra le righe */
+        }
+        a {
+            color: #007BFF; /* Colore del link */
+            text-decoration: none; /* Rimuove la sottolineatura */
+        }
+        a:hover {
+            text-decoration: underline; /* Sottolinea al passaggio del mouse */
+        }
+        .footer {
+            margin-top: 20px; /* Spazio sopra il footer */
+            font-size: 14px; /* Dimensione del testo del footer */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://fondazionelab00ets--dev.sandbox.lightning.force.com/sfc/servlet.shepherd/version/renditionDownload?rendition=ORIGINAL_Jpg&versionId=068MA0000044cTF&operationContext=CHATTER&contentId=05TMA000006Xh51" alt="Logo" style="max-width: 300px; height: auto;">
+        </div>
+        <h1>Ciao {{Account.Name}},</h1>
+        <p>benvenuto nel progetto SorrisoSospeso.org.</p>
+        <p>Ti chiediamo gentilmente di accedere al nostro <a href="{{siteUrl}}">portale</a> tramite il codice di accesso <b>{{Account.StructureCode__c}}</b></p>
+        <p>Questo codice è associato alla tua utenza, non perderlo e non diffonderlo.</p>
+        <p>Grazie.</p>
+        <div class="footer">
+            <p>Il team di progetto <br/> 
+            <a href="mailto:info@lab00.org">info@lab00.org</a></p>
+        </div>
+    </div>
+
+</body>
+</html>

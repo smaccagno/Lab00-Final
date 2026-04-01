@@ -196,4 +196,12 @@
         <name>dataloader_io_v2</name>
         <type>ConnectedApp</type>
     </appMenuItems>
+    <appMenuItems>
+        <name>Google_Sheets_Export</name>
+        <type>ExternalClientApplication</type>
+    </appMenuItems>
+    <appMenuItems>
+        <name>standard__Optimizer</name>
+        <type>CustomApplication</type>
+    </appMenuItems>
 </AppMenu>

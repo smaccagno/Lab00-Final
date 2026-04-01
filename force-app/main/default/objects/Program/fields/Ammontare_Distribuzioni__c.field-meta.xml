@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Ammontare_Distribuzioni__c</fullName>
+    <label>Ammontare Distribuzioni</label>
+    <summarizedField>Anno_Reportistica__c.Ammontare_Distribuzioni__c</summarizedField>
+    <summaryForeignKey>Anno_Reportistica__c.Programma__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <type>Summary</type>
+</CustomField>

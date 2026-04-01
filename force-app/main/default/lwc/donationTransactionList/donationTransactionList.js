@@ -6,6 +6,12 @@ import getAvailablePrograms from '@salesforce/apex/Transazioni.getAvailableProgr
 // Definiamo le colonne per la lightning-datatable
 const COLUMNS = [
     {
+        label: 'Descrizione',
+        fieldName: 'Description',
+        type: 'text',
+        wrapText: true
+    },
+    {
         label: 'Nome Transazione',
         fieldName: 'recordLink',
         type: 'url',

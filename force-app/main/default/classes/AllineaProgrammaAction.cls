@@ -44,52 +44,17 @@ public without sharing class AllineaProgrammaAction {
 
     lastAlignedProgramIds.addAll(programIds);
 
-    /* 2. Query bulk Donor Overview e Budgets */
-    List<Donor_Overview__c> overviews = [
-      SELECT Id
-      FROM Donor_Overview__c
-      WHERE Programma__c IN :programIds
-    ];
-    List<GiftDesignation> budgets = [
-      SELECT Id
-      FROM GiftDesignation
-      WHERE Program__c IN :programIds
-    ];
+    /* 2. Batch: aggiorna Fattura_Shadow, poi in finish() lancia Queueable
+     *    che esegue AllineaDonatoreAnno e AllineaBudgetAnno.
+     *    Riceverai una notifica verde al completamento.
+     */
+    InvoiceStaticValuesUpdater.updateStaticValuesWithContinuation(
+      programIds,
+      UserInfo.getUserId()
+    );
 
-    /* 3. Prepara input per gli action */
-    List<AllineaDonatoreAnnoAction.Input> inOV = new List<AllineaDonatoreAnnoAction.Input>();
-    for (Donor_Overview__c ov : overviews) {
-      AllineaDonatoreAnnoAction.Input rec = new AllineaDonatoreAnnoAction.Input();
-      rec.overviewDonatoreId = ov.Id;
-      inOV.add(rec);
-    }
-
-    List<AllineaBudgetAnnoAction.Input> inBD = new List<AllineaBudgetAnnoAction.Input>();
-    for (GiftDesignation gd : budgets) {
-      AllineaBudgetAnnoAction.Input rec = new AllineaBudgetAnnoAction.Input();
-      rec.budgetId = gd.Id;
-      inBD.add(rec);
-    }
-
-    /* 4. Invoca in bulk gli action già ottimizzati */
-    if (!inOV.isEmpty())
-      AllineaDonatoreAnnoAction.execute(inOV);
-    if (!inBD.isEmpty())
-      AllineaBudgetAnnoAction.execute(inBD);
-
-    /* 4-bis. Aggiorna le fatture collegate ai Program               // ► NEW
-     (una sola query + DML bulk gestiti internamente)              */
-    InvoiceStaticValuesUpdater.updateStaticValues(programIds); // ► NEW
-
-    /* 5. Riepilogo */
     return wrap(
-      'Overview allineati: ' +
-        inOV.size() +
-        ' | Budget allineati: ' +
-        inBD.size() +
-        ' | Fatture aggiornate per ' +
-        programIds.size() +
-        ' programma/i' // ► NEW
+      'Allineamento avviato in background. Riceverai un messaggio al completamento.'
     );
   }
 

@@ -1,8 +1,11 @@
 public without sharing class InvoiceTriggerHandler {
   private static Boolean isReentry = false;
-  private static Boolean skipAlignment = false;
   private static Set<Id> programsToAlign = new Set<Id>();
+  private static Boolean skipAlignment = false;
   
+  /**
+   * Metodo pubblico per disabilitare temporaneamente l'allineamento durante inserimenti batch
+   */
   public static void setSkipAlignment(Boolean skip) {
     skipAlignment = skip;
   }
@@ -146,7 +149,8 @@ public without sharing class InvoiceTriggerHandler {
     Set<Id> budIds = new Set<Id>();
     Set<String> anni = new Set<String>();
     Set<Id> invNeedsOb = new Set<Id>();
-    Map<Id, Id> fallbackObByBudget = new Map<Id, Id>();
+    Map<Id, Id> fallbackSingleObByBudget = new Map<Id, Id>();
+    Set<Id> fallbackMultiObBudgets = new Set<Id>();
     for (Invoice__c inv : work) {
       String anno = newAnnoByInv.get(inv.Id);
       Boolean yearOrBudgetChanged = yearChanged.contains(inv.Id) || budgetChanged.contains(inv.Id);
@@ -168,6 +172,21 @@ public without sharing class InvoiceTriggerHandler {
         obByBudgetAnno.put(String.valueOf(o.Budget__c) + '|' + o.Anno__c, o.Id);
       }
     }
+    if (!budIds.isEmpty()) {
+      for (Overview_Budget_per_Anno__c anyOb : [
+        SELECT Id, Budget__c
+        FROM Overview_Budget_per_Anno__c
+        WHERE Budget__c IN :budIds
+      ]) {
+        if (fallbackMultiObBudgets.contains(anyOb.Budget__c)) continue;
+        if (!fallbackSingleObByBudget.containsKey(anyOb.Budget__c)) {
+          fallbackSingleObByBudget.put(anyOb.Budget__c, anyOb.Id);
+        } else {
+          fallbackSingleObByBudget.remove(anyOb.Budget__c);
+          fallbackMultiObBudgets.add(anyOb.Budget__c);
+        }
+      }
+    }
     for (Invoice__c inv : work) {
       String anno = newAnnoByInv.get(inv.Id);
       Boolean yearOrBudgetChanged = yearChanged.contains(inv.Id) || budgetChanged.contains(inv.Id);
@@ -175,19 +194,7 @@ public without sharing class InvoiceTriggerHandler {
       if (invNeedsOb.contains(inv.Id) && inv.Budget__c != null && !String.isBlank(anno)) {
         obId = obByBudgetAnno.get(String.valueOf(inv.Budget__c) + '|' + anno);
         if (obId == null) {
-          if (!fallbackObByBudget.containsKey(inv.Budget__c)) {
-            List<Overview_Budget_per_Anno__c> anyOb = [
-              SELECT Id FROM Overview_Budget_per_Anno__c
-              WHERE Budget__c = :inv.Budget__c
-              LIMIT 2
-            ];
-            if (anyOb.size() == 1) {
-              fallbackObByBudget.put(inv.Budget__c, anyOb[0].Id);
-            } else {
-              fallbackObByBudget.put(inv.Budget__c, null);
-            }
-          }
-          obId = fallbackObByBudget.get(inv.Budget__c);
+          obId = fallbackSingleObByBudget.get(inv.Budget__c);
         }
       }
       if (obId != null) {
@@ -267,10 +274,27 @@ public without sharing class InvoiceTriggerHandler {
 
     if (!ryKeys.isEmpty()) {
       Map<String, Id> ryByKey = new Map<String, Id>();
+      Set<Id> ryAccountIds = new Set<Id>();
+      Set<String> ryYears = new Set<String>();
+      Set<Id> ryProgramIds = new Set<Id>();
+      for (String ryKey : ryKeys) {
+        if (String.isBlank(ryKey)) continue;
+        List<String> parts = ryKey.split('\\|');
+        if (parts.size() != 3) continue;
+        try {
+          ryAccountIds.add((Id) parts[0]);
+          ryYears.add(parts[1]);
+          ryProgramIds.add((Id) parts[2]);
+        } catch (Exception ex) {
+          // key malformata: ignora
+        }
+      }
       for (Reporting_Year__c ry : [
         SELECT Id, Account__c, Year__c, Programma__c
         FROM Reporting_Year__c
-        WHERE Account__c != null AND Year__c != null AND Programma__c != null
+        WHERE Account__c IN :ryAccountIds
+          AND Year__c IN :ryYears
+          AND Programma__c IN :ryProgramIds
       ]) {
         String ky = String.valueOf(ry.Account__c).left(18) + '|' + ry.Year__c + '|' + ry.Programma__c;
         if (!ryByKey.containsKey(ky)) ryByKey.put(ky, ry.Id);
@@ -307,7 +331,6 @@ public without sharing class InvoiceTriggerHandler {
    *─────────────────────────────────────────────────────────────────*/
   private static void afterUpsert(List<Invoice__c> news, Map<Id, Invoice__c> oldMap) {
     if (isReentry) return; // avoid loops
-    if (skipAlignment) return; // skip alignment when explicitly set
     if (news.isEmpty()) return;
 
     List<Invoice__c> work = new List<Invoice__c>();
@@ -401,7 +424,7 @@ public without sharing class InvoiceTriggerHandler {
         Id targetBud = desiredTotBud.get(invId);
         Id targetDon = desiredTotDon.get(invId);
         Boolean needsUpdate = false;
-        Fattura_Shadow__c upd = new Fattura_Shadow__c(Id = sh.Id);
+        Fattura_Shadow__c upd = new Fattura_Shadow__c(Id = sh.Id, Bypass_Flow__c = true);
         if (targetBud != sh.Totali_Budget_Anno__c) {
           upd.Totali_Budget_Anno__c = targetBud;
           needsUpdate = true;
@@ -415,7 +438,10 @@ public without sharing class InvoiceTriggerHandler {
       if (!shadowUpdates.isEmpty()) update shadowUpdates;
     }
 
-    if (!programsToAlign.isEmpty()) {
+    // Aggiorna i campi statici delle Fattura_Shadow (da formula Invoice) per tutte le shadow toccate
+    updateShadowStaticValuesFromInvoices(work, invToShadow, existingShadowIds, desiredTotBud, desiredTotDon);
+
+    if (!programsToAlign.isEmpty() && !skipAlignment) {
       List<AllineaProgrammaAction.Input> inputs = new List<AllineaProgrammaAction.Input>();
       for (Id progId : programsToAlign) {
         if (progId == null) continue;
@@ -427,6 +453,84 @@ public without sharing class InvoiceTriggerHandler {
         AllineaProgrammaAction.run(inputs);
       }
       programsToAlign.clear();
+    } else if (!programsToAlign.isEmpty() && skipAlignment) {
+      // Se l'allineamento è disabilitato, processalo in modo asincrono
+      Set<Id> programsToAlignAsync = new Set<Id>(programsToAlign);
+      alignProgramsAsync(programsToAlignAsync);
+      programsToAlign.clear();
+    }
+  }
+
+  /**
+   * Aggiorna i campi statici delle Fattura_Shadow a partire dai campi formula
+   * dell'Invoice (Totale_Fattura__c, Total_Duration_in_minutes__c, ecc.).
+   * Necessario perché Totali_Budget_Anno__c e Totali_Donatore_Anno__c fanno
+   * rollup da Fattura_Shadow e richiedono valori statici corretti.
+   */
+  private static void updateShadowStaticValuesFromInvoices(
+    List<Invoice__c> work,
+    Map<Id, Id> invToShadow,
+    Set<Id> existingShadowIds,
+    Map<Id, Id> desiredTotBud,
+    Map<Id, Id> desiredTotDon
+  ) {
+    Set<Id> shadowIdsToUpdate = new Set<Id>();
+    Set<Id> invIdsToQuery = new Set<Id>();
+
+    for (Invoice__c inv : work) {
+      Id shId = inv.Fattura_Shadow__c != null ? inv.Fattura_Shadow__c : invToShadow.get(inv.Id);
+      if (shId != null) {
+        shadowIdsToUpdate.add(shId);
+        invIdsToQuery.add(inv.Id);
+      }
+    }
+    if (invIdsToQuery.isEmpty()) return;
+
+    Map<Id, Invoice__c> invById = new Map<Id, Invoice__c>([
+      SELECT Id, Fattura_Shadow__c,
+             Totale_Fattura__c,
+             Totale_Biglietti__c,
+             Total_Number_of_Visits__c,
+             Total_Duration_in_minutes__c,
+             Overview_Budget_per_Anno__r.Totali_Budget_Anno__c,
+             Reporting_Year__r.Totali_Donatore_Anno__c
+      FROM Invoice__c
+      WHERE Id IN :invIdsToQuery
+    ]);
+
+    Map<Id, Invoice__c> invByShadowId = new Map<Id, Invoice__c>();
+    for (Invoice__c inv : invById.values()) {
+      if (inv.Fattura_Shadow__c != null) {
+        invByShadowId.put(inv.Fattura_Shadow__c, inv);
+      }
+    }
+
+    List<Fattura_Shadow__c> shadowStaticUpdates = new List<Fattura_Shadow__c>();
+    for (Id shId : shadowIdsToUpdate) {
+      Invoice__c inv = invByShadowId.get(shId);
+      if (inv == null) continue;
+
+      Id totBud = inv.Overview_Budget_per_Anno__r != null
+        ? inv.Overview_Budget_per_Anno__r.Totali_Budget_Anno__c
+        : desiredTotBud.get(inv.Id);
+      Id totDon = inv.Reporting_Year__r != null
+        ? inv.Reporting_Year__r.Totali_Donatore_Anno__c
+        : desiredTotDon.get(inv.Id);
+
+      Fattura_Shadow__c upd = new Fattura_Shadow__c(
+        Id = shId,
+        Bypass_Flow__c = true,
+        Totale_Durata_Visite_Static__c = inv.Total_Duration_in_minutes__c,
+        Totale_Fattura_Static__c = inv.Totale_Fattura__c,
+        Totale_Numero_di_Biglietti_Static__c = inv.Totale_Biglietti__c,
+        Totale_Numero_di_Visite_Static__c = inv.Total_Number_of_Visits__c,
+        Totali_Budget_Anno__c = totBud,
+        Totali_Donatore_Anno__c = totDon
+      );
+      shadowStaticUpdates.add(upd);
+    }
+    if (!shadowStaticUpdates.isEmpty()) {
+      Database.update(shadowStaticUpdates, false);
     }
   }
 
@@ -466,5 +570,58 @@ public without sharing class InvoiceTriggerHandler {
   private static String key(String num, Date d, String center) {
     if (String.isBlank(num) || d == null || String.isBlank(center)) return null;
     return num + '|' + String.valueOf(d) + '|' + center;
+  }
+
+  /**
+   * Metodo asincrono per allineare i programmi dopo un inserimento batch
+   */
+  public class AlignProgramsQueueable implements System.Queueable {
+    private Set<Id> programIds;
+    public AlignProgramsQueueable(Set<Id> pIds) {
+      this.programIds = pIds;
+    }
+    public void execute(System.QueueableContext qc) {
+      List<AllineaProgrammaAction.Input> inputs = new List<AllineaProgrammaAction.Input>();
+      for (Id progId : programIds) {
+        if (progId == null) continue;
+        AllineaProgrammaAction.Input rec = new AllineaProgrammaAction.Input();
+        rec.programId = String.valueOf(progId);
+        inputs.add(rec);
+      }
+      if (!inputs.isEmpty()) {
+        try {
+          AllineaProgrammaAction.run(inputs);
+        } catch (Exception e) {
+          System.debug('Errore nell\'allineamento asincrono dei programmi: ' + e.getMessage());
+          System.debug('Stack trace: ' + e.getStackTraceString());
+        }
+      }
+    }
+  }
+
+  public static void alignProgramsAsync(Set<Id> programIds) {
+    if (programIds == null || programIds.isEmpty()) return;
+    
+    // Non possiamo lanciare un queueable da un batch/future, 
+    // ma in quei casi eseguiamo in modo sincrono se serve (o lo saltiamo se non ammesso).
+    // Siccome System.isFuture() non supporta enqueueJob, potremmo doverlo eseguire síncrono
+    if (System.isFuture() || System.isBatch()) {
+        List<AllineaProgrammaAction.Input> inputs = new List<AllineaProgrammaAction.Input>();
+        for (Id progId : programIds) {
+          if (progId == null) continue;
+          AllineaProgrammaAction.Input rec = new AllineaProgrammaAction.Input();
+          rec.programId = String.valueOf(progId);
+          inputs.add(rec);
+        }
+        if (!inputs.isEmpty()) {
+          try {
+            AllineaProgrammaAction.run(inputs);
+          } catch (Exception e) {
+            System.debug('Errore nell\'allineamento sincrono: ' + e.getMessage());
+          }
+        }
+    } else {
+        System.enqueueJob(new AlignProgramsQueueable(programIds));
+    }
   }
 }

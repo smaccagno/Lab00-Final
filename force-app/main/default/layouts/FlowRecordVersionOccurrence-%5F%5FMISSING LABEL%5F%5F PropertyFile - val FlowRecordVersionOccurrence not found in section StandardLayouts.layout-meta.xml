@@ -69,6 +69,7 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
+    <relatedObjects>UserRecordAccessId</relatedObjects>
     <relatedObjects>RecordVisibilityId</relatedObjects>
     <relatedObjects>FlowRecordVersionId</relatedObjects>
     <relatedObjects>FlowRecordId</relatedObjects>

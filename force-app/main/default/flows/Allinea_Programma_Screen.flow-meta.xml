@@ -1,16 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <actionCalls>
-        <name>Refresh</name>
-        <label>Refresh</label>
-        <locationX>176</locationX>
-        <locationY>350</locationY>
-        <actionName>c:ReloadPage</actionName>
-        <actionType>component</actionType>
-        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
-        <nameSegment>c:ReloadPage</nameSegment>
-        <offset>0</offset>
-    </actionCalls>
     <apiVersion>62.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <customProperties>
@@ -66,12 +55,9 @@
         <allowBack>false</allowBack>
         <allowFinish>true</allowFinish>
         <allowPause>false</allowPause>
-        <connector>
-            <targetReference>Refresh</targetReference>
-        </connector>
         <fields>
             <name>Fatto</name>
-            <fieldText>&lt;p&gt;Allineamento Completato.&lt;/p&gt;</fieldText>
+            <fieldText>&lt;p&gt;Allineamento avviato in background. Riceverai un messaggio al completamento.&lt;/p&gt;&lt;p&gt;Non è necessario aggiornare la pagina.&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
             <styleProperties>
                 <verticalAlignment>

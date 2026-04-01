@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StandardValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <sorted>false</sorted>
+    <standardValue>
+        <fullName>Carta di Credito</fullName>
+        <default>false</default>
+        <label>Carta di Credito</label>
+    </standardValue>
+    <standardValue>
+        <fullName>Assegno</fullName>
+        <default>false</default>
+        <label>Assegno</label>
+    </standardValue>
+    <standardValue>
+        <fullName>PayPal</fullName>
+        <default>false</default>
+        <label>PayPal</label>
+    </standardValue>
+    <standardValue>
+        <fullName>Bonifico</fullName>
+        <default>true</default>
+        <label>Bonifico</label>
+    </standardValue>
+</StandardValueSet>

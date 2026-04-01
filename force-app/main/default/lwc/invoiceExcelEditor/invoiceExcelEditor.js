@@ -87,6 +87,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     @api programId;
     @api partnerBudgetId;
     _incomingContextApplied = false;
+    _incomingContextPromise = null;
+    _docClickHandler = null;
 
     @wire(CurrentPageReference)
     wiredPageRef(pageRef) {
@@ -97,8 +99,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     get showConfigCard() {
-        // Se Programma/Budget sono già determinati (da user/flow), non mostrare la sezione di selezione
-        return this.showProgramSelection || this.showPartnerSelection;
+        // Mostra sempre la sezione finché Programma e Budget non sono entrambi valorizzati.
+        return !this.isConfigurationComplete || this.showProgramSelection || this.showPartnerSelection;
+    }
+
+    get isConfigurationComplete() {
+        return Boolean(this.selectedProgramId && this.selectedPartnerBudgetId);
     }
 
 
@@ -916,16 +922,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const input = this.template.querySelector(`td[data-field="invoiceNumber"][data-row-index="${rowIndex}"] .invoice-number-edit-input`);
                 
                 if (cell && editBox) {
-                    // Funzione per posizionare la box
+                    // Funzione per posizionare la box (usa position: fixed per Lightning)
                     const positionEditBox = () => {
                         const cellRect = cell.getBoundingClientRect();
-                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
                         
-                        // Posiziona la box sopra la cella
-                        editBox.style.top = `${cellRect.top + scrollTop}px`;
-                        editBox.style.left = `${cellRect.left + scrollLeft}px`;
+                        // Usa position: fixed per posizionamento preciso in Lightning Experience
+                        editBox.style.position = 'fixed';
+                        editBox.style.top = `${cellRect.top}px`;
+                        editBox.style.left = `${cellRect.left}px`;
                         editBox.style.width = `${Math.max(cellRect.width, 200)}px`;
+                        editBox.style.zIndex = '1001';
                     };
                     
                     // Posiziona inizialmente
@@ -1169,16 +1175,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 const input = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"] .numeric-field-edit-input`);
                 
                 if (cell && editBox) {
-                    // Funzione per posizionare la box
+                    // Funzione per posizionare la box (usa position: fixed per Lightning)
                     const positionEditBox = () => {
                         const cellRect = cell.getBoundingClientRect();
-                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
                         
-                        // Posiziona la box sopra la cella
-                        editBox.style.top = `${cellRect.top + scrollTop}px`;
-                        editBox.style.left = `${cellRect.left + scrollLeft}px`;
+                        // Usa position: fixed per posizionamento preciso in Lightning Experience
+                        editBox.style.position = 'fixed';
+                        editBox.style.top = `${cellRect.top}px`;
+                        editBox.style.left = `${cellRect.left}px`;
                         editBox.style.width = `${Math.max(cellRect.width, 200)}px`;
+                        editBox.style.zIndex = '1001';
                     };
                     
                     // Posiziona inizialmente
@@ -2308,8 +2314,33 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory);
             }
             
-            // Se isFree o noInvoiceAvailable è true, genera il numero fattura se non presente
-            if ((updatedRows[rowIndex].isFree || updatedRows[rowIndex].noInvoiceAvailable) && !updatedRows[rowIndex].invoiceNumber) {
+            // Se isFree o noInvoiceAvailable è true (da paste Excel), applica override partner e numero fattura come nel toggle manuale
+            const isFree = !!updatedRows[rowIndex].isFree;
+            const noInvoiceAvailable = !!updatedRows[rowIndex].noInvoiceAvailable;
+            if (isFree || noInvoiceAvailable) {
+                // Override partner: quando isFree è true, imposta "Prestazioni Gratuite"
+                if (isFree) {
+                    if (!updatedRows[rowIndex].previousPartner && updatedRows[rowIndex].partner) {
+                        updatedRows[rowIndex].previousPartner = updatedRows[rowIndex].partner;
+                        updatedRows[rowIndex].previousPartnerId = updatedRows[rowIndex].partnerId || '';
+                    }
+                    try {
+                        const freeAccount = await getFreeAccount();
+                        if (freeAccount && freeAccount.Id && freeAccount.Name) {
+                            updatedRows[rowIndex].partner = freeAccount.Name;
+                            updatedRows[rowIndex].partnerId = freeAccount.Id;
+                        }
+                    } catch (error) {
+                        console.error('Errore nel recupero del Free Account durante paste:', error);
+                    }
+                }
+                // Override numero fattura: salva il precedente se non è già GRATUITA- o NON DISPONIBILE-, poi genera il nuovo
+                const invNum = updatedRows[rowIndex].invoiceNumber || '';
+                if (!invNum.startsWith('GRATUITA-') && !invNum.startsWith('NON DISPONIBILE-')) {
+                    if (invNum.trim() && !updatedRows[rowIndex].previousInvoiceNumber) {
+                        updatedRows[rowIndex].previousInvoiceNumber = invNum;
+                    }
+                }
                 try {
                     const invoiceNumber = await this.generateInvoiceNumberForRow(updatedRows[rowIndex], rowIndex);
                     if (invoiceNumber) {
@@ -2330,8 +2361,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         updatedRows.forEach((row, rowIdx) => {
             const rowElement = this.template.querySelector(`tr[data-row-index="${rowIdx}"]`);
             if (rowElement) {
-                // Aggiorna campi normali
-                ['tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory', 'invoiceNumber'].forEach(field => {
+                // Aggiorna campi normali (inclusi partner e invoiceNumber per override da flag Gratuita/Non disponibile)
+                ['partner', 'tipoVisita', 'beneficiaryType', 'comune', 'provincia', 'regione', 'medicalCenter', 'noProfit', 'noProfitCategory', 'invoiceNumber'].forEach(field => {
                     const cell = rowElement.querySelector(`td[data-field="${field}"]`);
                     if (cell && row[field] !== undefined) {
                         // Per invoiceNumber, aggiorna lo span interno se presente
@@ -3607,6 +3638,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'tipoVisita':
                 if (trimmedValue === '') {
                     row.validationErrors.tipoVisita = false; // Vuoto è ok (non obbligatorio fino al salvataggio)
+                } else if (row.tipoVisitaIsNew) {
+                    row.validationErrors.tipoVisita = false; // Valore confermato
                 } else {
                     // Verifica se il valore è nella lista dei tipi visita (pulisci anche i valori del dataset)
                     const tipoVisitaValid = this.tipoVisite.some(
@@ -3639,6 +3672,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'comune':
                 if (trimmedValue === '') {
                     row.validationErrors.comune = false; // Vuoto è ok
+                } else if (row.comuneIsNew) {
+                    row.validationErrors.comune = false; // Valore confermato
                 } else {
                     // Verifica se il comune esiste nella lista (pulisci anche i valori del dataset)
                     const comuneMatch = this.comuni.find(
@@ -3686,6 +3721,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'provincia':
                 if (trimmedValue === '') {
                     row.validationErrors.provincia = false; // Vuoto è ok
+                } else if (row.comuneIsNew) {
+                    row.validationErrors.provincia = false; // Se il comune è nuovo, accettiamo la provincia
                 } else {
                     // Verifica se la provincia esiste nella lista (pulisci anche i valori del Set)
                     // Crea un Set pulito delle province per il confronto
@@ -3749,6 +3786,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'regione':
                 if (trimmedValue === '') {
                     row.validationErrors.regione = false; // Vuoto è ok
+                } else if (row.comuneIsNew) {
+                    row.validationErrors.regione = false; // Se il comune è nuovo, accettiamo la regione
                 } else {
                     // Verifica se la regione esiste nella lista (pulisci anche i valori del Set)
                     // Crea un Set pulito delle regioni per il confronto
@@ -3812,6 +3851,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'medicalCenter':
                 if (trimmedValue === '') {
                     row.validationErrors.medicalCenter = false; // Vuoto è ok
+                } else if (row.medicalCenterIsNew) {
+                    row.validationErrors.medicalCenter = false; // Valore confermato
                 } else {
                     // Verifica se il centro medico esiste nella lista (pulisci anche i valori del dataset)
                     const medicalCenterValid = this.medicalCenters.some(
@@ -3828,6 +3869,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'noProfit':
                 if (trimmedValue === '') {
                     row.validationErrors.noProfit = false; // Vuoto è ok
+                } else if (row.noProfitIsNew) {
+                    row.validationErrors.noProfit = false; // Valore confermato
                 } else {
                     // Verifica se l'ente no profit esiste nella lista (pulisci anche i valori del dataset)
                     const noProfitValid = this.nonProfits.some(
@@ -4273,15 +4316,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (!dateInput || !cell) return;
 
         const cellRect = cell.getBoundingClientRect();
-        const container = this.template.querySelector('.excel-table-container');
-        if (!container) return;
-
-        const containerRect = container.getBoundingClientRect();
         
-        dateInput.style.position = 'absolute';
-        dateInput.style.top = `${cellRect.top - containerRect.top}px`;
-        dateInput.style.left = `${cellRect.left - containerRect.left}px`;
-        dateInput.style.width = `${cellRect.width}px`;
+        // Usa position: fixed per posizionamento preciso in Lightning Experience
+        dateInput.style.position = 'fixed';
+        dateInput.style.top = `${cellRect.top}px`;
+        dateInput.style.left = `${cellRect.left}px`;
+        dateInput.style.width = `${Math.max(cellRect.width, 150)}px`;
         dateInput.style.zIndex = '1001';
     }
 
@@ -5364,12 +5404,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.addRow();
         
         // Aggiungi listener per click fuori dal dropdown
-        document.addEventListener('click', (event) => {
-            this.handleClickOutside(event);
-        });
+        if (!this._docClickHandler) {
+            this._docClickHandler = this.handleClickOutside.bind(this);
+        }
+        document.addEventListener('click', this._docClickHandler);
 
         // Applica eventuali valori passati via Flow (API props) prima dell'inizializzazione
-        this.applyIncomingContext({
+        await this.applyIncomingContext({
             c__programId: this.programId,
             c__partnerBudgetId: this.partnerBudgetId
         });
@@ -5380,105 +5421,115 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     async applyIncomingContext(state) {
         if (this._incomingContextApplied) return;
+        if (this._incomingContextPromise) return this._incomingContextPromise;
+        this._incomingContextPromise = (async () => {
         const incomingProgramId = state?.c__programId || this.programId;
         const incomingBudgetId = state?.c__partnerBudgetId || this.partnerBudgetId;
 
-        // Se arrivano valori dal Flow (anche se vuoti), segnaliamo che sono stati passati
-        // Questo permette di nascondere la selezione perché il Flow ha già gestito la scelta
-        if (state?.c__programId !== undefined || this.programId !== undefined) {
-            // Valore passato dal Flow (può essere null se non selezionato, ma il Flow ha gestito la selezione)
-            if (incomingProgramId) {
-                this.selectedProgramId = incomingProgramId;
-                // Carica i partner per il programma selezionato
-                await this.loadPartnersForProgram(incomingProgramId);
-            } else {
-                // Se non c'è un programma selezionato, carica tutti i partner disponibili
-                await this.loadPartnersForProgram(null);
-            }
-            // Nascondi la selezione programma perché il Flow l'ha già gestita
+        // Se il Flow passa un Programma valido, usalo come predefinito.
+        // Se è vuoto/null, la selezione resta obbligatoria nel componente.
+        if (incomingProgramId) {
+            this.selectedProgramId = incomingProgramId;
+            // Carica i partner per il programma selezionato
+            await this.loadPartnersForProgram(incomingProgramId);
             this.showProgramSelection = false;
         }
         
-        if (state?.c__partnerBudgetId !== undefined || this.partnerBudgetId !== undefined) {
-            // Valore passato dal Flow (può essere null se non selezionato, ma il Flow ha gestito la selezione)
-            if (incomingBudgetId) {
-                this.selectedPartnerBudgetId = incomingBudgetId;
-            }
-            // Nascondi la selezione partner perché il Flow l'ha già gestita
+        // Se il Flow passa un Budget valido, usalo come predefinito.
+        // Se è vuoto/null, la selezione partner resta obbligatoria.
+        if (incomingBudgetId) {
+            this.selectedPartnerBudgetId = incomingBudgetId;
             this.showPartnerSelection = false;
         }
         
-        // Gestisci dati TSV passati da Google Sheets tramite URL
+        // Gestisci dati TSV passati da Google Sheets tramite URL (piccoli payload)
         if (state?.c__pasteData) {
             try {
-                console.log('Dati TSV ricevuti dall\'URL, elaborazione in corso...');
-                // Decodifica i dati base64
                 const base64Data = decodeURIComponent(state.c__pasteData);
-                const tsvData = atob(base64Data);
-                
-                console.log('Dati TSV decodificati, lunghezza:', tsvData.length);
-                
-                // Converti i dati TSV in righe (come fa pasteFromClipboard)
-                const rawLines = tsvData.split('\n');
-                const lines = rawLines
-                    .map(line => {
-                        // IMPORTANTE: Mantieni i tab (\t) perché separano le colonne nel formato TSV Excel
-                        // Rimuovi solo caratteri nascosti e di controllo, ma NON i tab
-                        let cleanedLine = line.replace(/\r/g, '');
-                        // Rimuovi caratteri Unicode invisibili comuni
-                        cleanedLine = cleanedLine.replace(/[\u200B-\u200D\uFEFF]/g, ''); // Zero-width spaces, zero-width non-joiner, zero-width joiner, BOM
-                        // Rimuovi caratteri di controllo (eccetto tab=0x09 che separa le colonne)
-                        cleanedLine = cleanedLine.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
-                        return cleanedLine;
-                    })
-                    .filter(line => line.trim() || line.includes('\t'));
-                
-                console.log('Righe TSV processate:', lines.length);
-                
-                if (lines.length > 0) {
-                    // Trova la prima riga vuota (stessa logica di pasteFromClipboard)
-                    let firstEmptyRowIndex = -1;
-                    for (let i = 0; i < this.rows.length; i++) {
-                        if (this.isRowEmpty(this.rows[i])) {
-                            firstEmptyRowIndex = i;
-                            break;
-                        }
-                    }
-                    
-                    // Se non ci sono righe vuote, aggiungi una nuova riga
-                    if (firstEmptyRowIndex === -1) {
-                        this.addRow();
-                        firstEmptyRowIndex = this.rows.length - 1;
-                    }
-                    
-                    console.log('Prima riga vuota trovata all\'indice:', firstEmptyRowIndex);
-                    
-                    // Incola i dati automaticamente
-                    await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
-                    console.log('Dati incollati automaticamente con successo');
-                    
-                    // Attendi un po' per assicurarsi che tutti i dataset siano stati caricati
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // Riesegui la validazione completa di tutte le righe
-                    // Questo è necessario perché durante il paste iniziale i dataset potrebbero non essere ancora completamente caricati
-                    console.log('Riesecuzione validazione completa di tutte le righe...');
-                    await this.validateAllRows();
-                    console.log('Validazione completa terminata');
-                    
-                    // Mostra un messaggio di successo
-                    this.showSuccess(`Incollati automaticamente ${lines.length} righe da Google Sheets.`);
-                } else {
-                    console.warn('Nessuna riga valida trovata nei dati TSV');
-                    this.showError('Nessun dato valido trovato nei dati ricevuti.');
-                }
+                await this.processTsvBase64_(base64Data, 'URL');
             } catch (error) {
-                console.error('Errore durante l\'elaborazione dei dati TSV dall\'URL:', error);
+                console.error('Errore elaborazione dati TSV dall\'URL:', error);
                 this.showError(`Errore durante l'elaborazione dei dati: ${error.message}`);
             }
         }
         
+        // Ascolta dati TSV via postMessage da Google Sheets (grandi payload)
+        if (state?.c__pasteDataPending) {
+            this._postMessageHandler = (event) => {
+                if (!this.isTrustedMessageOrigin(event.origin)) {
+                    return;
+                }
+                if (event.data?.type === 'gsheetsData' && event.data.pasteData) {
+                    console.log('Dati TSV ricevuti via postMessage');
+                    window.removeEventListener('message', this._postMessageHandler);
+                    this._postMessageHandler = null;
+                    this.processTsvBase64_(event.data.pasteData, 'postMessage').catch((err) => {
+                        console.error('Errore elaborazione dati TSV da postMessage:', err);
+                        this.showError(`Errore durante l'elaborazione dei dati: ${err.message}`);
+                    });
+                }
+            };
+            window.addEventListener('message', this._postMessageHandler);
+        }
+        
         this._incomingContextApplied = true;
+        })();
+        try {
+            await this._incomingContextPromise;
+        } finally {
+            this._incomingContextPromise = null;
+        }
+    }
+
+    isTrustedMessageOrigin(origin) {
+        if (!origin) return false;
+        if (origin === window.location.origin) return true;
+        return /^https:\/\/([a-z0-9-]+\.)*(google\.com|googleusercontent\.com)$/i.test(origin);
+    }
+    
+    async processTsvBase64_(base64Data, source) {
+        console.log(`Dati TSV ricevuti da ${source}, elaborazione in corso...`);
+        const tsvData = atob(base64Data);
+        console.log('Dati TSV decodificati, lunghezza:', tsvData.length);
+        
+        const rawLines = tsvData.split('\n');
+        const lines = rawLines
+            .map(line => {
+                let cleanedLine = line.replace(/\r/g, '');
+                cleanedLine = cleanedLine.replace(/[\u200B-\u200D\uFEFF]/g, '');
+                cleanedLine = cleanedLine.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+                return cleanedLine;
+            })
+            .filter(line => line.trim() || line.includes('\t'));
+        
+        console.log('Righe TSV processate:', lines.length);
+        
+        if (lines.length > 0) {
+            let firstEmptyRowIndex = -1;
+            for (let i = 0; i < this.rows.length; i++) {
+                if (this.isRowEmpty(this.rows[i])) {
+                    firstEmptyRowIndex = i;
+                    break;
+                }
+            }
+            
+            if (firstEmptyRowIndex === -1) {
+                this.addRow();
+                firstEmptyRowIndex = this.rows.length - 1;
+            }
+            
+            await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
+            console.log('Dati incollati automaticamente con successo');
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            console.log('Riesecuzione validazione completa...');
+            await this.validateAllRows();
+            
+            this.showSuccess(`Incollati automaticamente ${lines.length} righe da Google Sheets.`);
+        } else {
+            this.showError('Nessun dato valido trovato nei dati ricevuti.');
+        }
     }
     
     async initializeProgramSelection() {
@@ -5496,14 +5547,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     this.partnerAccountId = partnerAccount.Id;
                 }
                 await this.checkPartnerSelection();
-                return;
-            }
-            
-            // Se la selezione è già stata nascosta dal Flow (valori passati anche se null),
-            // non mostrare la UI e termina
-            if (!this.showProgramSelection && (this.programId !== undefined || this.partnerBudgetId !== undefined)) {
-                // Il Flow ha già gestito la selezione, anche se i valori sono null
-                // Non mostrare la UI di selezione
                 return;
             }
             
@@ -5552,8 +5595,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
     
     async selectProgram(programId, programName) {
+        const previousProgramId = this.selectedProgramId;
         this.selectedProgramId = programId;
         this.selectedProgramName = programName;
+
+        // Se cambia programma, forza una nuova determinazione del budget partner.
+        if (previousProgramId && previousProgramId !== programId) {
+            this.selectedPartnerBudgetId = null;
+            this.availableBudgets = [];
+            this.showPartnerSelection = false;
+        }
         
         // Aggiorna il variant di tutti i programmi
         if (this.programs && this.programs.length > 0) {
@@ -5610,14 +5661,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 return;
             }
             
-            // Se la selezione è già stata nascosta dal Flow (valori passati anche se null),
-            // non mostrare la UI partner
-            if (!this.showPartnerSelection && (this.programId !== undefined || this.partnerBudgetId !== undefined)) {
-                // Il Flow ha già gestito la selezione, anche se i valori sono null
-                // Non mostrare la UI di selezione
-                return;
-            }
-
             this.isLoadingBudgets = true;
             
             // Verifica se serve selezionare un partner
@@ -5664,8 +5707,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
     
     cancelPartnerSelection() {
-        // Se l'utente annulla, usa il budget di default
-        this.selectedPartnerBudgetId = null;
+        // La selezione partner/budget è obbligatoria.
+        this.showError('La selezione del Partner/Budget è obbligatoria per continuare.');
     }
     
     handleProgramSelect(event) {
@@ -5698,11 +5741,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     disconnectedCallback() {
-        // Rimuovi listener quando il componente viene distrutto
-        document.removeEventListener('click', this.handleClickOutside);
+        if (this._docClickHandler) {
+            document.removeEventListener('click', this._docClickHandler);
+        }
+        if (this._postMessageHandler) {
+            window.removeEventListener('message', this._postMessageHandler);
+            this._postMessageHandler = null;
+        }
     }
 
     async saveAllInvoices() {
+        if (!this.isConfigurationComplete) {
+            this.showError('Seleziona Programma e Partner/Budget prima di procedere.');
+            return;
+        }
+
         // Valida le righe prima di salvare
         const validRows = this.rows.filter(row => !this.isRowEmpty(row));
         
@@ -6201,6 +6254,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Organizza le fatture e le visite raggruppando per numero fattura
      */
     organizeInvoicesAndVisits() {
+        if (!this.isConfigurationComplete) {
+            this.showError('Seleziona Programma e Partner/Budget prima di procedere.');
+            return;
+        }
+
         // Filtra solo le righe che hanno almeno un numero fattura o una visita
         const validRows = this.rows.filter(row => {
             return row.invoiceNumber || row.tipoVisita || row.dataVisita;

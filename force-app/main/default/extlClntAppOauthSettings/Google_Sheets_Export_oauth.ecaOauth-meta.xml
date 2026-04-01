@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtlClntAppOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <commaSeparatedOauthScopes>Api, RefreshToken, Lightning</commaSeparatedOauthScopes>
+    <externalClientApplication>Google_Sheets_Export</externalClientApplication>
+    <isFirstPartyAppEnabled>false</isFirstPartyAppEnabled>
+    <label>Google_Sheets_Export_oauth</label>
+    <oauthLink>00D7a0000005FFo:888MA0000002c61</oauthLink>
+</ExtlClntAppOauthSettings>

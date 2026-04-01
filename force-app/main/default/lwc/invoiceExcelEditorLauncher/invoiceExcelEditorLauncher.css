@@ -1,0 +1,8 @@
+/* Stili per il componente launcher */
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 1rem;
+}

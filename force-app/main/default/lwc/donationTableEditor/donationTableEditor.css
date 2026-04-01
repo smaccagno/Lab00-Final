@@ -1,0 +1,1184 @@
+.excel-table-container {
+    overflow-x: auto;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+}
+
+.excel-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f3f3f3;
+}
+
+.excel-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid #d8dde6;
+    background-color: #f3f3f3;
+    color: #080707;
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.hidden-cell {
+    display: none !important;
+}
+
+.excel-table td {
+    padding: 6px 12px;
+    border: 1px solid #d8dde6;
+    background-color: #ffffff;
+    min-height: 32px;
+}
+
+.excel-table tbody tr {
+    position: relative;
+}
+
+/* Riga senza Progetto: grigio, celle non editabili (solo Progetto è cliccabile) */
+.excel-table tbody tr.row-no-progetto td {
+    background-color: #e5e5e5 !important;
+}
+.excel-table tbody tr.row-no-progetto:hover td {
+    background-color: #e5e5e5 !important;
+}
+.excel-table tbody tr.row-no-progetto td[data-field="Programma"] {
+    background-color: #f8f8f8 !important;
+    cursor: pointer;
+}
+.excel-table tbody tr.row-no-progetto:hover td[data-field="Programma"] {
+    background-color: #f0f0f0 !important;
+}
+.excel-table tbody tr.row-no-progetto:hover td:not([data-field="Programma"]):not(.row-number-cell) {
+    cursor: not-allowed;
+}
+
+.excel-table tbody tr:hover {
+    background-color: #f3f3f3;
+    box-shadow: 0 0 0 2px #0176d3;
+    z-index: 2; /* Solo sopra le altre righe, sotto nav e dropdown globali */
+}
+
+.excel-table tbody tr.selected-row {
+    background-color: #e8f4f8;
+    box-shadow: 0 0 0 2px #2e844a;
+    z-index: 1; /* Solo sopra le altre righe, sotto nav e dropdown globali */
+}
+
+/* Prima riga di gruppo multi-distribuzioni: NO bordo mezzano (che taglierebbe le celle merged) */
+.excel-table tbody tr.selected-row-first-multi {
+    box-shadow: none;
+    background-color: #e8f4f8;
+    z-index: 1;
+}
+
+.excel-table tbody tr.selected-row-first-multi .row-number-cell,
+.excel-table tbody tr.selected-row-first-multi td[data-field="Donatore"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Nome_della_Donazione"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Data_di_ricezione"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Trattenuta"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Programma"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Ammontare"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Data_di_Competenza"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Metodo_di_pagamento"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Percentuale_Allocazione"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Valore_Distribuito"] {
+    background-color: #d1e5ec !important;
+}
+
+/* Celle merged: solo bordo superiore - NO bordi verticali interni */
+.excel-table tbody tr.selected-row-first-multi td[data-field="Nome_della_Donazione"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Data_di_ricezione"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Trattenuta"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Programma"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Ammontare"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Data_di_Competenza"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Metodo_di_pagamento"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-first-multi td[data-field="Percentuale_Allocazione"] {
+    border-top: 2px solid #2e844a !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+/* Prima cella merged: solo bordo superiore (NO sinistro verde = bordo interno con # resta grigio) */
+.excel-table tbody tr.selected-row-first-multi td[data-field="Donatore"] {
+    border-left: 1px solid #d8dde6 !important;
+    border-top: 2px solid #2e844a !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+.excel-table tbody tr.selected-row-first-multi .row-number-cell {
+    border-left: 2px solid #2e844a !important;
+    border-top: 2px solid #2e844a !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+/* Ultima cella: bordo destro + superiore */
+.excel-table tbody tr.selected-row-first-multi td[data-field="Valore_Distribuito"] {
+    border-left: none !important;
+    border-top: 2px solid #2e844a !important;
+    border-right: 2px solid #2e844a !important;
+    border-bottom: none !important;
+}
+
+/* Riga selezionata ma non prima del gruppo: bordo solo su # e colonne allocazione, NON sulle celle merged */
+.excel-table tbody tr.selected-row-allocation-only {
+    box-shadow: none;
+}
+
+/* Ultima riga del gruppo selezionata: bordo inferiore su tutta la riga */
+.excel-table tbody tr.selected-row-allocation-only.last-in-group {
+    border-bottom: 2px solid #2e844a;
+}
+
+.excel-table tbody tr.selected-row-allocation-only .row-number-cell,
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Percentuale_Allocazione"],
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Valore_Distribuito"] {
+    background-color: #d1e5ec !important;
+}
+
+.excel-table tbody tr.selected-row-allocation-only .row-number-cell {
+    border-left: 2px solid #2e844a;
+    border-top: 2px solid #2e844a;
+}
+
+/* Riga in mezzo: NO bordo inferiore (evita bordo mezzano) */
+.excel-table tbody tr.selected-row-allocation-only:not(.last-in-group) .row-number-cell {
+    border-bottom: none;
+}
+
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Percentuale_Allocazione"],
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Valore_Distribuito"] {
+    border-top: 2px solid #2e844a;
+}
+
+/* Riga in mezzo: NO bordo inferiore sulle celle allocazione */
+.excel-table tbody tr.selected-row-allocation-only:not(.last-in-group) td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-allocation-only:not(.last-in-group) td[data-field="Percentuale_Allocazione"],
+.excel-table tbody tr.selected-row-allocation-only:not(.last-in-group) td[data-field="Valore_Distribuito"] {
+    border-bottom: none;
+}
+
+/* Ultima riga: bordo inferiore sulle celle allocazione e # */
+.excel-table tbody tr.selected-row-allocation-only.last-in-group .row-number-cell,
+.excel-table tbody tr.selected-row-allocation-only.last-in-group td[data-field="Partner_Allocato"],
+.excel-table tbody tr.selected-row-allocation-only.last-in-group td[data-field="Percentuale_Allocazione"],
+.excel-table tbody tr.selected-row-allocation-only.last-in-group td[data-field="Valore_Distribuito"] {
+    border-bottom: 2px solid #2e844a;
+}
+
+.excel-table tbody tr.selected-row-allocation-only td[data-field="Valore_Distribuito"] {
+    border-right: 2px solid #2e844a;
+}
+
+/* Quando si seleziona una riga non-prima del gruppo, le celle merged (nella prima riga) devono avere lo stesso sfondo di selezione */
+.excel-table tbody tr.merged-cells-selected td[data-field="Donatore"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Nome_della_Donazione"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Data_di_ricezione"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Trattenuta"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Programma"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Ammontare"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Data_di_Competenza"],
+.excel-table tbody tr.merged-cells-selected td[data-field="Metodo_di_pagamento"] {
+    background-color: #d1e5ec !important;
+}
+
+.row-number-header,
+.row-number-cell {
+    width: 50px;
+    text-align: center;
+    background-color: #f3f3f3;
+    font-weight: 600;
+    color: #706e6b;
+}
+
+.row-number-cell {
+    background-color: #fafaf9;
+    user-select: none;
+    cursor: pointer;
+}
+
+.editable-cell {
+    min-width: 120px;
+    outline: none;
+    cursor: text;
+    position: relative;
+    padding-right: 24px; /* Spazio per il pulsante di cancellazione */
+}
+
+.editable-cell:focus,
+.editable-cell.cell-focused {
+    background-color: #fff9e5;
+    border: 2px solid #0070d2 !important;
+    outline: none;
+    box-shadow: 0 0 0 1px #0070d2;
+}
+
+.invoice-number-value:focus,
+.invoice-number-value.cell-focused {
+    outline: none;
+}
+
+.editable-cell[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #c9c9c9;
+}
+
+.checkbox-cell {
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    min-width: 80px;
+}
+
+.checkbox-checked {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background-color: #0070d2;
+    color: white;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.checkbox-unchecked {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background-color: #ffffff;
+    border: 2px solid #d8dde6;
+    border-radius: 3px;
+}
+
+.checkbox-cell:hover .checkbox-unchecked {
+    border-color: #0070d2;
+}
+
+/* Scrollbar styling */
+.excel-table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.excel-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Stile per celle con validazione fallita */
+.error-value {
+    color: #c23934;
+    font-weight: bold;
+    border-bottom: 2px solid #c23934;
+}
+
+.invalid-cell {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+/* Cella con Donatore o Partner incoerente con il Programma selezionato */
+.error-program-mismatch {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+.invoice-number-container {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+    padding-right: 24px; /* Spazio per il pulsante di cancellazione */
+}
+
+.invoice-number-value {
+    flex: 1;
+    outline: none;
+}
+
+.invoice-number-error-message {
+    font-size: 0.75rem;
+    color: #c23934;
+    margin-top: 4px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* Stili per la vista organizzata */
+.invoice-group-card {
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.invoice-details {
+    background-color: #f3f2f2;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.visits-section {
+    margin-top: 1rem;
+}
+
+.visits-table {
+    font-size: 0.875rem;
+}
+
+.visits-table th {
+    background-color: #fafaf9;
+    font-weight: 600;
+}
+
+.visits-table td {
+    vertical-align: middle;
+}
+
+/* Stili per toggle visite */
+.visits-toggle-button {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    background-color: #fafaf9;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.visits-toggle-button:hover {
+    background-color: #f3f2f2;
+}
+
+.visits-toggle-icon {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.visits-toggle-icon-expanded {
+    transform: rotate(90deg);
+}
+
+.visits-content {
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    background-color: #ffffff;
+    margin-top: 0.5rem;
+}
+
+/* Compattazione vista organizzata */
+.invoice-group-card .slds-card__body_inner {
+    padding: 0.5rem;
+}
+
+.invoice-group-card .slds-text-body_small {
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.invalid-cell:focus {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+/* Stile per celle con dropdown */
+.dropdown-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.dropdown-cell:hover {
+    background-color: #f3f3f3;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    position: fixed;
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.dropdown-header {
+    padding: 8px;
+    border-bottom: 1px solid #d8dde6;
+    background-color: #f3f3f3;
+}
+
+.dropdown-filter {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d8dde6;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.dropdown-filter:focus {
+    border-color: #0070d2;
+    box-shadow: 0 0 0 1px #0070d2;
+}
+
+.dropdown-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #ffffff;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #080707;
+    border-bottom: 1px solid #f3f3f3;
+    transition: background-color 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 100%;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f3f3;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item-empty {
+    color: #706e6b;
+    font-style: italic;
+    cursor: default;
+}
+
+.dropdown-item-empty:hover {
+    background-color: transparent;
+}
+
+/* Scrollbar per dropdown */
+.dropdown-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.dropdown-footer {
+    padding: 8px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.confirm-value-button {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #0070d2;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.confirm-value-button:hover {
+    background-color: #005fb2;
+}
+
+.confirm-value-button:active {
+    background-color: #004d99;
+}
+
+/* Date Picker */
+.date-picker-input {
+    position: absolute;
+    padding: 6px 12px;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+    z-index: 1001;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.date-picker-input:focus {
+    outline: none;
+    border-color: #0070d2;
+    box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
+}
+
+.date-cell {
+    cursor: pointer;
+}
+
+.date-cell:hover {
+    background-color: #f3f3f3;
+}
+
+/* Pulsante di cancellazione cella */
+.cell-confirm-button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background-color: #2e844a;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    padding: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell-confirm-button:hover {
+    background-color: #1f5a2e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cell-confirm-button:active {
+    background-color: #1a4d26;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell-confirm-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #2e844a;
+}
+
+.cell-confirm-button lightning-icon {
+    --slds-c-icon-color-foreground-default: #ffffff;
+}
+
+.cell-clear-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    z-index: 10;
+    padding: 0;
+    font-size: 12px;
+    color: #706e6b;
+    line-height: 1;
+}
+
+.cell-clear-button:hover {
+    opacity: 1;
+    color: #c23934;
+}
+
+.cell-clear-button:focus {
+    outline: none;
+    opacity: 1;
+}
+
+.cell-clear-button::before {
+    content: '×';
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.cell-content-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.cell-content-wrapper span {
+    width: 100%;
+    display: inline-block;
+    min-height: 20px;
+    outline: none;
+    cursor: text;
+}
+
+/* Il pulsante viene mostrato/nascosto tramite template if:true nel HTML */
+
+/* Spinner durante il salvataggio e validazione */
+.slds-modal {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9001;
+    margin: 0;
+    padding: 0;
+}
+
+.slds-modal__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slds-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9000;
+    margin: 0;
+    padding: 0;
+}
+
+/* Tabella risultati */
+.slds-table {
+    font-size: 0.875rem;
+}
+
+.slds-table th {
+    white-space: nowrap;
+}
+
+.slds-table td {
+    vertical-align: top;
+}
+
+.slds-text-link {
+    color: #0070d2;
+    text-decoration: none;
+}
+
+.slds-text-link:hover {
+    text-decoration: underline;
+}
+
+/* Stili per la tabella dei risultati raggruppati */
+.invoice-row {
+    background-color: #f3f3f3 !important;
+    font-weight: normal;
+    border-top: 2px solid #0176d3;
+}
+
+.invoice-row td {
+    background-color: #f3f3f3 !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.expand-cell {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: top;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.expand-collapse-button {
+    border: 2px solid #0176d3;
+    background-color: #0176d3;
+    border-radius: 0.375rem;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.expand-collapse-button:hover {
+    background-color: #014486;
+    border-color: #014486;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.16);
+    transform: scale(1.05);
+}
+
+.expand-collapse-button:active {
+    transform: scale(0.95);
+}
+
+.expand-collapse-button lightning-icon {
+    --slds-c-icon-color-foreground-default: #ffffff;
+}
+
+.visit-error-message {
+    font-size: 0.7rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    margin-top: 4px;
+    padding: 2px 0;
+    display: block;
+}
+
+.visit-row {
+    background-color: #ffffff;
+}
+
+.visit-row td {
+    background-color: #ffffff;
+    border-top: 1px solid #e5e5e5;
+}
+
+.visit-row:hover {
+    background-color: #fafaf9 !important;
+}
+
+.visit-row:hover td {
+    background-color: #fafaf9 !important;
+}
+
+.visit-header-row {
+    background-color: #fafaf9;
+    border-top: 1px solid #dddbda;
+}
+
+.visit-header-row td {
+    background-color: #fafaf9;
+    padding: 8px 12px !important;
+}
+
+.visits-header-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.visit-expand-row {
+    background-color: #ffffff;
+}
+
+.visit-expand-row td {
+    padding: 0 !important;
+    border-top: none !important;
+}
+
+.visit-expand-row .visits-content {
+    background-color: #fafaf9;
+    border: 1px solid #dddbda;
+    border-radius: 4px;
+    margin: 8px;
+}
+
+/* Spinner di validazione per le celle */
+.cell-validation-spinner {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Assicura che le celle con spinner abbiano spazio sufficiente */
+.editable-cell {
+    padding-right: 32px; /* Spazio per il pulsante di cancellazione, conferma e lo spinner */
+}
+
+/* Box di editing inline per Invoice Number */
+.invoice-number-container {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+}
+
+.invoice-number-value {
+    display: inline-block;
+    width: 100%;
+    min-height: 20px;
+}
+
+.invoice-number-edit-box {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    gap: 4px;
+    z-index: 1000;
+    background-color: white;
+    padding: 4px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #0070d2;
+    border-radius: 4px;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.invoice-number-edit-input {
+    flex: 1;
+    font-size: 0.875rem;
+    padding: 4px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    min-width: 0;
+    max-width: calc(100% - 52px); /* Larghezza totale meno spazio per i due pulsanti */
+}
+
+.invoice-number-edit-input:focus {
+    border-color: #005fb2;
+    box-shadow: 0 0 3px rgba(0, 112, 210, 0.3);
+}
+
+.invoice-number-confirm-button,
+.invoice-number-cancel-button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.invoice-number-confirm-button {
+    background-color: #2e844a; /* Verde */
+    opacity: 0.9;
+}
+
+.invoice-number-confirm-button:hover {
+    opacity: 1;
+    background-color: #256e3e; /* Verde più scuro */
+}
+
+.invoice-number-cancel-button {
+    background-color: #c23934; /* Rosso */
+    opacity: 0.9;
+}
+
+.invoice-number-cancel-button:hover {
+    opacity: 1;
+    background-color: #a32924; /* Rosso più scuro */
+}
+
+.invoice-number-confirm-button lightning-icon,
+.invoice-number-cancel-button lightning-icon {
+    --sds-c-icon-color-foreground: white;
+    --sds-c-icon-color-background: transparent;
+    --sds-c-icon-width: 12px;
+    --sds-c-icon-height: 12px;
+}
+
+/* Box di editing inline per campi numerici (numeroVisite, totaleMinuti, amount) */
+.numeric-field-container {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+}
+
+.numeric-field-value {
+    display: inline-block;
+    width: 100%;
+    min-height: 20px;
+}
+
+.numeric-field-edit-box {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    gap: 4px;
+    z-index: 1000;
+    background-color: white;
+    padding: 4px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #0070d2;
+    border-radius: 4px;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.numeric-field-edit-input {
+    flex: 1;
+    font-size: 0.875rem;
+    padding: 4px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    min-width: 0;
+    max-width: calc(100% - 52px);
+}
+
+.numeric-field-edit-input:focus {
+    border-color: #005fb2;
+    box-shadow: 0 0 3px rgba(0, 112, 210, 0.3);
+}
+
+.numeric-field-confirm-button,
+.numeric-field-cancel-button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.numeric-field-confirm-button {
+    background-color: #2e844a; /* Verde */
+    opacity: 0.9;
+}
+
+.numeric-field-confirm-button:hover {
+    opacity: 1;
+    background-color: #256e3e; /* Verde più scuro */
+}
+
+.numeric-field-cancel-button {
+    background-color: #c23934; /* Rosso */
+    opacity: 0.9;
+}
+
+.numeric-field-cancel-button:hover {
+    opacity: 1;
+    background-color: #a32924; /* Rosso più scuro */
+}
+
+.numeric-field-confirm-button lightning-icon,
+.numeric-field-cancel-button lightning-icon {
+    --sds-c-icon-color-foreground: white;
+    --sds-c-icon-color-background: transparent;
+    --sds-c-icon-width: 12px;
+    --sds-c-icon-height: 12px;
+}
+
+/* Box editing testo (Descrizione) - stesso stile dei numerici */
+.text-field-edit-box {
+    min-width: 250px;
+}
+
+.text-field-edit-input {
+    flex: 1;
+    font-size: 0.875rem;
+    padding: 4px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    min-width: 120px;
+}
+
+/* Pulsanti Copia/Incolla nell'edit box */
+.cell-action-copy,
+.cell-action-paste {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    background-color: #f3f3f3;
+    transition: background-color 0.1s;
+}
+
+.cell-action-copy:hover,
+.cell-action-paste:hover {
+    background-color: #e0e5ea;
+}
+
+.cell-action-copy lightning-icon,
+.cell-action-paste lightning-icon {
+    --sds-c-icon-color-foreground: #706e6b;
+}
+
+/* Menu Azioni Cella (Copia/Incolla) - modale flottante */
+.cell-action-menu {
+    position: fixed;
+    z-index: 1002;
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+}
+
+.cell-action-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 3px;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    color: #080707;
+    transition: background-color 0.1s;
+}
+
+.cell-action-menu-btn:hover {
+    background-color: #f3f3f3;
+}
+
+.cell-action-menu-btn lightning-icon {
+    --sds-c-icon-color-foreground: #706e6b;
+}
+
+/* Pulsante Validazione verde */
+.validation-button {
+    --slds-c-button-neutral-color-background: #2e844a;
+    --slds-c-button-neutral-color-background-hover: #256e3e;
+    --slds-c-button-neutral-color-background-active: #1f5a2e;
+    --slds-c-button-text-color: #ffffff;
+}
+
+.validation-button:hover {
+    background-color: #256e3e;
+}
+
+.validation-button:active {
+    background-color: #1f5a2e;
+}
+
+/* Colori raggruppamento righe */
+.group-color-1 td {
+    background-color: #f4f6f9 !important;
+}
+
+.group-color-2 td {
+    background-color: #e6ebf1 !important; /* Colore leggermente più scuro per maggiore contrasto */
+}
+
+.group-color-1:hover td,
+.group-color-2:hover td {
+    background-color: #e0e5ea !important;
+}
+
+.selected-row.group-color-1 td,
+.selected-row.group-color-2 td,
+.selected-row td {
+    background-color: #d1e5ec !important;
+}
+
+/* Celle merged con sfondo selezione quando si seleziona riga non-prima (override group-color) */
+.merged-cells-selected.group-color-1 td[data-field="Donatore"],
+.merged-cells-selected.group-color-1 td[data-field="Nome_della_Donazione"],
+.merged-cells-selected.group-color-1 td[data-field="Data_di_ricezione"],
+.merged-cells-selected.group-color-1 td[data-field="Trattenuta"],
+.merged-cells-selected.group-color-1 td[data-field="Programma"],
+.merged-cells-selected.group-color-1 td[data-field="Ammontare"],
+.merged-cells-selected.group-color-1 td[data-field="Data_di_Competenza"],
+.merged-cells-selected.group-color-1 td[data-field="Metodo_di_pagamento"],
+.merged-cells-selected.group-color-2 td[data-field="Donatore"],
+.merged-cells-selected.group-color-2 td[data-field="Nome_della_Donazione"],
+.merged-cells-selected.group-color-2 td[data-field="Data_di_ricezione"],
+.merged-cells-selected.group-color-2 td[data-field="Trattenuta"],
+.merged-cells-selected.group-color-2 td[data-field="Programma"],
+.merged-cells-selected.group-color-2 td[data-field="Ammontare"],
+.merged-cells-selected.group-color-2 td[data-field="Data_di_Competenza"],
+.merged-cells-selected.group-color-2 td[data-field="Metodo_di_pagamento"] {
+    background-color: #d1e5ec !important;
+}
+
+.excel-table td[rowspan] {
+    vertical-align: middle; /* Allinea il testo al centro verticalmente per le celle unite */
+}
+
+/* Testi per validazione */
+.text-success {
+    color: #027e46 !important;
+    font-weight: 600;
+}
+
+.text-error {
+    color: #ea001e !important;
+    font-weight: 600;
+}
+
+.readonly-cell {
+    padding: 6px 12px;
+    background-color: transparent;
+    vertical-align: middle;
+    border: 1px solid #d8dde6;
+}

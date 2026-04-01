@@ -190,6 +190,31 @@
         </value>
     </constants>
     <decisions>
+        <name>Check_Donazioni_Multiple</name>
+        <label>Check Donazioni Multiple</label>
+        <locationX>314</locationX>
+        <locationY>242</locationY>
+        <defaultConnector>
+            <targetReference>Inserisci_Nuova_Donazione</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Donazione Singola</defaultConnectorLabel>
+        <rules>
+            <name>Donazioni_Multiple</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>donazioni_multiple_flag</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Crea_Donazioni_Multiple</targetReference>
+            </connector>
+            <label>Donazioni Multiple</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>Crea_nuovo_account_decision</name>
         <label>Crea nuovo account?</label>
         <locationX>314</locationX>
@@ -723,6 +748,30 @@
         <showHeader>true</showHeader>
     </screens>
     <screens>
+        <name>Fine_Multiple_Donations</name>
+        <label>Fine - Donazioni Multiple</label>
+        <locationX>446</locationX>
+        <locationY>242</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>messaggio_multiple</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Creazione Donazioni Multiple&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Per creare donazioni multiple, utilizza il flusso dedicato che verrà creato.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
         <name>Inserisci_Donatore</name>
         <label>Inserisci Donatore</label>
         <locationX>314</locationX>
@@ -829,7 +878,7 @@
         <name>Inserisci_Nuova_Donazione</name>
         <label>Inserisci Nuova Donazione</label>
         <locationX>314</locationX>
-        <locationY>134</locationY>
+        <locationY>350</locationY>
         <allowBack>true</allowBack>
         <allowFinish>true</allowFinish>
         <allowPause>false</allowPause>
@@ -925,23 +974,6 @@
             <fields>
                 <name>Inserisci_Nuova_Donazione_Section1_Column2</name>
                 <fieldType>Region</fieldType>
-                <fields>
-                    <name>Programma</name>
-                    <choiceReferences>Program_list</choiceReferences>
-                    <dataType>String</dataType>
-                    <fieldText>Programma</fieldText>
-                    <fieldType>DropdownBox</fieldType>
-                    <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
-                    <isRequired>true</isRequired>
-                    <styleProperties>
-                        <verticalAlignment>
-                            <stringValue>top</stringValue>
-                        </verticalAlignment>
-                        <width>
-                            <stringValue>12</stringValue>
-                        </width>
-                    </styleProperties>
-                </fields>
                 <fields>
                     <name>Ammontare</name>
                     <dataType>Currency</dataType>
@@ -1099,11 +1131,107 @@
         <showFooter>true</showFooter>
         <showHeader>false</showHeader>
     </screens>
+    <screens>
+        <name>Seleziona_Programma_e_Modalita</name>
+        <label>Seleziona Programma e Modalità</label>
+        <locationX>314</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Check_Donazioni_Multiple</targetReference>
+        </connector>
+        <fields>
+            <name>Seleziona_Programma_e_Modalita_Section1</name>
+            <fieldType>RegionContainer</fieldType>
+            <fields>
+                <name>Seleziona_Programma_e_Modalita_Section1_Column1</name>
+                <fieldType>Region</fieldType>
+                <fields>
+                    <name>Programma</name>
+                    <choiceReferences>Program_list</choiceReferences>
+                    <dataType>String</dataType>
+                    <fieldText>Programma</fieldText>
+                    <fieldType>DropdownBox</fieldType>
+                    <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+                    <isRequired>true</isRequired>
+                    <styleProperties>
+                        <verticalAlignment>
+                            <stringValue>top</stringValue>
+                        </verticalAlignment>
+                        <width>
+                            <stringValue>12</stringValue>
+                        </width>
+                    </styleProperties>
+                </fields>
+                <fields>
+                    <name>vuoi_creare_multiple</name>
+                    <extensionName>flowruntime:toggle</extensionName>
+                    <fieldType>ComponentInstance</fieldType>
+                    <inputParameters>
+                        <name>label</name>
+                        <value>
+                            <stringValue>Vuoi creare donazioni multiple?</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>messageToggleActive</name>
+                        <value>
+                            <stringValue>Sì</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>messageToggleInactive</name>
+                        <value>
+                            <stringValue>No</stringValue>
+                        </value>
+                    </inputParameters>
+                    <inputParameters>
+                        <name>value</name>
+                        <value>
+                            <elementReference>donazioni_multiple_flag</elementReference>
+                        </value>
+                    </inputParameters>
+                    <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+                    <isRequired>false</isRequired>
+                    <storeOutputAutomatically>true</storeOutputAutomatically>
+                    <styleProperties>
+                        <verticalAlignment>
+                            <stringValue>top</stringValue>
+                        </verticalAlignment>
+                        <width>
+                            <stringValue>12</stringValue>
+                        </width>
+                    </styleProperties>
+                </fields>
+                <inputParameters>
+                    <name>width</name>
+                    <value>
+                        <stringValue>12</stringValue>
+                    </value>
+                </inputParameters>
+                <isRequired>false</isRequired>
+            </fields>
+            <isRequired>false</isRequired>
+            <regionContainerType>SectionWithoutHeader</regionContainerType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
     <start>
         <locationX>188</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Inserisci_Nuova_Donazione</targetReference>
+            <targetReference>Seleziona_Programma_e_Modalita</targetReference>
         </connector>
     </start>
     <status>Active</status>
@@ -1134,6 +1262,23 @@
                 <elementReference>new_donation.Id</elementReference>
             </value>
         </inputAssignments>
+    </subflows>
+    <subflows>
+        <name>Crea_Donazioni_Multiple</name>
+        <label>Crea Donazioni Multiple</label>
+        <locationX>314</locationX>
+        <locationY>242</locationY>
+        <connector>
+            <targetReference>Fine</targetReference>
+        </connector>
+        <flowName>Create_Multiple_Donations</flowName>
+        <inputAssignments>
+            <name>programId</name>
+            <value>
+                <elementReference>Programma</elementReference>
+            </value>
+        </inputAssignments>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
     </subflows>
     <subflows>
         <name>Crea_Nuovo_Donatore</name>
@@ -1171,6 +1316,9 @@
         <label>Gestisci Allocazione</label>
         <locationX>182</locationX>
         <locationY>2762</locationY>
+        <connector>
+            <targetReference>Fine</targetReference>
+        </connector>
         <flowName>Gestisci_distribuzione_di_una_transazione</flowName>
         <inputAssignments>
             <name>recordId</name>
@@ -1199,6 +1347,13 @@
         <isInput>false</isInput>
         <isOutput>false</isOutput>
         <objectType>GiftEntry</objectType>
+    </variables>
+    <variables>
+        <name>donazioni_multiple_flag</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
     <variables>
         <name>donor_list</name>

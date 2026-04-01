@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Totale_Donato_Originale__c</fullName>
+    <label>Totale Donato Originale</label>
+    <summarizedField>Totali_Donatore_Anno__c.Donato_Originale__c</summarizedField>
+    <summaryForeignKey>Totali_Donatore_Anno__c.Donatore__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <type>Summary</type>
+</CustomField>

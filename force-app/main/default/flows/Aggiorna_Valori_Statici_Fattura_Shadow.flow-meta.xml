@@ -30,6 +30,7 @@
         <connector>
             <targetReference>Aggiorna_Valori_Statici_Fattura_Shadow_autolaunched</targetReference>
         </connector>
+        <filterFormula>NOT({!$Record.Bypass_Flow__c})</filterFormula>
         <object>Fattura_Shadow__c</object>
         <recordTriggerType>Update</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>

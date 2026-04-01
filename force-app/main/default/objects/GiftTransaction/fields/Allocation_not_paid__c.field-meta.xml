@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Allocation_not_paid__c</fullName>
+    <label>Allocation Not Paid</label>
+    <summaryFilterItems>
+        <field>GiftTransactionDesignation.Status__c</field>
+        <operation>notEqual</operation>
+        <value>Paid</value>
+    </summaryFilterItems>
+    <summaryForeignKey>GiftTransactionDesignation.GiftTransactionId</summaryForeignKey>
+    <summaryOperation>count</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <type>Summary</type>
+</CustomField>
