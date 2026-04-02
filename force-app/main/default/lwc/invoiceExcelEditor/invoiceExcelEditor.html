@@ -354,16 +354,14 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.partner}
-                                    <template if:true={row.partner}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="partner"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="partner"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.partner}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -383,16 +381,14 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.invoiceDate}
-                                    <template if:true={row.invoiceDate}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="invoiceDate"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="invoiceDate"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                 </td>
                                 <td class="editable-cell date-cell" 
                                     data-field="competenceDate"
@@ -405,16 +401,14 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.competenceDate}
-                                    <template if:true={row.competenceDate}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="competenceDate"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="competenceDate"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                 </td>
                                 <td class="editable-cell {row.validationErrors.invoiceNumber ? 'invalid-cell' : ''}" 
                                     data-field="invoiceNumber"
@@ -430,16 +424,14 @@
                                                     Numero fattura già presente a sistema, verificare
                                                 </div>
                                             </template>
-                                            <template if:true={row.invoiceNumber}>
-                                                <button 
-                                                    type="button"
-                                                    class="cell-clear-button"
-                                                    data-field="invoiceNumber"
-                                                    data-row-index={rowIndex}
-                                                    onclick={clearCellContent}
-                                                    title="Cancella contenuto">
-                                                </button>
-                                            </template>
+                                            <button 
+                                                type="button"
+                                                class="cell-clear-button"
+                                                data-field="invoiceNumber"
+                                                data-row-index={rowIndex}
+                                                onclick={clearCellContent}
+                                                title="Cancella contenuto">
+                                            </button>
                                         </template>
                                         <template if:true={row.isEditingInvoiceNumber}>
                                             <div class="invoice-number-edit-box">
@@ -498,16 +490,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.medicalCenter}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="medicalCenter"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="medicalCenter"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.medicalCenter}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -538,16 +528,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.noProfit}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="noProfit"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="noProfit"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.noProfit}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -578,16 +566,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.noProfitCategory}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="noProfitCategory"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="noProfitCategory"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.noProfitCategory}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -606,6 +592,14 @@
                                     <template if:false={row.isFree}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="isFree"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                 </td>
                                 <td class="editable-cell checkbox-cell" 
                                     data-field="noInvoiceAvailable"
@@ -617,6 +611,14 @@
                                     <template if:false={row.noInvoiceAvailable}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="noInvoiceAvailable"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                 </td>
                                 <!-- Colonne Visite Mediche -->
                                 <td class="editable-cell dropdown-cell" 
@@ -641,16 +643,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.tipoVisita}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="tipoVisita"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="tipoVisita"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.tipoVisita}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -681,16 +681,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.beneficiaryType}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="beneficiaryType"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="beneficiaryType"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.beneficiaryType}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -708,16 +706,14 @@
                                             <span class="numeric-field-value">
                                                 {row.numeroVisite}
                                             </span>
-                                            <template if:true={row.hasNumeroVisite}>
-                                                <button 
-                                                    type="button"
-                                                    class="cell-clear-button"
-                                                    data-field="numeroVisite"
-                                                    data-row-index={rowIndex}
-                                                    onclick={clearCellContent}
-                                                    title="Cancella contenuto">
-                                                </button>
-                                            </template>
+                                            <button 
+                                                type="button"
+                                                class="cell-clear-button"
+                                                data-field="numeroVisite"
+                                                data-row-index={rowIndex}
+                                                onclick={clearCellContent}
+                                                title="Cancella contenuto">
+                                            </button>
                                         </template>
                                         <template if:true={row.isEditingNumeroVisite}>
                                             <div class="numeric-field-edit-box">
@@ -759,16 +755,14 @@
                                             <span class="numeric-field-value">
                                                 {row.totaleMinuti}
                                             </span>
-                                            <template if:true={row.hasTotaleMinuti}>
-                                                <button 
-                                                    type="button"
-                                                    class="cell-clear-button"
-                                                    data-field="totaleMinuti"
-                                                    data-row-index={rowIndex}
-                                                    onclick={clearCellContent}
-                                                    title="Cancella contenuto">
-                                                </button>
-                                            </template>
+                                            <button 
+                                                type="button"
+                                                class="cell-clear-button"
+                                                data-field="totaleMinuti"
+                                                data-row-index={rowIndex}
+                                                onclick={clearCellContent}
+                                                title="Cancella contenuto">
+                                            </button>
                                         </template>
                                         <template if:true={row.isEditingTotaleMinuti}>
                                             <div class="numeric-field-edit-box">
@@ -810,16 +804,14 @@
                                             <span class="numeric-field-value">
                                                 {row.amount}
                                             </span>
-                                            <template if:true={row.hasAmount}>
-                                                <button 
-                                                    type="button"
-                                                    class="cell-clear-button"
-                                                    data-field="amount"
-                                                    data-row-index={rowIndex}
-                                                    onclick={clearCellContent}
-                                                    title="Cancella contenuto">
-                                                </button>
-                                            </template>
+                                            <button 
+                                                type="button"
+                                                class="cell-clear-button"
+                                                data-field="amount"
+                                                data-row-index={rowIndex}
+                                                onclick={clearCellContent}
+                                                title="Cancella contenuto">
+                                            </button>
                                         </template>
                                         <template if:true={row.isEditingAmount}>
                                             <div class="numeric-field-edit-box">
@@ -863,16 +855,14 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.dataVisita}
-                                    <template if:true={row.dataVisita}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="dataVisita"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="dataVisita"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                 </td>
                                 <td class="editable-cell dropdown-cell" 
                                     data-field="comune"
@@ -896,16 +886,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.comune}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="comune"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="comune"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.comune}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -936,16 +924,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.provincia}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="provincia"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="provincia"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.provincia}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -976,16 +962,14 @@
                                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
                                         </button>
                                     </template>
-                                    <template if:true={row.regione}>
-                                        <button 
-                                            type="button"
-                                            class="cell-clear-button"
-                                            data-field="regione"
-                                            data-row-index={rowIndex}
-                                            onclick={clearCellContent}
-                                            title="Cancella contenuto">
-                                        </button>
-                                    </template>
+                                    <button 
+                                        type="button"
+                                        class="cell-clear-button"
+                                        data-field="regione"
+                                        data-row-index={rowIndex}
+                                        onclick={clearCellContent}
+                                        title="Cancella contenuto">
+                                    </button>
                                     <template if:true={row.isValidating.regione}>
                                         <lightning-spinner 
                                             alternative-text="Validazione in corso"
@@ -1053,9 +1037,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.partner}
-                                    <template if:true={row.partner}>
-                                        <button type="button" class="cell-clear-button" data-field="partner" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="partner" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.partner}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1071,9 +1053,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.invoiceDate}
-                                    <template if:true={row.invoiceDate}>
-                                        <button type="button" class="cell-clear-button" data-field="invoiceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="invoiceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell date-cell"
                                     data-field="competenceDate"
@@ -1086,9 +1066,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.competenceDate}
-                                    <template if:true={row.competenceDate}>
-                                        <button type="button" class="cell-clear-button" data-field="competenceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="competenceDate" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell {row.validationErrors.invoiceNumber ? 'invalid-cell' : ''}"
                                     data-field="invoiceNumber"
@@ -1100,9 +1078,7 @@
                                             <template if:true={row.validationErrors.invoiceNumber}>
                                                 <div class="invoice-number-error-message">Numero fattura gia presente a sistema, verificare</div>
                                             </template>
-                                            <template if:true={row.invoiceNumber}>
-                                                <button type="button" class="cell-clear-button" data-field="invoiceNumber" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                            </template>
+                                            <button type="button" class="cell-clear-button" data-field="invoiceNumber" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                         </template>
                                         <template if:true={row.isEditingInvoiceNumber}>
                                             <div class="invoice-number-edit-box">
@@ -1131,9 +1107,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.tipologia}
-                                    <template if:true={row.tipologia}>
-                                        <button type="button" class="cell-clear-button" data-field="tipologia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="tipologia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.tipologia}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1149,9 +1123,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.fornitore}
-                                    <template if:true={row.fornitore}>
-                                        <button type="button" class="cell-clear-button" data-field="fornitore" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="fornitore" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.fornitore}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1166,9 +1138,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.nomeSpettacolo}
-                                    <template if:true={row.nomeSpettacolo}>
-                                        <button type="button" class="cell-clear-button" data-field="nomeSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="nomeSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell dropdown-cell {row.validationErrors.tipologiaSpettacolo ? 'invalid-cell' : ''}"
                                     data-field="tipologiaSpettacolo"
@@ -1181,9 +1151,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDropdown}>
                                     {row.tipologiaSpettacolo}
-                                    <template if:true={row.tipologiaSpettacolo}>
-                                        <button type="button" class="cell-clear-button" data-field="tipologiaSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="tipologiaSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.tipologiaSpettacolo}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1199,9 +1167,7 @@
                                     onpaste={handlePaste}
                                     onclick={openDatePicker}>
                                     {row.dataSpettacolo}
-                                    <template if:true={row.dataSpettacolo}>
-                                        <button type="button" class="cell-clear-button" data-field="dataSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="dataSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell"
                                     data-field="oraSpettacolo"
@@ -1213,9 +1179,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.oraSpettacolo}
-                                    <template if:true={row.oraSpettacolo}>
-                                        <button type="button" class="cell-clear-button" data-field="oraSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="oraSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell checkbox-cell"
                                     data-field="noInvoiceAvailable"
@@ -1227,6 +1191,7 @@
                                     <template if:false={row.noInvoiceAvailable}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
+                                    <button type="button" class="cell-clear-button" data-field="noInvoiceAvailable" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell"
                                     data-field="numeroVisite"
@@ -1235,9 +1200,7 @@
                                     <div class="numeric-field-container">
                                         <template if:false={row.isEditingNumeroVisite}>
                                             <span class="numeric-field-value">{row.numeroVisite}</span>
-                                            <template if:true={row.hasNumeroVisite}>
-                                                <button type="button" class="cell-clear-button" data-field="numeroVisite" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                            </template>
+                                            <button type="button" class="cell-clear-button" data-field="numeroVisite" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                         </template>
                                         <template if:true={row.isEditingNumeroVisite}>
                                             <div class="numeric-field-edit-box">
@@ -1259,9 +1222,7 @@
                                     <div class="numeric-field-container">
                                         <template if:false={row.isEditingAmount}>
                                             <span class="numeric-field-value">{row.amount}</span>
-                                            <template if:true={row.hasAmount}>
-                                                <button type="button" class="cell-clear-button" data-field="amount" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                            </template>
+                                            <button type="button" class="cell-clear-button" data-field="amount" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                         </template>
                                         <template if:true={row.isEditingAmount}>
                                             <div class="numeric-field-edit-box">
@@ -1286,9 +1247,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.valoreScontato}
-                                    <template if:true={row.hasValoreScontato}>
-                                        <button type="button" class="cell-clear-button" data-field="valoreScontato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="valoreScontato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell dropdown-cell"
                                     data-field="comune"
@@ -1301,9 +1260,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.comune}
-                                    <template if:true={row.comune}>
-                                        <button type="button" class="cell-clear-button" data-field="comune" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="comune" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.comune}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1319,9 +1276,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.provincia}
-                                    <template if:true={row.provincia}>
-                                        <button type="button" class="cell-clear-button" data-field="provincia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="provincia" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.provincia}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
@@ -1337,9 +1292,7 @@
                                     onkeydown={handleKeyDown}
                                     onpaste={handlePaste}>
                                     {row.regione}
-                                    <template if:true={row.regione}>
-                                        <button type="button" class="cell-clear-button" data-field="regione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                    </template>
+                                    <button type="button" class="cell-clear-button" data-field="regione" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                     <template if:true={row.isValidating.regione}>
                                         <lightning-spinner alternative-text="Validazione in corso" size="xx-small" class="cell-validation-spinner"></lightning-spinner>
                                     </template>
