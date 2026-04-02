@@ -1634,13 +1634,30 @@ public with sharing class InvoiceExcelEditorController {
     @AuraEnabled(cacheable=true)
     public static List<Account> getStructureSuppliers() {
         try {
+            Id structureRecordTypeId;
+            Schema.DescribeSObjectResult accountDescribe = Account.SObjectType.getDescribe();
+            Map<String, Schema.RecordTypeInfo> rtByDeveloperName = accountDescribe.getRecordTypeInfosByDeveloperName();
+            if (rtByDeveloperName.containsKey('Structure')) {
+                structureRecordTypeId = rtByDeveloperName.get('Structure').getRecordTypeId();
+            }
+
+            if (structureRecordTypeId == null) {
+                for (Schema.RecordTypeInfo rtInfo : accountDescribe.getRecordTypeInfos()) {
+                    if (rtInfo != null && rtInfo.getName() == 'Structure') {
+                        structureRecordTypeId = rtInfo.getRecordTypeId();
+                        break;
+                    }
+                }
+            }
+
+            if (structureRecordTypeId == null) {
+                return new List<Account>();
+            }
+
             return [
                 SELECT Id, Name
                 FROM Account
-                WHERE (
-                    RecordType.DeveloperName = 'Structure'
-                    OR RecordType.Name = 'Structure'
-                )
+                WHERE RecordTypeId = :structureRecordTypeId
                 AND Name != null
                 ORDER BY Name ASC
                 LIMIT 10000
