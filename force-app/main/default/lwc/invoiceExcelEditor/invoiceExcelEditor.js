@@ -526,6 +526,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (!event || event.type !== 'click' || event.detail !== 1 || !cell) {
             return false;
         }
+        const field = cell.dataset ? cell.dataset.field : '';
+        if (this.isCheckboxField(field)) {
+            return false;
+        }
         this.closeDropdown();
         this.closeDatePicker();
         this.closeTimePicker();
@@ -4778,6 +4782,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     isTimeField(field) {
         return field === 'oraSpettacolo';
+    }
+
+    isCheckboxField(field) {
+        return field === 'isFree' || field === 'noInvoiceAvailable';
     }
 
     /**
