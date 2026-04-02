@@ -59,6 +59,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     skipNextConfirmClick = false; // Evita doppia esecuzione quando usiamo mousedown+click sul bottone
     // Stato calendario date
     datePickerOpen = null; // {rowIndex: number, field: string}
+    // Stato selettore ora
+    timePickerOpen = null; // {rowIndex: number, field: string}
     // Stato modal editing Invoice Number
     @track invoiceNumberModalOpen = null; // {rowIndex: number} o null
     invoiceNumberModalValue = ''; // Valore temporaneo nel modal
@@ -526,6 +528,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         this.closeDropdown();
         this.closeDatePicker();
+        this.closeTimePicker();
         this.openCellActionMenu(cell);
         if (typeof event.preventDefault === 'function') {
             event.preventDefault();
@@ -549,6 +552,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         if (this.isDateField(field) && row[field]) {
             return this.formatDateForDisplay(row[field]) || String(row[field]);
+        }
+        if (this.isTimeField(field) && row[field]) {
+            return this.formatTimeForDisplay(row[field]) || String(row[field]);
         }
         const value = row[field];
         if (value === null || value === undefined) {
@@ -668,6 +674,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         if (this.isDateField(field)) {
             this.openDatePicker(syntheticEvent);
+            return;
+        }
+        if (this.isTimeField(field)) {
+            this.openTimePicker(syntheticEvent);
             return;
         }
         this.handleCellFocus(syntheticEvent);
@@ -944,6 +954,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 }
             });
+
+            // Formatta ora spettacolo come HH:mm
+            const timeCell = this.template.querySelector(
+                `td[data-field="oraSpettacolo"][data-row-index="${rowIndex}"]`
+            );
+            if (timeCell) {
+                if (row.oraSpettacolo) {
+                    const parsedTime = this.parseTime(row.oraSpettacolo);
+                    if (parsedTime) {
+                        row.oraSpettacolo = parsedTime;
+                        const formattedTime = this.formatTimeForDisplay(parsedTime);
+                        if (formattedTime) {
+                            timeCell.textContent = formattedTime;
+                        }
+                    }
+                } else if (timeCell.textContent.trim() !== '') {
+                    timeCell.textContent = '';
+                }
+            }
         });
     }
 
@@ -965,6 +994,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Chiudi eventuali dropdown o date picker aperti
         this.dropdownOpen = null;
         this.datePickerOpen = null;
+        this.timePickerOpen = null;
         this.dropdownFilter = '';
         this.dropdownFilteredOptions = [];
         this.showConfirmButton = false;
@@ -1212,7 +1242,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Per le celle data evitiamo l'apertura su focus:
         // l'apertura avviene su click (onclick), così non si innesca
         // il loop focus->open->blur che può far sparire subito il calendario.
-        if (this.isDateField(field)) {
+        if (this.isDateField(field) || this.isTimeField(field)) {
             return;
         }
         
@@ -1822,6 +1852,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             } else {
                 row[field] = value;
             }
+        } else if (field === 'oraSpettacolo') {
+            const timeValue = this.parseTime(value);
+            if (timeValue) {
+                row[field] = timeValue;
+                cell.textContent = this.formatTimeForDisplay(timeValue);
+            } else {
+                row[field] = value;
+            }
         } else if (field === 'isFree' || field === 'noInvoiceAvailable') {
             // I checkbox sono gestiti separatamente
             this.isConfirmingValue = false;
@@ -1962,6 +2000,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Aggiorna le celle corrette nel DOM dopo un breve delay
         // Escludi comune, provincia e regione dalla correzione automatica
         if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
+            field !== 'oraSpettacolo' &&
             field !== 'isFree' && field !== 'noInvoiceAvailable' &&
             field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
             field !== 'comune' && field !== 'provincia' && field !== 'regione') {
@@ -2002,7 +2041,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         
         // Formatta le date dopo la modifica
-        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo' || field === 'oraSpettacolo') {
             setTimeout(() => {
                 this.formatDatesInTable();
             }, 0);
@@ -2077,6 +2116,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         ) {
             return;
         }
+        if (
+            this.isTimeField(field) &&
+            this.timePickerOpen &&
+            this.timePickerOpen.field === field &&
+            this.timePickerOpen.rowIndex === rowIndex
+        ) {
+            return;
+        }
         // Per invoiceNumber, prendi il valore dallo span interno, altrimenti dalla cella
         const textElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value') 
             ? cell.querySelector('.invoice-number-value') 
@@ -2097,6 +2144,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Formatta per la visualizzazione
                     const formattedDate = this.formatDateForDisplay(dateValue);
                     cell.textContent = formattedDate;
+                } else {
+                    row[field] = value;
+                }
+            } else if (field === 'oraSpettacolo') {
+                const timeValue = this.parseTime(value);
+                if (timeValue) {
+                    row[field] = timeValue;
+                    cell.textContent = this.formatTimeForDisplay(timeValue);
                 } else {
                     row[field] = value;
                 }
@@ -2241,6 +2296,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // Aggiorna le celle corrette nel DOM dopo un breve delay
             // Escludi comune, provincia e regione dalla correzione automatica
             if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
+                field !== 'oraSpettacolo' &&
                 field !== 'isFree' && field !== 'noInvoiceAvailable' &&
                 field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
                 field !== 'comune' && field !== 'provincia' && field !== 'regione') {
@@ -2285,7 +2341,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Formatta le date dopo la modifica
-            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
+        if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo' || field === 'oraSpettacolo') {
                 setTimeout(() => {
                     this.formatDatesInTable();
                 }, 0);
@@ -2519,6 +2575,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         } else {
                             updatedRows[rowIndex][field] = trimmedValue;
                         }
+                    } else if (field === 'oraSpettacolo') {
+                        const parsedTime = this.parseTime(trimmedValue);
+                        updatedRows[rowIndex][field] = parsedTime !== null ? parsedTime : trimmedValue;
                     } else if (field === 'numeroVisite' || field === 'totaleMinuti') {
                         const numValue = this.parseInteger(trimmedValue);
                         updatedRows[rowIndex][field] = numValue !== null ? numValue : trimmedValue;
@@ -2711,6 +2770,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else {
                     updatedRows[rowIndex][field] = value;
                 }
+            } else if (field === 'oraSpettacolo') {
+                const parsedTime = this.parseTime(value);
+                updatedRows[rowIndex][field] = parsedTime !== null ? parsedTime : value;
             } else if (field === 'numeroVisite' || field === 'totaleMinuti') {
                 const numValue = this.parseInteger(value);
                 updatedRows[rowIndex][field] = numValue !== null ? numValue : value;
@@ -2776,7 +2838,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             // Formatta le date dopo la modifica
-            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo') {
+            if (field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo' || field === 'oraSpettacolo') {
                 setTimeout(() => {
                     this.formatDatesInTable();
                 }, 100);
@@ -3433,6 +3495,50 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Se non corrisponde al formato visualizzato, restituisci null
         return null;
+    }
+
+    parseTime(timeString) {
+        if (!timeString) return null;
+
+        const trimmed = String(timeString).trim();
+        if (!trimmed) return null;
+
+        // Formato HH:mm o H:mm
+        const hhmmMatch = trimmed.match(/^(\d{1,2}):(\d{1,2})(?::\d{1,2})?$/);
+        if (hhmmMatch) {
+            const hours = parseInt(hhmmMatch[1], 10);
+            const minutes = parseInt(hhmmMatch[2], 10);
+            if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            }
+        }
+
+        // Formato HH.mm o H.mm
+        const dotMatch = trimmed.match(/^(\d{1,2})\.(\d{1,2})$/);
+        if (dotMatch) {
+            const hours = parseInt(dotMatch[1], 10);
+            const minutes = parseInt(dotMatch[2], 10);
+            if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            }
+        }
+
+        // Formato "HHmm" (es. 0930, 1735)
+        const compactMatch = trimmed.match(/^(\d{2})(\d{2})$/);
+        if (compactMatch) {
+            const hours = parseInt(compactMatch[1], 10);
+            const minutes = parseInt(compactMatch[2], 10);
+            if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+                return `${compactMatch[1]}:${compactMatch[2]}`;
+            }
+        }
+
+        return null;
+    }
+
+    formatTimeForDisplay(timeString) {
+        const parsedTime = this.parseTime(timeString);
+        return parsedTime || (timeString ? String(timeString).trim() : '');
     }
 
     parseBoolean(value) {
@@ -4658,8 +4764,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.dropdownFilteredOptions = [];
         this.showConfirmButton = false;
         this.skipNextConfirmClick = false;
-        // Chiudi anche il date picker se aperto
+        // Chiudi anche date/time picker se aperti
         this.closeDatePicker();
+        this.closeTimePicker();
     }
 
     /**
@@ -4667,6 +4774,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     isDateField(field) {
         return field === 'invoiceDate' || field === 'competenceDate' || field === 'dataVisita' || field === 'dataSpettacolo';
+    }
+
+    isTimeField(field) {
+        return field === 'oraSpettacolo';
     }
 
     /**
@@ -4701,6 +4812,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Chiudi altri calendari/dropdown aperti
         this.closeDropdown();
         this.closeDatePicker();
+        this.closeTimePicker();
 
         // Ottieni il valore corrente della cella
         const currentValue = this.rows[rowIndex] ? this.rows[rowIndex][field] || '' : '';
@@ -4746,6 +4858,103 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     closeDatePicker() {
         this.datePickerOpen = null;
+    }
+
+    openTimePicker(event) {
+        const cell = event.currentTarget;
+        if (this.shouldOpenActionMenuOnClick(event, cell)) {
+            return;
+        }
+        this.closeCellActionMenu();
+        const field = cell.dataset.field;
+        const rowIndex = parseInt(cell.dataset.rowIndex, 10);
+
+        if (!this.isTimeField(field)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (
+            this.timePickerOpen &&
+            this.timePickerOpen.field === field &&
+            this.timePickerOpen.rowIndex === rowIndex
+        ) {
+            return;
+        }
+
+        this.closeDropdown();
+        this.closeDatePicker();
+        this.closeTimePicker();
+
+        const currentValue = this.rows[rowIndex] ? this.rows[rowIndex][field] || '' : '';
+        const normalizedTime = this.parseTime(currentValue);
+        const timeValue = normalizedTime || '';
+
+        this.timePickerOpen = { rowIndex, field, value: timeValue };
+
+        setTimeout(() => {
+            this.positionTimePicker(cell);
+            const timeInput = this.template.querySelector('.time-picker-input');
+            if (timeInput) {
+                timeInput.focus();
+                try {
+                    timeInput.showPicker && timeInput.showPicker();
+                } catch (e) {
+                    // noop
+                }
+            }
+        }, 0);
+    }
+
+    closeTimePicker() {
+        this.timePickerOpen = null;
+    }
+
+    positionTimePicker(cell) {
+        const timeInput = this.template.querySelector('.time-picker-input');
+        if (!timeInput || !cell) return;
+
+        const cellRect = cell.getBoundingClientRect();
+        timeInput.style.position = 'fixed';
+        timeInput.style.top = `${cellRect.top}px`;
+        timeInput.style.left = `${cellRect.left}px`;
+        timeInput.style.width = `${Math.max(cellRect.width, 120)}px`;
+        timeInput.style.zIndex = '1001';
+    }
+
+    handleTimeChange(event) {
+        if (!this.timePickerOpen) {
+            return;
+        }
+
+        const newTime = event.target.value;
+        const rowIndex = this.timePickerOpen.rowIndex;
+        const field = this.timePickerOpen.field;
+
+        if (rowIndex >= 0 && rowIndex < this.rows.length) {
+            const updatedRows = [...this.rows];
+            const row = updatedRows[rowIndex];
+            const parsedTime = this.parseTime(newTime);
+            row[field] = parsedTime || newTime;
+            this.validateField(row, field, row[field]);
+            this.rows = updatedRows;
+
+            setTimeout(() => {
+                const cell = this.template.querySelector(
+                    `td[data-field="${field}"][data-row-index="${rowIndex}"]`
+                );
+                if (cell) {
+                    cell.textContent = this.formatTimeForDisplay(row[field]);
+                    this.updateCellValidationState(cell, row, field);
+                }
+            }, 0);
+        }
+
+        setTimeout(() => {
+            this.closeTimePicker();
+        }, 100);
     }
 
     /**
@@ -4833,6 +5042,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     get currentDatePickerField() {
         return this.datePickerOpen ? this.datePickerOpen.field : '';
+    }
+
+    get isTimePickerOpen() {
+        return this.timePickerOpen !== null;
+    }
+
+    get currentTimePickerValue() {
+        return this.timePickerOpen ? this.timePickerOpen.value : '';
+    }
+
+    get currentTimePickerField() {
+        return this.timePickerOpen ? this.timePickerOpen.field : '';
     }
 
     /**
@@ -5857,6 +6078,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (dateInput && !dateInput.contains(event.target) && 
                 cell && !cell.contains(event.target)) {
                 this.closeDatePicker();
+            }
+        }
+
+        // Gestisci chiusura time picker
+        if (this.timePickerOpen) {
+            const timeInput = this.template.querySelector('.time-picker-input');
+            const cell = this.template.querySelector(
+                `td[data-field="${this.timePickerOpen.field}"][data-row-index="${this.timePickerOpen.rowIndex}"]`
+            );
+
+            if (timeInput && !timeInput.contains(event.target) && cell && !cell.contains(event.target)) {
+                this.closeTimePicker();
             }
         }
     }
@@ -7116,6 +7349,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Chiudi eventuali dropdown o date picker aperti
         this.dropdownOpen = null;
         this.datePickerOpen = null;
+        this.timePickerOpen = null;
         this.dropdownFilter = '';
         this.dropdownFilteredOptions = [];
         this.showConfirmButton = false;

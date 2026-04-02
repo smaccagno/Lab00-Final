@@ -1170,10 +1170,10 @@
                                     {row.dataSpettacolo}
                                     <button type="button" class="cell-clear-button" data-field="dataSpettacolo" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
-                                <td class="editable-cell"
+                                <td class="editable-cell time-cell"
                                     data-field="oraSpettacolo"
                                     data-row-index={rowIndex}
-                                    onclick={handleCellFocus}
+                                    onclick={openTimePicker}
                                     contenteditable="true"
                                     onblur={handleCellBlur}
                                     onfocus={handleCellFocus}
@@ -1371,6 +1371,18 @@
                     value={currentDatePickerValue}
                     data-field={currentDatePickerField}
                     onchange={handleDateChange}
+                />
+            </template>
+
+            <!-- Time Picker -->
+            <template if:true={isTimePickerOpen}>
+                <input
+                    type="time"
+                    class="time-picker-input"
+                    value={currentTimePickerValue}
+                    data-field={currentTimePickerField}
+                    step="60"
+                    onchange={handleTimeChange}
                 />
             </template>
 

@@ -440,11 +440,36 @@
     box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
 }
 
+.time-picker-input {
+    position: absolute;
+    padding: 6px 12px;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+    z-index: 1001;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.time-picker-input:focus {
+    outline: none;
+    border-color: #0070d2;
+    box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
+}
+
 .date-cell {
     cursor: pointer;
 }
 
 .date-cell:hover {
+    background-color: #f3f3f3;
+}
+
+.time-cell {
+    cursor: pointer;
+}
+
+.time-cell:hover {
     background-color: #f3f3f3;
 }
 
