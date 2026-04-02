@@ -997,10 +997,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             return;
         }
         
-        // Per le celle date, non fare focus normale ma apri il calendario
+        // Per le celle data evitiamo l'apertura su focus:
+        // l'apertura avviene su click (onclick), così non si innesca
+        // il loop focus->open->blur che può far sparire subito il calendario.
         if (this.isDateField(field)) {
-            event.preventDefault();
-            this.openDatePicker(event);
             return;
         }
         
@@ -1853,6 +1853,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         const field = cell.dataset.field;
         const rowIndex = parseInt(cell.dataset.rowIndex, 10);
+
+        // Se il date picker della stessa cella è già aperto, ignora il blur della cella:
+        // il focus sta passando all'input date e non vogliamo triggerare
+        // rerender/validazioni che possono chiudere il picker.
+        if (
+            this.isDateField(field) &&
+            this.datePickerOpen &&
+            this.datePickerOpen.field === field &&
+            this.datePickerOpen.rowIndex === rowIndex
+        ) {
+            return;
+        }
         // Per invoiceNumber, prendi il valore dallo span interno, altrimenti dalla cella
         const textElement = field === 'invoiceNumber' && cell.querySelector('.invoice-number-value') 
             ? cell.querySelector('.invoice-number-value') 
@@ -4453,6 +4465,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         event.preventDefault();
         event.stopPropagation();
 
+        // Evita doppia apertura (focus + click sulla stessa cella)
+        if (
+            this.datePickerOpen &&
+            this.datePickerOpen.field === field &&
+            this.datePickerOpen.rowIndex === rowIndex
+        ) {
+            return;
+        }
+
         // Chiudi altri calendari/dropdown aperti
         this.closeDropdown();
         this.closeDatePicker();
@@ -4486,7 +4507,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const dateInput = this.template.querySelector('.date-picker-input');
             if (dateInput) {
                 dateInput.focus();
-                dateInput.showPicker && dateInput.showPicker(); // Se supportato dal browser
+                try {
+                    dateInput.showPicker && dateInput.showPicker(); // Se supportato dal browser
+                } catch (e) {
+                    // In alcuni browser showPicker può lanciare eccezioni su eventi non consentiti.
+                    // Manteniamo comunque l'input visibile e focussato.
+                }
             }
         }, 0);
     }
