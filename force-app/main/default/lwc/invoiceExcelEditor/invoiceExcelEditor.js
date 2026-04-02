@@ -133,6 +133,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         );
     }
 
+    get organizedSummaryTitle() {
+        return this.isSorrisoSospeso ? 'Summary Fatture e Biglietti' : 'Summary Fatture e Visite';
+    }
+
 
     get isTableEmpty() {
         return this.rows.length === 0 || 
@@ -6856,6 +6860,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     invoiceId: saveResult.invoiceId || null,
                     invoiceName: saveResult.invoiceName || null
                 };
+
+                // In Sorriso non c'è creazione di Visit__c: propaga lo stato fattura alla lista biglietti.
+                if (this.isSorrisoSospeso) {
+                    const updatedTickets = (invoiceGroup.visits || []).map(ticket => ({
+                        ...ticket,
+                        saveStatus: saveResult.isSuccess ? 'success' : 'error',
+                        saveStatusSuccess: saveResult.isSuccess === true,
+                        saveErrorMessage: saveResult.errorMessage || saveResult.visitError || null
+                    }));
+
+                    return {
+                        ...invoiceGroup,
+                        invoice: updatedInvoice,
+                        visits: updatedTickets
+                    };
+                }
                 
                 // Funzione helper per normalizzare una stringa
                 const normalizeString = (str) => (str || '').trim().toLowerCase();
@@ -7153,7 +7173,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         dataSpettacolo: row.dataSpettacolo || '',
                         oraSpettacolo: row.oraSpettacolo || '',
                         valoreScontato: row.valoreScontato || '',
-                        amount: 0, // Sarà calcolato come somma delle visite
+                        amount: 0, // Sarà calcolato come somma dei dettagli associati
                         isFree: row.isFree || false,
                         noInvoiceAvailable: row.noInvoiceAvailable || false,
                         hasErrors: Object.values(invoiceErrors).some(err => err === true),
@@ -7161,6 +7181,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     },
                     visits: [],
                     totalVisitsAmount: 0,
+                    totalDiscountedAmount: 0,
                     totalVisitsMinutes: 0,
                     totalVisitsNumber: 0
                 });
@@ -7168,6 +7189,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             
             // Aggiorna gli errori della fattura aggregando da tutte le righe con lo stesso numero fattura
             const currentInvoice = invoiceMap.get(invoiceNumber);
+            if (row.noInvoiceAvailable) {
+                currentInvoice.invoice.noInvoiceAvailable = true;
+            }
             if (row.validationErrors) {
                 // Aggrega gli errori: se almeno una riga ha un errore, la fattura ha quell'errore
                 if (row.validationErrors.invoiceNumber === true) {
@@ -7246,7 +7270,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 currentInvoice.invoice.valoreScontato = row.amount;
             }
             
-            // Aggiungi la visita se presente
+            // Aggiungi il dettaglio riga (visita per Tempo, biglietto per Sorriso) se presente
             if (!this.isSorrisoSospeso && (row.tipoVisita || row.dataVisita || row.beneficiaryType || row.comune)) {
                 const visitAmount = this.parseDecimal(row.amount) || 0;
                 const visitMinutes = this.parseInteger(row.totaleMinuti) || 0;
@@ -7291,9 +7315,53 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     (invoiceMap.get(invoiceNumber).totalVisitsNumber || 0) + visitNumber;
             } else if (this.isSorrisoSospeso) {
                 const rowAmount = this.parseDecimal(row.amount) || 0;
+                const discountedValue = this.parseDecimal(row.valoreScontato);
+                const effectiveDiscounted = discountedValue !== null ? discountedValue : rowAmount;
                 const rowNumber = row.numeroVisite ? parseInt(row.numeroVisite, 10) : 0;
+                const ticketErrors = {
+                    tipologia: row.validationErrors && row.validationErrors.tipologia === true,
+                    fornitore: row.validationErrors && row.validationErrors.fornitore === true,
+                    tipologiaSpettacolo: row.validationErrors && row.validationErrors.tipologiaSpettacolo === true,
+                    comune: row.validationErrors && row.validationErrors.comune === true,
+                    provincia: row.validationErrors && row.validationErrors.provincia === true,
+                    regione: row.validationErrors && row.validationErrors.regione === true
+                };
+                const hasTicketData = !!(
+                    row.tipologia || row.fornitore || row.nomeSpettacolo || row.tipologiaSpettacolo ||
+                    row.dataSpettacolo || row.oraSpettacolo || row.numeroVisite || row.amount ||
+                    row.valoreScontato || row.comune || row.provincia || row.regione || row.noInvoiceAvailable
+                );
+
+                if (hasTicketData) {
+                    const ticketIndex = invoiceMap.get(invoiceNumber).visits.length;
+                    invoiceMap.get(invoiceNumber).visits.push({
+                        id: `ticket-${invoiceNumber}-${ticketIndex}`,
+                        tempIndex: ticketIndex,
+                        rowIndex: row.rowNumber || ticketIndex + 1,
+                        tipologia: row.tipologia || '',
+                        fornitore: row.fornitore || '',
+                        nomeSpettacolo: row.nomeSpettacolo || '',
+                        tipologiaSpettacolo: row.tipologiaSpettacolo || '',
+                        dataSpettacolo: row.dataSpettacolo ? this.formatDateForDisplay(row.dataSpettacolo) : '',
+                        oraSpettacolo: row.oraSpettacolo ? this.formatTimeForDisplay(row.oraSpettacolo) : '',
+                        noInvoiceAvailable: !!row.noInvoiceAvailable,
+                        numeroVisite: row.numeroVisite || '',
+                        amount: rowAmount,
+                        amountFormatted: this.formatCurrency(rowAmount),
+                        valoreScontato: effectiveDiscounted,
+                        valoreScontatoFormatted: this.formatCurrency(effectiveDiscounted),
+                        comune: row.comune || '',
+                        provincia: row.provincia || '',
+                        regione: row.regione || '',
+                        hasErrors: Object.values(ticketErrors).some(err => err === true),
+                        errors: ticketErrors
+                    });
+                }
+
                 invoiceMap.get(invoiceNumber).totalVisitsAmount =
                     (invoiceMap.get(invoiceNumber).totalVisitsAmount || 0) + rowAmount;
+                invoiceMap.get(invoiceNumber).totalDiscountedAmount =
+                    (invoiceMap.get(invoiceNumber).totalDiscountedAmount || 0) + effectiveDiscounted;
                 invoiceMap.get(invoiceNumber).totalVisitsNumber =
                     (invoiceMap.get(invoiceNumber).totalVisitsNumber || 0) + rowNumber;
             }
@@ -7302,6 +7370,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Converti la Map in array e formatta i totali
         this.organizedInvoices = Array.from(invoiceMap.values()).map(invoiceGroup => {
             const totalAmount = invoiceGroup.totalVisitsAmount || 0;
+            const totalDiscounted = invoiceGroup.totalDiscountedAmount || 0;
             const totalMinutes = invoiceGroup.totalVisitsMinutes || 0;
             const totalNumber = invoiceGroup.totalVisitsNumber || 0;
             
@@ -7311,8 +7380,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // L'ammontare della fattura è la somma degli ammontari delle visite
             invoiceGroup.invoice.amount = totalAmount;
             invoiceGroup.invoice.amountFormatted = this.formatCurrency(totalAmount);
-            if (this.isSorrisoSospeso && !this.hasNonEmptyValue(invoiceGroup.invoice.valoreScontato)) {
-                invoiceGroup.invoice.valoreScontato = totalAmount;
+            if (this.isSorrisoSospeso) {
+                const effectiveDiscountedTotal = totalDiscounted || totalAmount;
+                invoiceGroup.invoice.valoreScontato = effectiveDiscountedTotal;
+                invoiceGroup.invoice.valoreScontatoFormatted = this.formatCurrency(effectiveDiscountedTotal);
             }
             
             return {
