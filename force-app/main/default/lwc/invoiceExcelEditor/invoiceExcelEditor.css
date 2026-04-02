@@ -385,6 +385,43 @@
     background-color: #004d99;
 }
 
+/* Menu azioni cella (click singolo) */
+.cell-action-menu {
+    position: fixed;
+    z-index: 1002;
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+}
+
+.cell-action-menu-item {
+    border: none;
+    border-bottom: 1px solid #f3f3f3;
+    background: #ffffff;
+    color: #080707;
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.cell-action-menu-item:last-child {
+    border-bottom: none;
+}
+
+.cell-action-menu-item:hover {
+    background-color: #f3f3f3;
+}
+
+.cell-action-menu-item-cancel {
+    color: #ba0517;
+}
+
 /* Date Picker */
 .date-picker-input {
     position: absolute;

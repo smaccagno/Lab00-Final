@@ -1131,6 +1131,7 @@
                                 <td class="editable-cell"
                                     data-field="nomeSpettacolo"
                                     data-row-index={rowIndex}
+                                    onclick={handleCellFocus}
                                     contenteditable="true"
                                     onblur={handleCellBlur}
                                     onfocus={handleCellFocus}
@@ -1172,6 +1173,7 @@
                                 <td class="editable-cell"
                                     data-field="oraSpettacolo"
                                     data-row-index={rowIndex}
+                                    onclick={handleCellFocus}
                                     contenteditable="true"
                                     onblur={handleCellBlur}
                                     onfocus={handleCellFocus}
@@ -1240,6 +1242,7 @@
                                 <td class="editable-cell"
                                     data-field="valoreScontato"
                                     data-row-index={rowIndex}
+                                    onclick={handleCellFocus}
                                     contenteditable="true"
                                     onblur={handleCellBlur}
                                     onfocus={handleCellFocus}
@@ -1347,6 +1350,16 @@
                             </button>
                         </div>
                     </template>
+                </div>
+            </template>
+
+            <!-- Menu Azioni Cella -->
+            <template if:true={isCellActionMenuOpen}>
+                <div class="cell-action-menu" style={cellActionMenuStyle} onclick={handleActionMenuClick}>
+                    <button type="button" class="cell-action-menu-item" onclick={handleActionMenuCopy}>Copia</button>
+                    <button type="button" class="cell-action-menu-item" onclick={handleActionMenuPaste}>Incolla</button>
+                    <button type="button" class="cell-action-menu-item" onclick={handleActionMenuEdit}>Modifica</button>
+                    <button type="button" class="cell-action-menu-item cell-action-menu-item-cancel" onclick={handleActionMenuCancel}>Annulla</button>
                 </div>
             </template>
 

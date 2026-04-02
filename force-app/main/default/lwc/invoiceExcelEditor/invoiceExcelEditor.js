@@ -54,6 +54,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     @track dropdownFilter = '';
     @track dropdownFilteredOptions = [];
     @track showConfirmButton = false; // Mostra pulsante "Conferma Valore" per comune
+    @track cellActionMenu = null; // {rowIndex: number, field: string, top: number, left: number}
     isConfirmingValue = false; // Flag per prevenire blur quando si conferma un valore
     skipNextConfirmClick = false; // Evita doppia esecuzione quando usiamo mousedown+click sul bottone
     // Stato calendario date
@@ -476,12 +477,217 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         return false;
     }
 
+    get isCellActionMenuOpen() {
+        return this.cellActionMenu !== null;
+    }
+
+    get cellActionMenuStyle() {
+        if (!this.cellActionMenu) {
+            return '';
+        }
+        return `top:${this.cellActionMenu.top}px;left:${this.cellActionMenu.left}px;`;
+    }
+
+    openCellActionMenu(cell) {
+        if (!cell || !cell.dataset) {
+            return;
+        }
+        const rowIndex = parseInt(cell.dataset.rowIndex, 10);
+        const field = cell.dataset.field;
+        if (Number.isNaN(rowIndex) || !field) {
+            return;
+        }
+
+        const rect = cell.getBoundingClientRect();
+        const menuWidth = 180;
+        const menuHeight = 150;
+        const viewportWidth = window.innerWidth || 0;
+        const viewportHeight = window.innerHeight || 0;
+        let left = rect.left;
+        let top = rect.bottom + 4;
+
+        if (left + menuWidth > viewportWidth - 8) {
+            left = Math.max(8, viewportWidth - menuWidth - 8);
+        }
+        if (top + menuHeight > viewportHeight - 8) {
+            top = Math.max(8, rect.top - menuHeight - 4);
+        }
+
+        this.cellActionMenu = { rowIndex, field, top, left };
+    }
+
+    closeCellActionMenu() {
+        this.cellActionMenu = null;
+    }
+
+    shouldOpenActionMenuOnClick(event, cell) {
+        if (!event || event.type !== 'click' || event.detail !== 1 || !cell) {
+            return false;
+        }
+        this.closeDropdown();
+        this.closeDatePicker();
+        this.openCellActionMenu(cell);
+        if (typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+        if (typeof event.stopPropagation === 'function') {
+            event.stopPropagation();
+        }
+        return true;
+    }
+
+    handleActionMenuClick(event) {
+        event.stopPropagation();
+    }
+
+    getCellValueForClipboard(row, field) {
+        if (!row || !field) {
+            return '';
+        }
+        if (field === 'isFree' || field === 'noInvoiceAvailable') {
+            return row[field] ? 'TRUE' : 'FALSE';
+        }
+        if (this.isDateField(field) && row[field]) {
+            return this.formatDateForDisplay(row[field]) || String(row[field]);
+        }
+        const value = row[field];
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value);
+    }
+
+    async handleActionMenuCopy(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!this.cellActionMenu) {
+            return;
+        }
+
+        const { rowIndex, field } = this.cellActionMenu;
+        if (rowIndex < 0 || rowIndex >= this.rows.length) {
+            this.closeCellActionMenu();
+            return;
+        }
+
+        const textToCopy = this.getCellValueForClipboard(this.rows[rowIndex], field);
+        try {
+            if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+                throw new Error('API clipboard non disponibile');
+            }
+            await navigator.clipboard.writeText(textToCopy);
+            this.closeCellActionMenu();
+        } catch (error) {
+            this.showError(`Errore durante la copia: ${error?.message || 'operazione non riuscita'}`);
+        }
+    }
+
+    async handleActionMenuPaste(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!this.cellActionMenu) {
+            return;
+        }
+
+        const { rowIndex, field } = this.cellActionMenu;
+        const colIndex = this.getColumnIndex(field);
+        if (rowIndex < 0 || rowIndex >= this.rows.length || colIndex < 0) {
+            this.closeCellActionMenu();
+            return;
+        }
+
+        try {
+            if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+                throw new Error('API clipboard non disponibile');
+            }
+            const clipboardText = await navigator.clipboard.readText();
+            if (!clipboardText || !clipboardText.trim()) {
+                this.showError('Nessun dato trovato nella clipboard.');
+                return;
+            }
+
+            const lines = clipboardText
+                .split('\n')
+                .map(line => line.replace(/\r/g, ''))
+                .filter(line => line.trim() || line.includes('\t'));
+
+            if (lines.length > 1 || (lines.length === 1 && lines[0].includes('\t'))) {
+                await this.pasteMultipleRows(lines, rowIndex, colIndex);
+            } else {
+                const values = clipboardText.split('\t');
+                if (values.length > 0) {
+                    this.updateCellValue(rowIndex, colIndex, values[0].trim());
+                }
+            }
+            this.closeCellActionMenu();
+        } catch (error) {
+            this.showError(`Errore durante l'incolla: ${error?.message || 'operazione non riuscita'}`);
+        }
+    }
+
+    handleActionMenuEdit(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!this.cellActionMenu) {
+            return;
+        }
+
+        const { rowIndex, field } = this.cellActionMenu;
+        const cell = this.template.querySelector(`td[data-field="${field}"][data-row-index="${rowIndex}"]`);
+        this.closeCellActionMenu();
+        if (!cell) {
+            return;
+        }
+
+        const syntheticEvent = {
+            currentTarget: cell,
+            target: cell,
+            type: 'click',
+            detail: 2,
+            preventDefault: () => {},
+            stopPropagation: () => {}
+        };
+
+        if (typeof cell.focus === 'function') {
+            cell.focus();
+        }
+
+        if (field === 'isFree' || field === 'noInvoiceAvailable') {
+            this.toggleCheckbox(syntheticEvent);
+            return;
+        }
+        if (this.hasDropdown(field)) {
+            this.openDropdown(syntheticEvent);
+            return;
+        }
+        if (this.isDateField(field)) {
+            this.openDatePicker(syntheticEvent);
+            return;
+        }
+        this.handleCellFocus(syntheticEvent);
+    }
+
+    handleActionMenuCancel(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        this.closeCellActionMenu();
+    }
+
     /**
      * Cancella il contenuto di una cella
      */
     clearCellContent(event) {
         event.stopPropagation();
         event.preventDefault();
+        this.closeCellActionMenu();
         
         const button = event.currentTarget;
         const cell = button.closest('td[data-field]');
@@ -950,6 +1156,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Se l'evento viene dallo span interno (invoice-number-value), risali alla cella td
         if (cell.classList && cell.classList.contains('invoice-number-value')) {
             cell = cell.closest('td[data-field]');
+        }
+        if (this.shouldOpenActionMenuOnClick(event, cell)) {
+            return;
+        }
+        if (event && event.type === 'click') {
+            this.closeCellActionMenu();
         }
         const field = cell.dataset.field;
         
@@ -2875,6 +3087,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     async toggleCheckbox(event) {
         const cell = event.currentTarget;
+        if (this.shouldOpenActionMenuOnClick(event, cell)) {
+            return;
+        }
+        this.closeCellActionMenu();
         const field = cell.dataset.field;
         const rowIndex = parseInt(cell.dataset.rowIndex, 10);
         
@@ -4369,6 +4585,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     openDropdown(event) {
         const cell = event.currentTarget;
+        if (this.shouldOpenActionMenuOnClick(event, cell)) {
+            return;
+        }
+        this.closeCellActionMenu();
         const field = cell.dataset.field;
         const rowIndex = parseInt(cell.dataset.rowIndex, 10);
 
@@ -4454,6 +4674,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     openDatePicker(event) {
         const cell = event.currentTarget;
+        if (this.shouldOpenActionMenuOnClick(event, cell)) {
+            return;
+        }
+        this.closeCellActionMenu();
         const field = cell.dataset.field;
         const rowIndex = parseInt(cell.dataset.rowIndex, 10);
 
@@ -5594,6 +5818,18 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Gestisce il click fuori dal dropdown per chiuderlo
      */
     handleClickOutside(event) {
+        // Gestisci chiusura menu azioni celle
+        if (this.cellActionMenu) {
+            const menu = this.template.querySelector('.cell-action-menu');
+            const cell = this.template.querySelector(
+                `td[data-field="${this.cellActionMenu.field}"][data-row-index="${this.cellActionMenu.rowIndex}"]`
+            );
+
+            if (menu && !menu.contains(event.target) && cell && !cell.contains(event.target)) {
+                this.closeCellActionMenu();
+            }
+        }
+
         // Gestisci chiusura dropdown
         if (this.dropdownOpen) {
             const dropdown = this.template.querySelector('.dropdown-menu');
