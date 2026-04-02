@@ -479,6 +479,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         return false;
     }
 
+    hasNonEmptyValue(value) {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string') return value.trim() !== '';
+        return true;
+    }
+
+    applySorrisoDiscountFallback(row) {
+        if (!this.isSorrisoSospeso || !row) {
+            return;
+        }
+
+        const hasAmount = this.hasNonEmptyValue(row.amount);
+        const hasDiscountedValue = this.hasNonEmptyValue(row.valoreScontato);
+
+        if (!hasDiscountedValue && hasAmount) {
+            row.valoreScontato = row.amount;
+        }
+    }
+
     get isCellActionMenuOpen() {
         return this.cellActionMenu !== null;
     }
@@ -1693,6 +1712,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             } else {
                 row[field] = newValue;
             }
+
+            // In Sorriso: se valore scontato è vuoto, usa il commerciale.
+            this.applySorrisoDiscountFallback(row);
             
             // Aggiorna l'array rows per forzare il rerender
             this.rows = updatedRows;
@@ -2644,11 +2666,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 // Se c'è una categoria ma non c'è ente, valida comunque
                 this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory);
             }
+
+            // In Sorriso: se valore scontato è vuoto, usa il commerciale.
+            this.applySorrisoDiscountFallback(updatedRows[rowIndex]);
             
             // Se isFree o noInvoiceAvailable è true (da paste Excel), applica override partner e numero fattura come nel toggle manuale
-            const isFree = !!updatedRows[rowIndex].isFree;
+            const isFree = !this.isSorrisoSospeso && !!updatedRows[rowIndex].isFree;
             const noInvoiceAvailable = !!updatedRows[rowIndex].noInvoiceAvailable;
-            if (!this.isSorrisoSospeso && (isFree || noInvoiceAvailable)) {
+            if (isFree || noInvoiceAvailable) {
                 // Override partner: quando isFree è true, imposta "Prestazioni Gratuite"
                 if (isFree) {
                     if (!updatedRows[rowIndex].previousPartner && updatedRows[rowIndex].partner) {
@@ -2799,6 +2824,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     updatedRows[rowIndex].noProfitCategory = matchingEnte.Ente_Categoria__c;
                 }
             }
+
+            // In Sorriso: se valore scontato è vuoto, usa il commerciale.
+            this.applySorrisoDiscountFallback(updatedRows[rowIndex]);
             
             // Imposta lo spinner di validazione per questa cella
             if (this.hasValidation(field)) {
@@ -6543,10 +6571,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.fornitoreId = foundSupplier.Id;
                 }
             });
+
+            // Se Valore Scontato è assente, usa il Valore Commerciale.
+            validRows.forEach(row => this.applySorrisoDiscountFallback(row));
         }
 
         // Prepara i dati per il controller Apex
         const invoiceData = validRows.map((row, index) => {
+            const parsedAmount = this.parseDecimal(row.amount);
+            const parsedDiscounted = this.parseDecimal(row.valoreScontato);
+            const effectiveDiscounted = parsedDiscounted !== null ? parsedDiscounted : parsedAmount;
+
             const rowData = {
                 partner: row.partner || null,
                 partnerId: (row.partnerId && row.partnerId.trim() !== '') ? row.partnerId : null,
@@ -6564,8 +6599,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 beneficiaryType: row.beneficiaryType || null,
                 numeroVisite: row.numeroVisite ? parseInt(row.numeroVisite, 10) : null,
                 totaleMinuti: row.totaleMinuti ? parseInt(row.totaleMinuti, 10) : null,
-                amount: row.amount ? parseFloat(row.amount.toString().replace(',', '.')) : null,
-                valoreScontato: row.valoreScontato ? parseFloat(row.valoreScontato.toString().replace(',', '.')) : null,
+                amount: parsedAmount,
+                valoreScontato: effectiveDiscounted,
                 dataVisita: row.dataVisita || null,
                 dataSpettacolo: row.dataSpettacolo || null,
                 oraSpettacolo: row.oraSpettacolo || null,
@@ -7028,6 +7063,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const invoiceMap = new Map();
         
         validRows.forEach(row => {
+            this.applySorrisoDiscountFallback(row);
             const invoiceNumber = row.invoiceNumber || 'Senza Numero Fattura';
             
             if (!invoiceMap.has(invoiceNumber)) {
@@ -7153,6 +7189,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             if (row.valoreScontato && !currentInvoice.invoice.valoreScontato) {
                 currentInvoice.invoice.valoreScontato = row.valoreScontato;
+            } else if (!currentInvoice.invoice.valoreScontato && row.amount) {
+                currentInvoice.invoice.valoreScontato = row.amount;
             }
             
             // Aggiungi la visita se presente
@@ -7220,6 +7258,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             // L'ammontare della fattura è la somma degli ammontari delle visite
             invoiceGroup.invoice.amount = totalAmount;
             invoiceGroup.invoice.amountFormatted = this.formatCurrency(totalAmount);
+            if (this.isSorrisoSospeso && !this.hasNonEmptyValue(invoiceGroup.invoice.valoreScontato)) {
+                invoiceGroup.invoice.valoreScontato = totalAmount;
+            }
             
             return {
                 ...invoiceGroup,
