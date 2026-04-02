@@ -1225,15 +1225,24 @@
                                 <td class="editable-cell"
                                     data-field="valoreScontato"
                                     data-row-index={rowIndex}
-                                    onclick={handleCellFocus}
-                                    contenteditable="true"
-                                    onblur={handleCellBlur}
-                                    onfocus={handleCellFocus}
-                                    oninput={handleCellInput}
-                                    onkeydown={handleKeyDown}
-                                    onpaste={handlePaste}>
-                                    {row.valoreScontato}
-                                    <button type="button" class="cell-clear-button" data-field="valoreScontato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                    onclick={handleCellFocus}>
+                                    <div class="numeric-field-container">
+                                        <template if:false={row.isEditingValoreScontato}>
+                                            <span class="numeric-field-value">{row.valoreScontato}</span>
+                                            <button type="button" class="cell-clear-button" data-field="valoreScontato" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                        </template>
+                                        <template if:true={row.isEditingValoreScontato}>
+                                            <div class="numeric-field-edit-box">
+                                                <input type="text" class="numeric-field-edit-input" value={valoreScontatoModalValue} data-field="valoreScontato" oninput={handleNumericFieldModalInput} onkeydown={handleNumericFieldModalKeyDown} onclick={handleNumericFieldEditBoxClick} placeholder="Inserisci il valore scontato totale" />
+                                                <button type="button" class="numeric-field-confirm-button" data-field="valoreScontato" onclick={handleNumericFieldConfirmClick} title="Conferma">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button type="button" class="numeric-field-cancel-button" data-field="valoreScontato" onclick={handleNumericFieldCancelClick} title="Annulla">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td class="editable-cell dropdown-cell"
                                     data-field="comune"

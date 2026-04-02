@@ -71,6 +71,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     totaleMinutiModalValue = ''; // Valore temporaneo nel modal
     @track amountModalOpen = null; // {rowIndex: number} o null
     amountModalValue = ''; // Valore temporaneo nel modal
+    @track valoreScontatoModalOpen = null; // {rowIndex: number} o null
+    valoreScontatoModalValue = ''; // Valore temporaneo nel modal
     // Stato selezione programma e partner
     @track showProgramSelection = false;
     @track showPartnerSelection = false;
@@ -779,7 +781,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (row.validationErrors) {
                 row.validationErrors.tipoVisita = false;
             }
-        } else if (field === 'numeroVisite' || field === 'totaleMinuti' || field === 'amount') {
+        } else if (field === 'numeroVisite' || field === 'totaleMinuti' || field === 'amount' || field === 'valoreScontato') {
             // Per i campi numerici, imposta a stringa vuota
             row[field] = '';
             // Rimuovi errori di validazione
@@ -794,6 +796,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 row.validationErrors[field] = false;
             }
         }
+
+        // In Sorriso: se valore scontato è vuoto, usa il commerciale.
+        this.applySorrisoDiscountFallback(row);
         
         // Se il dropdown è aperto per questo campo, aggiorna il filtro e forza l'aggiornamento
         if (this.dropdownOpen && 
@@ -887,7 +892,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             isEditingInvoiceNumber: false, // Flag per indicare se il box di editing per Invoice Number è aperto
             isEditingNumeroVisite: false, // Flag per indicare se il box di editing per Numero Visite è aperto
             isEditingTotaleMinuti: false, // Flag per indicare se il box di editing per Totale Minuti è aperto
-            isEditingAmount: false // Flag per indicare se il box di editing per Ammontare è aperto
+            isEditingAmount: false, // Flag per indicare se il box di editing per Ammontare è aperto
+            isEditingValoreScontato: false // Flag per indicare se il box di editing per Valore Scontato è aperto
         };
         // Aggiungi getter per selectedClass
         Object.defineProperty(newRow, 'selectedClass', {
@@ -1218,8 +1224,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         const field = cell.dataset.field;
         
-        // Per Invoice Number, Numero Visite, Totale Minuti e Ammontare, apri il box di editing invece del contenteditable normale
-        if (field === 'invoiceNumber' || field === 'numeroVisite' || field === 'totaleMinuti' || field === 'amount') {
+        // Per Invoice Number, campi numerici e importi, apri il box di editing invece del contenteditable normale
+        if (field === 'invoiceNumber' || field === 'numeroVisite' || field === 'totaleMinuti' || field === 'amount' || field === 'valoreScontato') {
             const rowIndex = parseInt(cell.dataset.rowIndex, 10);
             event.preventDefault();
             
@@ -1257,6 +1263,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 this.closeAllEditingModals();
                 if (rowIndex >= 0 && rowIndex < this.rows.length) {
                     this.openNumericFieldModal(rowIndex, 'amount');
+                }
+            } else if (field === 'valoreScontato') {
+                if (this.valoreScontatoModalOpen && this.valoreScontatoModalOpen.rowIndex === rowIndex) {
+                    return;
+                }
+                this.closeAllEditingModals();
+                if (rowIndex >= 0 && rowIndex < this.rows.length) {
+                    this.openNumericFieldModal(rowIndex, 'valoreScontato');
                 }
             }
             return;
@@ -1529,10 +1543,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (this.amountModalOpen) {
             this.closeNumericFieldModal('amount');
         }
+        if (this.valoreScontatoModalOpen) {
+            this.closeNumericFieldModal('valoreScontato');
+        }
     }
 
     /**
-     * Apre il box di editing per un campo numerico (numeroVisite, totaleMinuti, amount)
+     * Apre il box di editing per un campo numerico/currency
      */
     openNumericFieldModal(rowIndex, field) {
         if (rowIndex >= 0 && rowIndex < this.rows.length) {
@@ -1547,6 +1564,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     r.isEditingTotaleMinuti = false;
                 } else if (field === 'amount' && r.isEditingAmount) {
                     r.isEditingAmount = false;
+                } else if (field === 'valoreScontato' && r.isEditingValoreScontato) {
+                    r.isEditingValoreScontato = false;
                 }
             });
             
@@ -1563,6 +1582,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 row.isEditingAmount = true;
                 this.amountModalOpen = { rowIndex: rowIndex };
                 this.amountModalValue = row.amount || '';
+            } else if (field === 'valoreScontato') {
+                row.isEditingValoreScontato = true;
+                this.valoreScontatoModalOpen = { rowIndex: rowIndex };
+                this.valoreScontatoModalValue = row.valoreScontato || '';
             }
             this.rows = updatedRows;
             
@@ -1646,6 +1669,16 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             this.amountModalOpen = null;
             this.amountModalValue = '';
+        } else if (field === 'valoreScontato' && this.valoreScontatoModalOpen && this.valoreScontatoModalOpen.rowIndex >= 0) {
+            const rowIndex = this.valoreScontatoModalOpen.rowIndex;
+            if (rowIndex < this.rows.length) {
+                const updatedRows = [...this.rows];
+                const row = updatedRows[rowIndex];
+                row.isEditingValoreScontato = false;
+                this.rows = updatedRows;
+            }
+            this.valoreScontatoModalOpen = null;
+            this.valoreScontatoModalValue = '';
         }
     }
 
@@ -1668,6 +1701,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         } else if (field === 'amount' && this.amountModalOpen && this.amountModalOpen.rowIndex >= 0) {
             modalOpen = this.amountModalOpen;
             modalValue = this.amountModalValue;
+            rowIndex = modalOpen.rowIndex;
+            newValue = modalValue.trim();
+        } else if (field === 'valoreScontato' && this.valoreScontatoModalOpen && this.valoreScontatoModalOpen.rowIndex >= 0) {
+            modalOpen = this.valoreScontatoModalOpen;
+            modalValue = this.valoreScontatoModalValue;
             rowIndex = modalOpen.rowIndex;
             newValue = modalValue.trim();
         } else {
@@ -1700,13 +1738,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 row.isEditingAmount = false;
                 this.amountModalOpen = null;
                 this.amountModalValue = '';
+            } else if (field === 'valoreScontato') {
+                row.isEditingValoreScontato = false;
+                this.valoreScontatoModalOpen = null;
+                this.valoreScontatoModalValue = '';
             }
             
             // Processa il valore in base al tipo di campo
             if (field === 'numeroVisite' || field === 'totaleMinuti') {
                 const numValue = this.parseInteger(newValue);
                 row[field] = numValue !== null ? numValue : newValue;
-            } else if (field === 'amount') {
+            } else if (field === 'amount' || field === 'valoreScontato') {
                 const currencyValue = this.parseCurrency(newValue);
                 row[field] = currencyValue !== null ? currencyValue : newValue;
             } else {
@@ -1744,6 +1786,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.totaleMinutiModalValue = event.target.value;
         } else if (field === 'amount') {
             this.amountModalValue = event.target.value;
+        } else if (field === 'valoreScontato') {
+            this.valoreScontatoModalValue = event.target.value;
         }
     }
 
@@ -2028,7 +2072,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
             field !== 'oraSpettacolo' &&
             field !== 'isFree' && field !== 'noInvoiceAvailable' &&
-            field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
+            field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' && field !== 'valoreScontato' &&
             field !== 'comune' && field !== 'provincia' && field !== 'regione') {
             setTimeout(() => {
                 updatedRows.forEach((otherRow, otherIndex) => {
@@ -2324,7 +2368,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             if (field !== 'invoiceDate' && field !== 'competenceDate' && field !== 'dataVisita' &&
                 field !== 'oraSpettacolo' &&
                 field !== 'isFree' && field !== 'noInvoiceAvailable' &&
-                field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' &&
+                field !== 'numeroVisite' && field !== 'totaleMinuti' && field !== 'amount' && field !== 'valoreScontato' &&
                 field !== 'comune' && field !== 'provincia' && field !== 'regione') {
                 setTimeout(() => {
                     updatedRows.forEach((otherRow, otherIndex) => {
@@ -2724,7 +2768,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 fieldsToRefresh.forEach(field => {
                     const cell = rowElement.querySelector(`td[data-field="${field}"]`);
                     if (cell && row[field] !== undefined) {
-                        // Per invoiceNumber, aggiorna lo span interno se presente
+                        // Per campi con struttura complessa, aggiorna lo span interno se presente
                         if (field === 'invoiceNumber') {
                             const invoiceValueSpan = cell.querySelector('.invoice-number-value');
                             if (invoiceValueSpan) {
@@ -2735,6 +2779,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                                 if (cell.textContent.trim() !== String(row[field] || '').trim()) {
                                     cell.textContent = row[field] || '';
                                 }
+                            }
+                        } else if (field === 'amount' || field === 'valoreScontato') {
+                            const numericValueSpan = cell.querySelector('.numeric-field-value');
+                            if (numericValueSpan) {
+                                if (numericValueSpan.textContent.trim() !== String(row[field] || '').trim()) {
+                                    numericValueSpan.textContent = row[field] || '';
+                                }
+                            } else if (cell.textContent.trim() !== String(row[field] || '').trim()) {
+                                cell.textContent = row[field] || '';
                             }
                         } else {
                             // Aggiorna il contenuto della cella con il valore esatto
@@ -5373,7 +5426,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     // Aggiorna il contenuto della cella con il valore confermato
                     // NON usare textContent per campi con struttura DOM complessa (invoiceNumber, numeroVisite, totaleMinuti, amount)
                     // Questi campi hanno una struttura con div e span che verrebbe distrutta
-                    const fieldsWithComplexStructure = ['invoiceNumber', 'numeroVisite', 'totaleMinuti', 'amount'];
+                    const fieldsWithComplexStructure = ['invoiceNumber', 'numeroVisite', 'totaleMinuti', 'amount', 'valoreScontato'];
                     if (!fieldsWithComplexStructure.includes(field) && currentCell.contentEditable === 'true') {
                         // Per celle contenteditable semplici, aggiorna il contenuto
                         currentCell.textContent = currentRow[field] || '';
