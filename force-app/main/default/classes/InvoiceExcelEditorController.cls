@@ -1634,20 +1634,13 @@ public with sharing class InvoiceExcelEditorController {
     @AuraEnabled(cacheable=true)
     public static List<Account> getStructureSuppliers() {
         try {
-            List<RecordType> structureRT = [
-                SELECT Id
-                FROM RecordType
-                WHERE SObjectType = 'Account'
-                AND Name = 'Structure'
-                LIMIT 1
-            ];
-            if (structureRT.isEmpty()) {
-                return new List<Account>();
-            }
             return [
                 SELECT Id, Name
                 FROM Account
-                WHERE RecordTypeId = :structureRT[0].Id
+                WHERE (
+                    RecordType.DeveloperName = 'Structure'
+                    OR RecordType.Name = 'Structure'
+                )
                 AND Name != null
                 ORDER BY Name ASC
                 LIMIT 10000
