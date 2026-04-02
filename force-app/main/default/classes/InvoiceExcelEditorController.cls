@@ -530,6 +530,9 @@ public with sharing class InvoiceExcelEditorController {
             List<Visit__c> visitsToInsert = new List<Visit__c>();
             Map<Integer, List<Visit__c>> visitsByInputRow = new Map<Integer, List<Visit__c>>();
             Map<Integer, List<String>> visitErrorsByInputRow = new Map<Integer, List<String>>();
+            List<Ticket__c> ticketsToInsert = new List<Ticket__c>();
+            Map<Integer, List<Ticket__c>> ticketsByInputRow = new Map<Integer, List<Ticket__c>>();
+            Map<Integer, List<String>> ticketErrorsByInputRow = new Map<Integer, List<String>>();
             
             if (!invoicesToInsert.isEmpty()) {
                 try {
@@ -1032,7 +1035,180 @@ public with sharing class InvoiceExcelEditorController {
                         }
                     }
                     
-                    // Aggiorna i risultati con gli errori delle visite
+                    // Ora crea i biglietti associati alle fatture (ramo Sorriso Sospeso)
+                    if (!invoicesToInsert.isEmpty()) {
+                        try {
+                            Map<String, Id> showIdByKey = resolveShowsForTickets(invoiceDataList, inputRowToInvoiceIndex, errors);
+
+                            for (Integer i = 0; i < invoiceDataList.size(); i++) {
+                                Object invoiceObj = invoiceDataList[i];
+                                if (!(invoiceObj instanceof Map<String, Object>)) continue;
+
+                                Map<String, Object> invoiceDataMap = (Map<String, Object>) invoiceObj;
+
+                                if (inputRowToInvoiceIndex.containsKey(i) && hasTicketData(invoiceDataMap)) {
+                                    Integer invoiceIdx = inputRowToInvoiceIndex.get(i);
+                                    List<Ticket__c> invoiceTickets = new List<Ticket__c>();
+                                    List<String> invoiceTicketErrors = new List<String>();
+
+                                    try {
+                                        Ticket__c ticket = createTicketRecord(invoiceDataMap, invoicesToInsert[invoiceIdx].Id, i + 1, showIdByKey);
+                                        if (ticket != null) {
+                                            invoiceTickets.add(ticket);
+                                        }
+                                    } catch (Exception e) {
+                                        String errMsg = getDescriptiveErrorMessage(e);
+                                        invoiceTicketErrors.add(errMsg);
+                                        errors.add('Riga ' + (i + 1) + ' - Biglietto: ' + errMsg);
+                                        System.debug('Errore nella creazione del biglietto riga ' + (i + 1) + ': ' + errMsg);
+                                    }
+
+                                    ticketsByInputRow.put(i, invoiceTickets);
+                                    if (!invoiceTicketErrors.isEmpty()) {
+                                        ticketErrorsByInputRow.put(i, invoiceTicketErrors);
+                                    }
+                                }
+                            }
+
+                            List<Integer> sortedTicketInputRowIndices = new List<Integer>(ticketsByInputRow.keySet());
+                            sortedTicketInputRowIndices.sort();
+                            for (Integer inputRowIndex : sortedTicketInputRowIndices) {
+                                List<Ticket__c> invoiceTickets = ticketsByInputRow.get(inputRowIndex);
+                                for (Ticket__c t : invoiceTickets) {
+                                    ticketsToInsert.add(t);
+                                }
+                            }
+
+                            if (!ticketsToInsert.isEmpty()) {
+                                insert ticketsToInsert;
+
+                                Set<Id> ticketIds = new Set<Id>();
+                                for (Ticket__c t : ticketsToInsert) {
+                                    if (t.Id != null) {
+                                        ticketIds.add(t.Id);
+                                    }
+                                }
+
+                                Map<Id, Ticket__c> ticketDetailsMap = new Map<Id, Ticket__c>();
+                                if (!ticketIds.isEmpty()) {
+                                    for (Ticket__c td : [
+                                        SELECT Id, Name, Name__c, Type__c, Category__c,
+                                               City__c, Province__c, Region__c,
+                                               Uses__c, Price__c, CommercialValue__c,
+                                               Show__c, Show__r.Name, Show__r.Datetime__c
+                                        FROM Ticket__c
+                                        WHERE Id IN :ticketIds
+                                    ]) {
+                                        ticketDetailsMap.put(td.Id, td);
+                                    }
+                                }
+
+                                for (Integer inputRowIndex : sortedTicketInputRowIndices) {
+                                    List<Ticket__c> invoiceTickets = ticketsByInputRow.get(inputRowIndex);
+                                    List<Map<String, Object>> ticketDetails = new List<Map<String, Object>>();
+
+                                    for (Ticket__c t : invoiceTickets) {
+                                        if (t.Id != null && ticketDetailsMap.containsKey(t.Id)) {
+                                            Ticket__c td = ticketDetailsMap.get(t.Id);
+                                            Map<String, Object> ticketInfo = new Map<String, Object>();
+                                            ticketInfo.put('id', td.Id);
+                                            ticketInfo.put('name', td.Name);
+                                            ticketInfo.put('ticketName', td.Name__c);
+                                            ticketInfo.put('ticketType', td.Type__c);
+                                            ticketInfo.put('showType', td.Category__c);
+                                            ticketInfo.put('showName', td.Show__r != null ? td.Show__r.Name : td.Name__c);
+                                            ticketInfo.put('showDatetime', td.Show__r != null && td.Show__r.Datetime__c != null ? String.valueOf(td.Show__r.Datetime__c) : null);
+                                            String localita = buildLocalitaString(td.City__c, td.Province__c, td.Region__c);
+                                            ticketInfo.put('localita', localita);
+                                            ticketInfo.put('comune', td.City__c);
+                                            ticketInfo.put('provincia', td.Province__c);
+                                            ticketInfo.put('regione', td.Region__c);
+                                            ticketInfo.put('numeroVisite', td.Uses__c);
+                                            ticketInfo.put('totaleMinuti', null);
+                                            ticketInfo.put('amount', td.CommercialValue__c);
+                                            ticketInfo.put('amountFormatted', td.CommercialValue__c != null ? td.CommercialValue__c.setScale(2).toPlainString() : '-');
+                                            ticketInfo.put('discountedAmount', td.Price__c);
+                                            ticketInfo.put('discountedAmountFormatted', td.Price__c != null ? td.Price__c.setScale(2).toPlainString() : '-');
+                                            // Compatibilità col payload storico "visite"
+                                            ticketInfo.put('visitType', td.Type__c);
+                                            ticketInfo.put('beneficiaryType', '');
+                                            ticketInfo.put('dataVisita', td.Show__r != null && td.Show__r.Datetime__c != null ? String.valueOf(td.Show__r.Datetime__c.date()) : '');
+                                            ticketInfo.put('saveStatus', true);
+                                            ticketInfo.put('saveStatusSuccess', true);
+                                            ticketDetails.add(ticketInfo);
+                                        }
+                                    }
+
+                                    if (inputRowIndex < invoiceResults.size()) {
+                                        Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                                        Integer currentCreated = (Integer) invoiceResult.get('visitsCreated');
+                                        Integer createdTickets = invoiceTickets.size();
+                                        invoiceResult.put('visitsCreated', (currentCreated != null ? currentCreated : 0) + createdTickets);
+                                        if (!ticketDetails.isEmpty()) {
+                                            Object existingDetailsObj = invoiceResult.get('visitDetails');
+                                            List<Map<String, Object>> existingDetails = new List<Map<String, Object>>();
+                                            if (existingDetailsObj != null && existingDetailsObj instanceof List<Object>) {
+                                                for (Object dObj : (List<Object>) existingDetailsObj) {
+                                                    if (dObj instanceof Map<String, Object>) {
+                                                        existingDetails.add((Map<String, Object>) dObj);
+                                                    }
+                                                }
+                                            }
+                                            existingDetails.addAll(ticketDetails);
+                                            invoiceResult.put('visitDetails', existingDetails);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (DmlException e) {
+                            Map<Integer, Integer> ticketIndexToInputRow = new Map<Integer, Integer>();
+                            Integer ticketCount = 0;
+                            for (Integer inputRowIndex : ticketsByInputRow.keySet()) {
+                                List<Ticket__c> invoiceTickets = ticketsByInputRow.get(inputRowIndex);
+                                for (Integer j = 0; j < invoiceTickets.size(); j++) {
+                                    ticketIndexToInputRow.put(ticketCount + j, inputRowIndex);
+                                }
+                                ticketCount += invoiceTickets.size();
+                            }
+
+                            for (Integer i = 0; i < e.getNumDml(); i++) {
+                                Integer dmlIndex = e.getDmlIndex(i);
+                                Integer inputRowIndex = ticketIndexToInputRow.get(dmlIndex);
+
+                                if (inputRowIndex != null && inputRowIndex < invoiceResults.size()) {
+                                    Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                                    Integer currentCreated = (Integer) invoiceResult.get('visitsCreated');
+                                    invoiceResult.put('visitsCreated', currentCreated != null ? Math.max(0, currentCreated - 1) : 0);
+                                    Integer currentFailed = (Integer) invoiceResult.get('visitsFailed');
+                                    invoiceResult.put('visitsFailed', currentFailed != null ? currentFailed + 1 : 1);
+
+                                    String currentError = (String) invoiceResult.get('visitError');
+                                    String errorMsg = e.getDmlMessage(i);
+                                    if (String.isBlank(currentError)) {
+                                        invoiceResult.put('visitError', errorMsg);
+                                    } else {
+                                        invoiceResult.put('visitError', currentError + '; ' + errorMsg);
+                                    }
+                                }
+
+                                errors.add('Errore DML Biglietto riga ' + (dmlIndex + 1) + ': ' + e.getDmlMessage(i));
+                            }
+                        } catch (Exception e) {
+                            String errMsg = getDescriptiveErrorMessage(e);
+                            errors.add('Errore nella creazione dei biglietti: ' + errMsg);
+                            for (Integer inputRowIndex : ticketsByInputRow.keySet()) {
+                                if (inputRowIndex < invoiceResults.size()) {
+                                    Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                                    invoiceResult.put('visitError', errMsg);
+                                    Integer currentFailed = (Integer) invoiceResult.get('visitsFailed');
+                                    Integer failedTickets = ticketsByInputRow.get(inputRowIndex).size();
+                                    invoiceResult.put('visitsFailed', (currentFailed != null ? currentFailed : 0) + failedTickets);
+                                }
+                            }
+                        }
+                    }
+
+                    // Aggiorna i risultati con gli errori delle visite e dei biglietti
                     for (Integer inputRowIndex : visitErrorsByInputRow.keySet()) {
                         if (inputRowIndex < invoiceResults.size()) {
                             Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
@@ -1040,6 +1216,22 @@ public with sharing class InvoiceExcelEditorController {
                             invoiceResult.put('visitError', String.join(visitErrors, '; '));
                             Integer currentFailed = (Integer) invoiceResult.get('visitsFailed');
                             invoiceResult.put('visitsFailed', currentFailed != null ? currentFailed + visitErrors.size() : visitErrors.size());
+                        }
+                    }
+
+                    for (Integer inputRowIndex : ticketErrorsByInputRow.keySet()) {
+                        if (inputRowIndex < invoiceResults.size()) {
+                            Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                            List<String> ticketErrors = ticketErrorsByInputRow.get(inputRowIndex);
+                            String currentError = (String) invoiceResult.get('visitError');
+                            String ticketErrorMsg = String.join(ticketErrors, '; ');
+                            if (String.isBlank(currentError)) {
+                                invoiceResult.put('visitError', ticketErrorMsg);
+                            } else {
+                                invoiceResult.put('visitError', currentError + '; ' + ticketErrorMsg);
+                            }
+                            Integer currentFailed = (Integer) invoiceResult.get('visitsFailed');
+                            invoiceResult.put('visitsFailed', currentFailed != null ? currentFailed + ticketErrors.size() : ticketErrors.size());
                         }
                     }
                     
@@ -2007,6 +2199,253 @@ public with sharing class InvoiceExcelEditorController {
                (invoiceData.containsKey('beneficiaryType') && invoiceData.get('beneficiaryType') != null) ||
                (invoiceData.containsKey('numeroVisite') && invoiceData.get('numeroVisite') != null) ||
                (invoiceData.containsKey('comune') && invoiceData.get('comune') != null);
+    }
+
+    /**
+     * Verifica se la riga appartiene al ramo Sorriso (ticket).
+     */
+    private static Boolean isSorrisoTicketRow(Map<String, Object> invoiceData) {
+        if (invoiceData == null) return false;
+
+        if (invoiceData.containsKey('skipVisitCreation')) {
+            Object skipVisitObj = invoiceData.get('skipVisitCreation');
+            if (skipVisitObj != null && Boolean.valueOf(String.valueOf(skipVisitObj))) {
+                return true;
+            }
+        }
+
+        return String.isNotBlank(toStringSafe(invoiceData.get('tipologia'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('fornitore'))) ||
+               toIdSafe(invoiceData.get('fornitoreId')) != null ||
+               String.isNotBlank(toStringSafe(invoiceData.get('nomeSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('tipologiaSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('dataSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('oraSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('valoreScontato')));
+    }
+
+    /**
+     * Verifica se una riga contiene dati utili per creare Ticket__c.
+     */
+    private static Boolean hasTicketData(Map<String, Object> invoiceData) {
+        if (!isSorrisoTicketRow(invoiceData)) {
+            return false;
+        }
+
+        Integer uses = toIntegerSafe(invoiceData.get('numeroVisite'));
+        Decimal amount = toDecimalSafe(invoiceData.get('amount'));
+        Decimal discounted = toDecimalSafe(invoiceData.get('valoreScontato'));
+
+        return String.isNotBlank(toStringSafe(invoiceData.get('tipologia'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('nomeSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('tipologiaSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('dataSpettacolo'))) ||
+               String.isNotBlank(toStringSafe(invoiceData.get('oraSpettacolo'))) ||
+               (uses != null && uses > 0) ||
+               amount != null ||
+               discounted != null ||
+               String.isNotBlank(toStringSafe(invoiceData.get('comune')));
+    }
+
+    private static String buildShowKey(Id structureId, String showName, String showType, DateTime showDateTime) {
+        if (structureId == null || String.isBlank(showName) || String.isBlank(showType) || showDateTime == null) {
+            return null;
+        }
+        return String.valueOf(structureId) + '|' +
+               showName.trim().toLowerCase() + '|' +
+               showType.trim().toLowerCase() + '|' +
+               String.valueOf(showDateTime.getTime());
+    }
+
+    private static Time parseTimeValue(String timeValue) {
+        if (String.isBlank(timeValue)) return null;
+
+        String normalized = timeValue.trim();
+        normalized = normalized.replace('.', ':');
+
+        if (Pattern.matches('^\\d{4}$', normalized)) {
+            normalized = normalized.substring(0, 2) + ':' + normalized.substring(2, 4);
+        }
+
+        if (!Pattern.matches('^\\d{1,2}:\\d{2}(:\\d{2})?$', normalized)) {
+            return null;
+        }
+
+        List<String> parts = normalized.split(':');
+        Integer hour = Integer.valueOf(parts[0]);
+        Integer minute = Integer.valueOf(parts[1]);
+        Integer second = parts.size() > 2 ? Integer.valueOf(parts[2]) : 0;
+
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+            return null;
+        }
+
+        return Time.newInstance(hour, minute, second, 0);
+    }
+
+    private static DateTime buildShowDateTimeFromRow(Map<String, Object> ticketData) {
+        Date showDate = toDateSafe(ticketData.get('dataSpettacolo'));
+        if (showDate == null) return null;
+
+        Time showTime = parseTimeValue(toStringSafe(ticketData.get('oraSpettacolo')));
+        if (showTime == null) {
+            showTime = Time.newInstance(0, 0, 0, 0);
+        }
+
+        return DateTime.newInstance(showDate, showTime);
+    }
+
+    /**
+     * Replica la logica NewShow flow: cerca uno show esistente (Structure+Name+Type+Datetime),
+     * altrimenti lo crea in bulk e restituisce una mappa chiave->Id show.
+     */
+    private static Map<String, Id> resolveShowsForTickets(
+        List<Object> invoiceDataList,
+        Map<Integer, Integer> inputRowToInvoiceIndex,
+        List<String> errors
+    ) {
+        Map<String, Id> showIdByKey = new Map<String, Id>();
+        Map<String, Show__c> candidateByKey = new Map<String, Show__c>();
+        Set<Id> structureIds = new Set<Id>();
+        Set<String> showNames = new Set<String>();
+        Set<String> showTypes = new Set<String>();
+        Set<DateTime> showDateTimes = new Set<DateTime>();
+
+        for (Integer i = 0; i < invoiceDataList.size(); i++) {
+            if (!inputRowToInvoiceIndex.containsKey(i)) continue;
+
+            Object rowObj = invoiceDataList[i];
+            if (!(rowObj instanceof Map<String, Object>)) continue;
+
+            Map<String, Object> rowData = (Map<String, Object>) rowObj;
+            if (!hasTicketData(rowData)) continue;
+
+            Id structureId = toIdSafe(rowData.get('fornitoreId'));
+            String showName = toStringSafe(rowData.get('nomeSpettacolo'));
+            String showType = toStringSafe(rowData.get('tipologiaSpettacolo'));
+            DateTime showDateTime = buildShowDateTimeFromRow(rowData);
+
+            if (structureId == null || String.isBlank(showName) || String.isBlank(showType) || showDateTime == null) {
+                continue;
+            }
+
+            String showKey = buildShowKey(structureId, showName, showType, showDateTime);
+            if (!candidateByKey.containsKey(showKey)) {
+                candidateByKey.put(showKey, new Show__c(
+                    Structure__c = structureId,
+                    Name = showName,
+                    Type__c = showType,
+                    Datetime__c = showDateTime
+                ));
+                structureIds.add(structureId);
+                showNames.add(showName);
+                showTypes.add(showType);
+                showDateTimes.add(showDateTime);
+            }
+        }
+
+        if (candidateByKey.isEmpty()) {
+            return showIdByKey;
+        }
+
+        try {
+            for (Show__c existingShow : [
+                SELECT Id, Structure__c, Name, Type__c, Datetime__c
+                FROM Show__c
+                WHERE Structure__c IN :structureIds
+                AND Name IN :showNames
+                AND Type__c IN :showTypes
+                AND Datetime__c IN :showDateTimes
+            ]) {
+                String showKey = buildShowKey(existingShow.Structure__c, existingShow.Name, existingShow.Type__c, existingShow.Datetime__c);
+                if (showKey != null) {
+                    showIdByKey.put(showKey, existingShow.Id);
+                }
+            }
+
+            List<Show__c> showsToInsert = new List<Show__c>();
+            Map<String, Show__c> pendingByKey = new Map<String, Show__c>();
+            for (String showKey : candidateByKey.keySet()) {
+                if (!showIdByKey.containsKey(showKey)) {
+                    Show__c candidate = candidateByKey.get(showKey);
+                    showsToInsert.add(candidate);
+                    pendingByKey.put(showKey, candidate);
+                }
+            }
+
+            if (!showsToInsert.isEmpty()) {
+                insert showsToInsert;
+                for (String showKey : pendingByKey.keySet()) {
+                    Show__c createdShow = pendingByKey.get(showKey);
+                    if (createdShow != null && createdShow.Id != null) {
+                        showIdByKey.put(showKey, createdShow.Id);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            String errMsg = getDescriptiveErrorMessage(e);
+            errors.add('Errore nella risoluzione degli spettacoli per i biglietti: ' + errMsg);
+            System.debug('Errore nella risoluzione show per ticket: ' + errMsg);
+        }
+
+        return showIdByKey;
+    }
+
+    /**
+     * Crea un record Ticket__c dai dati Sorriso Sospeso.
+     */
+    private static Ticket__c createTicketRecord(Map<String, Object> ticketData, Id invoiceId, Integer rowNumber, Map<String, Id> showIdByKey) {
+        Ticket__c ticket = new Ticket__c();
+        ticket.Invoice__c = invoiceId;
+
+        String ticketType = toStringSafe(ticketData.get('tipologia'));
+        if (String.isBlank(ticketType)) {
+            throwAuraHandledException('Tipologia è obbligatoria');
+        }
+        ticket.Type__c = ticketType;
+
+        String showType = toStringSafe(ticketData.get('tipologiaSpettacolo'));
+        if (String.isNotBlank(showType)) {
+            ticket.Category__c = showType;
+        }
+
+        Integer uses = toIntegerSafe(ticketData.get('numeroVisite'));
+        if (uses == null || uses <= 0) {
+            throwAuraHandledException('Quantità beneficiari deve essere maggiore di 0');
+        }
+        ticket.Uses__c = uses;
+
+        Decimal commercialValue = toDecimalSafe(ticketData.get('amount'));
+        if (commercialValue == null) {
+            commercialValue = 0;
+        }
+        Decimal discountedValue = toDecimalSafe(ticketData.get('valoreScontato'));
+        if (discountedValue == null) {
+            discountedValue = commercialValue;
+        }
+        ticket.CommercialValue__c = commercialValue;
+        ticket.Price__c = discountedValue;
+
+        String city = toStringSafe(ticketData.get('comune'));
+        String province = toStringSafe(ticketData.get('provincia'));
+        String region = toStringSafe(ticketData.get('regione'));
+        if (String.isNotBlank(city)) ticket.City__c = city;
+        if (String.isNotBlank(province)) ticket.Province__c = province;
+        if (String.isNotBlank(region)) ticket.Region__c = region;
+
+        String showName = toStringSafe(ticketData.get('nomeSpettacolo'));
+        if (String.isNotBlank(showName)) {
+            ticket.Name__c = showName;
+        }
+
+        Id structureId = toIdSafe(ticketData.get('fornitoreId'));
+        DateTime showDateTime = buildShowDateTimeFromRow(ticketData);
+        String showKey = buildShowKey(structureId, showName, showType, showDateTime);
+        if (showKey != null && showIdByKey != null && showIdByKey.containsKey(showKey)) {
+            ticket.Show__c = showIdByKey.get(showKey);
+        }
+
+        return ticket;
     }
     
     /**

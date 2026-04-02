@@ -422,6 +422,98 @@ public class InvoiceExcelEditorControllerTest {
             System.assert(createdVisits.size() > 0, 'Dovrebbero essere state create delle visite. Risultato: ' + JSON.serialize(result));
         }
     }
+
+    @IsTest
+    static void testCreateInvoicesFromFlowWithSorrisoTickets() {
+        Program testProgram = [SELECT Id FROM Program LIMIT 1];
+        GiftDesignation testBudget = [SELECT Id FROM GiftDesignation LIMIT 1];
+        Account testAccount = [SELECT Id, Name FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        Comune__c testComune = [SELECT Id, Nome_Comune__c, Provincia__c, Regione__c FROM Comune__c LIMIT 1];
+
+        List<Schema.PicklistEntry> ticketTypeValues = Ticket__c.Type__c.getDescribe().getPicklistValues();
+        List<Schema.PicklistEntry> showTypeValues = Show__c.Type__c.getDescribe().getPicklistValues();
+        System.assert(!ticketTypeValues.isEmpty(), 'Serve almeno un valore in Ticket__c.Type__c');
+        System.assert(!showTypeValues.isEmpty(), 'Serve almeno un valore in Show__c.Type__c');
+
+        Id structureRecordTypeId;
+        Schema.DescribeSObjectResult accountDescribe = Account.SObjectType.getDescribe();
+        Map<String, Schema.RecordTypeInfo> rtByDeveloperName = accountDescribe.getRecordTypeInfosByDeveloperName();
+        if (rtByDeveloperName.containsKey('Structure')) {
+            structureRecordTypeId = rtByDeveloperName.get('Structure').getRecordTypeId();
+        } else {
+            for (Schema.RecordTypeInfo rtInfo : accountDescribe.getRecordTypeInfos()) {
+                if (rtInfo != null && rtInfo.getName() == 'Structure') {
+                    structureRecordTypeId = rtInfo.getRecordTypeId();
+                    break;
+                }
+            }
+        }
+
+        Account supplier = new Account(Name = 'Test Structure Supplier');
+        if (structureRecordTypeId != null) {
+            supplier.RecordTypeId = structureRecordTypeId;
+        }
+        insert supplier;
+
+        List<Map<String, Object>> invoiceDataList = new List<Map<String, Object>>();
+        invoiceDataList.add(new Map<String, Object>{
+            'invoiceNumber' => 'TEST-SORRISO-INV-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'competenceDate' => String.valueOf(Date.today()),
+            'partnerId' => testAccount.Id,
+            'partner' => testAccount.Name,
+            'tipologia' => ticketTypeValues[0].getValue(),
+            'fornitore' => supplier.Name,
+            'fornitoreId' => supplier.Id,
+            'nomeSpettacolo' => 'Spettacolo Test',
+            'tipologiaSpettacolo' => showTypeValues[0].getValue(),
+            'dataSpettacolo' => String.valueOf(Date.today()),
+            'oraSpettacolo' => '20:30',
+            'numeroVisite' => 3,
+            'amount' => 150,
+            'valoreScontato' => 120,
+            'comune' => testComune.Nome_Comune__c,
+            'provincia' => testComune.Provincia__c,
+            'regione' => testComune.Regione__c,
+            'skipVisitCreation' => true
+        });
+
+        String invoiceDataJson = JSON.serialize(invoiceDataList);
+
+        Test.startTest();
+        Map<String, Object> result = InvoiceExcelEditorController.createInvoicesFromFlow(invoiceDataJson, testProgram.Id, testBudget.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Il risultato non deve essere null');
+
+        List<Invoice__c> createdInvoices = [
+            SELECT Id
+            FROM Invoice__c
+            WHERE Invoice_Number__c = 'TEST-SORRISO-INV-001'
+        ];
+
+        if (createdInvoices.isEmpty()) {
+            System.assert(result.containsKey('errorMessage'), 'Se la fattura non è creata, ci si aspetta un messaggio di errore');
+            return;
+        }
+
+        List<Ticket__c> createdTickets = [
+            SELECT Id, Type__c, Uses__c, Price__c, CommercialValue__c, Invoice__c
+            FROM Ticket__c
+            WHERE Invoice__c IN :createdInvoices
+        ];
+        System.assert(createdTickets.size() > 0, 'Per Sorriso devono essere creati biglietti');
+        System.assertEquals(3, createdTickets[0].Uses__c.intValue(), 'La quantità biglietti deve essere mappata da numeroVisite');
+        System.assertEquals(Decimal.valueOf('150'), createdTickets[0].CommercialValue__c, 'Il commerciale deve essere mappato da amount');
+        System.assertEquals(Decimal.valueOf('120'), createdTickets[0].Price__c, 'Lo scontato deve essere mappato da valoreScontato');
+
+        List<Visit__c> createdVisits = [
+            SELECT Id
+            FROM Visit__c
+            WHERE Invoice__c IN :createdInvoices
+        ];
+        System.assertEquals(0, createdVisits.size(), 'Nel ramo Sorriso non devono essere create visite');
+    }
     
     @IsTest
     static void testUpdateInvoicesWithPartners() {
