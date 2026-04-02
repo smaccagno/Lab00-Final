@@ -592,14 +592,6 @@
                                     <template if:false={row.isFree}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
-                                    <button 
-                                        type="button"
-                                        class="cell-clear-button"
-                                        data-field="isFree"
-                                        data-row-index={rowIndex}
-                                        onclick={clearCellContent}
-                                        title="Cancella contenuto">
-                                    </button>
                                 </td>
                                 <td class="editable-cell checkbox-cell" 
                                     data-field="noInvoiceAvailable"
@@ -611,14 +603,6 @@
                                     <template if:false={row.noInvoiceAvailable}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
-                                    <button 
-                                        type="button"
-                                        class="cell-clear-button"
-                                        data-field="noInvoiceAvailable"
-                                        data-row-index={rowIndex}
-                                        onclick={clearCellContent}
-                                        title="Cancella contenuto">
-                                    </button>
                                 </td>
                                 <!-- Colonne Visite Mediche -->
                                 <td class="editable-cell dropdown-cell" 
@@ -1193,7 +1177,6 @@
                                     <template if:false={row.noInvoiceAvailable}>
                                         <span class="checkbox-unchecked"></span>
                                     </template>
-                                    <button type="button" class="cell-clear-button" data-field="noInvoiceAvailable" data-row-index={rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                 </td>
                                 <td class="editable-cell"
                                     data-field="numeroVisite"
