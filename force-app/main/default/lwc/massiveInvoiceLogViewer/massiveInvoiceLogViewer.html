@@ -25,13 +25,13 @@
                         <div class="slds-text-body_regular">{numeroFatture}</div>
                     </div>
                     <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
-                        <div class="slds-text-title">Numero Visite</div>
-                        <div class="slds-text-body_regular">{numeroVisite}</div>
+                        <div class="slds-text-title">{detailCountLabel}</div>
+                        <div class="slds-text-body_regular">{numeroDettagli}</div>
                     </div>
                 </div>
                 
                 <template lwc:if={hasLogEntries}>
-                    <div class="slds-text-heading_small slds-m-bottom_small">Fatture e Visite Caricate</div>
+                    <div class="slds-text-heading_small slds-m-bottom_small">{detailSectionTitle}</div>
                     <div class="log-entries">
                         <template for:each={entriesWithIndex} for:item="entry">
                             <div key={entry.index} class="log-entry slds-box slds-m-bottom_small">
@@ -48,8 +48,8 @@
                                         <span class={entry.badgeClass}>
                                             {entry.status}
                                         </span>
-                                        <span lwc:if={entry.visitsCreated} class="slds-m-left_small">
-                                            ({entry.visitsCreated} visita/e)
+                                        <span lwc:if={entry.hasCreatedDetails} class="slds-m-left_small">
+                                            ({entry.createdDetailsText})
                                         </span>
                                     </div>
                                     <lightning-icon 
@@ -63,7 +63,7 @@
                                     <div class="log-entry-body slds-p-around_small">
                                         <template lwc:if={entry.visitError}>
                                             <div class="slds-m-bottom_small slds-p-around_small slds-box slds-box_x-small slds-theme_error">
-                                                <div class="slds-text-heading_small slds-m-bottom_x-small">Errori nella creazione delle visite</div>
+                                                <div class="slds-text-heading_small slds-m-bottom_x-small">{entry.detailErrorTitle}</div>
                                                 <div class="slds-text-body_small" style="white-space: pre-wrap;">{entry.visitError}</div>
                                             </div>
                                         </template>
@@ -77,7 +77,7 @@
                                         </div>
                                         <template lwc:if={entry.visitDetails}>
                                             <div class="slds-m-top_medium">
-                                                <div class="slds-text-title slds-m-bottom_x-small">Visite associate</div>
+                                                <div class="slds-text-title slds-m-bottom_x-small">{entry.detailSectionTitle}</div>
                                                             <template for:each={entry.visitDetails} for:item="visit">
                                                     <div key={visit.id} class={visit.boxClass}>
                                                         <div class="slds-grid slds-wrap slds-gutters_x-small">

@@ -329,8 +329,12 @@ public with sharing class InvoiceExcelEditorController {
             List<Map<String, Object>> invoiceResults = new List<Map<String, Object>>();
             // Mappa che collega l'indice della riga di input all'indice della fattura creata
             Map<Integer, Integer> inputRowToInvoiceIndex = new Map<Integer, Integer>();
+            // Mappa inversa: indice fattura -> indici righe input associate
+            Map<Integer, List<Integer>> invoiceIndexToInputRows = new Map<Integer, List<Integer>>();
             // Mappa che collega l'indice della fattura creata al partnerId dalla riga di input
             Map<Integer, String> invoiceIndexToPartnerId = new Map<Integer, String>();
+            // Mappa indice fattura -> allegato selezionato lato UI
+            Map<Integer, Map<String, String>> invoiceIndexToAttachmentData = new Map<Integer, Map<String, String>>();
             
             // Raggruppa le righe per numero fattura + data fattura + centro medico
             // Chiave: numeroFattura|dataFattura|centroMedico
@@ -490,6 +494,10 @@ public with sharing class InvoiceExcelEditorController {
                         // Collega tutte le righe del gruppo alla stessa fattura
                         for (Integer i : rowIndices) {
                             inputRowToInvoiceIndex.put(i, invoiceInsertIndex);
+                            if (!invoiceIndexToInputRows.containsKey(invoiceInsertIndex)) {
+                                invoiceIndexToInputRows.put(invoiceInsertIndex, new List<Integer>());
+                            }
+                            invoiceIndexToInputRows.get(invoiceInsertIndex).add(i);
                         }
                         
                         // Salva il partnerId per questa fattura
@@ -501,6 +509,22 @@ public with sharing class InvoiceExcelEditorController {
                             System.debug('partnerId salvato nella mappa invoiceIndexToPartnerId[' + invoiceInsertIndex + '] = ' + partnerId);
                         } else {
                             System.debug('ATTENZIONE: partnerId è NULL per invoiceInsertIndex ' + invoiceInsertIndex);
+                        }
+
+                        // Salva l'allegato associato alla fattura (inviato una sola volta dal frontend).
+                        String attachmentFileName = invoiceDataMap.containsKey('attachmentFileName')
+                            ? String.valueOf(invoiceDataMap.get('attachmentFileName'))
+                            : null;
+                        String attachmentBase64 = invoiceDataMap.containsKey('attachmentBase64')
+                            ? String.valueOf(invoiceDataMap.get('attachmentBase64'))
+                            : null;
+                        if (String.isNotBlank(attachmentFileName) &&
+                            String.isNotBlank(attachmentBase64) &&
+                            attachmentBase64 != 'null') {
+                            Map<String, String> attachmentData = new Map<String, String>();
+                            attachmentData.put('fileName', attachmentFileName);
+                            attachmentData.put('base64', attachmentBase64);
+                            invoiceIndexToAttachmentData.put(invoiceInsertIndex, attachmentData);
                         }
                         invoiceInsertIndex++;
                     } else {
@@ -722,6 +746,83 @@ public with sharing class InvoiceExcelEditorController {
                     } else {
                         System.debug('=== NESSUNA FATTURA DA AGGIORNARE ===');
                     }
+
+                    // Carica allegati obbligatori sulle fatture create.
+                    if (!invoiceIndexToAttachmentData.isEmpty()) {
+                        List<Integer> sortedAttachmentInvoiceIndexes = new List<Integer>(invoiceIndexToAttachmentData.keySet());
+                        sortedAttachmentInvoiceIndexes.sort();
+                        List<ContentVersion> attachmentsToInsert = new List<ContentVersion>();
+                        List<Integer> attachmentInvoiceIndexes = new List<Integer>();
+
+                        for (Integer invoiceIdx : sortedAttachmentInvoiceIndexes) {
+                            if (invoiceIdx == null || invoiceIdx < 0 || invoiceIdx >= invoicesToInsert.size()) {
+                                continue;
+                            }
+                            Map<String, String> attachmentData = invoiceIndexToAttachmentData.get(invoiceIdx);
+                            if (attachmentData == null) {
+                                continue;
+                            }
+
+                            String fileName = attachmentData.get('fileName');
+                            String base64Data = attachmentData.get('base64');
+
+                            if (String.isBlank(fileName) || String.isBlank(base64Data)) {
+                                continue;
+                            }
+
+                            try {
+                                ContentVersion cv = new ContentVersion();
+                                cv.Title = deriveAttachmentTitle(fileName);
+                                cv.PathOnClient = fileName;
+                                cv.FirstPublishLocationId = invoicesToInsert[invoiceIdx].Id;
+                                cv.VersionData = EncodingUtil.base64Decode(base64Data);
+                                attachmentsToInsert.add(cv);
+                                attachmentInvoiceIndexes.add(invoiceIdx);
+                            } catch (Exception ex) {
+                                String attachmentErr = 'Errore nel caricamento allegato: ' + getDescriptiveErrorMessage(ex);
+                                errors.add(attachmentErr);
+                                if (invoiceIndexToInputRows.containsKey(invoiceIdx)) {
+                                    for (Integer inputRowIndex : invoiceIndexToInputRows.get(invoiceIdx)) {
+                                        if (inputRowIndex < invoiceResults.size()) {
+                                            Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                                            String existingError = (String) invoiceResult.get('errorMessage');
+                                            invoiceResult.put('status', 'error');
+                                            invoiceResult.put('errorMessage',
+                                                String.isNotBlank(existingError) ? (existingError + ' | ' + attachmentErr) : attachmentErr
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!attachmentsToInsert.isEmpty()) {
+                            Database.SaveResult[] attachmentInsertResults = Database.insert(attachmentsToInsert, false);
+                            for (Integer i = 0; i < attachmentInsertResults.size(); i++) {
+                                if (attachmentInsertResults[i].isSuccess()) {
+                                    continue;
+                                }
+                                Integer invoiceIdx = attachmentInvoiceIndexes[i];
+                                String dmlError = 'Errore nel caricamento allegato';
+                                if (!attachmentInsertResults[i].getErrors().isEmpty()) {
+                                    dmlError += ': ' + attachmentInsertResults[i].getErrors()[0].getMessage();
+                                }
+                                errors.add(dmlError);
+                                if (invoiceIndexToInputRows.containsKey(invoiceIdx)) {
+                                    for (Integer inputRowIndex : invoiceIndexToInputRows.get(invoiceIdx)) {
+                                        if (inputRowIndex < invoiceResults.size()) {
+                                            Map<String, Object> invoiceResult = invoiceResults[inputRowIndex];
+                                            String existingError = (String) invoiceResult.get('errorMessage');
+                                            invoiceResult.put('status', 'error');
+                                            invoiceResult.put('errorMessage',
+                                                String.isNotBlank(existingError) ? (existingError + ' | ' + dmlError) : dmlError
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     
                     // Processa l'allineamento in modo asincrono se ci sono programmi da allineare
                     if (!programsToAlignAfter.isEmpty()) {
@@ -768,7 +869,13 @@ public with sharing class InvoiceExcelEditorController {
                             
                             invoiceResult.put('invoiceId', invoiceId);
                             invoiceResult.put('invoiceName', invoiceDetail != null ? invoiceDetail.Name : null);
-                            invoiceResult.put('status', 'success');
+                            String currentError = invoiceResult.containsKey('errorMessage') ? String.valueOf(invoiceResult.get('errorMessage')) : '';
+                            Boolean hasBlockingError = String.isNotBlank(currentError) && currentError != 'null';
+                            if (hasBlockingError) {
+                                invoiceResult.put('status', 'error');
+                            } else {
+                                invoiceResult.put('status', 'success');
+                            }
                             
                             // Aggiungi tutti i dettagli della fattura
                             if (invoiceDetail != null) {
@@ -1295,26 +1402,36 @@ public with sharing class InvoiceExcelEditorController {
     
     /**
      * Crea un record MassiveInvoiceLog__c con il riepilogo completo del caricamento massivo.
-     * Struttura identica alla tabella Summary: raggruppata per fattura con visite (create e fallite).
+     * Supporta sia Tempo Sospeso (fatture + visite) sia Sorriso Sospeso (fatture + biglietti).
      */
     private static void createMassiveInvoiceLog(List<Map<String, Object>> invoiceResults, List<Object> invoiceDataList, Integer invoiceCount, List<String> errors) {
-        Integer visitCount = 0;
-        for (Map<String, Object> ir : invoiceResults) {
-            Object vc = ir.get('visitsCreated');
-            if (vc != null && vc instanceof Integer) {
-                visitCount += (Integer) vc;
+        Boolean isSorrisoLog = false;
+        for (Object rowObj : invoiceDataList) {
+            if (rowObj instanceof Map<String, Object> && isSorrisoTicketRow((Map<String, Object>) rowObj)) {
+                isSorrisoLog = true;
+                break;
             }
         }
-        
-        // Raggruppa per invoiceNumber (stessa logica di organizedInvoices)
+
+        Integer detailCount = 0;
+        for (Map<String, Object> ir : invoiceResults) {
+            Integer created = toIntegerSafe(ir.get('visitsCreated'));
+            if (created != null) detailCount += created;
+        }
+
         Map<String, Map<String, Object>> invoiceMap = new Map<String, Map<String, Object>>();
         for (Integer i = 0; i < invoiceResults.size(); i++) {
             Map<String, Object> ir = invoiceResults[i];
-            String invoiceNumber = ir.containsKey('invoiceNumber') && ir.get('invoiceNumber') != null ? 
-                String.valueOf(ir.get('invoiceNumber')) : 'Senza Numero';
-            
+            String invoiceNumber = ir.containsKey('invoiceNumber') && ir.get('invoiceNumber') != null
+                ? String.valueOf(ir.get('invoiceNumber'))
+                : 'Senza Numero';
+            Map<String, Object> inputData = (i < invoiceDataList.size() && invoiceDataList[i] instanceof Map<String, Object>)
+                ? (Map<String, Object>) invoiceDataList[i]
+                : new Map<String, Object>();
+
             if (!invoiceMap.containsKey(invoiceNumber)) {
                 Map<String, Object> inv = new Map<String, Object>();
+                inv.put('isSorrisoSospeso', isSorrisoLog);
                 inv.put('invoiceNumber', invoiceNumber);
                 inv.put('invoiceId', ir.get('invoiceId'));
                 inv.put('invoiceName', ir.get('invoiceName'));
@@ -1332,110 +1449,282 @@ public with sharing class InvoiceExcelEditorController {
                 inv.put('localita', ir.get('localita'));
                 inv.put('status', ir.get('status'));
                 inv.put('errorMessage', ir.get('errorMessage'));
-                inv.put('visits', new List<Map<String, Object>>());
-                inv.put('totalVisitsAmount', 0);
-                inv.put('totalVisitsMinutes', 0);
-                inv.put('totalVisitsNumber', 0);
+
+                if (isSorrisoLog) {
+                    inv.put('tickets', new List<Map<String, Object>>());
+                    inv.put('totalTicketsAmount', 0);
+                    inv.put('totalTicketsNumber', 0);
+                    inv.put('totalTicketsMinutes', 0);
+                    inv.put('ticketsCreated', 0);
+                    inv.put('ticketsFailed', 0);
+                    inv.put('ticketError', null);
+                    inv.put('tipologia', toStringSafe(inputData.get('tipologia')));
+                    inv.put('fornitore', toStringSafe(inputData.get('fornitore')));
+                    inv.put(
+                        'noInvoiceAvailable',
+                        inputData.containsKey('noInvoiceAvailable') &&
+                        Boolean.valueOf(String.valueOf(inputData.get('noInvoiceAvailable')))
+                    );
+                    inv.put('totalDiscountedAmount', 0);
+                } else {
+                    inv.put('visits', new List<Map<String, Object>>());
+                    inv.put('totalVisitsAmount', 0);
+                    inv.put('totalVisitsMinutes', 0);
+                    inv.put('totalVisitsNumber', 0);
+                    inv.put('visitsCreated', 0);
+                    inv.put('visitsFailed', 0);
+                    inv.put('visitError', null);
+                }
+
                 invoiceMap.put(invoiceNumber, inv);
             }
-            
+
             Map<String, Object> invoiceGroup = invoiceMap.get(invoiceNumber);
             Decimal totalCost = toDecimalSafe(ir.get('totalCost'));
             Integer totalMinutes = toIntegerSafe(ir.get('totalMinutes'));
             Integer totalQuantity = toIntegerSafe(ir.get('totalQuantity'));
-            invoiceGroup.put('totalVisitsAmount', (Decimal)invoiceGroup.get('totalVisitsAmount') + (totalCost != null ? totalCost : 0));
-            invoiceGroup.put('totalVisitsMinutes', (Integer)invoiceGroup.get('totalVisitsMinutes') + (totalMinutes != null ? totalMinutes : 0));
-            invoiceGroup.put('totalVisitsNumber', (Integer)invoiceGroup.get('totalVisitsNumber') + (totalQuantity != null ? totalQuantity : 0));
-            
-            List<Map<String, Object>> visits = (List<Map<String, Object>>) invoiceGroup.get('visits');
-            Object visitDetailsObj = ir.get('visitDetails');
-            String visitError = ir.containsKey('visitError') && ir.get('visitError') != null ? String.valueOf(ir.get('visitError')) : null;
-            Boolean addedVisitFromRow = false;
-            
-            if (visitDetailsObj != null && visitDetailsObj instanceof List<Object>) {
-                for (Object vObj : (List<Object>) visitDetailsObj) {
-                    if (vObj instanceof Map<String, Object>) {
-                        Map<String, Object> v = (Map<String, Object>) vObj;
-                        Map<String, Object> visitEntry = new Map<String, Object>();
-                        visitEntry.put('id', v.get('id'));
-                        visitEntry.put('visitId', v.get('id'));
-                        visitEntry.put('name', v.get('name'));
-                        visitEntry.put('visitName', v.get('name'));
-                        visitEntry.put('visitType', v.get('visitType'));
-                        visitEntry.put('tipoVisita', v.get('visitType'));
-                        visitEntry.put('beneficiaryType', v.get('beneficiaryType'));
-                        visitEntry.put('localita', v.get('localita'));
-                        visitEntry.put('dataVisita', v.get('dataVisita'));
-                        visitEntry.put('comune', v.get('comune'));
-                        visitEntry.put('provincia', v.get('provincia'));
-                        visitEntry.put('regione', v.get('regione'));
-                        visitEntry.put('numeroVisite', v.get('numeroVisite'));
-                        visitEntry.put('totaleMinuti', v.get('totaleMinuti'));
-                        visitEntry.put('amount', v.get('amount'));
-                        visitEntry.put('amountFormatted', v.get('amountFormatted'));
-                        visitEntry.put('saveStatus', true);
-                        visitEntry.put('saveStatusSuccess', true);
-                        visits.add(visitEntry);
-                        addedVisitFromRow = true;
+            String detailError = ir.containsKey('visitError') && ir.get('visitError') != null ? String.valueOf(ir.get('visitError')) : null;
+            Integer createdCountForRow = toIntegerSafe(ir.get('visitsCreated'));
+            Integer failedCountForRow = toIntegerSafe(ir.get('visitsFailed'));
+
+            if (isSorrisoLog) {
+                Decimal runningAmount = toDecimalSafe(invoiceGroup.get('totalTicketsAmount'));
+                Integer runningMinutes = toIntegerSafe(invoiceGroup.get('totalTicketsMinutes'));
+                Integer runningQuantity = toIntegerSafe(invoiceGroup.get('totalTicketsNumber'));
+                invoiceGroup.put('totalTicketsAmount', (runningAmount != null ? runningAmount : 0) + (totalCost != null ? totalCost : 0));
+                invoiceGroup.put('totalTicketsMinutes', (runningMinutes != null ? runningMinutes : 0) + (totalMinutes != null ? totalMinutes : 0));
+                invoiceGroup.put('totalTicketsNumber', (runningQuantity != null ? runningQuantity : 0) + (totalQuantity != null ? totalQuantity : 0));
+
+                Decimal rowAmount = toDecimalSafe(inputData.get('amount'));
+                Decimal rowDiscounted = toDecimalSafe(inputData.get('valoreScontato'));
+                Decimal effectiveDiscounted = rowDiscounted != null ? rowDiscounted : rowAmount;
+                Decimal runningDiscounted = toDecimalSafe(invoiceGroup.get('totalDiscountedAmount'));
+                invoiceGroup.put('totalDiscountedAmount', (runningDiscounted != null ? runningDiscounted : 0) + (effectiveDiscounted != null ? effectiveDiscounted : 0));
+
+                Integer runningCreated = toIntegerSafe(invoiceGroup.get('ticketsCreated'));
+                Integer runningFailed = toIntegerSafe(invoiceGroup.get('ticketsFailed'));
+                invoiceGroup.put('ticketsCreated', (runningCreated != null ? runningCreated : 0) + (createdCountForRow != null ? createdCountForRow : 0));
+                invoiceGroup.put('ticketsFailed', (runningFailed != null ? runningFailed : 0) + (failedCountForRow != null ? failedCountForRow : 0));
+                invoiceGroup.put('ticketError', appendErrorMessage((String) invoiceGroup.get('ticketError'), detailError));
+
+                String rowTipologia = toStringSafe(inputData.get('tipologia'));
+                String rowFornitore = toStringSafe(inputData.get('fornitore'));
+                if (String.isBlank(toStringSafe(invoiceGroup.get('tipologia'))) && String.isNotBlank(rowTipologia)) {
+                    invoiceGroup.put('tipologia', rowTipologia);
+                }
+                if (String.isBlank(toStringSafe(invoiceGroup.get('fornitore'))) && String.isNotBlank(rowFornitore)) {
+                    invoiceGroup.put('fornitore', rowFornitore);
+                }
+                Boolean rowNoInvoice = inputData.containsKey('noInvoiceAvailable') &&
+                    Boolean.valueOf(String.valueOf(inputData.get('noInvoiceAvailable')));
+                Boolean currentNoInvoice = invoiceGroup.containsKey('noInvoiceAvailable') &&
+                    Boolean.valueOf(String.valueOf(invoiceGroup.get('noInvoiceAvailable')));
+                invoiceGroup.put('noInvoiceAvailable', currentNoInvoice || rowNoInvoice);
+            } else {
+                Decimal runningAmount = toDecimalSafe(invoiceGroup.get('totalVisitsAmount'));
+                Integer runningMinutes = toIntegerSafe(invoiceGroup.get('totalVisitsMinutes'));
+                Integer runningQuantity = toIntegerSafe(invoiceGroup.get('totalVisitsNumber'));
+                invoiceGroup.put('totalVisitsAmount', (runningAmount != null ? runningAmount : 0) + (totalCost != null ? totalCost : 0));
+                invoiceGroup.put('totalVisitsMinutes', (runningMinutes != null ? runningMinutes : 0) + (totalMinutes != null ? totalMinutes : 0));
+                invoiceGroup.put('totalVisitsNumber', (runningQuantity != null ? runningQuantity : 0) + (totalQuantity != null ? totalQuantity : 0));
+
+                Integer runningCreated = toIntegerSafe(invoiceGroup.get('visitsCreated'));
+                Integer runningFailed = toIntegerSafe(invoiceGroup.get('visitsFailed'));
+                invoiceGroup.put('visitsCreated', (runningCreated != null ? runningCreated : 0) + (createdCountForRow != null ? createdCountForRow : 0));
+                invoiceGroup.put('visitsFailed', (runningFailed != null ? runningFailed : 0) + (failedCountForRow != null ? failedCountForRow : 0));
+                invoiceGroup.put('visitError', appendErrorMessage((String) invoiceGroup.get('visitError'), detailError));
+            }
+
+            List<Map<String, Object>> details = isSorrisoLog
+                ? (List<Map<String, Object>>) invoiceGroup.get('tickets')
+                : (List<Map<String, Object>>) invoiceGroup.get('visits');
+            Object detailRowsObj = ir.get('visitDetails');
+            Boolean addedDetailFromRow = false;
+
+            if (detailRowsObj != null && detailRowsObj instanceof List<Object>) {
+                for (Object dObj : (List<Object>) detailRowsObj) {
+                    if (!(dObj instanceof Map<String, Object>)) continue;
+                    Map<String, Object> d = (Map<String, Object>) dObj;
+                    Boolean detailSuccess = d.containsKey('saveStatusSuccess')
+                        ? Boolean.valueOf(String.valueOf(d.get('saveStatusSuccess')))
+                        : true;
+
+                    String recordId = d.containsKey('id') && d.get('id') != null ? String.valueOf(d.get('id')) : null;
+                    Map<String, Object> detailEntry = new Map<String, Object>();
+                    detailEntry.put('id', recordId);
+                    detailEntry.put('name', d.get('name'));
+                    detailEntry.put('localita', d.get('localita'));
+                    detailEntry.put('comune', d.get('comune'));
+                    detailEntry.put('provincia', d.get('provincia'));
+                    detailEntry.put('regione', d.get('regione'));
+                    detailEntry.put('saveStatus', true);
+                    detailEntry.put('saveStatusSuccess', detailSuccess);
+                    detailEntry.put('saveErrorMessage', d.get('saveErrorMessage'));
+
+                    if (isSorrisoLog) {
+                        String showDatetime = toStringSafe(d.get('showDatetime'));
+                        String defaultTipologia = toStringSafe(inputData.get('tipologia'));
+                        String defaultFornitore = toStringSafe(inputData.get('fornitore'));
+                        String defaultNomeSpettacolo = toStringSafe(inputData.get('nomeSpettacolo'));
+                        String defaultTipologiaSpettacolo = toStringSafe(inputData.get('tipologiaSpettacolo'));
+                        String defaultDataSpettacolo = toStringSafe(inputData.get('dataSpettacolo'));
+                        String defaultOraSpettacolo = toStringSafe(inputData.get('oraSpettacolo'));
+
+                        Decimal amountValue = toDecimalSafe(d.get('amount'));
+                        if (amountValue == null) amountValue = toDecimalSafe(inputData.get('amount'));
+                        Decimal discountedValue = toDecimalSafe(d.get('discountedAmount'));
+                        if (discountedValue == null) discountedValue = toDecimalSafe(inputData.get('valoreScontato'));
+                        if (discountedValue == null) discountedValue = amountValue;
+
+                        String ticketType = toStringSafe(d.get('ticketType'));
+                        if (String.isBlank(ticketType)) ticketType = toStringSafe(d.get('visitType'));
+                        if (String.isBlank(ticketType)) ticketType = defaultTipologia;
+
+                        String showType = toStringSafe(d.get('showType'));
+                        if (String.isBlank(showType)) showType = defaultTipologiaSpettacolo;
+
+                        String showName = toStringSafe(d.get('showName'));
+                        if (String.isBlank(showName)) showName = defaultNomeSpettacolo;
+
+                        String dataSpettacolo = extractDateFromDateTimeString(showDatetime);
+                        if (String.isBlank(dataSpettacolo)) dataSpettacolo = defaultDataSpettacolo;
+                        String oraSpettacolo = extractTimeFromDateTimeString(showDatetime);
+                        if (String.isBlank(oraSpettacolo)) oraSpettacolo = defaultOraSpettacolo;
+
+                        detailEntry.put('ticketId', recordId);
+                        detailEntry.put('ticketName', d.get('name'));
+                        detailEntry.put('tipologia', ticketType);
+                        detailEntry.put('fornitore', defaultFornitore);
+                        detailEntry.put('nomeSpettacolo', showName);
+                        detailEntry.put('tipologiaSpettacolo', showType);
+                        detailEntry.put('dataSpettacolo', dataSpettacolo);
+                        detailEntry.put('oraSpettacolo', oraSpettacolo);
+                        detailEntry.put(
+                            'noInvoiceAvailable',
+                            inputData.containsKey('noInvoiceAvailable') &&
+                            Boolean.valueOf(String.valueOf(inputData.get('noInvoiceAvailable')))
+                        );
+                        detailEntry.put('numeroBeneficiari', d.get('numeroVisite'));
+                        detailEntry.put('amount', amountValue);
+                        detailEntry.put('amountFormatted', formatCurrencyForLog(amountValue));
+                        detailEntry.put('valoreScontato', discountedValue);
+                        detailEntry.put('valoreScontatoFormatted', formatCurrencyForLog(discountedValue));
+                    } else {
+                        detailEntry.put('visitId', recordId);
+                        detailEntry.put('visitName', d.get('name'));
+                        detailEntry.put('visitType', d.get('visitType'));
+                        detailEntry.put('tipoVisita', d.get('visitType'));
+                        detailEntry.put('beneficiaryType', d.get('beneficiaryType'));
+                        detailEntry.put('dataVisita', d.get('dataVisita'));
+                        detailEntry.put('numeroVisite', d.get('numeroVisite'));
+                        detailEntry.put('totaleMinuti', d.get('totaleMinuti'));
+                        detailEntry.put('amount', d.get('amount'));
+                        detailEntry.put('amountFormatted', d.get('amountFormatted'));
                     }
+
+                    details.add(detailEntry);
+                    addedDetailFromRow = true;
                 }
             }
-            
-            // Se c'è un errore visita ma nessuna visita creata per questa riga, aggiungi la visita fallita con dati input
-            if (String.isNotBlank(visitError) && !addedVisitFromRow && i < invoiceDataList.size()) {
+
+            if (String.isNotBlank(detailError) && !addedDetailFromRow && i < invoiceDataList.size()) {
                 Object rowObj = invoiceDataList[i];
                 if (rowObj instanceof Map<String, Object>) {
-                    Map<String, Object> inputData = (Map<String, Object>) rowObj;
-                    Map<String, Object> failedVisit = new Map<String, Object>();
-                    failedVisit.put('id', 'failed-' + i);
-                    failedVisit.put('visitId', null);
-                    failedVisit.put('name', null);
-                    failedVisit.put('visitName', null);
-                    failedVisit.put('tipoVisita', inputData.get('tipoVisita'));
-                    failedVisit.put('visitType', inputData.get('tipoVisita'));
-                    failedVisit.put('beneficiaryType', inputData.get('beneficiaryType'));
-                    failedVisit.put('dataVisita', inputData.get('dataVisita'));
-                    failedVisit.put('comune', inputData.get('comune'));
-                    failedVisit.put('provincia', inputData.get('provincia'));
-                    failedVisit.put('regione', inputData.get('regione'));
-                    failedVisit.put('numeroVisite', inputData.get('numeroVisite'));
-                    failedVisit.put('totaleMinuti', inputData.get('totaleMinuti'));
-                    Object amt = inputData.get('amount');
-                    failedVisit.put('amount', amt);
-                    failedVisit.put('amountFormatted', amt != null ? String.valueOf(amt) : '-');
-                    failedVisit.put('localita', buildLocalitaFromInput(inputData));
-                    failedVisit.put('saveStatus', true);
-                    failedVisit.put('saveStatusSuccess', false);
-                    failedVisit.put('saveErrorMessage', visitError);
-                    visits.add(failedVisit);
+                    Map<String, Object> inputRow = (Map<String, Object>) rowObj;
+                    Map<String, Object> failedDetail = new Map<String, Object>();
+                    failedDetail.put('id', 'failed-' + i);
+                    failedDetail.put('name', null);
+                    failedDetail.put('localita', buildLocalitaFromInput(inputRow));
+                    failedDetail.put('comune', inputRow.get('comune'));
+                    failedDetail.put('provincia', inputRow.get('provincia'));
+                    failedDetail.put('regione', inputRow.get('regione'));
+                    failedDetail.put('saveStatus', true);
+                    failedDetail.put('saveStatusSuccess', false);
+                    failedDetail.put('saveErrorMessage', detailError);
+
+                    if (isSorrisoLog) {
+                        Decimal failedAmount = toDecimalSafe(inputRow.get('amount'));
+                        Decimal failedDiscounted = toDecimalSafe(inputRow.get('valoreScontato'));
+                        if (failedDiscounted == null) failedDiscounted = failedAmount;
+                        failedDetail.put('ticketId', null);
+                        failedDetail.put('ticketName', null);
+                        failedDetail.put('tipologia', inputRow.get('tipologia'));
+                        failedDetail.put('fornitore', inputRow.get('fornitore'));
+                        failedDetail.put('nomeSpettacolo', inputRow.get('nomeSpettacolo'));
+                        failedDetail.put('tipologiaSpettacolo', inputRow.get('tipologiaSpettacolo'));
+                        failedDetail.put('dataSpettacolo', inputRow.get('dataSpettacolo'));
+                        failedDetail.put('oraSpettacolo', inputRow.get('oraSpettacolo'));
+                        failedDetail.put(
+                            'noInvoiceAvailable',
+                            inputRow.containsKey('noInvoiceAvailable') &&
+                            Boolean.valueOf(String.valueOf(inputRow.get('noInvoiceAvailable')))
+                        );
+                        failedDetail.put('numeroBeneficiari', inputRow.get('numeroVisite'));
+                        failedDetail.put('amount', failedAmount);
+                        failedDetail.put('amountFormatted', formatCurrencyForLog(failedAmount));
+                        failedDetail.put('valoreScontato', failedDiscounted);
+                        failedDetail.put('valoreScontatoFormatted', formatCurrencyForLog(failedDiscounted));
+                    } else {
+                        failedDetail.put('visitId', null);
+                        failedDetail.put('visitName', null);
+                        failedDetail.put('tipoVisita', inputRow.get('tipoVisita'));
+                        failedDetail.put('visitType', inputRow.get('tipoVisita'));
+                        failedDetail.put('beneficiaryType', inputRow.get('beneficiaryType'));
+                        failedDetail.put('dataVisita', inputRow.get('dataVisita'));
+                        failedDetail.put('numeroVisite', inputRow.get('numeroVisite'));
+                        failedDetail.put('totaleMinuti', inputRow.get('totaleMinuti'));
+                        Decimal failedAmount = toDecimalSafe(inputRow.get('amount'));
+                        failedDetail.put('amount', failedAmount);
+                        failedDetail.put('amountFormatted', formatCurrencyForLog(failedAmount));
+                    }
+
+                    details.add(failedDetail);
                 }
             }
-            
+
             if (ir.get('partnerName') != null && invoiceGroup.get('partnerName') == null) {
                 invoiceGroup.put('partnerName', ir.get('partnerName'));
                 invoiceGroup.put('partner', ir.get('partnerName'));
             }
         }
-        
-        // Formatta e serializza
+
         List<Map<String, Object>> logData = new List<Map<String, Object>>();
         for (Map<String, Object> invGroup : invoiceMap.values()) {
-            Decimal amt = (Decimal) invGroup.get('totalVisitsAmount');
-            invGroup.put('amountFormatted', formatCurrencyForLog(amt));
-            invGroup.put('totalVisitsMinutesFormatted', String.valueOf(invGroup.get('totalVisitsMinutes')));
-            invGroup.put('totalVisitsNumberFormatted', String.valueOf(invGroup.get('totalVisitsNumber')));
-            invGroup.put('visitsContentRowKey', 'visits-' + invGroup.get('invoiceNumber'));
+            if (invGroup.containsKey('isSorrisoSospeso') && Boolean.valueOf(String.valueOf(invGroup.get('isSorrisoSospeso')))) {
+                Decimal totalAmount = toDecimalSafe(invGroup.get('totalTicketsAmount'));
+                totalAmount = totalAmount != null ? totalAmount : 0;
+                invGroup.put('amountFormatted', formatCurrencyForLog(totalAmount));
+                invGroup.put('totalTicketsMinutesFormatted', String.valueOf(invGroup.get('totalTicketsMinutes')));
+                invGroup.put('totalTicketsNumberFormatted', String.valueOf(invGroup.get('totalTicketsNumber')));
+                invGroup.put('totalBeneficiari', invGroup.get('totalTicketsNumber'));
+                invGroup.put('totalBeneficiariFormatted', String.valueOf(invGroup.get('totalTicketsNumber')));
+                Decimal totalDiscounted = toDecimalSafe(invGroup.get('totalDiscountedAmount'));
+                if (totalDiscounted == null || (totalDiscounted == 0 && totalAmount != 0)) {
+                    totalDiscounted = totalAmount;
+                }
+                invGroup.put('valoreScontato', totalDiscounted);
+                invGroup.put('valoreScontatoFormatted', formatCurrencyForLog(totalDiscounted));
+                invGroup.put('ticketsContentRowKey', 'tickets-' + invGroup.get('invoiceNumber'));
+            } else {
+                Decimal totalAmount = toDecimalSafe(invGroup.get('totalVisitsAmount'));
+                totalAmount = totalAmount != null ? totalAmount : 0;
+                invGroup.put('amountFormatted', formatCurrencyForLog(totalAmount));
+                invGroup.put('totalVisitsMinutesFormatted', String.valueOf(invGroup.get('totalVisitsMinutes')));
+                invGroup.put('totalVisitsNumberFormatted', String.valueOf(invGroup.get('totalVisitsNumber')));
+                invGroup.put('visitsContentRowKey', 'visits-' + invGroup.get('invoiceNumber'));
+            }
             logData.add(invGroup);
         }
-        
+
         MassiveInvoiceLog__c logRecord = new MassiveInvoiceLog__c();
         logRecord.Data__c = DateTime.now();
         logRecord.Utente__c = UserInfo.getUserId();
         logRecord.Numero_Fatture__c = invoiceCount;
-        logRecord.Numero_Visite__c = visitCount;
+        // Campo storico usato anche per Sorriso: contiene il totale dettagli creati (visite/biglietti).
+        logRecord.Numero_Visite__c = detailCount;
         logRecord.Log__c = JSON.serializePretty(logData);
         logRecord.Errori__c = errors != null && !errors.isEmpty() ? String.join(errors, '\n') : null;
-        
+
         insert logRecord;
     }
     
@@ -1449,10 +1738,63 @@ public with sharing class InvoiceExcelEditorController {
         }
         return String.isNotBlank(reg) ? city + ' (' + reg + ')' : city;
     }
+
+    private static String appendErrorMessage(String existing, String toAppend) {
+        if (String.isBlank(toAppend)) {
+            return existing;
+        }
+        if (String.isBlank(existing)) {
+            return toAppend;
+        }
+        if (existing.contains(toAppend)) {
+            return existing;
+        }
+        return existing + '; ' + toAppend;
+    }
     
     private static String formatCurrencyForLog(Decimal value) {
         if (value == null) return '-';
         return value.setScale(2).format();
+    }
+
+    private static String extractDateFromDateTimeString(String rawDateTime) {
+        if (String.isBlank(rawDateTime)) return '';
+        String normalized = rawDateTime.replace('T', ' ').trim();
+
+        if (normalized.length() >= 10) {
+            String candidate = normalized.substring(0, 10);
+            if (parseDate(candidate) != null) {
+                return candidate;
+            }
+        }
+
+        Integer firstSpace = normalized.indexOf(' ');
+        if (firstSpace > 0) {
+            String candidate = normalized.substring(0, firstSpace);
+            if (parseDate(candidate) != null) {
+                return candidate;
+            }
+        }
+
+        return '';
+    }
+
+    private static String extractTimeFromDateTimeString(String rawDateTime) {
+        if (String.isBlank(rawDateTime)) return '';
+        String normalized = rawDateTime.replace('T', ' ').trim();
+        Integer firstSpace = normalized.indexOf(' ');
+        String candidate = firstSpace > -1 ? normalized.substring(firstSpace + 1) : normalized;
+        if (String.isBlank(candidate)) return '';
+
+        Integer dotIndex = candidate.indexOf('.');
+        if (dotIndex > -1) {
+            candidate = candidate.substring(0, dotIndex);
+        }
+        candidate = candidate.replace('Z', '');
+        if (candidate.length() >= 5 && candidate.substring(2, 3) == ':') {
+            return candidate.substring(0, 5);
+        }
+        return '';
     }
     
     /**
@@ -3049,6 +3391,16 @@ public with sharing class InvoiceExcelEditorController {
         if (obj == null) return '';
         String s = String.valueOf(obj);
         return String.isBlank(s) || s == 'null' ? '' : s.trim();
+    }
+
+    private static String deriveAttachmentTitle(String fileName) {
+        String safeFileName = String.isBlank(fileName) ? 'Allegato Fattura' : fileName.trim();
+        Integer dotIndex = safeFileName.lastIndexOf('.');
+        String title = dotIndex > 0 ? safeFileName.substring(0, dotIndex) : safeFileName;
+        if (String.isBlank(title)) {
+            title = 'Allegato Fattura';
+        }
+        return title.length() > 255 ? title.substring(0, 255) : title;
     }
     
     /**

@@ -8,7 +8,7 @@ public with sharing class MassiveInvoiceLogController {
         Integer limitVal = (limitCount != null && limitCount > 0) ? Math.min(limitCount, 100) : 50;
         
         List<MassiveInvoiceLog__c> logs = [
-            SELECT Id, Name, Data__c, Utente__r.Name, Numero_Fatture__c, Numero_Visite__c
+            SELECT Id, Name, Data__c, Utente__r.Name, Numero_Fatture__c, Numero_Visite__c, Log__c
             FROM MassiveInvoiceLog__c
             ORDER BY Data__c DESC
             LIMIT :limitVal
@@ -16,16 +16,19 @@ public with sharing class MassiveInvoiceLogController {
         
         List<Map<String, Object>> result = new List<Map<String, Object>>();
         for (MassiveInvoiceLog__c log : logs) {
+            Boolean isSorrisoLog = isSorrisoLogPayload(log.Log__c);
+            String detailsLabel = isSorrisoLog ? 'biglietti' : 'visite';
             Map<String, Object> item = new Map<String, Object>();
             item.put('id', log.Id);
             item.put('name', log.Name);
             item.put('label', log.Name + ' - ' + (log.Data__c != null ? log.Data__c.format('dd/MM/yyyy HH:mm') : '') + 
                 ' (' + (log.Numero_Fatture__c != null ? String.valueOf(log.Numero_Fatture__c.intValue()) : '0') + ' fatture, ' +
-                (log.Numero_Visite__c != null ? String.valueOf(log.Numero_Visite__c.intValue()) : '0') + ' visite)');
+                (log.Numero_Visite__c != null ? String.valueOf(log.Numero_Visite__c.intValue()) : '0') + ' ' + detailsLabel + ')');
             item.put('data', log.Data__c != null ? String.valueOf(log.Data__c) : '');
             item.put('utente', log.Utente__r != null ? log.Utente__r.Name : '');
             item.put('numeroFatture', log.Numero_Fatture__c != null ? log.Numero_Fatture__c.intValue() : 0);
             item.put('numeroVisite', log.Numero_Visite__c != null ? log.Numero_Visite__c.intValue() : 0);
+            item.put('isSorrisoLog', isSorrisoLog);
             result.add(item);
         }
         return result;
@@ -59,8 +62,20 @@ public with sharing class MassiveInvoiceLogController {
         result.put('utente', log.Utente__r != null ? log.Utente__r.Name : '');
         result.put('numeroFatture', log.Numero_Fatture__c != null ? log.Numero_Fatture__c.intValue() : 0);
         result.put('numeroVisite', log.Numero_Visite__c != null ? log.Numero_Visite__c.intValue() : 0);
+        result.put('isSorrisoLog', isSorrisoLogPayload(log.Log__c));
         result.put('logJson', log.Log__c);
         result.put('errori', log.Errori__c);
         return result;
+    }
+
+    private static Boolean isSorrisoLogPayload(String logJson) {
+        if (String.isBlank(logJson)) return false;
+        return logJson.contains('"isSorrisoSospeso": true') ||
+               logJson.contains('"isSorrisoSospeso" : true') ||
+               logJson.contains('"tickets"') ||
+               logJson.contains('"ticketId"') ||
+               logJson.contains('"ticketName"') ||
+               logJson.contains('"tipologiaSpettacolo"') ||
+               logJson.contains('"ticketType"');
     }
 }

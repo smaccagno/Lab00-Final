@@ -1411,7 +1411,7 @@
                             onclick={saveAllInvoices}
                             variant="brand"
                             icon-name="utility:save"
-                            disabled={hasValidationErrors}>
+                            disabled={isSaveDisabled}>
                         </lightning-button>
                         <lightning-button 
                             label="Torna alla Tabella" 
@@ -1434,6 +1434,11 @@
                         <template if:true={hasValidationErrors}>
                             <div class="slds-text-color_error slds-text-body_small">
                                 ⚠️ Ci sono errori di validazione. Correggili prima di salvare.
+                            </div>
+                        </template>
+                        <template if:true={hasMissingInvoiceAttachments}>
+                            <div class="slds-text-color_error slds-text-body_small slds-m-top_x-small">
+                                ⚠️ Carica un allegato per ogni fattura prima del salvataggio.
                             </div>
                         </template>
                     </div>
@@ -1477,6 +1482,9 @@
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Totale Numero Visite">Totale Numero Visite</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Allegato">Allegato</div>
                                 </th>
                                 <th scope="col">
                                     <div class="slds-truncate" title="Visite Associate">Visite Associate</div>
@@ -1596,6 +1604,35 @@
                                     <td data-label="Totale Numero Visite">
                                         <div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div>
                                     </td>
+                                    <td data-label="Allegato">
+                                        <div class="slds-grid slds-grid_vertical slds-grid_vertical-align-center">
+                                            <div class="slds-col">
+                                                <lightning-button-icon
+                                                    icon-name="utility:upload"
+                                                    variant="border-filled"
+                                                    alternative-text="Carica allegato"
+                                                    title="Carica allegato"
+                                                    data-row-index={invoiceIndex}
+                                                    onclick={triggerInvoiceAttachmentPicker}>
+                                                </lightning-button-icon>
+                                                <input
+                                                    type="file"
+                                                    class="invoice-attachment-input"
+                                                    style="display:none"
+                                                    data-row-index={invoiceIndex}
+                                                    data-invoice-number={invoiceGroup.invoice.invoiceNumber}
+                                                    onchange={handleInvoiceAttachmentSelected} />
+                                            </div>
+                                            <div class="slds-col slds-truncate slds-text-body_small slds-m-top_xx-small">
+                                                <template if:true={invoiceGroup.invoice.attachmentFileName}>
+                                                    {invoiceGroup.invoice.attachmentFileName}
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.attachmentFileName}>
+                                                    Nessun allegato
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td data-label="Visite Associate">
                                         <template if:true={invoiceGroup.visits.length}>
                                             <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
@@ -1659,7 +1696,7 @@
                                 <template if:true={invoiceGroup.visits.length}>
                                     <template if:true={invoiceGroup.expanded}>
                                         <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="12" class="slds-p-around_none">
+                                            <td colspan="13" class="slds-p-around_none">
                                                 <div class="slds-m-around_small visits-content">
                                                     <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
                                                         <thead>
@@ -1847,6 +1884,7 @@
                                 <th scope="col"><div class="slds-truncate" title="Valore Commerciale Totale">Valore Commerciale Totale</div></th>
                                 <th scope="col"><div class="slds-truncate" title="Valore Scontato Totale">Valore Scontato Totale</div></th>
                                 <th scope="col"><div class="slds-truncate" title="Totale Beneficiari">Totale Beneficiari</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Allegato">Allegato</div></th>
                                 <th scope="col"><div class="slds-truncate" title="Biglietti Associati">Biglietti Associati</div></th>
                             </tr>
                         </thead>
@@ -1947,6 +1985,35 @@
                                     <td data-label="Totale Beneficiari">
                                         <div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div>
                                     </td>
+                                    <td data-label="Allegato">
+                                        <div class="slds-grid slds-grid_vertical slds-grid_vertical-align-center">
+                                            <div class="slds-col">
+                                                <lightning-button-icon
+                                                    icon-name="utility:upload"
+                                                    variant="border-filled"
+                                                    alternative-text="Carica allegato"
+                                                    title="Carica allegato"
+                                                    data-row-index={invoiceIndex}
+                                                    onclick={triggerInvoiceAttachmentPicker}>
+                                                </lightning-button-icon>
+                                                <input
+                                                    type="file"
+                                                    class="invoice-attachment-input"
+                                                    style="display:none"
+                                                    data-row-index={invoiceIndex}
+                                                    data-invoice-number={invoiceGroup.invoice.invoiceNumber}
+                                                    onchange={handleInvoiceAttachmentSelected} />
+                                            </div>
+                                            <div class="slds-col slds-truncate slds-text-body_small slds-m-top_xx-small">
+                                                <template if:true={invoiceGroup.invoice.attachmentFileName}>
+                                                    {invoiceGroup.invoice.attachmentFileName}
+                                                </template>
+                                                <template if:false={invoiceGroup.invoice.attachmentFileName}>
+                                                    Nessun allegato
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td data-label="Biglietti Associati">
                                         <template if:true={invoiceGroup.visits.length}>
                                             <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
@@ -1999,7 +2066,7 @@
                                 <template if:true={invoiceGroup.visits.length}>
                                     <template if:true={invoiceGroup.expanded}>
                                         <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="12" class="slds-p-around_none">
+                                            <td colspan="13" class="slds-p-around_none">
                                                 <div class="slds-m-around_small visits-content">
                                                     <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
                                                         <thead>
@@ -2028,6 +2095,18 @@
                                                                             <template if:true={visit.saveStatusSuccess}>
                                                                                 <div class="slds-truncate">
                                                                                     <span class="slds-text-color_success">Caricato correttamente</span>
+                                                                                    <template if:true={visit.visitId}>
+                                                                                        <span class="slds-m-left_x-small">
+                                                                                            -
+                                                                                            <a href="#"
+                                                                                               class="slds-text-link"
+                                                                                               data-record-id={visit.visitId}
+                                                                                               onclick={openVisitRecord}
+                                                                                               title={visit.visitName}>
+                                                                                                {visit.visitName}
+                                                                                            </a>
+                                                                                        </span>
+                                                                                    </template>
                                                                                 </div>
                                                                             </template>
                                                                             <template if:false={visit.saveStatusSuccess}>

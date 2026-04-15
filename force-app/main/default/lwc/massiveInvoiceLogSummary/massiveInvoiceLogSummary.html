@@ -1,5 +1,5 @@
 <template>
-    <lightning-card title="Summary Caricamento Massivo" icon-name="standard:invoice">
+    <lightning-card title={summaryCardTitle} icon-name="standard:invoice">
         <div class="slds-m-around_medium">
             <template lwc:if={error}>
                 <div class="slds-m-bottom_medium">
@@ -9,13 +9,13 @@
                     </div>
                 </div>
             </template>
-            
+
             <template lwc:if={isLoading}>
                 <div class="slds-text-align_center slds-p-around_large">
                     <lightning-spinner alternative-text="Caricamento..." size="medium"></lightning-spinner>
                 </div>
             </template>
-            
+
             <template lwc:if={hasData}>
                 <template lwc:if={logErrori}>
                     <div class="slds-m-bottom_small slds-p-around_small slds-box slds-box_x-small slds-theme_error">
@@ -23,188 +23,330 @@
                         <div class="slds-text-body_small" style="white-space: pre-wrap;">{logErrori}</div>
                     </div>
                 </template>
-                <div class="slds-scrollable_x">
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col"><div class="slds-truncate" title="Numero Fattura">Numero Fattura</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Stato Caricamento">Stato Caricamento</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Data Fattura">Data Fattura</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Data Competenza">Data Competenza</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Partner">Partner</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Centro Medico">Centro Medico</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Ente No Profit">Ente No Profit</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Categoria Ente">Categoria Ente</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Ammontare">Ammontare</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Totale Tempo Donato">Totale Tempo Donato</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Totale Numero Visite">Totale Numero Visite</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Visite Associate">Visite Associate</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Errori">Errori</div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={invoicesWithExpanded} for:item="invoiceGroup" for:index="invoiceIndex">
-                                <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
-                                    <td data-label="Numero Fattura">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div>
-                                    </td>
-                                    <td data-label="Stato Caricamento">
-                                        <div class="slds-truncate">
-                                            <template lwc:if={invoiceGroup.invoice.invoiceId}>
-                                                <span class="slds-text-color_success">Caricata correttamente</span>
-                                                <span class="slds-m-left_x-small">-</span>
-                                                <a href="#" class="slds-text-link" data-invoice-id={invoiceGroup.invoice.invoiceId} onclick={openInvoiceRecord} title={invoiceGroup.invoice.invoiceName}>
-                                                    {invoiceGroup.invoice.invoiceName}
-                                                </a>
-                                            </template>
-                                            <template lwc:else>
-                                                <template lwc:if={invoiceGroup.invoice.errorMessage}>
-                                                    <span class="slds-text-color_error">Errore: {invoiceGroup.invoice.errorMessage}</span>
+
+                <template lwc:if={isSorrisoLog}>
+                    <div class="slds-scrollable_x">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"><div class="slds-truncate" title="Numero Fattura">Numero Fattura</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Stato Caricamento">Stato Caricamento</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Data Fattura">Data Fattura</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Data Competenza">Data Competenza</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Partner">Partner</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Tipologia">Tipologia</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Fornitore">Fornitore</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Fattura Non Disponibile">Fattura Non Disponibile</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Valore Commerciale Totale">Valore Commerciale Totale</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Valore Scontato Totale">Valore Scontato Totale</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Totale Beneficiari">Totale Beneficiari</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Biglietti Associati">Biglietti Associati</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={invoicesWithExpanded} for:item="invoiceGroup">
+                                    <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
+                                        <td data-label="Numero Fattura"><div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div></td>
+                                        <td data-label="Stato Caricamento">
+                                            <div class="slds-truncate">
+                                                <template lwc:if={invoiceGroup.invoice.invoiceId}>
+                                                    <span class="slds-text-color_success">Caricata correttamente</span>
+                                                    <span class="slds-m-left_x-small">-</span>
+                                                    <a href="#" class="slds-text-link" data-invoice-id={invoiceGroup.invoice.invoiceId} onclick={openInvoiceRecord} title={invoiceGroup.invoice.invoiceName}>
+                                                        {invoiceGroup.invoice.invoiceName}
+                                                    </a>
                                                 </template>
                                                 <template lwc:else>
-                                                    <span class={invoiceGroup.invoice.statusClass}>{invoiceGroup.invoice.status}</span>
+                                                    <template lwc:if={invoiceGroup.invoice.errorMessage}>
+                                                        <span class="slds-text-color_error">Errore nel caricamento: {invoiceGroup.invoice.errorMessage}</span>
+                                                    </template>
+                                                    <template lwc:else>
+                                                        <span class={invoiceGroup.invoice.statusClass}>{invoiceGroup.invoice.status}</span>
+                                                    </template>
                                                 </template>
+                                            </div>
+                                        </td>
+                                        <td data-label="Data Fattura"><div class="slds-truncate">{invoiceGroup.invoice.invoiceDate}</div></td>
+                                        <td data-label="Data Competenza"><div class="slds-truncate">{invoiceGroup.invoice.dataCompetenza}</div></td>
+                                        <td data-label="Partner"><div class="slds-truncate">{invoiceGroup.invoice.partnerName}</div></td>
+                                        <td data-label="Tipologia"><div class="slds-truncate">{invoiceGroup.invoice.tipologia}</div></td>
+                                        <td data-label="Fornitore"><div class="slds-truncate">{invoiceGroup.invoice.fornitore}</div></td>
+                                        <td data-label="Fattura Non Disponibile">
+                                            <template lwc:if={invoiceGroup.invoice.noInvoiceAvailable}>
+                                                <span class="slds-badge slds-badge_success">Sì</span>
                                             </template>
-                                        </div>
-                                    </td>
-                                    <td data-label="Data Fattura">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.invoiceDate}</div>
-                                    </td>
-                                    <td data-label="Data Competenza">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.dataCompetenza}</div>
-                                    </td>
-                                    <td data-label="Partner">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.partnerName}</div>
-                                    </td>
-                                    <td data-label="Centro Medico">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.medicalCenter}</div>
-                                    </td>
-                                    <td data-label="Ente No Profit">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.enteNoProfit}</div>
-                                    </td>
-                                    <td data-label="Categoria Ente">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.noProfitCategory}</div>
-                                    </td>
-                                    <td data-label="Ammontare">
-                                        <div class="slds-truncate">{invoiceGroup.invoice.amountFormatted}</div>
-                                    </td>
-                                    <td data-label="Totale Tempo Donato">
-                                        <div class="slds-truncate">{invoiceGroup.totalVisitsMinutesFormatted}</div>
-                                    </td>
-                                    <td data-label="Totale Numero Visite">
-                                        <div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div>
-                                    </td>
-                                    <td data-label="Visite Associate">
-                                        <template lwc:if={invoiceGroup.visits.length}>
-                                            <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
-                                                <div class="slds-col slds-no-flex">
-                                                    <button type="button" class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
-                                                        data-index={invoiceGroup.index} onclick={toggleVisits}
-                                                        title={invoiceGroup.expandButtonTitle} aria-label={invoiceGroup.expandButtonTitle}>
-                                                        <lightning-icon icon-name={invoiceGroup.expandIcon} size="small" alternative-text={invoiceGroup.expandButtonTitle}>
-                                                        </lightning-icon>
-                                                    </button>
-                                                </div>
-                                                <div class="slds-col">
-                                                    <div class="slds-grid slds-grid_vertical">
-                                                        <div class="slds-col">
-                                                            <span class="slds-text-heading_small">Visite Associate ({invoiceGroup.visits.length})</span>
-                                                        </div>
-                                                        <template lwc:if={invoiceGroup.hasVisitErrors}>
+                                            <template lwc:else>
+                                                <span class="slds-badge">No</span>
+                                            </template>
+                                        </td>
+                                        <td data-label="Valore Commerciale Totale"><div class="slds-truncate">{invoiceGroup.invoice.amountFormatted}</div></td>
+                                        <td data-label="Valore Scontato Totale"><div class="slds-truncate">{invoiceGroup.invoice.valoreScontatoFormatted}</div></td>
+                                        <td data-label="Totale Beneficiari"><div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div></td>
+                                        <td data-label="Biglietti Associati">
+                                            <template lwc:if={invoiceGroup.visits.length}>
+                                                <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
+                                                    <div class="slds-col slds-no-flex">
+                                                        <button type="button" class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
+                                                            data-index={invoiceGroup.index} onclick={toggleVisits}
+                                                            title={invoiceGroup.expandButtonTitle} aria-label={invoiceGroup.expandButtonTitle}>
+                                                            <lightning-icon icon-name={invoiceGroup.expandIcon} size="small" alternative-text={invoiceGroup.expandButtonTitle}></lightning-icon>
+                                                        </button>
+                                                    </div>
+                                                    <div class="slds-col">
+                                                        <div class="slds-grid slds-grid_vertical">
                                                             <div class="slds-col">
-                                                                <span class="slds-text-color_error slds-text-body_small">⚠️ Ci sono errori nelle visite</span>
+                                                                <span class="slds-text-heading_small">{invoiceGroup.detailTitle}</span>
                                                             </div>
-                                                        </template>
+                                                            <template lwc:if={invoiceGroup.hasVisitErrors}>
+                                                                <div class="slds-col">
+                                                                    <span class="slds-text-color_error slds-text-body_small">{invoiceGroup.detailErrorWarning}</span>
+                                                                </div>
+                                                            </template>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </template>
-                                        <template lwc:else>
-                                            <div class="slds-truncate">-</div>
-                                        </template>
-                                    </td>
-                                    <td data-label="Errori">
-                                        <div class="slds-truncate error-cell">{invoiceGroup.invoice.errorMessage}</div>
-                                    </td>
-                                </tr>
-                                <template lwc:if={invoiceGroup.visits.length}>
-                                    <template lwc:if={invoiceGroup.isExpanded}>
-                                        <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
-                                            <td colspan="13" class="slds-p-around_none">
-                                                <div class="slds-m-around_small visits-content">
-                                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
-                                                        <thead>
-                                                            <tr class="slds-line-height_reset">
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Stato Caricamento</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipo Visita</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipo Beneficiario</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Data Visita</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Comune</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Provincia</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Regione</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Numero Visite</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Totale Minuti</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Ammontare</div></th>
-                                                                <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Errori</div></th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <template for:each={invoiceGroup.visits} for:item="visit">
-                                                                <tr key={visit.id} class="slds-text-body_small visit-row">
-                                                                    <td data-label="Stato Caricamento">
-                                                                        <template lwc:if={visit.saveStatusSuccess}>
-                                                                            <div class="slds-truncate">
-                                                                                <span class="slds-text-color_success">Caricata correttamente</span>
-                                                                                <template lwc:if={visit.visitId}>
-                                                                                    <span class="slds-m-left_x-small">-</span>
-                                                                                    <a href="#" class="slds-text-link" data-visit-id={visit.visitId} onclick={openVisitRecord} title={visit.visitName}>
-                                                                                        {visit.visitName}
-                                                                                    </a>
-                                                                                </template>
-                                                                            </div>
-                                                                        </template>
-                                                                        <template lwc:else>
-                                                                            <div class="slds-truncate slds-text-color_error">
-                                                                                Errore nel caricamento: {visit.saveErrorMessage}
-                                                                            </div>
-                                                                        </template>
-                                                                    </td>
-                                                                    <td data-label="Tipo Visita"><div class="slds-truncate">{visit.visitType}</div></td>
-                                                                    <td data-label="Tipo Beneficiario"><div class="slds-truncate">{visit.beneficiaryType}</div></td>
-                                                                    <td data-label="Data Visita"><div class="slds-truncate">{visit.dataVisita}</div></td>
-                                                                    <td data-label="Comune"><div class="slds-truncate">{visit.comune}</div></td>
-                                                                    <td data-label="Provincia"><div class="slds-truncate">{visit.provincia}</div></td>
-                                                                    <td data-label="Regione"><div class="slds-truncate">{visit.regione}</div></td>
-                                                                    <td data-label="Numero Visite"><div class="slds-truncate">{visit.numeroVisite}</div></td>
-                                                                    <td data-label="Totale Minuti"><div class="slds-truncate">{visit.totaleMinuti}</div></td>
-                                                                    <td data-label="Ammontare"><div class="slds-truncate">{visit.amountFormatted}</div></td>
-                                                                    <td data-label="Errori">
-                                                                        <div class="slds-truncate error-cell">{visit.saveErrorMessage}</div>
-                                                                    </td>
+                                            </template>
+                                            <template lwc:else>
+                                                <div class="slds-truncate">-</div>
+                                            </template>
+                                        </td>
+                                    </tr>
+
+                                    <template lwc:if={invoiceGroup.visits.length}>
+                                        <template lwc:if={invoiceGroup.isExpanded}>
+                                            <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
+                                                <td colspan="12" class="slds-p-around_none">
+                                                    <div class="slds-m-around_small visits-content">
+                                                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
+                                                            <thead>
+                                                                <tr class="slds-line-height_reset">
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Stato Caricamento</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipologia</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Fornitore</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Nome Spettacolo</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipologia Spettacolo</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Data Spettacolo</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Ora Spettacolo</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Fattura Non Disponibile</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Quantità Beneficiari</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Valore Commerciale Totale</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Valore Scontato Totale</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Comune</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Provincia</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Regione</div></th>
                                                                 </tr>
-                                                            </template>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <template for:each={invoiceGroup.visits} for:item="visit">
+                                                                    <tr key={visit.id} class="slds-text-body_small visit-row">
+                                                                        <td data-label="Stato Caricamento">
+                                                                            <template lwc:if={visit.saveStatusSuccess}>
+                                                                                <div class="slds-truncate">
+                                                                                    <span class="slds-text-color_success">Caricato correttamente</span>
+                                                                                    <template lwc:if={visit.visitId}>
+                                                                                        <span class="slds-m-left_x-small">-</span>
+                                                                                        <a href="#" class="slds-text-link" data-record-id={visit.visitId} onclick={openVisitRecord} title={visit.visitName}>
+                                                                                            {visit.visitName}
+                                                                                        </a>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template lwc:else>
+                                                                                <div class="slds-truncate slds-text-color_error">
+                                                                                    Errore nel caricamento: {visit.saveErrorMessage}
+                                                                                </div>
+                                                                            </template>
+                                                                        </td>
+                                                                        <td data-label="Tipologia"><div class="slds-truncate">{visit.tipologia}</div></td>
+                                                                        <td data-label="Fornitore"><div class="slds-truncate">{visit.fornitore}</div></td>
+                                                                        <td data-label="Nome Spettacolo"><div class="slds-truncate">{visit.nomeSpettacolo}</div></td>
+                                                                        <td data-label="Tipologia Spettacolo"><div class="slds-truncate">{visit.tipologiaSpettacolo}</div></td>
+                                                                        <td data-label="Data Spettacolo"><div class="slds-truncate">{visit.dataSpettacolo}</div></td>
+                                                                        <td data-label="Ora Spettacolo"><div class="slds-truncate">{visit.oraSpettacolo}</div></td>
+                                                                        <td data-label="Fattura Non Disponibile">
+                                                                            <template lwc:if={visit.noInvoiceAvailable}>
+                                                                                <span class="slds-badge slds-badge_success">Sì</span>
+                                                                            </template>
+                                                                            <template lwc:else>
+                                                                                <span class="slds-badge">No</span>
+                                                                            </template>
+                                                                        </td>
+                                                                        <td data-label="Quantità Beneficiari"><div class="slds-truncate">{visit.numeroVisite}</div></td>
+                                                                        <td data-label="Valore Commerciale Totale"><div class="slds-truncate">{visit.amountFormatted}</div></td>
+                                                                        <td data-label="Valore Scontato Totale"><div class="slds-truncate">{visit.valoreScontatoFormatted}</div></td>
+                                                                        <td data-label="Comune"><div class="slds-truncate">{visit.comune}</div></td>
+                                                                        <td data-label="Provincia"><div class="slds-truncate">{visit.provincia}</div></td>
+                                                                        <td data-label="Regione"><div class="slds-truncate">{visit.regione}</div></td>
+                                                                    </tr>
+                                                                </template>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
                                     </template>
                                 </template>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
+                <template lwc:else>
+                    <div class="slds-scrollable_x">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"><div class="slds-truncate" title="Numero Fattura">Numero Fattura</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Stato Caricamento">Stato Caricamento</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Data Fattura">Data Fattura</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Data Competenza">Data Competenza</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Partner">Partner</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Centro Medico">Centro Medico</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Ente No Profit">Ente No Profit</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Categoria Ente">Categoria Ente</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Ammontare">Ammontare</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Totale Tempo Donato">Totale Tempo Donato</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Totale Numero Visite">Totale Numero Visite</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Visite Associate">Visite Associate</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={invoicesWithExpanded} for:item="invoiceGroup">
+                                    <tr key={invoiceGroup.invoice.invoiceNumber} class="slds-line-height_reset invoice-row">
+                                        <td data-label="Numero Fattura"><div class="slds-truncate">{invoiceGroup.invoice.invoiceNumber}</div></td>
+                                        <td data-label="Stato Caricamento">
+                                            <div class="slds-truncate">
+                                                <template lwc:if={invoiceGroup.invoice.invoiceId}>
+                                                    <span class="slds-text-color_success">Caricata correttamente</span>
+                                                    <span class="slds-m-left_x-small">-</span>
+                                                    <a href="#" class="slds-text-link" data-invoice-id={invoiceGroup.invoice.invoiceId} onclick={openInvoiceRecord} title={invoiceGroup.invoice.invoiceName}>
+                                                        {invoiceGroup.invoice.invoiceName}
+                                                    </a>
+                                                </template>
+                                                <template lwc:else>
+                                                    <template lwc:if={invoiceGroup.invoice.errorMessage}>
+                                                        <span class="slds-text-color_error">Errore nel caricamento: {invoiceGroup.invoice.errorMessage}</span>
+                                                    </template>
+                                                    <template lwc:else>
+                                                        <span class={invoiceGroup.invoice.statusClass}>{invoiceGroup.invoice.status}</span>
+                                                    </template>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td data-label="Data Fattura"><div class="slds-truncate">{invoiceGroup.invoice.invoiceDate}</div></td>
+                                        <td data-label="Data Competenza"><div class="slds-truncate">{invoiceGroup.invoice.dataCompetenza}</div></td>
+                                        <td data-label="Partner"><div class="slds-truncate">{invoiceGroup.invoice.partnerName}</div></td>
+                                        <td data-label="Centro Medico"><div class="slds-truncate">{invoiceGroup.invoice.medicalCenter}</div></td>
+                                        <td data-label="Ente No Profit"><div class="slds-truncate">{invoiceGroup.invoice.enteNoProfit}</div></td>
+                                        <td data-label="Categoria Ente"><div class="slds-truncate">{invoiceGroup.invoice.noProfitCategory}</div></td>
+                                        <td data-label="Ammontare"><div class="slds-truncate">{invoiceGroup.invoice.amountFormatted}</div></td>
+                                        <td data-label="Totale Tempo Donato"><div class="slds-truncate">{invoiceGroup.totalVisitsMinutesFormatted}</div></td>
+                                        <td data-label="Totale Numero Visite"><div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div></td>
+                                        <td data-label="Visite Associate">
+                                            <template lwc:if={invoiceGroup.visits.length}>
+                                                <div class="slds-grid slds-grid_vertical-align-center visits-header-box">
+                                                    <div class="slds-col slds-no-flex">
+                                                        <button type="button" class="slds-button slds-button_icon slds-button_icon-small expand-collapse-button"
+                                                            data-index={invoiceGroup.index} onclick={toggleVisits}
+                                                            title={invoiceGroup.expandButtonTitle} aria-label={invoiceGroup.expandButtonTitle}>
+                                                            <lightning-icon icon-name={invoiceGroup.expandIcon} size="small" alternative-text={invoiceGroup.expandButtonTitle}></lightning-icon>
+                                                        </button>
+                                                    </div>
+                                                    <div class="slds-col">
+                                                        <div class="slds-grid slds-grid_vertical">
+                                                            <div class="slds-col">
+                                                                <span class="slds-text-heading_small">{invoiceGroup.detailTitle}</span>
+                                                            </div>
+                                                            <template lwc:if={invoiceGroup.hasVisitErrors}>
+                                                                <div class="slds-col">
+                                                                    <span class="slds-text-color_error slds-text-body_small">{invoiceGroup.detailErrorWarning}</span>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template lwc:else>
+                                                <div class="slds-truncate">-</div>
+                                            </template>
+                                        </td>
+                                    </tr>
+
+                                    <template lwc:if={invoiceGroup.visits.length}>
+                                        <template lwc:if={invoiceGroup.isExpanded}>
+                                            <tr key={invoiceGroup.visitsContentRowKey} class="slds-line-height_reset visit-expand-row">
+                                                <td colspan="12" class="slds-p-around_none">
+                                                    <div class="slds-m-around_small visits-content">
+                                                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_compact visits-table">
+                                                            <thead>
+                                                                <tr class="slds-line-height_reset">
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Stato Caricamento</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipo Visita</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Tipo Beneficiario</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Data Visita</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Comune</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Provincia</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Regione</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Numero Visite</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Totale Minuti</div></th>
+                                                                    <th scope="col" class="slds-text-body_small"><div class="slds-truncate">Ammontare</div></th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <template for:each={invoiceGroup.visits} for:item="visit">
+                                                                    <tr key={visit.id} class="slds-text-body_small visit-row">
+                                                                        <td data-label="Stato Caricamento">
+                                                                            <template lwc:if={visit.saveStatusSuccess}>
+                                                                                <div class="slds-truncate">
+                                                                                    <span class="slds-text-color_success">Caricata correttamente</span>
+                                                                                    <template lwc:if={visit.visitId}>
+                                                                                        <span class="slds-m-left_x-small">-</span>
+                                                                                        <a href="#" class="slds-text-link" data-record-id={visit.visitId} onclick={openVisitRecord} title={visit.visitName}>
+                                                                                            {visit.visitName}
+                                                                                        </a>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template lwc:else>
+                                                                                <div class="slds-truncate slds-text-color_error">
+                                                                                    Errore nel caricamento: {visit.saveErrorMessage}
+                                                                                </div>
+                                                                            </template>
+                                                                        </td>
+                                                                        <td data-label="Tipo Visita"><div class="slds-truncate">{visit.visitType}</div></td>
+                                                                        <td data-label="Tipo Beneficiario"><div class="slds-truncate">{visit.beneficiaryType}</div></td>
+                                                                        <td data-label="Data Visita"><div class="slds-truncate">{visit.dataVisita}</div></td>
+                                                                        <td data-label="Comune"><div class="slds-truncate">{visit.comune}</div></td>
+                                                                        <td data-label="Provincia"><div class="slds-truncate">{visit.provincia}</div></td>
+                                                                        <td data-label="Regione"><div class="slds-truncate">{visit.regione}</div></td>
+                                                                        <td data-label="Numero Visite"><div class="slds-truncate">{visit.numeroVisite}</div></td>
+                                                                        <td data-label="Totale Minuti"><div class="slds-truncate">{visit.totaleMinuti}</div></td>
+                                                                        <td data-label="Ammontare"><div class="slds-truncate">{visit.amountFormatted}</div></td>
+                                                                    </tr>
+                                                                </template>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </template>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
                 <div class="slds-text-align_center slds-text-color_weak slds-m-top_medium">
                     Totale Fatture: {organizedInvoices.length}
                 </div>
             </template>
-            
+
             <template lwc:if={recordId}>
-                <template lwc:if={hasData}>
-                </template>
+                <template lwc:if={hasData}></template>
                 <template lwc:else>
-                    <template lwc:if={isLoading}>
-                    </template>
+                    <template lwc:if={isLoading}></template>
                     <template lwc:else>
                         <div class="slds-text-align_center slds-text-color_weak slds-p-around_large">
                             Nessun dato nel log corrente.

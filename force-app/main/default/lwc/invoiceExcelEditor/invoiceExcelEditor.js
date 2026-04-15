@@ -94,6 +94,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     @track showResults = false;
     @track saveResults = []; // Array di risultati per ogni fattura
     @track expandedInvoices = {}; // Oggetto per tracciare lo stato di espansione delle fatture
+    @track invoiceAttachmentsByNumber = {}; // { [invoiceNumber]: { fileName, contentType, base64Data, sizeBytes } }
 
     // Valori passati dal Flow (come screen component) o tramite URL state quando aperto come Navigation Item
     @api programId;
@@ -171,6 +172,24 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             return false;
         });
+    }
+
+    get hasMissingInvoiceAttachments() {
+        if (!this.showOrganizedView || !this.organizedInvoices || this.organizedInvoices.length === 0) {
+            return false;
+        }
+        return this.organizedInvoices.some(invoiceGroup => {
+            const invoiceNumber = invoiceGroup && invoiceGroup.invoice ? String(invoiceGroup.invoice.invoiceNumber || '').trim() : '';
+            if (!invoiceNumber) {
+                return true;
+            }
+            const attachment = this.invoiceAttachmentsByNumber[invoiceNumber];
+            return !(attachment && attachment.base64Data && attachment.fileName);
+        });
+    }
+
+    get isSaveDisabled() {
+        return this.hasValidationErrors || this.hasMissingInvoiceAttachments;
     }
 
     /**
@@ -271,18 +290,140 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Apre un record visita in un nuovo tab della console
      */
     async openVisitRecord(event) {
-        const visitId = event.currentTarget.dataset.visitId;
-        if (!visitId) return;
+        const recordId = event.currentTarget.dataset.recordId || event.currentTarget.dataset.visitId;
+        if (!recordId) return;
         
         try {
             await openTab({
-                recordId: visitId,
+                recordId: recordId,
                 focus: true
             });
         } catch (error) {
             console.error('Errore apertura tab console:', error);
-            this.showError('Errore nell\'apertura del record visita.');
+            this.showError('Errore nell\'apertura del record.');
         }
+    }
+
+    triggerInvoiceAttachmentPicker(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const rowIndex = event.currentTarget.dataset.rowIndex;
+        const fileInput = this.template.querySelector(`input.invoice-attachment-input[data-row-index="${rowIndex}"]`);
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+
+    async handleInvoiceAttachmentSelected(event) {
+        const currentTarget = event.currentTarget;
+        const inputEl = event.target;
+        const invoiceNumber = String((currentTarget && currentTarget.dataset ? currentTarget.dataset.invoiceNumber : '') || '').trim();
+        const file = inputEl && inputEl.files && inputEl.files.length > 0 ? inputEl.files[0] : null;
+        if (!invoiceNumber || !file) {
+            return;
+        }
+
+        // Conservativo per evitare payload troppo grandi nella chiamata Apex.
+        const maxFileSizeBytes = 4 * 1024 * 1024;
+        if (file.size > maxFileSizeBytes) {
+            this.showError('Il file supera 4MB. Carica un allegato più piccolo.');
+            this.resetFileInputValue(inputEl);
+            return;
+        }
+
+        try {
+            const base64Data = await this.readFileAsBase64(file);
+            this.invoiceAttachmentsByNumber = {
+                ...this.invoiceAttachmentsByNumber,
+                [invoiceNumber]: {
+                    fileName: file.name,
+                    contentType: file.type || 'application/octet-stream',
+                    base64Data: base64Data,
+                    sizeBytes: file.size
+                }
+            };
+            this.syncInvoiceAttachmentDisplay(invoiceNumber, file.name);
+            this.resetFileInputValue(inputEl);
+        } catch (error) {
+            console.error('Errore lettura allegato:', error);
+            const details = error && error.message ? ` (${error.message})` : '';
+            this.showError(`Impossibile leggere il file selezionato${details}.`);
+            this.resetFileInputValue(inputEl);
+        }
+    }
+
+    resetFileInputValue(inputEl) {
+        if (!inputEl) {
+            return;
+        }
+        try {
+            inputEl.value = '';
+        } catch (e) {
+            console.warn('Impossibile resettare input file:', e);
+        }
+    }
+
+    async readFileAsBase64(file) {
+        // Primo tentativo: API moderna (più affidabile nei browser recenti).
+        if (file && typeof file.arrayBuffer === 'function') {
+            try {
+                const buffer = await file.arrayBuffer();
+                return this.arrayBufferToBase64(buffer);
+            } catch (modernApiError) {
+                console.warn('Fallback a FileReader per allegato:', modernApiError);
+            }
+        }
+
+        // Fallback: FileReader DataURL.
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = String(reader.result || '');
+                const commaIndex = dataUrl.indexOf(',');
+                if (commaIndex === -1) {
+                    reject(new Error('Formato file non valido'));
+                    return;
+                }
+                resolve(dataUrl.substring(commaIndex + 1));
+            };
+            reader.onerror = () => reject(reader.error || new Error('Errore lettura file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    arrayBufferToBase64(arrayBuffer) {
+        if (!arrayBuffer) {
+            throw new Error('Contenuto file vuoto');
+        }
+        const bytes = new Uint8Array(arrayBuffer);
+        const chunkSize = 0x8000;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+        }
+        return btoa(binary);
+    }
+
+    syncInvoiceAttachmentDisplay(invoiceNumber, fileName) {
+        if (!this.organizedInvoices || this.organizedInvoices.length === 0) {
+            return;
+        }
+        this.organizedInvoices = this.organizedInvoices.map(group => {
+            if (!group || !group.invoice) return group;
+            const currentInvoiceNumber = String(group.invoice.invoiceNumber || '').trim();
+            if (currentInvoiceNumber !== invoiceNumber) {
+                return group;
+            }
+            return {
+                ...group,
+                invoice: {
+                    ...group.invoice,
+                    attachmentFileName: fileName,
+                    hasAttachment: true
+                }
+            };
+        });
     }
 
     getInvoiceErrorClass(invoiceGroup, field) {
@@ -6580,6 +6721,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             return;
         }
 
+        if (this.hasMissingInvoiceAttachments) {
+            this.showError('Carica un allegato per ogni fattura prima di salvare.');
+            return;
+        }
+
         // Log dello stato delle righe prima di preparare i dati
         console.log('[saveAllInvoices] Stato righe prima di preparare i dati:');
         validRows.slice(0, 5).forEach((row, idx) => {
@@ -6634,10 +6780,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
 
         // Prepara i dati per il controller Apex
+        const attachmentAssignedByInvoiceNumber = new Set();
         const invoiceData = validRows.map((row, index) => {
             const parsedAmount = this.parseDecimal(row.amount);
             const parsedDiscounted = this.parseDecimal(row.valoreScontato);
             const effectiveDiscounted = parsedDiscounted !== null ? parsedDiscounted : parsedAmount;
+            const invoiceNumberKey = String(row.invoiceNumber || '').trim();
+            const attachmentForInvoice = invoiceNumberKey ? this.invoiceAttachmentsByNumber[invoiceNumberKey] : null;
+            const includeAttachmentPayload = attachmentForInvoice && !attachmentAssignedByInvoiceNumber.has(invoiceNumberKey);
+            if (includeAttachmentPayload) {
+                attachmentAssignedByInvoiceNumber.add(invoiceNumberKey);
+            }
 
             const rowData = {
                 partner: row.partner || null,
@@ -6674,7 +6827,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 noProfitIsNew: row.noProfitIsNew || false, // Flag per indicare se l'ente no profit è nuovo
                 noProfitCategoryIsNew: row.noProfitCategoryIsNew || false, // Flag per indicare se la categoria ente è nuova
                 tipoVisitaIsNew: row.tipoVisitaIsNew || false, // Flag per indicare se il tipo visita è nuovo
-                skipVisitCreation: this.isSorrisoSospeso
+                skipVisitCreation: this.isSorrisoSospeso,
+                attachmentFileName: includeAttachmentPayload ? attachmentForInvoice.fileName : null,
+                attachmentContentType: includeAttachmentPayload ? attachmentForInvoice.contentType : null,
+                attachmentBase64: includeAttachmentPayload ? attachmentForInvoice.base64Data : null
             };
             console.log(`[saveAllInvoices] Riga ${index + 1} - partnerId:`, rowData.partnerId, 'partner:', rowData.partner);
             return rowData;
@@ -6684,7 +6840,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const partnerIdCount = invoiceData.filter(d => d.partnerId != null).length;
         console.log(`[saveAllInvoices] Riepilogo: ${invoiceData.length} righe totali, ${partnerIdCount} con partnerId non null`);
         
-        console.log('[saveAllInvoices] Dati preparati per Apex:', JSON.stringify(invoiceData, null, 2));
+        const debugSample = invoiceData.slice(0, 3).map(row => ({
+            ...row,
+            attachmentBase64: row.attachmentBase64 ? `<${row.attachmentBase64.length} chars>` : null
+        }));
+        console.log('[saveAllInvoices] Dati preparati per Apex (sample):', JSON.stringify(debugSample, null, 2));
 
         // Attiva lo spinner
         this.isSaving = true;
@@ -6697,7 +6857,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 invoiceDataLength: invoiceData.length,
                 programId: this.selectedProgramId,
                 partnerBudgetId: this.selectedPartnerBudgetId,
-                invoiceDataSample: invoiceData.slice(0, 2) // Mostra solo le prime 2 righe per non intasare la console
+                invoiceDataSample: invoiceData.slice(0, 2).map(row => ({
+                    ...row,
+                    attachmentBase64: row.attachmentBase64 ? `<${row.attachmentBase64.length} chars>` : null
+                }))
             });
             
             const result = await createInvoicesFromFlow({ 
@@ -6851,24 +7014,40 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const saveResult = resultsMap.get(invoiceNumber);
             
             if (saveResult) {
+                const normalizedErrorMessage = saveResult.errorMessage && String(saveResult.errorMessage).trim() !== ''
+                    ? saveResult.errorMessage
+                    : 'Dettaglio errore non disponibile';
                 // Aggiorna lo stato della fattura
                 const updatedInvoice = {
                     ...invoiceGroup.invoice,
                     saveStatus: saveResult.isSuccess ? 'success' : 'error',
                     saveStatusSuccess: saveResult.isSuccess === true, // Booleano per il template
-                    saveErrorMessage: saveResult.errorMessage || null,
+                    saveErrorMessage: saveResult.isSuccess ? null : normalizedErrorMessage,
                     invoiceId: saveResult.invoiceId || null,
                     invoiceName: saveResult.invoiceName || null
                 };
 
-                // In Sorriso non c'è creazione di Visit__c: propaga lo stato fattura alla lista biglietti.
+                // In Sorriso i dettagli sono restituiti nel payload "visitDetails" (compatibilità storica).
                 if (this.isSorrisoSospeso) {
-                    const updatedTickets = (invoiceGroup.visits || []).map(ticket => ({
-                        ...ticket,
-                        saveStatus: saveResult.isSuccess ? 'success' : 'error',
-                        saveStatusSuccess: saveResult.isSuccess === true,
-                        saveErrorMessage: saveResult.errorMessage || saveResult.visitError || null
-                    }));
+                    const availableTicketDetails = saveResult.visitDetails || [];
+                    const updatedTickets = (invoiceGroup.visits || []).map((ticket, ticketIndex) => {
+                        const ticketResult = ticketIndex < availableTicketDetails.length
+                            ? availableTicketDetails[ticketIndex]
+                            : null;
+
+                        return {
+                            ...ticket,
+                            saveStatus: saveResult.isSuccess ? 'success' : 'error',
+                            saveStatusSuccess: saveResult.isSuccess === true,
+                            saveErrorMessage: saveResult.isSuccess
+                                ? null
+                                : (saveResult.errorMessage || saveResult.visitError || normalizedErrorMessage),
+                            visitId: ticketResult && ticketResult.id ? ticketResult.id : (ticket.visitId || null),
+                            visitName: ticketResult && (ticketResult.name || ticketResult.ticketName)
+                                ? (ticketResult.name || ticketResult.ticketName)
+                                : (ticket.visitName || null)
+                        };
+                    });
 
                     return {
                         ...invoiceGroup,
@@ -7385,6 +7564,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 invoiceGroup.invoice.valoreScontato = effectiveDiscountedTotal;
                 invoiceGroup.invoice.valoreScontatoFormatted = this.formatCurrency(effectiveDiscountedTotal);
             }
+            const invoiceNumberKey = String(invoiceGroup.invoice.invoiceNumber || '').trim();
+            const attachmentMeta = invoiceNumberKey ? this.invoiceAttachmentsByNumber[invoiceNumberKey] : null;
+            invoiceGroup.invoice.attachmentFileName = attachmentMeta ? attachmentMeta.fileName : '';
+            invoiceGroup.invoice.hasAttachment = !!attachmentMeta;
             
             return {
                 ...invoiceGroup,
@@ -7411,6 +7594,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
+        this.invoiceAttachmentsByNumber = {};
         this.rows = [];
         this.addRow();
         this.hasError = false;
@@ -7425,6 +7609,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
+        this.invoiceAttachmentsByNumber = {};
         // Attiva lo spinner globale immediatamente
         this.isValidating = true;
         // Forza un re-render immediato per assicurarsi che la tabella sia visibile e lo spinner sia mostrato
@@ -7533,6 +7718,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.showResults = false;
         this.organizedInvoices = [];
         this.saveResults = [];
+        this.invoiceAttachmentsByNumber = {};
         
         // Resetta messaggi di errore/successo
         this.hasError = false;

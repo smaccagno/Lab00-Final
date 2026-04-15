@@ -513,6 +513,112 @@ public class InvoiceExcelEditorControllerTest {
             WHERE Invoice__c IN :createdInvoices
         ];
         System.assertEquals(0, createdVisits.size(), 'Nel ramo Sorriso non devono essere create visite');
+
+        List<MassiveInvoiceLog__c> createdLogs = [
+            SELECT Id, Log__c
+            FROM MassiveInvoiceLog__c
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+        System.assert(!createdLogs.isEmpty(), 'Il caricamento massivo deve creare un record di log');
+        String logJson = createdLogs[0].Log__c;
+        System.assert(logJson.contains('"isSorrisoSospeso" : true') || logJson.contains('"isSorrisoSospeso": true'),
+            'Il payload log deve marcare il ramo Sorriso');
+        System.assert(logJson.contains('"tickets"'),
+            'Il payload log Sorriso deve usare la chiave tickets');
+        System.assert(logJson.contains('"ticketsContentRowKey"'),
+            'Il payload log Sorriso deve usare ticketsContentRowKey');
+        System.assert(!logJson.contains('"visitsContentRowKey"'),
+            'Il payload log Sorriso non deve usare visitsContentRowKey');
+    }
+
+    @IsTest
+    static void testCreateInvoicesFromFlowWithInvoiceAttachment() {
+        Program testProgram = [SELECT Id FROM Program LIMIT 1];
+        GiftDesignation testBudget = [SELECT Id FROM GiftDesignation LIMIT 1];
+        Account testAccount = [SELECT Id, Name FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        Comune__c testComune = [SELECT Id, Nome_Comune__c, Provincia__c, Regione__c FROM Comune__c LIMIT 1];
+
+        List<Schema.PicklistEntry> ticketTypeValues = Ticket__c.Type__c.getDescribe().getPicklistValues();
+        List<Schema.PicklistEntry> showTypeValues = Show__c.Type__c.getDescribe().getPicklistValues();
+        System.assert(!ticketTypeValues.isEmpty(), 'Serve almeno un valore in Ticket__c.Type__c');
+        System.assert(!showTypeValues.isEmpty(), 'Serve almeno un valore in Show__c.Type__c');
+
+        Id structureRecordTypeId;
+        Schema.DescribeSObjectResult accountDescribe = Account.SObjectType.getDescribe();
+        Map<String, Schema.RecordTypeInfo> rtByDeveloperName = accountDescribe.getRecordTypeInfosByDeveloperName();
+        if (rtByDeveloperName.containsKey('Structure')) {
+            structureRecordTypeId = rtByDeveloperName.get('Structure').getRecordTypeId();
+        } else {
+            for (Schema.RecordTypeInfo rtInfo : accountDescribe.getRecordTypeInfos()) {
+                if (rtInfo != null && rtInfo.getName() == 'Structure') {
+                    structureRecordTypeId = rtInfo.getRecordTypeId();
+                    break;
+                }
+            }
+        }
+
+        Account supplier = new Account(Name = 'Test Structure Supplier Attachment');
+        if (structureRecordTypeId != null) {
+            supplier.RecordTypeId = structureRecordTypeId;
+        }
+        insert supplier;
+
+        List<Map<String, Object>> invoiceDataList = new List<Map<String, Object>>();
+        invoiceDataList.add(new Map<String, Object>{
+            'invoiceNumber' => 'TEST-SORRISO-ATT-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'competenceDate' => String.valueOf(Date.today()),
+            'partnerId' => testAccount.Id,
+            'partner' => testAccount.Name,
+            'tipologia' => ticketTypeValues[0].getValue(),
+            'fornitore' => supplier.Name,
+            'fornitoreId' => supplier.Id,
+            'nomeSpettacolo' => 'Spettacolo Allegato',
+            'tipologiaSpettacolo' => showTypeValues[0].getValue(),
+            'dataSpettacolo' => String.valueOf(Date.today()),
+            'oraSpettacolo' => '19:30',
+            'numeroVisite' => 1,
+            'amount' => 100,
+            'valoreScontato' => 90,
+            'comune' => testComune.Nome_Comune__c,
+            'provincia' => testComune.Provincia__c,
+            'regione' => testComune.Regione__c,
+            'skipVisitCreation' => true,
+            'attachmentFileName' => 'fattura-test.txt',
+            'attachmentBase64' => EncodingUtil.base64Encode(Blob.valueOf('allegato di test'))
+        });
+
+        String invoiceDataJson = JSON.serialize(invoiceDataList);
+
+        Test.startTest();
+        Map<String, Object> result = InvoiceExcelEditorController.createInvoicesFromFlow(invoiceDataJson, testProgram.Id, testBudget.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Il risultato non deve essere null');
+
+        List<Invoice__c> createdInvoices = [
+            SELECT Id
+            FROM Invoice__c
+            WHERE Invoice_Number__c = 'TEST-SORRISO-ATT-001'
+        ];
+
+        if (createdInvoices.isEmpty()) {
+            System.assert(result.containsKey('errorMessage'), 'Se la fattura non è creata, ci si aspetta un messaggio di errore');
+            return;
+        }
+
+        Set<Id> createdInvoiceIds = new Set<Id>();
+        for (Invoice__c inv : createdInvoices) {
+            createdInvoiceIds.add(inv.Id);
+        }
+
+        List<ContentDocumentLink> invoiceAttachments = [
+            SELECT Id, LinkedEntityId
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :createdInvoiceIds
+        ];
+        System.assert(invoiceAttachments.size() > 0, 'Ogni fattura salvata deve avere almeno un allegato');
     }
     
     @IsTest

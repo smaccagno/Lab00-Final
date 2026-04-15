@@ -22,6 +22,7 @@ export default class MassiveInvoiceLogSummary extends NavigationMixin(LightningE
     organizedInvoices = [];
     expandedInvoices = {};
     isLoading = false;
+    isSorrisoLog = false;
     error;
     
     @api
@@ -73,16 +74,86 @@ export default class MassiveInvoiceLogSummary extends NavigationMixin(LightningE
         }
         if (!Array.isArray(logEntries)) {
             this.organizedInvoices = [];
+            this.isSorrisoLog = false;
             return;
         }
+        this.isSorrisoLog = this.isSorrisoPayload(logJson);
         this.organizedInvoices = this.normalizeLogToSummaryFormat(logEntries);
+        this.isSorrisoLog = this.isSorrisoLog || this.organizedInvoices.some((g) => g.isSorrisoSospeso === true);
     }
     
     normalizeLogToSummaryFormat(logEntries) {
-        return logEntries.map((g) => {
-            const visits = g.visits || [];
+        return logEntries.map((g, groupIndex) => {
+            const details = Array.isArray(g.tickets)
+                ? g.tickets
+                : (Array.isArray(g.visits) ? g.visits : []);
+            const isSorriso = this.isSorrisoEntry(g, details);
+            const totalVisitsAmount = this.toNumber(g.totalTicketsAmount ?? g.totalVisitsAmount);
+            const totalVisitsMinutes = this.toNumber(g.totalTicketsMinutes ?? g.totalVisitsMinutes);
+            const totalVisitsNumber = this.toNumber(g.totalTicketsNumber ?? g.totalBeneficiari ?? g.totalVisitsNumber);
+            const totalDiscountedAmount = isSorriso
+                ? (this.toNumber(g.totalDiscountedAmount) ?? this.toNumber(g.valoreScontato) ?? totalVisitsAmount)
+                : null;
+
+            const normalizedDetails = details.map((v, detailIndex) => {
+                const success = v.saveStatusSuccess !== false;
+                const detailId = v.id || v.ticketId || v.visitId || `d-${groupIndex}-${detailIndex}`;
+                const amountValue = this.toNumber(v.amount);
+                const discountedValue = this.toNumber(v.valoreScontato ?? v.discountedAmount ?? amountValue);
+                const showDatetime = this.coalesceString(v.showDatetime);
+
+                if (isSorriso) {
+                    return {
+                        id: detailId,
+                        recordId: detailId,
+                        visitId: detailId,
+                        visitName: v.ticketName || v.visitName || v.name || detailId,
+                        name: v.ticketName || v.name || v.visitName || detailId,
+                        tipologia: this.coalesceString(v.tipologia) || this.coalesceString(v.ticketType) || this.coalesceString(v.visitType),
+                        fornitore: this.coalesceString(v.fornitore) || this.coalesceString(g.fornitore),
+                        nomeSpettacolo: this.coalesceString(v.nomeSpettacolo) || this.coalesceString(v.showName),
+                        tipologiaSpettacolo: this.coalesceString(v.tipologiaSpettacolo) || this.coalesceString(v.showType),
+                        dataSpettacolo: this.coalesceString(v.dataSpettacolo) || this.extractDateFromDateTime(showDatetime),
+                        oraSpettacolo: this.coalesceString(v.oraSpettacolo) || this.extractTimeFromDateTime(showDatetime),
+                        noInvoiceAvailable: this.toBoolean(v.noInvoiceAvailable) || this.toBoolean(g.noInvoiceAvailable),
+                        numeroVisite: v.numeroBeneficiari || v.numeroVisite || '',
+                        amountFormatted: v.amountFormatted || this.formatCurrency(amountValue),
+                        valoreScontatoFormatted: v.valoreScontatoFormatted || v.discountedAmountFormatted || this.formatCurrency(discountedValue),
+                        comune: v.comune || '',
+                        provincia: v.provincia || '',
+                        regione: v.regione || '',
+                        saveStatus: v.saveStatus ?? true,
+                        saveStatusSuccess: success,
+                        saveErrorMessage: v.saveErrorMessage || null
+                    };
+                }
+
+                return {
+                    id: detailId,
+                    recordId: detailId,
+                    visitId: detailId,
+                    visitName: v.visitName || v.name || detailId,
+                    name: v.name || v.visitName || detailId,
+                    visitType: v.visitType || v.tipoVisita || '',
+                    tipoVisita: v.tipoVisita || v.visitType || '',
+                    beneficiaryType: v.beneficiaryType || '',
+                    dataVisita: v.dataVisita || '',
+                    comune: v.comune || '',
+                    provincia: v.provincia || '',
+                    regione: v.regione || '',
+                    numeroVisite: v.numeroVisite || '',
+                    totaleMinuti: v.totaleMinuti || '',
+                    amountFormatted: v.amountFormatted || this.formatCurrency(amountValue),
+                    localita: v.localita || '',
+                    saveStatus: v.saveStatus ?? true,
+                    saveStatusSuccess: success,
+                    saveErrorMessage: v.saveErrorMessage || null
+                };
+            });
+
             return {
                 invoice: {
+                    isSorrisoSospeso: isSorriso,
                     invoiceNumber: g.invoiceNumber || '',
                     invoiceDate: g.invoiceDate || '',
                     competenceDate: g.dataCompetenza || g.competenceDate || '',
@@ -95,39 +166,29 @@ export default class MassiveInvoiceLogSummary extends NavigationMixin(LightningE
                     noProfitCategory: g.noProfitCategory || '',
                     prestazioneGratuita: g.prestazioneGratuita ?? false,
                     localita: g.localita || '',
+                    tipologia: g.tipologia || '',
+                    fornitore: g.fornitore || '',
+                    noInvoiceAvailable: this.toBoolean(g.noInvoiceAvailable),
+                    valoreScontatoFormatted: isSorriso ? this.formatCurrency(totalDiscountedAmount) : null,
                     invoiceId: g.invoiceId,
                     invoiceName: g.invoiceName,
                     status: g.status,
                     errorMessage: g.errorMessage,
-                    amountFormatted: g.amountFormatted || this.formatCurrency(g.totalVisitsAmount)
+                    amountFormatted: g.amountFormatted || this.formatCurrency(totalVisitsAmount)
                 },
-                visits: visits.map((v) => ({
-                    id: v.id || v.visitId || `v-${Math.random()}`,
-                    visitId: v.visitId || v.id,
-                    visitName: v.visitName || v.name,
-                    name: v.name || v.visitName,
-                    visitType: v.visitType || v.tipoVisita || '',
-                    tipoVisita: v.tipoVisita || v.visitType || '',
-                    beneficiaryType: v.beneficiaryType || '',
-                    dataVisita: v.dataVisita || '',
-                    comune: v.comune || '',
-                    provincia: v.provincia || '',
-                    regione: v.regione || '',
-                    numeroVisite: v.numeroVisite || '',
-                    totaleMinuti: v.totaleMinuti || '',
-                    amountFormatted: v.amountFormatted || (v.amount != null ? this.formatCurrency(v.amount) : '-'),
-                    localita: v.localita || '',
-                    saveStatus: v.saveStatus ?? true,
-                    saveStatusSuccess: v.saveStatusSuccess ?? true,
-                    saveErrorMessage: v.saveErrorMessage
-                })),
-                totalVisitsAmount: g.totalVisitsAmount || 0,
-                totalVisitsMinutes: g.totalVisitsMinutes || 0,
-                totalVisitsNumber: g.totalVisitsNumber || 0,
-                totalVisitsMinutesFormatted: (g.totalVisitsMinutesFormatted || (g.totalVisitsMinutes || 0).toLocaleString('it-IT')),
-                totalVisitsNumberFormatted: (g.totalVisitsNumberFormatted || (g.totalVisitsNumber || 0).toLocaleString('it-IT')),
-                hasVisitErrors: visits.some((v) => v.saveStatusSuccess === false),
-                visitsContentRowKey: g.visitsContentRowKey || `visits-${g.invoiceNumber}`
+                visits: normalizedDetails,
+                totalVisitsAmount: totalVisitsAmount,
+                totalVisitsMinutes: totalVisitsMinutes,
+                totalVisitsNumber: totalVisitsNumber,
+                totalTicketsAmount: totalVisitsAmount,
+                totalTicketsMinutes: totalVisitsMinutes,
+                totalTicketsNumber: totalVisitsNumber,
+                totalDiscountedAmount: totalDiscountedAmount,
+                totalVisitsMinutesFormatted: g.totalTicketsMinutesFormatted || g.totalVisitsMinutesFormatted || totalVisitsMinutes.toLocaleString('it-IT'),
+                totalVisitsNumberFormatted: g.totalTicketsNumberFormatted || g.totalBeneficiariFormatted || g.totalVisitsNumberFormatted || totalVisitsNumber.toLocaleString('it-IT'),
+                hasVisitErrors: normalizedDetails.some((v) => v.saveStatusSuccess === false),
+                visitsContentRowKey: g.ticketsContentRowKey || g.visitsContentRowKey || `details-${g.invoiceNumber || groupIndex}`,
+                isSorrisoSospeso: isSorriso
             };
         });
     }
@@ -164,14 +225,14 @@ export default class MassiveInvoiceLogSummary extends NavigationMixin(LightningE
     
     async openVisitRecord(event) {
         event.preventDefault();
-        const visitId = event.currentTarget.dataset.visitId;
-        if (!visitId) return;
+        const recordId = event.currentTarget.dataset.recordId || event.currentTarget.dataset.visitId;
+        if (!recordId) return;
         try {
-            await openTab({ recordId: visitId, focus: true });
+            await openTab({ recordId: recordId, focus: true });
         } catch (err) {
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',
-                attributes: { recordId: visitId, actionName: 'view' }
+                attributes: { recordId: recordId, actionName: 'view' }
             });
         }
     }
@@ -201,11 +262,94 @@ export default class MassiveInvoiceLogSummary extends NavigationMixin(LightningE
                 isExpanded: isExp,
                 expandIcon: isExp ? 'utility:dash' : 'utility:add',
                 expandButtonTitle: isExp ? 'Collassa' : 'Espandi',
+                detailTitle: inv.isSorrisoSospeso ? `Biglietti Associati (${inv.visits.length})` : `Visite Associate (${inv.visits.length})`,
+                detailErrorWarning: inv.isSorrisoSospeso
+                    ? '⚠️ Ci sono errori da correggere nei biglietti'
+                    : '⚠️ Ci sono errori da correggere nelle visite',
                 invoice: {
                     ...inv.invoice,
                     statusClass: statusClass
                 }
             };
         });
+    }
+
+    get summaryCardTitle() {
+        return this.isSorrisoLog ? 'Summary Caricamento Massivo - Fatture e Biglietti' : 'Summary Caricamento Massivo - Fatture e Visite';
+    }
+
+    toNumber(value) {
+        if (value === null || value === undefined || value === '') return 0;
+        if (typeof value === 'number') return value;
+        const parsed = Number(String(value).replace(',', '.'));
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    toBoolean(value) {
+        if (value === true || value === false) return value;
+        if (value === null || value === undefined) return false;
+        return String(value).toLowerCase() === 'true';
+    }
+
+    coalesceString(value) {
+        if (value === null || value === undefined) return '';
+        const str = String(value).trim();
+        return str === 'null' ? '' : str;
+    }
+
+    isSorrisoEntry(entry, details) {
+        if (entry && entry.isSorrisoSospeso === true) return true;
+        if (entry && Array.isArray(entry.tickets)) return true;
+        if (entry && (entry.tipologia || entry.fornitore || entry.valoreScontato != null || entry.totalDiscountedAmount != null)) return true;
+        return details.some((d) =>
+            d && (
+                d.tipologia ||
+                d.ticketId ||
+                d.ticketName ||
+                d.ticketType ||
+                d.nomeSpettacolo ||
+                d.showName ||
+                d.tipologiaSpettacolo ||
+                d.showType ||
+                d.valoreScontato != null ||
+                d.discountedAmount != null
+            )
+        );
+    }
+
+    isSorrisoPayload(logJson) {
+        if (!logJson || typeof logJson !== 'string') return false;
+        return logJson.includes('"isSorrisoSospeso": true') ||
+            logJson.includes('"isSorrisoSospeso" : true') ||
+            logJson.includes('"tickets"') ||
+            logJson.includes('"ticketId"') ||
+            logJson.includes('"ticketName"');
+    }
+
+    extractDateFromDateTime(value) {
+        const raw = this.coalesceString(value);
+        if (!raw) return '';
+        const normalized = raw.replace('T', ' ');
+        if (normalized.length >= 10) {
+            return normalized.substring(0, 10);
+        }
+        return '';
+    }
+
+    extractTimeFromDateTime(value) {
+        const raw = this.coalesceString(value);
+        if (!raw) return '';
+        const normalized = raw.replace('T', ' ');
+        const spaceIndex = normalized.indexOf(' ');
+        let timePart = spaceIndex > -1 ? normalized.substring(spaceIndex + 1) : normalized;
+        const dotIndex = timePart.indexOf('.');
+        if (dotIndex > -1) {
+            timePart = timePart.substring(0, dotIndex);
+        }
+        timePart = timePart.replace('Z', '');
+        if (timePart.length >= 5 && timePart.substring(2, 3) === ':') {
+            return timePart.substring(0, 5);
+        }
+        return '';
     }
 }
