@@ -112,7 +112,7 @@ public with sharing class DonationCreationController {
                 GiftEntry donation = new GiftEntry();
                 donation.DonorId = rowDonorId;
                 donation.OrganizationName = rowDonorName;
-                donation.GiftAmount = finalAmount;
+                donation.GiftAmount = ammontare;
                 donation.Original_Donation_Amount__c = ammontare;
                 donation.Withholding_percent__c = trattenuta;
                 donation.GiftType = giftType;

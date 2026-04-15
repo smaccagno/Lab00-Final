@@ -152,8 +152,8 @@ public class CreateAllocationsQueueable implements Queueable {
                         withholdGtd.GiftTransactionId = transactionId;
                         withholdGtd.GiftDesignationId = defaultDesignationByProgram.get(programId);
                         withholdGtd.Amount = withholdAmount;
-                        withholdGtd.Percent = originalAmount != 0
-                            ? (withholdAmount / originalAmount * 100).setScale(3, RoundingMode.HALF_UP)
+                        withholdGtd.Percent = baseAmount != 0
+                            ? (withholdAmount / baseAmount * 100).setScale(3, RoundingMode.HALF_UP)
                             : withholdPercent;
                         withholdGtd.Status__c = 'Distributed';
                         withholdGtd.Programma__c = programId;

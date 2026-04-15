@@ -16,6 +16,7 @@ export default class GiftAllocation extends LightningElement {
   @track rows = []; // righe dinamiche
 
   currentAmount = 0;
+  grossAmount = 0;
   ready = false;
   error;
   totalPercentage = 0;
@@ -40,12 +41,13 @@ export default class GiftAllocation extends LightningElement {
   //------------------------------------------------------------------
   async initData() {
     try {
-      const [budgets, amount] = await Promise.all([
+      const [budgets, amountInfo] = await Promise.all([
         getBudgets({ programId: this.programId }),
         getCurrentAmount({ giftTransactionId: this.giftTransactionId })
       ]);
       this.budgetOptions = budgets;
-      this.currentAmount = amount;
+      this.currentAmount = amountInfo.netAmount;
+      this.grossAmount = amountInfo.grossAmount;
       this.addRow(); // crea la prima riga
       this.refreshRowOptions();
       this.recalcTotals();
@@ -286,7 +288,10 @@ export default class GiftAllocation extends LightningElement {
 
     // Costruisce le stringhe nel formato: Id|Percent|Amount
     this.designationRows = finalRows.map(
-      (r) => `${r.designationId}|${r.percentage}|${r.amount}`
+      (r) => {
+        let truePercent = this.grossAmount ? (r.amount / this.grossAmount) * 100 : r.percentage;
+        return `${r.designationId}|${truePercent}|${r.amount}`;
+      }
     );
 
     // notifica il Flow

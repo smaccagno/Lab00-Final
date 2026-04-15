@@ -4,7 +4,7 @@ public class CreateWithholdAllocationAction {
         if (transactionIds == null || transactionIds.isEmpty()) return;
 
         List<GiftTransaction> txs = [
-            SELECT Id, Reporting_Year__c, Programma__c, Original_Donation_Amount__c, Withholding__c
+            SELECT Id, Reporting_Year__c, Programma__c, Original_Donation_Amount__c, CurrentAmount, Withholding__c
             FROM GiftTransaction
             WHERE Id IN :transactionIds AND Programma__c != null
         ];
@@ -30,6 +30,8 @@ public class CreateWithholdAllocationAction {
             Decimal originalAmount = tx.Original_Donation_Amount__c != null ? tx.Original_Donation_Amount__c : 0;
             Decimal withholdPercent = tx.Withholding__c != null ? tx.Withholding__c : 0;
             
+            Decimal currentAmount = tx.CurrentAmount != null ? tx.CurrentAmount : originalAmount;
+            
             if (withholdPercent > 0 && originalAmount > 0 && defaultDesignationByProgram.containsKey(tx.Programma__c)) {
                 Decimal withholdAmount = (originalAmount * (withholdPercent / 100)).setScale(2, RoundingMode.HALF_UP);
                 if (withholdAmount > 0) {
@@ -37,7 +39,7 @@ public class CreateWithholdAllocationAction {
                     withholdGtd.GiftTransactionId = tx.Id;
                     withholdGtd.GiftDesignationId = defaultDesignationByProgram.get(tx.Programma__c);
                     withholdGtd.Amount = withholdAmount;
-                    withholdGtd.Percent = (withholdAmount / originalAmount * 100).setScale(3, RoundingMode.HALF_UP);
+                    withholdGtd.Percent = currentAmount != 0 ? (withholdAmount / currentAmount * 100).setScale(3, RoundingMode.HALF_UP) : 0;
                     withholdGtd.Status__c = 'Distributed';
                     withholdGtd.Programma__c = tx.Programma__c;
                     withholdGtd.Data_di_Distribuzione__c = Date.today();
