@@ -81,12 +81,33 @@ public class CreateAllocationsQueueable implements Queueable {
         }
 
         Map<Id, GiftTransaction> txById = new Map<Id, GiftTransaction>([
-            SELECT Id, Reporting_Year__c, CurrentAmount, Donation__r.GiftAmount
+            SELECT Id, Name, Reporting_Year__c, CurrentAmount, Donation__r.GiftAmount, Original_Donation_Amount__c, Withholding__c, Programma__c, Data_di_Competenza__c
             FROM GiftTransaction
             WHERE Id IN :transactionIds
         ]);
 
+        Set<Id> programIds = new Set<Id>();
+        Set<String> years = new Set<String>();
+        for (GiftTransaction tx : txById.values()) {
+            if (tx.Programma__c != null) programIds.add(tx.Programma__c);
+            if (tx.Data_di_Competenza__c != null) years.add(String.valueOf(tx.Data_di_Competenza__c.year()));
+        }
+
+        Map<String, Id> defaultOverviewBudgetByProgAndYear = new Map<String, Id>();
+        if (!programIds.isEmpty() && !years.isEmpty()) {
+            for (Overview_Budget_per_Anno__c ob : [
+                SELECT Id, Programma__c, Anno__c 
+                FROM Overview_Budget_per_Anno__c 
+                WHERE Programma__c IN :programIds 
+                  AND Anno__c IN :years 
+                  AND Budget__r.IsDefault = true
+            ]) {
+                defaultOverviewBudgetByProgAndYear.put(ob.Programma__c + '_' + ob.Anno__c, ob.Id);
+            }
+        }
+
         List<GiftTransactionDesignation> allocationsToCreate = new List<GiftTransactionDesignation>();
+        List<Voce_di_Incasso__c> incassiToCreate = new List<Voce_di_Incasso__c>();
         for (Map<String, Object> p : payloads) {
             try {
                 Id transactionId = parseId(p != null ? p.get('transactionId') : null);
@@ -122,6 +143,28 @@ public class CreateAllocationsQueueable implements Queueable {
                     gtd.Donatore_Anno__c = tx.Reporting_Year__c;
                     allocationsToCreate.add(gtd);
                 }
+
+                Decimal originalAmount = tx.Original_Donation_Amount__c != null ? tx.Original_Donation_Amount__c : 0;
+                Decimal withholdPercent = tx.Withholding__c != null ? tx.Withholding__c : 0;
+                String yearStr = tx.Data_di_Competenza__c != null ? String.valueOf(tx.Data_di_Competenza__c.year()) : null;
+                
+                if (withholdPercent > 0 && originalAmount > 0 && yearStr != null) {
+                    Id overviewBudgetId = defaultOverviewBudgetByProgAndYear.get(tx.Programma__c + '_' + yearStr);
+                    if (overviewBudgetId != null) {
+                        Decimal withholdAmount = (originalAmount * (withholdPercent / 100)).setScale(2, RoundingMode.HALF_UP);
+                        if (withholdAmount > 0) {
+                            Voce_di_Incasso__c vi = new Voce_di_Incasso__c();
+                            vi.Overview_Budget_per_Anno__c = overviewBudgetId;
+                            String nameStr = 'Trattenuta ' + tx.Name;
+                            if (nameStr.length() > 80) nameStr = nameStr.substring(0, 80);
+                            vi.Name = nameStr;
+                            vi.Categoria__c = 'Donazione';
+                            vi.Stato__c = 'Effettiva';
+                            vi.Ammontare__c = withholdAmount;
+                            incassiToCreate.add(vi);
+                        }
+                    }
+                }
             } catch (Exception e) {
                 System.debug('Errore parsing payload CreateAllocationsQueueable: ' + e.getMessage());
             }
@@ -156,6 +199,10 @@ public class CreateAllocationsQueueable implements Queueable {
             UpdateTransazioneShadowStaticInvocable.processPayloadsSynchronously(
                 UpdateTransazioneShadowStaticInvocable.takePendingPayloads()
             );
+        }
+
+        if (!incassiToCreate.isEmpty()) {
+            Database.insert(incassiToCreate, false);
         }
 
         if (!shadowAllocationIds.isEmpty()) {
