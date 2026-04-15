@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Categoria__c</fullName>
+    <externalId>false</externalId>
+    <label>Categoria</label>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Donazione</fullName>
+                <default>false</default>
+                <label>Donazione</label>
+            </value>
+            <value>
+                <fullName>Altro</fullName>
+                <default>false</default>
+                <label>Altro</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
