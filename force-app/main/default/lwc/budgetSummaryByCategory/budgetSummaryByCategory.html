@@ -6,69 +6,57 @@
                 <div class="slds-text-color_error">{error}</div>
             </template>
 
-            <div class="slds-grid slds-wrap slds-gutters">
-                <!-- Incassi Section -->
-                <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-color_success">
-                        <lightning-icon icon-name="utility:arrowup" size="small" variant="success" class="slds-m-right_xx-small"></lightning-icon>
-                        Incassi
-                    </h3>
-                    <template if:true={hasIncassi}>
-                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
-                            <thead>
-                                <tr class="slds-line-height_reset">
-                                    <th scope="col"><div class="slds-truncate" title="Categoria">Categoria</div></th>
-                                    <th scope="col"><div class="slds-truncate" title="Totale">Totale</div></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template for:each={incassi} for:item="incasso">
-                                    <tr key={incasso.categoria}>
-                                        <td data-label="Categoria"><div class="slds-truncate">{incasso.categoria}</div></td>
-                                        <td data-label="Totale">
-                                            <lightning-formatted-number value={incasso.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+            <template if:true={hasData}>
+                <div class="chart-container">
+                    
+                    <!-- Incassi Section -->
+                    <template if:true={incassi.length}>
+                        <h3 class="slds-text-heading_small slds-m-bottom_medium slds-text-color_success">
+                            <lightning-icon icon-name="utility:arrowup" size="small" variant="success" class="slds-m-right_xx-small"></lightning-icon>
+                            Incassi
+                        </h3>
+                        
+                        <template for:each={incassi} for:item="item">
+                            <div key={item.categoria} class="bar-row">
+                                <div class="bar-label" title={item.categoria}>{item.categoria}</div>
+                                <div class="bar-track">
+                                    <div class={item.barClass} style={item.widthStyle}></div>
+                                </div>
+                                <div class="bar-value">
+                                    <lightning-formatted-number value={item.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                        </template>
                     </template>
-                    <template if:false={hasIncassi}>
-                        <p class="slds-text-color_weak">Nessun incasso presente.</p>
-                    </template>
-                </div>
 
-                <!-- Spese Section -->
-                <div class="slds-col slds-size_1-of-1">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-color_error">
-                        <lightning-icon icon-name="utility:arrowdown" size="small" variant="error" class="slds-m-right_xx-small"></lightning-icon>
-                        Spese
-                    </h3>
-                    <template if:true={hasSpese}>
-                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
-                            <thead>
-                                <tr class="slds-line-height_reset">
-                                    <th scope="col"><div class="slds-truncate" title="Categoria">Categoria</div></th>
-                                    <th scope="col"><div class="slds-truncate" title="Totale">Totale</div></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template for:each={spese} for:item="spesa">
-                                    <tr key={spesa.categoria}>
-                                        <td data-label="Categoria"><div class="slds-truncate">{spesa.categoria}</div></td>
-                                        <td data-label="Totale">
-                                            <lightning-formatted-number value={spesa.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                    <!-- Spese Section -->
+                    <template if:true={spese.length}>
+                        <h3 class="slds-text-heading_small slds-m-top_large slds-m-bottom_medium slds-text-color_error">
+                            <lightning-icon icon-name="utility:arrowdown" size="small" variant="error" class="slds-m-right_xx-small"></lightning-icon>
+                            Spese
+                        </h3>
+                        
+                        <template for:each={spese} for:item="item">
+                            <div key={item.categoria} class="bar-row">
+                                <div class="bar-label" title={item.categoria}>{item.categoria}</div>
+                                <div class="bar-track">
+                                    <div class={item.barClass} style={item.widthStyle}></div>
+                                </div>
+                                <div class="bar-value">
+                                    <lightning-formatted-number value={item.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                        </template>
                     </template>
-                    <template if:false={hasSpese}>
-                        <p class="slds-text-color_weak">Nessuna spesa presente.</p>
-                    </template>
+
                 </div>
-            </div>
+            </template>
+
+            <template if:false={hasData}>
+                <template if:false={error}>
+                    <p class="slds-text-color_weak slds-text-align_center slds-m-top_medium">Nessun dato presente per generare il grafico.</p>
+                </template>
+            </template>
 
         </div>
     </lightning-card>
