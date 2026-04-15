@@ -21,7 +21,11 @@
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
                                     <template if:true={item.showEffettivo}>
-                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo"></div>
+                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo">
+                                            <span class="effettivo-label">
+                                                <lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
+                                        </div>
                                     </template>
                                     <template if:true={item.showPrevisto}>
                                         <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
@@ -46,7 +50,11 @@
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
                                     <template if:true={item.showEffettivo}>
-                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo"></div>
+                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo">
+                                            <span class="effettivo-label">
+                                                <lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
+                                        </div>
                                     </template>
                                     <template if:true={item.showPrevisto}>
                                         <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
