@@ -80,8 +80,26 @@ public class CreateAllocationsQueueable implements Queueable {
             Database.delete(existingGtds, false);
         }
 
+        Set<Id> programIds = new Set<Id>();
+        for (Map<String, Object> p : payloads) {
+            Id programId = parseId(p != null ? p.get('programId') : null);
+            if (programId != null) programIds.add(programId);
+        }
+
+        Map<Id, Id> defaultDesignationByProgram = new Map<Id, Id>();
+        if (!programIds.isEmpty()) {
+            for (GiftDesignation gd : [
+                SELECT Id, Program__c 
+                FROM GiftDesignation 
+                WHERE Program__c IN :programIds AND IsDefault = true
+            ]) {
+                defaultDesignationByProgram.put(gd.Program__c, gd.Id);
+            }
+        }
+
         Map<Id, GiftTransaction> txById = new Map<Id, GiftTransaction>([
-            SELECT Id, Reporting_Year__c, CurrentAmount, Donation__r.GiftAmount
+            SELECT Id, Reporting_Year__c, CurrentAmount, Donation__r.GiftAmount,
+                   Original_Donation_Amount__c, Withholding__c
             FROM GiftTransaction
             WHERE Id IN :transactionIds
         ]);
@@ -121,6 +139,28 @@ public class CreateAllocationsQueueable implements Queueable {
                     gtd.Data_di_Distribuzione__c = dataDistribuzione;
                     gtd.Donatore_Anno__c = tx.Reporting_Year__c;
                     allocationsToCreate.add(gtd);
+                }
+
+                // Add withhold allocation
+                Decimal originalAmount = tx.Original_Donation_Amount__c != null ? tx.Original_Donation_Amount__c : baseAmount;
+                Decimal withholdPercent = tx.Withholding__c != null ? tx.Withholding__c : 0;
+                
+                if (withholdPercent > 0 && defaultDesignationByProgram.containsKey(programId)) {
+                    Decimal withholdAmount = (originalAmount * (withholdPercent / 100)).setScale(2, RoundingMode.HALF_UP);
+                    if (withholdAmount > 0) {
+                        GiftTransactionDesignation withholdGtd = new GiftTransactionDesignation();
+                        withholdGtd.GiftTransactionId = transactionId;
+                        withholdGtd.GiftDesignationId = defaultDesignationByProgram.get(programId);
+                        withholdGtd.Amount = withholdAmount;
+                        withholdGtd.Percent = originalAmount != 0
+                            ? (withholdAmount / originalAmount * 100).setScale(3, RoundingMode.HALF_UP)
+                            : withholdPercent;
+                        withholdGtd.Status__c = 'Distributed';
+                        withholdGtd.Programma__c = programId;
+                        withholdGtd.Data_di_Distribuzione__c = dataDistribuzione;
+                        withholdGtd.Donatore_Anno__c = tx.Reporting_Year__c;
+                        allocationsToCreate.add(withholdGtd);
+                    }
                 }
             } catch (Exception e) {
                 System.debug('Errore parsing payload CreateAllocationsQueueable: ' + e.getMessage());
