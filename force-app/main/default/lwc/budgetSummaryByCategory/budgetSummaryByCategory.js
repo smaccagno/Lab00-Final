@@ -28,16 +28,24 @@ export default class BudgetSummaryByCategory extends LightningElement {
             this.incassi = (data.incassi || []).map(item => {
                 return {
                     ...item,
-                    widthStyle: `width: ${(item.totale / maxVal) * 100}%`,
-                    barClass: 'bar-fill bar-incasso'
+                    effettivoStyle: `width: ${(item.effettivo / maxVal) * 100}%`,
+                    previstoStyle: `width: ${(item.previsto / maxVal) * 100}%`,
+                    effettivoClass: 'bar-fill bar-incasso-effettivo',
+                    previstoClass: 'bar-fill bar-incasso-previsto',
+                    showEffettivo: item.effettivo > 0,
+                    showPrevisto: item.previsto > 0
                 };
             });
 
             this.spese = (data.spese || []).map(item => {
                 return {
                     ...item,
-                    widthStyle: `width: ${(item.totale / maxVal) * 100}%`,
-                    barClass: 'bar-fill bar-spesa'
+                    effettivoStyle: `width: ${(item.effettivo / maxVal) * 100}%`,
+                    previstoStyle: `width: ${(item.previsto / maxVal) * 100}%`,
+                    effettivoClass: 'bar-fill bar-spesa-effettivo',
+                    previstoClass: 'bar-fill bar-spesa-previsto',
+                    showEffettivo: item.effettivo > 0,
+                    showPrevisto: item.previsto > 0
                 };
             });
 

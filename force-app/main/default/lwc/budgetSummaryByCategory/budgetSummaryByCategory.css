@@ -31,17 +31,40 @@
     display: flex;
     align-items: center;
     transition: width 0.5s ease-in-out;
-    min-width: 2px;
 }
-.bar-incasso {
+.bar-incasso-effettivo {
     background-color: #2e844a; /* SLDS Success */
 }
-.bar-spesa {
+.bar-incasso-previsto {
+    background-color: #91c8a0; /* Lighter green */
+}
+.bar-spesa-effettivo {
     background-color: #ea001e; /* SLDS Error */
+}
+.bar-spesa-previsto {
+    background-color: #f28b96; /* Lighter red */
 }
 .bar-value {
     margin-left: 0.75rem;
     font-weight: bold;
     color: #333;
     min-width: 80px;
+}
+.legend-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #666;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
 }

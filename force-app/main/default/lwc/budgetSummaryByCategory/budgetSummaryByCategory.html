@@ -20,7 +20,12 @@
                             <div key={item.categoria} class="bar-row">
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
-                                    <div class={item.barClass} style={item.widthStyle}></div>
+                                    <template if:true={item.showEffettivo}>
+                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo"></div>
+                                    </template>
+                                    <template if:true={item.showPrevisto}>
+                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
+                                    </template>
                                 </div>
                                 <div class="bar-value">
                                     <lightning-formatted-number value={item.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
@@ -40,7 +45,12 @@
                             <div key={item.categoria} class="bar-row">
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
-                                    <div class={item.barClass} style={item.widthStyle}></div>
+                                    <template if:true={item.showEffettivo}>
+                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo"></div>
+                                    </template>
+                                    <template if:true={item.showPrevisto}>
+                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
+                                    </template>
                                 </div>
                                 <div class="bar-value">
                                     <lightning-formatted-number value={item.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
@@ -48,6 +58,26 @@
                             </div>
                         </template>
                     </template>
+
+                    <!-- Legenda -->
+                    <div class="legend-container slds-m-top_large">
+                        <div class="legend-item">
+                            <div class="legend-color bar-incasso-effettivo"></div>
+                            <span>Incassi Effettivi</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bar-incasso-previsto"></div>
+                            <span>Incassi Previsti</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bar-spesa-effettivo"></div>
+                            <span>Spese Effettive</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bar-spesa-previsto"></div>
+                            <span>Spese Previste</span>
+                        </div>
+                    </div>
 
                 </div>
             </template>
