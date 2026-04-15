@@ -12,24 +12,26 @@ export default class BudgetSummaryByCategory extends LightningElement {
     @wire(getSummary, { recordId: '$recordId' })
     wiredSummary({ error, data }) {
         if (data) {
-            let maxVal = 0;
+            let maxIncassiVal = 0;
+            let maxSpeseVal = 0;
             
             // Trova il valore massimo per scalare le barre proporzionalmente (da 0 a 100%)
             if (data.incassi) {
-                data.incassi.forEach(item => { if (item.totale > maxVal) maxVal = item.totale; });
+                data.incassi.forEach(item => { if (item.totale > maxIncassiVal) maxIncassiVal = item.totale; });
             }
             if (data.spese) {
-                data.spese.forEach(item => { if (item.totale > maxVal) maxVal = item.totale; });
+                data.spese.forEach(item => { if (item.totale > maxSpeseVal) maxSpeseVal = item.totale; });
             }
 
             // Evita divisioni per zero
-            maxVal = maxVal > 0 ? maxVal : 1;
+            maxIncassiVal = maxIncassiVal > 0 ? maxIncassiVal : 1;
+            maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
 
             this.incassi = (data.incassi || []).map(item => {
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxVal) * 100}%`,
-                    previstoStyle: `width: ${(item.previsto / maxVal) * 100}%`,
+                    effettivoStyle: `width: ${(item.effettivo / maxIncassiVal) * 100}%`,
+                    previstoStyle: `width: ${(item.previsto / maxIncassiVal) * 100}%`,
                     effettivoClass: 'bar-fill bar-incasso-effettivo',
                     previstoClass: 'bar-fill bar-incasso-previsto',
                     showEffettivo: item.effettivo > 0,
@@ -40,8 +42,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
             this.spese = (data.spese || []).map(item => {
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxVal) * 100}%`,
-                    previstoStyle: `width: ${(item.previsto / maxVal) * 100}%`,
+                    effettivoStyle: `width: ${(item.effettivo / maxSpeseVal) * 100}%`,
+                    previstoStyle: `width: ${(item.previsto / maxSpeseVal) * 100}%`,
                     effettivoClass: 'bar-fill bar-spesa-effettivo',
                     previstoClass: 'bar-fill bar-spesa-previsto',
                     showEffettivo: item.effettivo > 0,
