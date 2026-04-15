@@ -161,6 +161,7 @@ public class CreateAllocationsQueueable implements Queueable {
                             vi.Categoria__c = 'Donazione';
                             vi.Stato__c = 'Effettiva';
                             vi.Ammontare__c = withholdAmount;
+                            vi.Transazione__c = transactionId;
                             incassiToCreate.add(vi);
                         }
                     }

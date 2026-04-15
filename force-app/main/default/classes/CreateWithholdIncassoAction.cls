@@ -52,6 +52,7 @@ public class CreateWithholdIncassoAction {
                         vi.Categoria__c = 'Donazione';
                         vi.Stato__c = 'Effettiva';
                         vi.Ammontare__c = withholdAmount;
+                        vi.Transazione__c = tx.Id;
                         incassiToCreate.add(vi);
                     }
                 }
