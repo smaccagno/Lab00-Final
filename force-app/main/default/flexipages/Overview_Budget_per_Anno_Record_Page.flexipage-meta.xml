@@ -193,6 +193,18 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentName>budgetSummaryByCategory</componentName>
+                <identifier>c_budgetSummaryByCategory</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.isDefault__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>true</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </componentInstance>
+        </itemInstances><itemInstances>
+            <componentInstance>
                 <componentInstanceProperties>
                     <name>actionNames</name>
                     <valueList>

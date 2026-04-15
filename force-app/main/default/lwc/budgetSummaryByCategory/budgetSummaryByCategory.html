@@ -1,0 +1,75 @@
+<template>
+    <lightning-card title="Riepilogo Budget per Categoria" icon-name="custom:custom41">
+        <div class="slds-p-around_medium">
+            
+            <template if:true={error}>
+                <div class="slds-text-color_error">{error}</div>
+            </template>
+
+            <div class="slds-grid slds-wrap slds-gutters">
+                <!-- Incassi Section -->
+                <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-color_success">
+                        <lightning-icon icon-name="utility:arrowup" size="small" variant="success" class="slds-m-right_xx-small"></lightning-icon>
+                        Incassi
+                    </h3>
+                    <template if:true={hasIncassi}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"><div class="slds-truncate" title="Categoria">Categoria</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Totale">Totale</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={incassi} for:item="incasso">
+                                    <tr key={incasso.categoria}>
+                                        <td data-label="Categoria"><div class="slds-truncate">{incasso.categoria}</div></td>
+                                        <td data-label="Totale">
+                                            <lightning-formatted-number value={incasso.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template if:false={hasIncassi}>
+                        <p class="slds-text-color_weak">Nessun incasso presente.</p>
+                    </template>
+                </div>
+
+                <!-- Spese Section -->
+                <div class="slds-col slds-size_1-of-1">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-color_error">
+                        <lightning-icon icon-name="utility:arrowdown" size="small" variant="error" class="slds-m-right_xx-small"></lightning-icon>
+                        Spese
+                    </h3>
+                    <template if:true={hasSpese}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"><div class="slds-truncate" title="Categoria">Categoria</div></th>
+                                    <th scope="col"><div class="slds-truncate" title="Totale">Totale</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={spese} for:item="spesa">
+                                    <tr key={spesa.categoria}>
+                                        <td data-label="Categoria"><div class="slds-truncate">{spesa.categoria}</div></td>
+                                        <td data-label="Totale">
+                                            <lightning-formatted-number value={spesa.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template if:false={hasSpese}>
+                        <p class="slds-text-color_weak">Nessuna spesa presente.</p>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+    </lightning-card>
+</template>
