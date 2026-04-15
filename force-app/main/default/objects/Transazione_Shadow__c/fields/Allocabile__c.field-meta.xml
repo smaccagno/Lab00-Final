@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Allocabile__c</fullName>
-    <formula>Transazione__r.CurrentAmount - (Transazione__r.CurrentAmount * Transazione__r.Withholding__c)</formula>
+    <formula>Transazione__r.CurrentAmount</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Allocabile</label>
     <precision>18</precision>

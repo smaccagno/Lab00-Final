@@ -50,31 +50,19 @@ public with sharing class GiftAllocationController {
     return result;
   }
 
-  public class AmountInfo {
-    @AuraEnabled public Decimal netAmount;
-    @AuraEnabled public Decimal grossAmount;
-  }
-
   /**
    * Ritorna il CurrentAmount della GiftTransaction passata.
    */
   @AuraEnabled(cacheable=true)
-  public static AmountInfo getCurrentAmount(Id giftTransactionId) {
-    AmountInfo info = new AmountInfo();
-    info.netAmount = 0;
-    info.grossAmount = 0;
+  public static Decimal getCurrentAmount(Id giftTransactionId) {
     if (giftTransactionId == null)
-      return info;
+      return 0;
     GiftTransaction gt = [
-      SELECT CurrentAmount, Withholding__c
+      SELECT CurrentAmount
       FROM GiftTransaction
       WHERE Id = :giftTransactionId
       LIMIT 1
     ];
-    Decimal amount = gt.CurrentAmount == null ? 0 : gt.CurrentAmount;
-    Decimal withhold = gt.Withholding__c == null ? 0 : gt.Withholding__c;
-    info.grossAmount = amount;
-    info.netAmount = amount - (amount * withhold / 100);
-    return info;
+    return gt.CurrentAmount == null ? 0 : gt.CurrentAmount;
   }
 }

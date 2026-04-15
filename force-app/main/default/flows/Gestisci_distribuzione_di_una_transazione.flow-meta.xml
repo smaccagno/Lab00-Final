@@ -1,24 +1,8 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>62.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
-    <actionCalls>
-        <name>Create_Withhold_Allocation</name>
-        <label>Create Withhold Allocation</label>
-        <locationX>446</locationX>
-        <locationY>1850</locationY>
-        <actionName>CreateWithholdAllocationAction</actionName>
-        <actionType>apex</actionType>
-        <connector>
-            <targetReference>get_Allocations</targetReference>
-        </connector>
-        <inputParameters>
-            <name>transactionIds</name>
-            <value>
-                <elementReference>recordId</elementReference>
-            </value>
-        </inputParameters>
-    </actionCalls><assignments>
+    <assignments>
         <name>Aggiungi_Allocazione</name>
         <label>Aggiungi Allocazione</label>
         <locationX>534</locationX>
@@ -243,18 +227,18 @@
     <formulas>
         <name>FD_Amount</name>
         <dataType>Number</dataType>
-        <expression>VALUE( RIGHT({!Loop_su_elementi}, LEN({!Loop_su_elementi}) - ( FIND("|", {!Loop_su_elementi}, FIND("|", {!Loop_su_elementi})+1 ) ) ) )</expression>
+        <expression>VALUE( RIGHT({!Loop_su_elementi}, LEN({!Loop_su_elementi}) - ( FIND(&quot;|&quot;, {!Loop_su_elementi}, FIND(&quot;|&quot;, {!Loop_su_elementi})+1 ) ) ) )</expression>
         <scale>2</scale>
     </formulas>
     <formulas>
         <name>FD_Id</name>
         <dataType>String</dataType>
-        <expression>LEFT({!Loop_su_elementi}, FIND("|", {!Loop_su_elementi})-1)</expression>
+        <expression>LEFT({!Loop_su_elementi}, FIND(&quot;|&quot;, {!Loop_su_elementi})-1)</expression>
     </formulas>
     <formulas>
         <name>FD_Percent</name>
         <dataType>Number</dataType>
-        <expression>VALUE( LEFT( MID({!Loop_su_elementi}, FIND("|", {!Loop_su_elementi})+1, LEN({!Loop_su_elementi})), FIND("|", MID({!Loop_su_elementi}, FIND("|", {!Loop_su_elementi})+1, LEN({!Loop_su_elementi})) ) -1 ) )</expression>
+        <expression>VALUE( LEFT( MID({!Loop_su_elementi}, FIND(&quot;|&quot;, {!Loop_su_elementi})+1, LEN({!Loop_su_elementi})), FIND(&quot;|&quot;, MID({!Loop_su_elementi}, FIND(&quot;|&quot;, {!Loop_su_elementi})+1, LEN({!Loop_su_elementi})) ) -1 ) )</expression>
         <scale>2</scale>
     </formulas>
     <interviewLabel>Manage Gift Designation {!$Flow.CurrentDateTime}</interviewLabel>
@@ -373,7 +357,7 @@
         <locationX>446</locationX>
         <locationY>1790</locationY>
         <connector>
-            <targetReference>Create_Withhold_Allocation</targetReference>
+            <targetReference>get_Allocations</targetReference>
         </connector>
         <inputReference>GetGiftTransaction</inputReference>
     </recordUpdates>
@@ -390,7 +374,7 @@
         </connector>
         <fields>
             <name>Dati_transazione</name>
-            <fieldText>&lt;p style="text-align: center;"&gt;&lt;strong style="font-size: 14px;"&gt;&lt;em&gt;In questa schermata puoi scegliere a quali budget, legati al programma selezionato e ad esso iscritti, vuoi distribuire la donazione, ed in che percentuali.&lt;/em&gt;&lt;/strong&gt;&lt;/p&gt;</fieldText>
+            <fieldText>&lt;p style=&quot;text-align: center;&quot;&gt;&lt;strong style=&quot;font-size: 14px;&quot;&gt;&lt;em&gt;In questa schermata puoi scegliere a quali budget, legati al programma selezionato e ad esso iscritti, vuoi distribuire la donazione, ed in che percentuali.&lt;/em&gt;&lt;/strong&gt;&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
             <styleProperties>
                 <verticalAlignment>
@@ -606,7 +590,7 @@
             <inputParameters>
                 <name>columns</name>
                 <value>
-                    <stringValue>[{"apiName":"Budget_Name__c","guid":"column-3e0d","editable":false,"hasCustomHeaderLabel":false,"customHeaderLabel":"","wrapText":true,"order":0,"label":"Budget Name","type":"customRichText"},{"apiName":"Percent","guid":"column-842d","editable":false,"hasCustomHeaderLabel":false,"customHeaderLabel":"","wrapText":true,"order":1,"label":"Percent","type":"customPercent"},{"apiName":"Amount","guid":"column-b352","editable":false,"hasCustomHeaderLabel":false,"customHeaderLabel":"","wrapText":true,"order":2,"label":"Amount","type":"currency"},{"apiName":"Status__c","guid":"column-8a1d","editable":false,"hasCustomHeaderLabel":false,"customHeaderLabel":"","wrapText":true,"order":3,"label":"Status","type":"text"}]</stringValue>
+                    <stringValue>[{&quot;apiName&quot;:&quot;Budget_Name__c&quot;,&quot;guid&quot;:&quot;column-3e0d&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Budget Name&quot;,&quot;type&quot;:&quot;customRichText&quot;},{&quot;apiName&quot;:&quot;Percent&quot;,&quot;guid&quot;:&quot;column-842d&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Percent&quot;,&quot;type&quot;:&quot;customPercent&quot;},{&quot;apiName&quot;:&quot;Amount&quot;,&quot;guid&quot;:&quot;column-b352&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Amount&quot;,&quot;type&quot;:&quot;currency&quot;},{&quot;apiName&quot;:&quot;Status__c&quot;,&quot;guid&quot;:&quot;column-8a1d&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:3,&quot;label&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
                 </value>
             </inputParameters>
             <inputParameters>

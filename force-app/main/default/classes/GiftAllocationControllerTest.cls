@@ -43,8 +43,8 @@ private class GiftAllocationControllerTest {
    *───────────────────────────────────────────────────────────*/
   @IsTest
   static void testGetCurrentAmount_NullId() {
-    GiftAllocationController.AmountInfo amt = GiftAllocationController.getCurrentAmount(null);
-    System.assertEquals(0, amt.netAmount, 'Con Id null il metodo restituisce 0.');
+    Decimal amt = GiftAllocationController.getCurrentAmount(null);
+    System.assertEquals(0, amt, 'Con Id null il metodo restituisce 0.');
   }
 
   /*────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ private class GiftAllocationControllerTest {
   @IsTest
   static void testGetCurrentAmount_WithId() {
     List<GiftTransaction> gts = [
-      SELECT Id, CurrentAmount, Withholding__c
+      SELECT Id, CurrentAmount
       FROM GiftTransaction
       LIMIT 1
     ];
@@ -65,15 +65,13 @@ private class GiftAllocationControllerTest {
 
     GiftTransaction gt = gts[0];
 
-    Decimal expectedGross = (gt.CurrentAmount == null) ? 0 : gt.CurrentAmount;
-    Decimal withhold = (gt.Withholding__c == null) ? 0 : gt.Withholding__c;
-    Decimal expectedNet = expectedGross - (expectedGross * withhold / 100);
+    Decimal expected = (gt.CurrentAmount == null) ? 0 : gt.CurrentAmount;
 
-    GiftAllocationController.AmountInfo res = GiftAllocationController.getCurrentAmount(gt.Id);
+    Decimal res = GiftAllocationController.getCurrentAmount(gt.Id);
 
     System.assertEquals(
-      expectedNet,
-      res.netAmount,
+      expected,
+      res,
       'CurrentAmount restituito non coerente con il DB.'
     );
   }
