@@ -31,7 +31,7 @@ public with sharing class BudgetAppDashboardController {
         }
     }
 
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<YearSummary> getProgramDetailsData(Id programId, String selectedDateStr) {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
