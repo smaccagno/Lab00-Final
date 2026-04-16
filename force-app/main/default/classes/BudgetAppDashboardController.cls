@@ -21,7 +21,6 @@ public with sharing class BudgetAppDashboardController {
         @AuraEnabled public String categoria;
         @AuraEnabled public Decimal previsto;
         @AuraEnabled public Decimal effettivo;
-        @AuraEnabled public Decimal totale;
         
         public YearSummary(String anno, String tipo, String categoria) {
             this.anno = anno;
@@ -29,7 +28,6 @@ public with sharing class BudgetAppDashboardController {
             this.categoria = categoria;
             this.previsto = 0;
             this.effettivo = 0;
-            this.totale = 0;
         }
     }
 
@@ -117,8 +115,10 @@ public with sharing class BudgetAppDashboardController {
                 ys.previsto = 0;
             }
             if (ys.effettivo < 0) ys.effettivo = 0;
-            ys.totale = ys.effettivo + ys.previsto;
-            results.add(ys);
+            
+            if (ys.effettivo != 0 || ys.previsto != 0) {
+                results.add(ys);
+            }
         }
 
         // Sort by year descending, then type, then category

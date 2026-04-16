@@ -47,15 +47,25 @@
                         onchange={handleProgramChange}>
                     </lightning-combobox>
 
-                    <template if:true={programData}>
+                    <template if:true={yearlyData}>
                         <div class="slds-m-top_medium">
-                            <lightning-datatable
-                                key-field="id"
-                                data={programData}
-                                columns={columns}
-                                hide-checkbox-column>
-                            </lightning-datatable>
+                            <template for:each={yearlyData} for:item="yearGroup">
+                                <div key={yearGroup.anno} class="slds-m-bottom_large">
+                                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">Anno: {yearGroup.anno}</h3>
+                                    <lightning-datatable
+                                        key-field="id"
+                                        data={yearGroup.data}
+                                        columns={columns}
+                                        hide-checkbox-column>
+                                    </lightning-datatable>
+                                </div>
+                            </template>
                         </div>
+                    </template>
+                    <template if:false={yearlyData}>
+                        <template if:true={selectedProgramId}>
+                            <p class="slds-m-top_medium slds-text-color_weak">Nessun dato disponibile per i filtri selezionati.</p>
+                        </template>
                     </template>
                 </div>
             </lightning-card>
