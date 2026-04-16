@@ -1,0 +1,49 @@
+<template>
+    <div class="slds-grid slds-wrap slds-gutters slds-p-around_small">
+        <!-- Top: Omnicomprehensive view -->
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_large">
+            <template if:true={accountId}>
+                <c-budget-summary-by-category record-id={accountId}></c-budget-summary-by-category>
+            </template>
+        </div>
+
+        <!-- Left column: Charts per program -->
+        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+            <h2 class="slds-text-heading_medium slds-m-bottom_medium">Grafici per Programma</h2>
+            <template for:each={programs} for:item="prog">
+                <div key={prog.Id} class="slds-m-bottom_medium">
+                    <lightning-card title={prog.Name} icon-name="standard:budget">
+                        <c-budget-summary-by-category record-id={prog.Id}></c-budget-summary-by-category>
+                    </lightning-card>
+                </div>
+            </template>
+        </div>
+
+        <!-- Right column: Tabular data per program -->
+        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+            <lightning-card title="Dettaglio Tabellare per Anno" icon-name="standard:report">
+                <div class="slds-p-around_medium">
+                    <lightning-combobox
+                        name="programSelect"
+                        label="Seleziona Programma"
+                        value={selectedProgramId}
+                        placeholder="Seleziona un programma"
+                        options={programOptions}
+                        onchange={handleProgramChange}>
+                    </lightning-combobox>
+
+                    <template if:true={programData}>
+                        <div class="slds-m-top_medium">
+                            <lightning-datatable
+                                key-field="id"
+                                data={programData}
+                                columns={columns}
+                                hide-checkbox-column>
+                            </lightning-datatable>
+                        </div>
+                    </template>
+                </div>
+            </lightning-card>
+        </div>
+    </div>
+</template>
