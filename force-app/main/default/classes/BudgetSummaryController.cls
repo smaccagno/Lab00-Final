@@ -46,14 +46,14 @@ public with sharing class BudgetSummaryController {
                 incassiMap.put(cat, new CategorySummary(cat));
             }
             
-            if (stato == 'Effettiva') {
-                if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
+            if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
+                if (stato == 'Effettiva') {
                     incassiMap.get(cat).effettivo += tot;
+                } else if (stato == 'Prevista') {
+                    incassiMap.get(cat).previsto += tot;
+                } else if (stato == 'Annullata') {
+                    incassiMap.get(cat).previsto -= tot;
                 }
-            } else if (stato == 'Prevista') {
-                incassiMap.get(cat).previsto += tot;
-            } else if (stato == 'Annullata') {
-                incassiMap.get(cat).previsto -= tot;
             }
         }
 
@@ -65,7 +65,7 @@ public with sharing class BudgetSummaryController {
             if (cs.effettivo < 0) cs.effettivo = 0;
             cs.totale = cs.effettivo + cs.previsto;
             
-            if (cs.totale > 0) {
+            if (cs.totale >= 0) {
                 result.incassi.add(cs);
             }
         }
@@ -87,15 +87,15 @@ public with sharing class BudgetSummaryController {
                 speseMap.put(cat, new CategorySummary(cat));
             }
             
-            if (stato == 'Effettiva') {
-                if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
+            if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
+                if (stato == 'Effettiva') {
                     speseMap.get(cat).effettivo += tot;
+                } else if (stato == 'Prevista') {
+                    speseMap.get(cat).previsto += tot;
+                } else if (stato == 'Annullata') {
+                    // Sottrae il totale alla categoria (dal previsto)
+                    speseMap.get(cat).previsto -= tot;
                 }
-            } else if (stato == 'Prevista') {
-                speseMap.get(cat).previsto += tot;
-            } else if (stato == 'Annullata') {
-                // Sottrae il totale alla categoria (dal previsto)
-                speseMap.get(cat).previsto -= tot;
             }
         }
 
@@ -107,7 +107,7 @@ public with sharing class BudgetSummaryController {
             if (cs.effettivo < 0) cs.effettivo = 0;
             cs.totale = cs.effettivo + cs.previsto;
             
-            if (cs.totale > 0) {
+            if (cs.totale >= 0) {
                 result.spese.add(cs);
             }
         }

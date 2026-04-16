@@ -33,26 +33,34 @@ export default class BudgetSummaryByCategory extends LightningElement {
             maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
 
             this.incassi = (data.incassi || []).map(item => {
+                let pStyle = `width: ${(item.previsto / maxIncassiVal) * 100}%; min-width: 35px;`;
+                if (item.previsto === 0) {
+                    pStyle += ` border-left: 1px solid rgba(255,255,255,0.5);`;
+                }
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxIncassiVal) * 100}%`,
-                    previstoStyle: `width: ${(item.previsto / maxIncassiVal) * 100}%`,
+                    effettivoStyle: `width: ${(item.effettivo / maxIncassiVal) * 100}%; min-width: 35px;`,
+                    previstoStyle: pStyle,
                     effettivoClass: 'bar-fill bar-incasso-effettivo',
                     previstoClass: 'bar-fill bar-incasso-previsto',
                     showEffettivo: item.effettivo > 0,
-                    showPrevisto: item.previsto > 0
+                    showPrevisto: true
                 };
             });
 
             this.spese = (data.spese || []).map(item => {
+                let pStyle = `width: ${(item.previsto / maxSpeseVal) * 100}%; min-width: 35px;`;
+                if (item.previsto === 0) {
+                    pStyle += ` border-left: 1px solid rgba(255,255,255,0.5);`;
+                }
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxSpeseVal) * 100}%`,
-                    previstoStyle: `width: ${(item.previsto / maxSpeseVal) * 100}%`,
+                    effettivoStyle: `width: ${(item.effettivo / maxSpeseVal) * 100}%; min-width: 35px;`,
+                    previstoStyle: pStyle,
                     effettivoClass: 'bar-fill bar-spesa-effettivo',
                     previstoClass: 'bar-fill bar-spesa-previsto',
                     showEffettivo: item.effettivo > 0,
-                    showPrevisto: item.previsto > 0
+                    showPrevisto: true
                 };
             });
 

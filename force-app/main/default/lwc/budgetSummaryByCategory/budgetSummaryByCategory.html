@@ -34,7 +34,11 @@
                                         </div>
                                     </template>
                                     <template if:true={item.showPrevisto}>
-                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
+                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto">
+                                            <span class="effettivo-label">
+                                                <lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
+                                        </div>
                                     </template>
                                 </div>
                                 <div class="bar-value">
@@ -63,7 +67,11 @@
                                         </div>
                                     </template>
                                     <template if:true={item.showPrevisto}>
-                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto"></div>
+                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto">
+                                            <span class="effettivo-label">
+                                                <lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
+                                        </div>
                                     </template>
                                 </div>
                                 <div class="bar-value">
