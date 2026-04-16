@@ -50,7 +50,7 @@ export default class BudgetAppDashboard extends LightningElement {
 
     fetchProgramData() {
         if (this.selectedProgramId) {
-            getProgramDetails({ programId: this.selectedProgramId, filterDate: this.globalDate })
+            getProgramDetails({ programId: this.selectedProgramId, filterDateStr: this.globalDate })
                 .then(result => {
                     let groupedByYear = {};
                     let programTotals = {};

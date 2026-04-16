@@ -32,9 +32,18 @@ public with sharing class BudgetAppDashboardController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<YearSummary> getProgramDetails(Id programId, Date filterDate) {
+    public static List<YearSummary> getProgramDetails(Id programId, String filterDateStr) {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
+
+        Date filterDate = null;
+        if (String.isNotBlank(filterDateStr)) {
+            try {
+                filterDate = Date.valueOf(filterDateStr);
+            } catch (Exception e) {
+                // Ignore parse errors
+            }
+        }
 
         Map<String, YearSummary> yearToTypeToCatToSummary = new Map<String, YearSummary>();
 
