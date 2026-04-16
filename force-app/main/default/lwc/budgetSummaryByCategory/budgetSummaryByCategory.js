@@ -4,7 +4,7 @@ import getSummary from '@salesforce/apex/BudgetSummaryController.getSummary';
 export default class BudgetSummaryByCategory extends LightningElement {
     @api recordId;
 
-    selectedDate;
+    selectedDate = new Date().toISOString().split('T')[0];
     incassi = [];
     spese = [];
     cashFlow = [];
