@@ -29,14 +29,16 @@ export default class BudgetSummaryByCategory extends LightningElement {
             // Trova il valore massimo per scalare le barre proporzionalmente (da 0 a 100%)
             if (data.incassi) {
                 data.incassi.forEach(item => { 
-                    if (item.totale > maxIncassiVal) maxIncassiVal = item.totale; 
+                    let maxBar = Math.max(item.effettivo, item.previsto);
+                    if (maxBar > maxIncassiVal) maxIncassiVal = maxBar; 
                     totalIncassiEffettivo += item.effettivo;
                     totalIncassiPrevisto += item.previsto;
                 });
             }
             if (data.spese) {
                 data.spese.forEach(item => { 
-                    if (item.totale > maxSpeseVal) maxSpeseVal = item.totale; 
+                    let maxBar = Math.max(item.effettivo, item.previsto);
+                    if (maxBar > maxSpeseVal) maxSpeseVal = maxBar; 
                     totalSpeseEffettivo += item.effettivo;
                     totalSpesePrevisto += item.previsto;
                 });
@@ -122,7 +124,11 @@ export default class BudgetSummaryByCategory extends LightningElement {
             let dispPrevisto = totalIncassiPrevisto - totalSpesePrevisto;
             let totalDisp = dispEffettivo + dispPrevisto;
 
-            let maxCashFlowVal = Math.max(totalIncassi, totalSpese, Math.abs(dispEffettivo), Math.abs(dispPrevisto));
+            let maxCashFlowVal = Math.max(
+                totalIncassiEffettivo, totalIncassiPrevisto,
+                totalSpeseEffettivo, totalSpesePrevisto,
+                Math.abs(dispEffettivo), Math.abs(dispPrevisto)
+            );
             maxCashFlowVal = maxCashFlowVal > 0 ? maxCashFlowVal : 1;
 
             let cfIncassiSegments = [];
