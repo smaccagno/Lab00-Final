@@ -117,7 +117,12 @@ export default class BudgetSummaryByCategory extends LightningElement {
             // Cash Flow logic
             let totalIncassi = totalIncassiEffettivo + totalIncassiPrevisto;
             let totalSpese = totalSpeseEffettivo + totalSpesePrevisto;
-            let maxCashFlowVal = Math.max(totalIncassi, totalSpese);
+            
+            let dispEffettivo = totalIncassiEffettivo - totalSpeseEffettivo;
+            let dispPrevisto = totalIncassiPrevisto - totalSpesePrevisto;
+            let totalDisp = dispEffettivo + dispPrevisto;
+
+            let maxCashFlowVal = Math.max(totalIncassi, totalSpese, Math.abs(dispEffettivo), Math.abs(dispPrevisto));
             maxCashFlowVal = maxCashFlowVal > 0 ? maxCashFlowVal : 1;
 
             let cfIncassiSegments = [];
@@ -166,6 +171,34 @@ export default class BudgetSummaryByCategory extends LightningElement {
             }
             cfSpeseSegments.sort((a, b) => b.value - a.value);
 
+            let cfDispSegments = [];
+            let dispPrevWidth = Math.max(0, dispPrevisto);
+            let cfDispPStyle = `width: ${(dispPrevWidth / maxCashFlowVal) * 100}%;`;
+            if (dispPrevisto <= 0) {
+                cfDispPStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
+            }
+            cfDispSegments.push({
+                id: 'previsto',
+                value: dispPrevisto,
+                style: cfDispPStyle,
+                cssClass: 'bar-fill bar-disp-previsto',
+                title: 'Previsto'
+            });
+
+            let dispEffWidth = Math.max(0, dispEffettivo);
+            let cfDispEStyle = `width: ${(dispEffWidth / maxCashFlowVal) * 100}%;`;
+            if (dispEffettivo <= 0) {
+                cfDispEStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
+            }
+            cfDispSegments.push({
+                id: 'effettivo',
+                value: dispEffettivo,
+                style: cfDispEStyle,
+                cssClass: 'bar-fill bar-disp-effettivo',
+                title: 'Effettivo'
+            });
+            cfDispSegments.sort((a, b) => b.value - a.value);
+
             this.cashFlow = [];
             if (totalIncassi > 0 || totalSpese > 0) {
                 this.cashFlow.push({
@@ -177,6 +210,11 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     categoria: 'Totale Spese',
                     totale: totalSpese,
                     segments: cfSpeseSegments
+                });
+                this.cashFlow.push({
+                    categoria: 'Disponibile',
+                    totale: totalDisp,
+                    segments: cfDispSegments
                 });
             }
 

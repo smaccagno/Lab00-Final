@@ -56,6 +56,12 @@
 .bar-spesa-previsto {
     background-color: #f28b96; /* Lighter red */
 }
+.bar-disp-effettivo {
+    background-color: #0176d3; /* SLDS Brand */
+}
+.bar-disp-previsto {
+    background-color: #89c2f5; /* Lighter blue */
+}
 .bar-value {
     margin-left: 0.75rem;
     font-weight: bold;
