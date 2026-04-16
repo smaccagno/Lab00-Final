@@ -49,6 +49,18 @@
                         onchange={handleProgramChange}>
                     </lightning-combobox>
 
+                    <template if:true={programSummaryData}>
+                        <div class="slds-m-top_large slds-m-bottom_large slds-box slds-theme_default">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">Totali Programma (Tutti gli anni)</h3>
+                            <lightning-datatable
+                                key-field="id"
+                                data={programSummaryData}
+                                columns={columns}
+                                hide-checkbox-column>
+                            </lightning-datatable>
+                        </div>
+                    </template>
+
                     <template if:true={yearlyData}>
                         <div class="slds-m-top_medium">
                             <template for:each={yearlyData} for:item="yearGroup">

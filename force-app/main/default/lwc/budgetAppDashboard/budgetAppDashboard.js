@@ -8,6 +8,7 @@ export default class BudgetAppDashboard extends LightningElement {
     programOptions = [];
     selectedProgramId;
     yearlyData = null;
+    programSummaryData = null;
     globalDate = new Date().toISOString().split('T')[0];
 
     columns = [
@@ -52,16 +53,71 @@ export default class BudgetAppDashboard extends LightningElement {
             getProgramDetails({ programId: this.selectedProgramId, filterDate: this.globalDate })
                 .then(result => {
                     let groupedByYear = {};
+                    let programTotals = {};
+                    let totalIncassiPrev = 0, totalIncassiEff = 0;
+                    let totalSpesePrev = 0, totalSpeseEff = 0;
                     
                     result.forEach(item => {
                         // Skip if both are 0
                         if (item.effettivo === 0 && item.previsto === 0) return;
                         
+                        let rowClass = '';
+                        if (item.tipo === 'Incasso') rowClass = 'slds-text-color_success';
+                        else if (item.tipo === 'Spesa') rowClass = 'slds-text-color_error';
+
                         if (!groupedByYear[item.anno]) {
                             groupedByYear[item.anno] = [];
                         }
-                        groupedByYear[item.anno].push({ ...item, cssClass: '' });
+                        groupedByYear[item.anno].push({ ...item, cssClass: rowClass });
+
+                        // Program Summary Aggregation
+                        let key = item.tipo + '_' + item.categoria;
+                        if (!programTotals[key]) {
+                            programTotals[key] = {
+                                id: 'tot_' + key,
+                                tipo: item.tipo,
+                                categoria: item.categoria,
+                                previsto: 0,
+                                effettivo: 0,
+                                cssClass: rowClass
+                            };
+                        }
+                        programTotals[key].previsto += item.previsto;
+                        programTotals[key].effettivo += item.effettivo;
+
+                        if (item.tipo === 'Incasso') {
+                            totalIncassiPrev += item.previsto;
+                            totalIncassiEff += item.effettivo;
+                        } else if (item.tipo === 'Spesa') {
+                            totalSpesePrev += item.previsto;
+                            totalSpeseEff += item.effettivo;
+                        }
                     });
+
+                    // Build Summary Data
+                    let summaryData = Object.values(programTotals);
+                    summaryData.sort((a, b) => {
+                        if (a.tipo !== b.tipo) {
+                            if (a.tipo === 'Incasso') return -1;
+                            if (b.tipo === 'Incasso') return 1;
+                            return a.tipo.localeCompare(b.tipo);
+                        }
+                        return a.categoria.localeCompare(b.categoria);
+                    });
+
+                    if (summaryData.length > 0) {
+                        summaryData.push({
+                            id: 'tot_cashflow',
+                            tipo: 'CASH FLOW TOTALE',
+                            categoria: '',
+                            previsto: totalIncassiPrev - totalSpesePrev,
+                            effettivo: totalIncassiEff - totalSpeseEff,
+                            cssClass: 'slds-text-title_bold slds-theme_shade'
+                        });
+                        this.programSummaryData = summaryData;
+                    } else {
+                        this.programSummaryData = null;
+                    }
 
                     let yearlyDataArray = [];
                     for (let anno in groupedByYear) {
@@ -121,9 +177,11 @@ export default class BudgetAppDashboard extends LightningElement {
                 .catch(error => {
                     console.error(error);
                     this.yearlyData = null;
+                    this.programSummaryData = null;
                 });
         } else {
             this.yearlyData = null;
+            this.programSummaryData = null;
         }
     }
 }
