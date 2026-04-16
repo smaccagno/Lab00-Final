@@ -24,23 +24,22 @@ public with sharing class BudgetSummaryController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static BudgetSummary getSummary(Id recordId) {
+    public static BudgetSummary getSummary(Id recordId, Date filterDate) {
         BudgetSummary result = new BudgetSummary();
         
         if (recordId == null) return result;
 
         // Aggregate Incassi
         Map<String, CategorySummary> incassiMap = new Map<String, CategorySummary>();
-        for (AggregateResult ar : [
-            SELECT Categoria__c, Stato__c, SUM(Ammontare__c) totale
+        for (Voce_di_Incasso__c vi : [
+            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__c = :recordId
-            GROUP BY Categoria__c, Stato__c
         ]) {
-            String cat = (String) ar.get('Categoria__c');
+            String cat = vi.Categoria__c;
             if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = (String) ar.get('Stato__c');
-            Decimal tot = (Decimal) ar.get('totale');
+            String stato = vi.Stato__c;
+            Decimal tot = vi.Ammontare__c;
             if (tot == null) tot = 0;
 
             if (!incassiMap.containsKey(cat)) {
@@ -48,11 +47,12 @@ public with sharing class BudgetSummaryController {
             }
             
             if (stato == 'Effettiva') {
-                incassiMap.get(cat).effettivo += tot;
+                if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
+                    incassiMap.get(cat).effettivo += tot;
+                }
             } else if (stato == 'Prevista') {
                 incassiMap.get(cat).previsto += tot;
             } else if (stato == 'Annullata') {
-                // Sottrae il totale alla categoria (dal previsto)
                 incassiMap.get(cat).previsto -= tot;
             }
         }
@@ -72,16 +72,15 @@ public with sharing class BudgetSummaryController {
 
         // Aggregate Spese
         Map<String, CategorySummary> speseMap = new Map<String, CategorySummary>();
-        for (AggregateResult ar : [
-            SELECT Categoria__c, Stato__c, SUM(Ammontare__c) totale
+        for (Voce_di_Spesa__c vs : [
+            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__c = :recordId
-            GROUP BY Categoria__c, Stato__c
         ]) {
-            String cat = (String) ar.get('Categoria__c');
+            String cat = vs.Categoria__c;
             if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = (String) ar.get('Stato__c');
-            Decimal tot = (Decimal) ar.get('totale');
+            String stato = vs.Stato__c;
+            Decimal tot = vs.Ammontare__c;
             if (tot == null) tot = 0;
 
             if (!speseMap.containsKey(cat)) {
@@ -89,7 +88,9 @@ public with sharing class BudgetSummaryController {
             }
             
             if (stato == 'Effettiva') {
-                speseMap.get(cat).effettivo += tot;
+                if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
+                    speseMap.get(cat).effettivo += tot;
+                }
             } else if (stato == 'Prevista') {
                 speseMap.get(cat).previsto += tot;
             } else if (stato == 'Annullata') {

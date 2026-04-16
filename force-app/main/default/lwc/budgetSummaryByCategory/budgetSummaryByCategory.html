@@ -2,6 +2,12 @@
     <lightning-card title="Riepilogo Budget per Categoria" icon-name="custom:custom41">
         <div class="slds-p-around_medium">
             
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <lightning-input type="date" label="Filtra per Data (solo voci Effettive)" value={selectedDate} onchange={handleDateChange}></lightning-input>
+                </div>
+            </div>
+
             <template if:true={error}>
                 <div class="slds-text-color_error">{error}</div>
             </template>

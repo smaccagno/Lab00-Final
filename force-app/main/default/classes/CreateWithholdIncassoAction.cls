@@ -53,6 +53,7 @@ public class CreateWithholdIncassoAction {
                         vi.Stato__c = 'Effettiva';
                         vi.Ammontare__c = withholdAmount;
                         vi.Transazione__c = tx.Id;
+                        vi.Data__c = tx.Data_di_Competenza__c;
                         incassiToCreate.add(vi);
                     }
                 }

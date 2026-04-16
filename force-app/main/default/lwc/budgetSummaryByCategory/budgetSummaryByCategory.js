@@ -4,12 +4,17 @@ import getSummary from '@salesforce/apex/BudgetSummaryController.getSummary';
 export default class BudgetSummaryByCategory extends LightningElement {
     @api recordId;
 
+    selectedDate;
     incassi = [];
     spese = [];
     hasData = false;
     error;
 
-    @wire(getSummary, { recordId: '$recordId' })
+    handleDateChange(event) {
+        this.selectedDate = event.target.value;
+    }
+
+    @wire(getSummary, { recordId: '$recordId', filterDate: '$selectedDate' })
     wiredSummary({ error, data }) {
         if (data) {
             let maxIncassiVal = 0;
