@@ -4,19 +4,16 @@
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
-                    <name>actionNames</name>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
                     <name>collapsed</name>
                     <value>false</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsConfiguration</name>
-                    <value>true</value>
+                    <value>false</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsInNative</name>
-                    <value>true</value>
+                    <value>false</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>hideChatterActions</name>
@@ -50,11 +47,31 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Anno__c</fieldItem>
-                <identifier>RecordAnno_cField</identifier>
+                <fieldItem>Record.IsActive</fieldItem>
+                <identifier>RecordIsActiveField</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-524fab31-564c-40f1-84aa-91a7b8f0989a</name>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Program__c</fieldItem>
+                <identifier>RecordProgram_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Partner__c</fieldItem>
+                <identifier>RecordPartner_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <name>Facet-729e069c-096a-450d-a5da-c422eb91f193</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -64,31 +81,21 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Programma__c</fieldItem>
-                <identifier>RecordProgramma_cField</identifier>
+                <fieldItem>Record.Description</fieldItem>
+                <identifier>RecordDescriptionField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
                     <name>uiBehavior</name>
-                    <value>required</value>
+                    <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Anno_Reportistica__c</fieldItem>
-                <identifier>RecordAnno_Reportistica_cField</identifier>
+                <fieldItem>Record.IsDefault</fieldItem>
+                <identifier>RecordIsDefaultField</identifier>
             </fieldInstance>
         </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>required</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.Budget__c</fieldItem>
-                <identifier>RecordBudget_cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <name>Facet-27e19b42-59a8-4821-afcc-bb9473a287b2</name>
+        <name>Facet-6786dabc-9a24-42a2-b0f3-d03acf9bd406</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -96,7 +103,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>body</name>
-                    <value>Facet-524fab31-564c-40f1-84aa-91a7b8f0989a</value>
+                    <value>Facet-729e069c-096a-450d-a5da-c422eb91f193</value>
                 </componentInstanceProperties>
                 <componentName>flexipage:column</componentName>
                 <identifier>flexipage_column</identifier>
@@ -106,13 +113,13 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>body</name>
-                    <value>Facet-27e19b42-59a8-4821-afcc-bb9473a287b2</value>
+                    <value>Facet-6786dabc-9a24-42a2-b0f3-d03acf9bd406</value>
                 </componentInstanceProperties>
                 <componentName>flexipage:column</componentName>
                 <identifier>flexipage_column2</identifier>
             </componentInstance>
         </itemInstances>
-        <name>Facet-bac279de-d9e3-40d2-ac0c-477156eea11e</name>
+        <name>Facet-3abc8b96-d9af-402d-babd-9894d8d25ee0</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -141,11 +148,11 @@
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>parentFieldApiName</name>
-                    <value>Overview_Budget_per_Anno__c.Id</value>
+                    <value>GiftDesignation.Id</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>relatedListApiName</name>
-                    <value>Voci_di_Incasso__r</value>
+                    <value>Overview_Budget_per_Anno__r</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>relatedListDisplayType</name>
@@ -158,25 +165,13 @@
                             <value>NAME</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Data__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Categoria__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Stato__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Ammontare__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Transazione__c</value>
+                            <value>Anno__c</value>
                         </valueListItems>
                     </valueList>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>relatedListLabel</name>
-                    <value>Voci di Incasso</value>
+                    <value>Overview Budget per Anno</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>showActionBar</name>
@@ -197,77 +192,8 @@
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
-                    <name>actionNames</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>MassChangeOwner</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>maxRecordsToDisplay</name>
-                    <value>10</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>parentFieldApiName</name>
-                    <value>Overview_Budget_per_Anno__c.Id</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListApiName</name>
-                    <value>Voci_di_Spesa__r</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListDisplayType</name>
-                    <value>ADVGRID</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListFieldAliases</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>NAME</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Data__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Categoria__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Stato__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Ammontare__c</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListLabel</name>
-                    <value>Voci di Spesa</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>showActionBar</name>
-                    <value>true</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldAlias</name>
-                    <value>__DEFAULT__</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldOrder</name>
-                    <value>Default</value>
-                </componentInstanceProperties>
-                <componentName>lst:dynamicRelatedList</componentName>
-                <identifier>lst_dynamicRelatedList2</identifier>
-            </componentInstance>
-        </itemInstances>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
                     <name>columns</name>
-                    <value>Facet-bac279de-d9e3-40d2-ac0c-477156eea11e</value>
+                    <value>Facet-3abc8b96-d9af-402d-babd-9894d8d25ee0</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>horizontalAlignment</name>
@@ -275,7 +201,7 @@
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
-                    <value>@@@SFDCInformationSFDC@@@</value>
+                    <value>@@@SFDCGift_Designation_InformationSFDC@@@</value>
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>flexipage_fieldSection</identifier>
@@ -284,8 +210,8 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
-    <masterLabel>Budget per Anno Record Page</masterLabel>
-    <sobjectType>Overview_Budget_per_Anno__c</sobjectType>
+    <masterLabel>Budget Record Page</masterLabel>
+    <sobjectType>GiftDesignation</sobjectType>
     <template>
         <name>flexipage:recordHomeSingleColTemplateDesktop</name>
     </template>
