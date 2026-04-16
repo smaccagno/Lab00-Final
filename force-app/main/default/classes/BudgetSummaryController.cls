@@ -1,15 +1,28 @@
 public with sharing class BudgetSummaryController {
+    public class ItemDetail {
+        @AuraEnabled public String name;
+        @AuraEnabled public Decimal amount;
+        public ItemDetail(String name, Decimal amount) {
+            this.name = name;
+            this.amount = amount;
+        }
+    }
+
     public class CategorySummary {
         @AuraEnabled public String categoria;
         @AuraEnabled public Decimal effettivo;
         @AuraEnabled public Decimal previsto;
         @AuraEnabled public Decimal totale;
+        @AuraEnabled public List<ItemDetail> itemsEffettivi;
+        @AuraEnabled public List<ItemDetail> itemsPrevisti;
         
         public CategorySummary(String categoria) {
             this.categoria = categoria;
             this.effettivo = 0;
             this.previsto = 0;
             this.totale = 0;
+            this.itemsEffettivi = new List<ItemDetail>();
+            this.itemsPrevisti = new List<ItemDetail>();
         }
     }
 
@@ -32,7 +45,7 @@ public with sharing class BudgetSummaryController {
         // Aggregate Incassi
         Map<String, CategorySummary> incassiMap = new Map<String, CategorySummary>();
         for (Voce_di_Incasso__c vi : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c
+            SELECT Name, Categoria__c, Stato__c, Ammontare__c, Data__c
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__c = :recordId
         ]) {
@@ -49,10 +62,13 @@ public with sharing class BudgetSummaryController {
             if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
                 if (stato == 'Effettiva') {
                     incassiMap.get(cat).effettivo += tot;
+                    incassiMap.get(cat).itemsEffettivi.add(new ItemDetail(vi.Name, tot));
                 } else if (stato == 'Prevista') {
                     incassiMap.get(cat).previsto += tot;
+                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Name, tot));
                 } else if (stato == 'Annullata') {
                     incassiMap.get(cat).previsto -= tot;
+                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Name + ' (Annullata)', -tot));
                 }
             }
         }
@@ -73,7 +89,7 @@ public with sharing class BudgetSummaryController {
         // Aggregate Spese
         Map<String, CategorySummary> speseMap = new Map<String, CategorySummary>();
         for (Voce_di_Spesa__c vs : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c
+            SELECT Name, Categoria__c, Stato__c, Ammontare__c, Data__c
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__c = :recordId
         ]) {
@@ -90,11 +106,14 @@ public with sharing class BudgetSummaryController {
             if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
                 if (stato == 'Effettiva') {
                     speseMap.get(cat).effettivo += tot;
+                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Name, tot));
                 } else if (stato == 'Prevista') {
                     speseMap.get(cat).previsto += tot;
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Name, tot));
                 } else if (stato == 'Annullata') {
                     // Sottrae il totale alla categoria (dal previsto)
                     speseMap.get(cat).previsto -= tot;
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Name + ' (Annullata)', -tot));
                 }
             }
         }

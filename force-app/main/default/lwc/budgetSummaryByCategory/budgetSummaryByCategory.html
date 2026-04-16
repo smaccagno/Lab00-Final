@@ -28,7 +28,9 @@
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
-                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} 
+                                             data-title={seg.title} data-items={seg.itemsJson}
+                                             onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut}>
                                             <span class="segment-label">
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
                                             </span>
@@ -53,7 +55,9 @@
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
-                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} 
+                                             data-title={seg.title} data-items={seg.itemsJson}
+                                             onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut}>
                                             <span class="segment-label">
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
                                             </span>
@@ -76,7 +80,9 @@
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
-                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} 
+                                             data-title={seg.title} data-items={seg.itemsJson}
+                                             onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut}>
                                             <span class="segment-label">
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
                                             </span>
@@ -122,6 +128,23 @@
                 <template if:false={error}>
                     <p class="slds-text-color_weak slds-text-align_center slds-m-top_medium">Nessun dato presente per generare il grafico.</p>
                 </template>
+            </template>
+
+            <!-- Tooltip -->
+            <template if:true={tooltipVisible}>
+                <div class="custom-tooltip" style={tooltipStyle}>
+                    <div class="tooltip-title">{tooltipTitle}</div>
+                    <ul class="tooltip-list">
+                        <template for:each={tooltipItems} for:item="tItem" for:index="idx">
+                            <li key={tItem.label} class="tooltip-list-item">
+                                <span class="tooltip-item-label" title={tItem.label}>{tItem.label}</span>
+                                <span class="tooltip-item-value">
+                                    <lightning-formatted-number value={tItem.value} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
             </template>
 
         </div>

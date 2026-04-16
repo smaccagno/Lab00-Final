@@ -11,6 +11,46 @@ export default class BudgetSummaryByCategory extends LightningElement {
     hasData = false;
     error;
 
+    tooltipVisible = false;
+    tooltipStyle = '';
+    tooltipTitle = '';
+    tooltipItems = [];
+
+    handleMouseOver(event) {
+        const itemsJson = event.currentTarget.dataset.items;
+        const title = event.currentTarget.dataset.title;
+        if (itemsJson) {
+            let parsedItems = JSON.parse(itemsJson);
+            // Deduplicate items with same name, summing their values
+            let itemsMap = {};
+            parsedItems.forEach(item => {
+                if (itemsMap[item.label]) {
+                    itemsMap[item.label].value += item.value;
+                } else {
+                    itemsMap[item.label] = { ...item };
+                }
+            });
+            this.tooltipItems = Object.values(itemsMap).filter(item => item.value !== 0);
+            this.tooltipTitle = title;
+            if (this.tooltipItems.length > 0) {
+                this.tooltipVisible = true;
+            }
+        }
+    }
+
+    handleMouseMove(event) {
+        if (this.tooltipVisible) {
+            // Offset slightly from cursor
+            const x = event.clientX + 15;
+            const y = event.clientY + 15;
+            this.tooltipStyle = `left: ${x}px; top: ${y}px;`;
+        }
+    }
+
+    handleMouseOut() {
+        this.tooltipVisible = false;
+    }
+
     handleDateChange(event) {
         this.selectedDate = event.target.value;
     }
@@ -60,7 +100,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     value: item.previsto,
                     style: pStyle,
                     cssClass: 'bar-fill bar-incasso-previsto',
-                    title: 'Previsto'
+                    title: 'Previsto',
+                    itemsJson: JSON.stringify((item.itemsPrevisti || []).map(i => ({ label: i.name, value: i.amount })))
                 });
 
                 if (item.effettivo > 0) {
@@ -69,7 +110,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                         value: item.effettivo,
                         style: `width: ${(item.effettivo / maxIncassiVal) * 100}%;`,
                         cssClass: 'bar-fill bar-incasso-effettivo',
-                        title: 'Effettivo'
+                        title: 'Effettivo',
+                        itemsJson: JSON.stringify((item.itemsEffettivi || []).map(i => ({ label: i.name, value: i.amount })))
                     });
                 }
 
@@ -93,7 +135,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     value: item.previsto,
                     style: pStyle,
                     cssClass: 'bar-fill bar-spesa-previsto',
-                    title: 'Previsto'
+                    title: 'Previsto',
+                    itemsJson: JSON.stringify((item.itemsPrevisti || []).map(i => ({ label: i.name, value: i.amount })))
                 });
 
                 if (item.effettivo > 0) {
@@ -102,7 +145,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                         value: item.effettivo,
                         style: `width: ${(item.effettivo / maxSpeseVal) * 100}%;`,
                         cssClass: 'bar-fill bar-spesa-effettivo',
-                        title: 'Effettivo'
+                        title: 'Effettivo',
+                        itemsJson: JSON.stringify((item.itemsEffettivi || []).map(i => ({ label: i.name, value: i.amount })))
                     });
                 }
 
@@ -141,7 +185,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 value: totalIncassiPrevisto,
                 style: cfIncassiPStyle,
                 cssClass: 'bar-fill bar-incasso-previsto',
-                title: 'Previsto'
+                title: 'Previsto',
+                itemsJson: JSON.stringify(data.incassi ? data.incassi.map(i => ({ label: i.categoria, value: i.previsto })).filter(i => i.value !== 0) : [])
             });
             if (totalIncassiEffettivo > 0) {
                 cfIncassiSegments.push({
@@ -149,7 +194,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     value: totalIncassiEffettivo,
                     style: `width: ${(totalIncassiEffettivo / maxCashFlowVal) * 100}%;`,
                     cssClass: 'bar-fill bar-incasso-effettivo',
-                    title: 'Effettivo'
+                    title: 'Effettivo',
+                    itemsJson: JSON.stringify(data.incassi ? data.incassi.map(i => ({ label: i.categoria, value: i.effettivo })).filter(i => i.value !== 0) : [])
                 });
             }
             cfIncassiSegments.sort((a, b) => b.value - a.value);
@@ -164,7 +210,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 value: totalSpesePrevisto,
                 style: cfSpesePStyle,
                 cssClass: 'bar-fill bar-spesa-previsto',
-                title: 'Previsto'
+                title: 'Previsto',
+                itemsJson: JSON.stringify(data.spese ? data.spese.map(i => ({ label: i.categoria, value: i.previsto })).filter(i => i.value !== 0) : [])
             });
             if (totalSpeseEffettivo > 0) {
                 cfSpeseSegments.push({
@@ -172,7 +219,8 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     value: totalSpeseEffettivo,
                     style: `width: ${(totalSpeseEffettivo / maxCashFlowVal) * 100}%;`,
                     cssClass: 'bar-fill bar-spesa-effettivo',
-                    title: 'Effettivo'
+                    title: 'Effettivo',
+                    itemsJson: JSON.stringify(data.spese ? data.spese.map(i => ({ label: i.categoria, value: i.effettivo })).filter(i => i.value !== 0) : [])
                 });
             }
             cfSpeseSegments.sort((a, b) => b.value - a.value);
@@ -188,7 +236,11 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 value: dispPrevisto,
                 style: cfDispPStyle,
                 cssClass: 'bar-fill bar-disp-previsto',
-                title: 'Previsto'
+                title: 'Previsto',
+                itemsJson: JSON.stringify([
+                    { label: 'Totale Incassi Previsti', value: totalIncassiPrevisto },
+                    { label: 'Totale Spese Previste', value: -totalSpesePrevisto }
+                ])
             });
 
             let dispEffWidth = Math.max(0, dispEffettivo);
@@ -201,7 +253,11 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 value: dispEffettivo,
                 style: cfDispEStyle,
                 cssClass: 'bar-fill bar-disp-effettivo',
-                title: 'Effettivo'
+                title: 'Effettivo',
+                itemsJson: JSON.stringify([
+                    { label: 'Totale Incassi Effettivi', value: totalIncassiEffettivo },
+                    { label: 'Totale Spese Effettive', value: -totalSpeseEffettivo }
+                ])
             });
             cfDispSegments.sort((a, b) => b.value - a.value);
 

@@ -86,3 +86,43 @@
     height: 12px;
     border-radius: 2px;
 }
+.custom-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    pointer-events: none;
+    min-width: 200px;
+    max-width: 300px;
+    font-size: 0.8rem;
+    color: #333;
+}
+.tooltip-title {
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+.tooltip-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.tooltip-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.1rem 0;
+}
+.tooltip-item-label {
+    margin-right: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tooltip-item-value {
+    font-weight: bold;
+    white-space: nowrap;
+}
