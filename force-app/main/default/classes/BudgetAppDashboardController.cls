@@ -31,13 +31,12 @@ public with sharing class BudgetAppDashboardController {
         }
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<YearSummary> getProgramDetails(Id programId, String filterDateStr) {
+    @AuraEnabled
+    public static List<YearSummary> getProgramDetails(Id programId, Date filterDate, String filterDateStr) {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
 
-        Date filterDate = null;
-        if (String.isNotBlank(filterDateStr)) {
+        if (filterDate == null && String.isNotBlank(filterDateStr)) {
             try {
                 filterDate = Date.valueOf(filterDateStr);
             } catch (Exception e) {
