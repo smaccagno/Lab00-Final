@@ -10,6 +10,7 @@
         <targetConfig targets="lightning__RecordPage">
             <objects>
                 <object>Overview_Budget_per_Anno__c</object>
+                <object>GiftDesignation</object>
             </objects>
         </targetConfig>
     </targetConfigs>

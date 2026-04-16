@@ -55,13 +55,40 @@ public with sharing class BudgetSummaryController {
         
         if (recordId == null) return result;
 
+        String sObjName = recordId.getSObjectType().getDescribe().getName();
+        
+        List<Voce_di_Incasso__c> incassiList = new List<Voce_di_Incasso__c>();
+        List<Voce_di_Spesa__c> speseList = new List<Voce_di_Spesa__c>();
+
+        if (sObjName == 'Overview_Budget_per_Anno__c') {
+            incassiList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                FROM Voce_di_Incasso__c
+                WHERE Overview_Budget_per_Anno__c = :recordId
+            ];
+            speseList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                FROM Voce_di_Spesa__c
+                WHERE Overview_Budget_per_Anno__c = :recordId
+            ];
+        } else if (sObjName == 'GiftDesignation') {
+            incassiList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                FROM Voce_di_Incasso__c
+                WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
+            ];
+            speseList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                FROM Voce_di_Spesa__c
+                WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
+            ];
+        } else {
+            return result;
+        }
+
         // Aggregate Incassi
         Map<String, CategorySummary> incassiMap = new Map<String, CategorySummary>();
-        for (Voce_di_Incasso__c vi : [
-            SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
-            FROM Voce_di_Incasso__c
-            WHERE Overview_Budget_per_Anno__c = :recordId
-        ]) {
+        for (Voce_di_Incasso__c vi : incassiList) {
             String cat = vi.Categoria__c;
             if (String.isBlank(cat)) cat = 'Non categorizzato';
             String stato = vi.Stato__c;
@@ -101,11 +128,7 @@ public with sharing class BudgetSummaryController {
 
         // Aggregate Spese
         Map<String, CategorySummary> speseMap = new Map<String, CategorySummary>();
-        for (Voce_di_Spesa__c vs : [
-            SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
-            FROM Voce_di_Spesa__c
-            WHERE Overview_Budget_per_Anno__c = :recordId
-        ]) {
+        for (Voce_di_Spesa__c vs : speseList) {
             String cat = vs.Categoria__c;
             if (String.isBlank(cat)) cat = 'Non categorizzato';
             String stato = vs.Stato__c;
