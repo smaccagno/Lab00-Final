@@ -149,6 +149,30 @@ export default class BudgetSummaryByCategory extends LightningElement {
             maxIncassiVal = maxIncassiVal > 0 ? maxIncassiVal : 1;
             maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
 
+            const processSegments = (segments, maxVal) => {
+                segments.sort((a, b) => b.value - a.value);
+                
+                if (segments.length === 2) {
+                    let pct0 = (segments[0].value / maxVal) * 100;
+                    let pct1 = (segments[1].value / maxVal) * 100;
+                    
+                    if ((pct0 - pct1 < 15 && pct0 < 85) || pct0 < 12) {
+                        segments[0].labelClass = 'segment-label label-outside';
+                    } else {
+                        segments[0].labelClass = 'segment-label';
+                    }
+                    segments[1].labelClass = 'segment-label';
+                } else if (segments.length === 1) {
+                    let pct0 = (segments[0].value / maxVal) * 100;
+                    if (pct0 < 12) {
+                        segments[0].labelClass = 'segment-label label-outside';
+                    } else {
+                        segments[0].labelClass = 'segment-label';
+                    }
+                }
+                return segments;
+            };
+
             this.incassi = (data.incassi || []).map(item => {
                 let segments = [];
                 
@@ -176,7 +200,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     });
                 }
 
-                segments.sort((a, b) => b.value - a.value);
+                segments = processSegments(segments, maxIncassiVal);
 
                 return {
                     ...item,
@@ -211,7 +235,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     });
                 }
 
-                segments.sort((a, b) => b.value - a.value);
+                segments = processSegments(segments, maxSpeseVal);
 
                 return {
                     ...item,
@@ -259,7 +283,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     itemsJson: JSON.stringify(allIncassiEffettiviItems)
                 });
             }
-            cfIncassiSegments.sort((a, b) => b.value - a.value);
+            cfIncassiSegments = processSegments(cfIncassiSegments, maxCashFlowVal);
 
             let cfSpeseSegments = [];
             let cfSpesePStyle = `width: ${(totalSpesePrevisto / maxCashFlowVal) * 100}%;`;
@@ -284,7 +308,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     itemsJson: JSON.stringify(allSpeseEffettiviItems)
                 });
             }
-            cfSpeseSegments.sort((a, b) => b.value - a.value);
+            cfSpeseSegments = processSegments(cfSpeseSegments, maxCashFlowVal);
 
             let cfDispSegments = [];
             let dispPrevWidth = Math.max(0, dispPrevisto);
@@ -320,7 +344,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     { label: 'Totale Spese Effettive', value: -totalSpeseEffettivo }
                 ])
             });
-            cfDispSegments.sort((a, b) => b.value - a.value);
+            cfDispSegments = processSegments(cfDispSegments, maxCashFlowVal);
 
             this.cashFlow = [];
             if (totalIncassi > 0 || totalSpese > 0) {
