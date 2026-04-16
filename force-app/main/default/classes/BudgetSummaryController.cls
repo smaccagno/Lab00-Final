@@ -82,6 +82,17 @@ public with sharing class BudgetSummaryController {
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
+        } else if (sObjName == 'Account') {
+            incassiList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                FROM Voce_di_Incasso__c
+                WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
+            ];
+            speseList = [
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                FROM Voce_di_Spesa__c
+                WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
+            ];
         } else {
             return result;
         }
