@@ -26,17 +26,10 @@
                             <div key={item.categoria} class="bar-row">
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
-                                    <template if:true={item.showEffettivo}>
-                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo">
-                                            <span class="effettivo-label">
-                                                <lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
-                                            </span>
-                                        </div>
-                                    </template>
-                                    <template if:true={item.showPrevisto}>
-                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto">
-                                            <span class="effettivo-label">
-                                                <lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                    <template for:each={item.segments} for:item="seg">
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                            <span class="segment-label">
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
                                             </span>
                                         </div>
                                     </template>
@@ -59,17 +52,10 @@
                             <div key={item.categoria} class="bar-row">
                                 <div class="bar-label" title={item.categoria}>{item.categoria}</div>
                                 <div class="bar-track">
-                                    <template if:true={item.showEffettivo}>
-                                        <div class={item.effettivoClass} style={item.effettivoStyle} title="Effettivo">
-                                            <span class="effettivo-label">
-                                                <lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
-                                            </span>
-                                        </div>
-                                    </template>
-                                    <template if:true={item.showPrevisto}>
-                                        <div class={item.previstoClass} style={item.previstoStyle} title="Previsto">
-                                            <span class="effettivo-label">
-                                                <lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                    <template for:each={item.segments} for:item="seg">
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                            <span class="segment-label">
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
                                             </span>
                                         </div>
                                     </template>

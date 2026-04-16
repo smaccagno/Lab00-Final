@@ -33,34 +33,68 @@ export default class BudgetSummaryByCategory extends LightningElement {
             maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
 
             this.incassi = (data.incassi || []).map(item => {
-                let pStyle = `width: ${(item.previsto / maxIncassiVal) * 100}%; min-width: 35px;`;
+                let segments = [];
+                
+                let pStyle = `width: ${(item.previsto / maxIncassiVal) * 100}%;`;
                 if (item.previsto === 0) {
-                    pStyle += ` border-left: 1px solid rgba(255,255,255,0.5);`;
+                    pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
+                segments.push({
+                    id: 'previsto',
+                    value: item.previsto,
+                    style: pStyle,
+                    cssClass: 'bar-fill bar-incasso-previsto',
+                    title: 'Previsto'
+                });
+
+                if (item.effettivo > 0) {
+                    segments.push({
+                        id: 'effettivo',
+                        value: item.effettivo,
+                        style: `width: ${(item.effettivo / maxIncassiVal) * 100}%;`,
+                        cssClass: 'bar-fill bar-incasso-effettivo',
+                        title: 'Effettivo'
+                    });
+                }
+
+                segments.sort((a, b) => b.value - a.value);
+
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxIncassiVal) * 100}%; min-width: 35px;`,
-                    previstoStyle: pStyle,
-                    effettivoClass: 'bar-fill bar-incasso-effettivo',
-                    previstoClass: 'bar-fill bar-incasso-previsto',
-                    showEffettivo: item.effettivo > 0,
-                    showPrevisto: true
+                    segments: segments
                 };
             });
 
             this.spese = (data.spese || []).map(item => {
-                let pStyle = `width: ${(item.previsto / maxSpeseVal) * 100}%; min-width: 35px;`;
+                let segments = [];
+                
+                let pStyle = `width: ${(item.previsto / maxSpeseVal) * 100}%;`;
                 if (item.previsto === 0) {
-                    pStyle += ` border-left: 1px solid rgba(255,255,255,0.5);`;
+                    pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
+                segments.push({
+                    id: 'previsto',
+                    value: item.previsto,
+                    style: pStyle,
+                    cssClass: 'bar-fill bar-spesa-previsto',
+                    title: 'Previsto'
+                });
+
+                if (item.effettivo > 0) {
+                    segments.push({
+                        id: 'effettivo',
+                        value: item.effettivo,
+                        style: `width: ${(item.effettivo / maxSpeseVal) * 100}%;`,
+                        cssClass: 'bar-fill bar-spesa-effettivo',
+                        title: 'Effettivo'
+                    });
+                }
+
+                segments.sort((a, b) => b.value - a.value);
+
                 return {
                     ...item,
-                    effettivoStyle: `width: ${(item.effettivo / maxSpeseVal) * 100}%; min-width: 35px;`,
-                    previstoStyle: pStyle,
-                    effettivoClass: 'bar-fill bar-spesa-effettivo',
-                    previstoClass: 'bar-fill bar-spesa-previsto',
-                    showEffettivo: item.effettivo > 0,
-                    showPrevisto: true
+                    segments: segments
                 };
             });
 
