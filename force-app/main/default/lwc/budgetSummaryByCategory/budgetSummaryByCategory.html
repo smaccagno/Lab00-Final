@@ -15,6 +15,34 @@
             <template if:true={hasData}>
                 <div class="chart-container">
                     
+                    <!-- Cash Flow Section -->
+                    <template if:true={cashFlow.length}>
+                        <h3 class="slds-text-heading_small slds-m-bottom_medium slds-text-color_default">
+                            <lightning-icon icon-name="utility:moneybag" size="small" class="slds-m-right_xx-small"></lightning-icon>
+                            Cash Flow
+                        </h3>
+                        
+                        <template for:each={cashFlow} for:item="item">
+                            <div key={item.categoria} class="bar-row">
+                                <div class="bar-label" title={item.categoria}>{item.categoria}</div>
+                                <div class="bar-track">
+                                    <template for:each={item.segments} for:item="seg">
+                                        <div key={seg.id} class={seg.cssClass} style={seg.style} title={seg.title}>
+                                            <span class="segment-label">
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="bar-value">
+                                    <lightning-formatted-number value={item.totale} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <hr class="slds-m-vertical_large" />
+                    </template>
+
                     <!-- Incassi Section -->
                     <template if:true={incassi.length}>
                         <h3 class="slds-text-heading_small slds-m-bottom_medium slds-text-color_success">
