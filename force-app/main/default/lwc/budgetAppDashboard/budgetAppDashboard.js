@@ -22,9 +22,14 @@ export default class BudgetAppDashboard extends LightningElement {
         if (data) {
             this.accountId = data.accountId;
             if (data.programs) {
-                this.programs = data.programs;
-                this.programOptions = data.programs.map(p => {
-                    return { label: p.Name, value: p.Id };
+                this.programs = data.programs.map(p => {
+                    return {
+                        ...p,
+                        DisplayName: p.Program__r ? p.Program__r.Name : p.Name
+                    };
+                });
+                this.programOptions = this.programs.map(p => {
+                    return { label: p.DisplayName, value: p.Id };
                 });
             }
         } else if (error) {

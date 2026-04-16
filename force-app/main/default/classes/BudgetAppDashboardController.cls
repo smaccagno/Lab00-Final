@@ -10,7 +10,7 @@ public with sharing class BudgetAppDashboardController {
         List<Account> accs = [SELECT Id FROM Account WHERE Name = 'Lab00' LIMIT 1];
         if (!accs.isEmpty()) {
             data.accountId = accs[0].Id;
-            data.programs = [SELECT Id, Name FROM GiftDesignation WHERE Partner__c = :data.accountId ORDER BY Name];
+            data.programs = [SELECT Id, Name, Program__r.Name FROM GiftDesignation WHERE Partner__c = :data.accountId ORDER BY Program__r.Name];
         }
         return data;
     }

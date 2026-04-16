@@ -25,8 +25,10 @@
             <lightning-card title="Grafici per Programma" icon-name="standard:budget">
                 <div class="slds-p-around_medium">
                     <template for:each={programs} for:item="prog">
-                        <div key={prog.Id} class="slds-m-bottom_large">
-                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold">{prog.Name}</h3>
+                        <div key={prog.Id} class="slds-m-bottom_large slds-box slds-box_small slds-theme_default">
+                            <div class="slds-text-align_center slds-m-bottom_medium">
+                                <h3 class="slds-text-heading_medium slds-text-title_bold">{prog.DisplayName}</h3>
+                            </div>
                             <c-budget-summary-by-category record-id={prog.Id} filter-date={globalDate} hide-date-filter="true"></c-budget-summary-by-category>
                         </div>
                     </template>
