@@ -1,6 +1,6 @@
 import { LightningElement, wire, track } from 'lwc';
 import getDashboardData from '@salesforce/apex/BudgetAppDashboardController.getDashboardData';
-import getProgramDetails from '@salesforce/apex/BudgetAppDashboardController.getProgramDetails';
+import getProgramDetailsData from '@salesforce/apex/BudgetAppDashboardController.getProgramDetailsData';
 
 export default class BudgetAppDashboard extends LightningElement {
     accountId;
@@ -50,7 +50,7 @@ export default class BudgetAppDashboard extends LightningElement {
 
     fetchProgramData() {
         if (this.selectedProgramId) {
-            getProgramDetails({ programId: this.selectedProgramId, filterDate: this.globalDate, filterDateStr: this.globalDate })
+            getProgramDetailsData({ programId: this.selectedProgramId, selectedDateStr: this.globalDate })
                 .then(result => {
                     let groupedByYear = {};
                     let programTotals = {};

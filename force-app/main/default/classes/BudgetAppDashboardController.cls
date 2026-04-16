@@ -32,15 +32,16 @@ public with sharing class BudgetAppDashboardController {
     }
 
     @AuraEnabled
-    public static List<YearSummary> getProgramDetails(Id programId, Date filterDate, String filterDateStr) {
+    public static List<YearSummary> getProgramDetailsData(Id programId, String selectedDateStr) {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
 
-        if (filterDate == null && String.isNotBlank(filterDateStr)) {
+        Date filterDate = null;
+        if (String.isNotBlank(selectedDateStr)) {
             try {
-                filterDate = Date.valueOf(filterDateStr);
+                filterDate = Date.valueOf(selectedDateStr);
             } catch (Exception e) {
-                // Ignore parse errors
+                System.debug('Error parsing date: ' + e.getMessage());
             }
         }
 
