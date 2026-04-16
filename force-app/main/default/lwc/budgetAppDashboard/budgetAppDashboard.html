@@ -1,22 +1,37 @@
 <template>
     <div class="slds-grid slds-wrap slds-gutters slds-p-around_small">
+        
+        <!-- Global Date Filter -->
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+            <lightning-card>
+                <div class="slds-p-around_medium slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <label class="slds-form-element__label slds-text-title_bold" for="global-date-filter">Filtra per Data (Globale)</label>
+                        <lightning-input id="global-date-filter" type="date" variant="label-hidden" value={globalDate} onchange={handleGlobalDateChange}></lightning-input>
+                    </div>
+                </div>
+            </lightning-card>
+        </div>
+
         <!-- Top: Omnicomprehensive view -->
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_large">
             <template if:true={accountId}>
-                <c-budget-summary-by-category record-id={accountId}></c-budget-summary-by-category>
+                <c-budget-summary-by-category record-id={accountId} filter-date={globalDate} hide-date-filter="true"></c-budget-summary-by-category>
             </template>
         </div>
 
         <!-- Left column: Charts per program -->
         <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
-            <h2 class="slds-text-heading_medium slds-m-bottom_medium">Grafici per Programma</h2>
-            <template for:each={programs} for:item="prog">
-                <div key={prog.Id} class="slds-m-bottom_medium">
-                    <lightning-card title={prog.Name} icon-name="standard:budget">
-                        <c-budget-summary-by-category record-id={prog.Id}></c-budget-summary-by-category>
-                    </lightning-card>
+            <lightning-card title="Grafici per Programma" icon-name="standard:budget">
+                <div class="slds-p-around_medium">
+                    <template for:each={programs} for:item="prog">
+                        <div key={prog.Id} class="slds-m-bottom_large">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold">{prog.Name}</h3>
+                            <c-budget-summary-by-category record-id={prog.Id} filter-date={globalDate} hide-date-filter="true"></c-budget-summary-by-category>
+                        </div>
+                    </template>
                 </div>
-            </template>
+            </lightning-card>
         </div>
 
         <!-- Right column: Tabular data per program -->

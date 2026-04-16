@@ -8,6 +8,7 @@ export default class BudgetAppDashboard extends LightningElement {
     programOptions = [];
     selectedProgramId;
     programData = null;
+    globalDate = new Date().toISOString().split('T')[0];
 
     columns = [
         { label: 'Anno', fieldName: 'anno', type: 'text', sortable: true },
@@ -33,20 +34,34 @@ export default class BudgetAppDashboard extends LightningElement {
         }
     }
 
+    handleGlobalDateChange(event) {
+        this.globalDate = event.target.value;
+        this.fetchProgramData();
+    }
+
     handleProgramChange(event) {
         this.selectedProgramId = event.detail.value;
+        this.fetchProgramData();
+    }
+
+    fetchProgramData() {
         if (this.selectedProgramId) {
-            getProgramDetails({ programId: this.selectedProgramId })
+            getProgramDetails({ programId: this.selectedProgramId, filterDate: this.globalDate })
                 .then(result => {
                     // Add a unique id for datatable and sort
                     let formattedData = result.map((item, index) => {
                         return { ...item, id: index.toString() };
                     });
                     
-                    // Sort by Anno descending, then Tipo, then Categoria
+                    // Sort by Tipo ("Incasso" before "Spesa"), then Anno descending, then Categoria
                     formattedData.sort((a, b) => {
+                        if (a.tipo !== b.tipo) {
+                            // "Incasso" should come before "Spesa"
+                            if (a.tipo === 'Incasso') return -1;
+                            if (b.tipo === 'Incasso') return 1;
+                            return a.tipo.localeCompare(b.tipo);
+                        }
                         if (a.anno !== b.anno) return b.anno.localeCompare(a.anno);
-                        if (a.tipo !== b.tipo) return a.tipo.localeCompare(b.tipo);
                         return a.categoria.localeCompare(b.categoria);
                     });
                     

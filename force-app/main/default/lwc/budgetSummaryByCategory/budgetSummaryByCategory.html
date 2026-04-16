@@ -2,12 +2,14 @@
     <lightning-card title="Riepilogo Budget per Categoria" icon-name="custom:custom41">
         <div class="slds-p-around_medium">
             
-            <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-                    <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
-                    <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>
+            <template if:false={hideDateFilter}>
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
+                        <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>
+                    </div>
                 </div>
-            </div>
+            </template>
 
             <template if:true={error}>
                 <div class="slds-text-color_error">{error}</div>

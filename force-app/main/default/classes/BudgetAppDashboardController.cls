@@ -34,14 +34,14 @@ public with sharing class BudgetAppDashboardController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<YearSummary> getProgramDetails(Id programId) {
+    public static List<YearSummary> getProgramDetails(Id programId, Date filterDate) {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
 
         Map<String, YearSummary> yearToTypeToCatToSummary = new Map<String, YearSummary>();
 
         for (Voce_di_Incasso__c vi : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Overview_Budget_per_Anno__r.Anno__c
+            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
         ]) {
@@ -58,17 +58,25 @@ public with sharing class BudgetAppDashboardController {
             }
             YearSummary ys = yearToTypeToCatToSummary.get(key);
 
-            if (stato == 'Effettiva') {
-                ys.effettivo += tot;
-            } else if (stato == 'Prevista') {
-                ys.previsto += tot;
-            } else if (stato == 'Annullata') {
-                ys.previsto -= tot;
+            if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
+                if (stato == 'Effettiva') {
+                    ys.effettivo += tot;
+                } else if (stato == 'Prevista') {
+                    ys.previsto += tot;
+                } else if (stato == 'Annullata') {
+                    ys.previsto -= tot;
+                }
+            } else {
+                if (stato == 'Prevista') {
+                    ys.previsto += tot;
+                } else if (stato == 'Annullata') {
+                    ys.previsto -= tot;
+                }
             }
         }
 
         for (Voce_di_Spesa__c vs : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Overview_Budget_per_Anno__r.Anno__c
+            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
         ]) {
@@ -85,12 +93,20 @@ public with sharing class BudgetAppDashboardController {
             }
             YearSummary ys = yearToTypeToCatToSummary.get(key);
 
-            if (stato == 'Effettiva') {
-                ys.effettivo += tot;
-            } else if (stato == 'Prevista') {
-                ys.previsto += tot;
-            } else if (stato == 'Annullata') {
-                ys.previsto -= tot;
+            if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
+                if (stato == 'Effettiva') {
+                    ys.effettivo += tot;
+                } else if (stato == 'Prevista') {
+                    ys.previsto += tot;
+                } else if (stato == 'Annullata') {
+                    ys.previsto -= tot;
+                }
+            } else {
+                if (stato == 'Prevista') {
+                    ys.previsto += tot;
+                } else if (stato == 'Annullata') {
+                    ys.previsto -= tot;
+                }
             }
         }
 
