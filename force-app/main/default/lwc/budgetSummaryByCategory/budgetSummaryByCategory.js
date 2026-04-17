@@ -48,6 +48,23 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     get selectedDate() {
         return this._selectedDate;
     }
+
+    get selectedYear() {
+        return this.getSelectedYear();
+    }
+
+    get yearOptions() {
+        const selectedYear = Number(this.getSelectedYear()) || new Date().getFullYear();
+        const options = [];
+        for (let year = selectedYear + 5; year >= selectedYear - 5; year -= 1) {
+            options.push({
+                label: String(year),
+                value: String(year)
+            });
+        }
+        return options;
+    }
+
     incassi = [];
     spese = [];
     cashFlow = [];
@@ -202,6 +219,20 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
         return String(new Date().getFullYear());
     }
 
+    rebaseDateToYear(targetYear) {
+        const safeYear = Number(targetYear);
+        const sourceDate = this._selectedDate || this.getTodayDate();
+        const parts = String(sourceDate).split('-');
+        const month = Number(parts[1]) || 1;
+        const day = Number(parts[2]) || 1;
+        if (!safeYear) {
+            return this.getTodayDate();
+        }
+        const lastDay = new Date(safeYear, month, 0).getDate();
+        const safeDay = Math.min(day, lastDay);
+        return `${safeYear}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+    }
+
     buildQuarterDate(actionKey) {
         const year = this.getSelectedYear();
         const quarterMap = {
@@ -234,6 +265,10 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
     handleMonthShortcutChange(event) {
         this._selectedDate = this.buildMonthEndDate(event.detail.value);
+    }
+
+    handleYearChange(event) {
+        this._selectedDate = this.rebaseDateToYear(event.detail.value);
     }
 
     calculateProgress(effettivo, previsto) {

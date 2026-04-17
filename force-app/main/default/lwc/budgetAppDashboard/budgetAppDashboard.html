@@ -5,6 +5,16 @@
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
             <lightning-card>
                 <div class="slds-p-around_medium dashboard-date-toolbar">
+                    <div class="dashboard-date-year">
+                        <lightning-combobox
+                            name="globalYearFilter"
+                            variant="label-hidden"
+                            value={selectedYear}
+                            placeholder="Anno"
+                            options={yearOptions}
+                            onchange={handleYearChange}>
+                        </lightning-combobox>
+                    </div>
                     <div class="dashboard-date-input">
                         <label class="slds-form-element__label slds-text-title_bold" for="global-date-filter">Filtra per Data (Globale)</label>
                         <lightning-input id="global-date-filter" type="date" variant="label-hidden" value={globalDate} onchange={handleGlobalDateChange}></lightning-input>

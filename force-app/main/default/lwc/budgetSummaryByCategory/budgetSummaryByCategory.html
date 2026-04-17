@@ -4,6 +4,16 @@
             
             <template if:false={hideDateFilter}>
                 <div class="date-filter-toolbar slds-m-bottom_medium">
+                    <div class="date-filter-year">
+                        <lightning-combobox
+                            name="yearFilter"
+                            variant="label-hidden"
+                            value={selectedYear}
+                            placeholder="Anno"
+                            options={yearOptions}
+                            onchange={handleYearChange}>
+                        </lightning-combobox>
+                    </div>
                     <div class="date-filter-input">
                         <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
                         <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>

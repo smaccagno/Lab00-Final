@@ -5,6 +5,11 @@
     align-items: flex-end;
 }
 
+.dashboard-date-year {
+    flex: 0 0 130px;
+    min-width: 130px;
+}
+
 .dashboard-date-input {
     flex: 0 0 240px;
     min-width: 240px;
@@ -26,6 +31,7 @@
 }
 
 @media (max-width: 768px) {
+    .dashboard-date-year,
     .dashboard-date-input {
         flex-basis: 100%;
         min-width: 0;
