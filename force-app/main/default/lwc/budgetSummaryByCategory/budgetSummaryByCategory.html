@@ -11,12 +11,53 @@
                 </div>
             </template>
 
+            <template if:true={showQuickSummary}>
+                <template if:true={quickSummary}>
+                    <div class="quick-summary slds-m-bottom_medium">
+                        <div class="quick-summary-grid">
+                            <div class="quick-summary-section">
+                                <div class="quick-summary-title">Totale Incassi (alla data {quickSummary.dateLabel})</div>
+                                <div class="quick-summary-line">Previsti:
+                                    <lightning-formatted-number value={quickSummary.incassiPrevisti} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                                <div class="quick-summary-line">Effettivi:
+                                    <lightning-formatted-number value={quickSummary.incassiEffettivi} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                            <div class="quick-summary-section">
+                                <div class="quick-summary-title">Totale Spese (alla data {quickSummary.dateLabel})</div>
+                                <div class="quick-summary-line">Previste:
+                                    <lightning-formatted-number value={quickSummary.spesePreviste} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                                <div class="quick-summary-line">Effettive:
+                                    <lightning-formatted-number value={quickSummary.speseEffettive} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                            <div class="quick-summary-section">
+                                <div class="quick-summary-title">Ammontare Disponibile (alla data {quickSummary.dateLabel})</div>
+                                <div class="quick-summary-line">Previsto:
+                                    <lightning-formatted-number value={quickSummary.disponibilePrevisto} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                                <div class="quick-summary-line">Effettivo:
+                                    <lightning-formatted-number value={quickSummary.disponibileEffettivo} format-style="currency" currency-code="EUR"></lightning-formatted-number>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
             <template if:true={error}>
                 <div class="slds-text-color_error">{error}</div>
             </template>
 
             <template if:true={hasData}>
                 <div class="chart-container">
+                    <div class="bar-row progress-header-row">
+                        <div class="bar-label"></div>
+                        <div class="bar-track progress-header-track"></div>
+                        <div class="bar-progress bar-progress-header">Avanzamento (Effettivi/Previsti)</div>
+                    </div>
                     
                     <!-- Cash Flow Section -->
                     <template if:true={cashFlow.length}>
@@ -38,6 +79,9 @@
                                             </span>
                                         </div>
                                     </template>
+                                </div>
+                                <div class="bar-progress">
+                                    <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
                                 </div>
                             </div>
                         </template>
@@ -66,6 +110,9 @@
                                         </div>
                                     </template>
                                 </div>
+                                <div class="bar-progress">
+                                    <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
+                                </div>
                             </div>
                         </template>
                     </template>
@@ -90,6 +137,9 @@
                                             </span>
                                         </div>
                                     </template>
+                                </div>
+                                <div class="bar-progress">
+                                    <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
                                 </div>
                             </div>
                         </template>
@@ -162,9 +212,10 @@
                         </header>
                         <div class="slds-modal__content slds-p-around_medium">
                             <lightning-datatable
-                                key-field="name"
+                                key-field="_rowKey"
                                 data={modalData}
                                 columns={modalColumns}
+                                onrowaction={handleModalRowAction}
                                 hide-checkbox-column>
                             </lightning-datatable>
                         </div>

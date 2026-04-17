@@ -6,16 +6,18 @@ public with sharing class BudgetSummaryController {
         @AuraEnabled public Date itemDate;
         @AuraEnabled public String category;
         @AuraEnabled public String status;
+        @AuraEnabled public Id sourceTransactionId;
         @AuraEnabled public String sourceTransactionName;
         @AuraEnabled public String url;
 
-        public ItemDetail(Id recordId, String name, Decimal amount, Date itemDate, String category, String status, String sourceTransactionName) {
+        public ItemDetail(Id recordId, String name, Decimal amount, Date itemDate, String category, String status, Id sourceTransactionId, String sourceTransactionName) {
             this.recordId = recordId;
             this.name = name;
             this.amount = amount;
             this.itemDate = itemDate;
             this.category = category;
             this.status = status;
+            this.sourceTransactionId = sourceTransactionId;
             this.sourceTransactionName = sourceTransactionName;
             this.url = recordId != null ? '/' + recordId : null;
         }
@@ -62,7 +64,7 @@ public with sharing class BudgetSummaryController {
 
         if (sObjName == 'Overview_Budget_per_Anno__c') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__c = :recordId
             ];
@@ -73,7 +75,7 @@ public with sharing class BudgetSummaryController {
             ];
         } else if (sObjName == 'GiftDesignation') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
@@ -84,7 +86,7 @@ public with sharing class BudgetSummaryController {
             ];
         } else if (sObjName == 'Account') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
             ];
@@ -113,13 +115,13 @@ public with sharing class BudgetSummaryController {
             if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
                 if (stato == 'Effettiva') {
                     incassiMap.get(cat).effettivo += tot;
-                    incassiMap.get(cat).itemsEffettivi.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__r?.Name));
+                    incassiMap.get(cat).itemsEffettivi.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
                 } else if (stato == 'Prevista') {
                     incassiMap.get(cat).previsto += tot;
-                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__r?.Name));
+                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
                 } else if (stato == 'Annullata') {
                     incassiMap.get(cat).previsto -= tot;
-                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name + ' (Annullata)', -tot, vi.Data__c, cat, stato, vi.Transazione__r?.Name));
+                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name + ' (Annullata)', -tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
                 }
             }
         }
@@ -153,14 +155,14 @@ public with sharing class BudgetSummaryController {
             if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
                 if (stato == 'Effettiva') {
                     speseMap.get(cat).effettivo += tot;
-                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null));
+                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null, null));
                 } else if (stato == 'Prevista') {
                     speseMap.get(cat).previsto += tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null));
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null, null));
                 } else if (stato == 'Annullata') {
                     // Sottrae il totale alla categoria (dal previsto)
                     speseMap.get(cat).previsto -= tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata)', -tot, vs.Data__c, cat, stato, null));
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata)', -tot, vs.Data__c, cat, stato, null, null));
                 }
             }
         }

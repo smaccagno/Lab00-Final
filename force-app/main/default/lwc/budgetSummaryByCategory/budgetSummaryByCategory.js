@@ -1,9 +1,16 @@
 import { LightningElement, api, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
 import getSummary from '@salesforce/apex/BudgetSummaryController.getSummary';
 
-export default class BudgetSummaryByCategory extends LightningElement {
+export default class BudgetSummaryByCategory extends NavigationMixin(LightningElement) {
     @api recordId;
     @api hideDateFilter = false;
+    @api showQuickSummary = false;
+    @api externalMaxVal;
+    @api externalMaxIncassiVal;
+    @api externalMaxSpeseVal;
+    @api externalMaxCashFlowVal;
 
     _selectedDate = new Date().toISOString().split('T')[0];
 
@@ -23,6 +30,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
     incassi = [];
     spese = [];
     cashFlow = [];
+    quickSummary = null;
     hasData = false;
     error;
 
@@ -30,18 +38,24 @@ export default class BudgetSummaryByCategory extends LightningElement {
     tooltipStyle = '';
     tooltipTitle = '';
     tooltipItems = [];
+    isConsoleNavigation = false;
 
     modalVisible = false;
     modalTitle = '';
     modalData = [];
     modalColumns = [
-        { label: 'Titolo', fieldName: 'url', type: 'url', typeAttributes: { label: { fieldName: 'name' }, target: '_blank' } },
+        { label: 'Titolo', type: 'button', typeAttributes: { label: { fieldName: 'name' }, name: 'open_record', variant: 'base' } },
         { label: 'Data', fieldName: 'itemDate', type: 'date-local' },
         { label: 'Categoria', fieldName: 'category', type: 'text' },
         { label: 'Stato', fieldName: 'status', type: 'text' },
-        { label: 'Transazione', fieldName: 'sourceTransactionName', type: 'text' },
+        { label: 'Transazione', type: 'button', typeAttributes: { label: { fieldName: 'sourceTransactionName' }, name: 'open_transaction', variant: 'base', disabled: { fieldName: 'disableSourceTransaction' } } },
         { label: 'Ammontare', fieldName: 'amount', type: 'currency', typeAttributes: { currencyCode: 'EUR' } }
     ];
+
+    @wire(IsConsoleNavigation)
+    wiredIsConsoleNavigation(result) {
+        this.isConsoleNavigation = !!(result && result.data);
+    }
 
     handleMouseOver(event) {
         const itemsJson = event.currentTarget.dataset.items;
@@ -91,11 +105,57 @@ export default class BudgetSummaryByCategory extends LightningElement {
             // If it's cash flow, we might just show the aggregate in the modal or we can pass the full items.
             // We'll pass the full items in itemsJson.
             if (parsedItems && parsedItems.length > 0 && parsedItems[0].name !== undefined) {
-                this.modalData = parsedItems;
+                this.modalData = parsedItems.map(item => ({
+                    ...item,
+                    _rowKey: item.recordId,
+                    sourceTransactionName: item.sourceTransactionName || '',
+                    disableSourceTransaction: !item.sourceTransactionId
+                }));
                 this.modalTitle = `Dettaglio: ${cat ? cat + ' - ' : ''}${title}`;
                 this.modalVisible = true;
                 this.tooltipVisible = false;
             }
+        }
+    }
+
+    async openRecordInConsole(recordId) {
+        if (!recordId) {
+            return;
+        }
+        const pageReference = {
+            type: 'standard__recordPage',
+            attributes: {
+                recordId,
+                actionName: 'view'
+            }
+        };
+
+        try {
+            if (this.isConsoleNavigation) {
+                const focusedTabInfo = await getFocusedTabInfo();
+                if (focusedTabInfo && focusedTabInfo.tabId) {
+                    await openSubtab(focusedTabInfo.tabId, { pageReference, focus: true });
+                    return;
+                }
+                await openTab({ pageReference, focus: true });
+                return;
+            }
+        } catch (e) {
+            // fallback below
+        }
+
+        this[NavigationMixin.Navigate](pageReference);
+    }
+
+    handleModalRowAction(event) {
+        if (!(event.detail && event.detail.action && event.detail.row)) {
+            return;
+        }
+
+        if (event.detail.action.name === 'open_record') {
+            this.openRecordInConsole(event.detail.row.recordId);
+        } else if (event.detail.action.name === 'open_transaction') {
+            this.openRecordInConsole(event.detail.row.sourceTransactionId);
         }
     }
 
@@ -105,6 +165,53 @@ export default class BudgetSummaryByCategory extends LightningElement {
 
     handleDateChange(event) {
         this._selectedDate = event.target.value;
+    }
+
+    calculateProgress(effettivo, previsto) {
+        const eff = Number(effettivo) || 0;
+        const prev = Number(previsto) || 0;
+        if (prev > 0) {
+            return eff / prev;
+        }
+        if (prev === 0) {
+            // In percent format, 2 => 200%. Keep zero-denominator case readable.
+            return eff / 100;
+        }
+        return eff / Math.abs(prev);
+    }
+
+    formatDateLabel(value) {
+        if (!value) {
+            return '-';
+        }
+        const parts = String(value).split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return value;
+    }
+
+    createZeroSegments(previstoClass, effettivoClass) {
+        return [
+            {
+                id: 'previsto',
+                value: 0,
+                style: 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);',
+                cssClass: `${previstoClass} clickable`,
+                title: 'Previsto',
+                itemsJson: '[]',
+                labelClass: 'segment-label label-outside'
+            },
+            {
+                id: 'effettivo',
+                value: 0,
+                style: 'width: 18px; border-right: 1px solid rgba(255,255,255,0.5);',
+                cssClass: `${effettivoClass} clickable`,
+                title: 'Effettivo',
+                itemsJson: '[]',
+                labelClass: 'segment-label'
+            }
+        ];
     }
 
     @wire(getSummary, { recordId: '$recordId', filterDate: '$_selectedDate' })
@@ -148,6 +255,26 @@ export default class BudgetSummaryByCategory extends LightningElement {
             // Evita divisioni per zero
             maxIncassiVal = maxIncassiVal > 0 ? maxIncassiVal : 1;
             maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
+            const externalGlobalMaxVal = Number(this.externalMaxVal);
+            const externalLegacyMaxVal = Math.max(
+                Number(this.externalMaxIncassiVal) || 0,
+                Number(this.externalMaxSpeseVal) || 0,
+                Number(this.externalMaxCashFlowVal) || 0
+            );
+            const totalIncassi = totalIncassiEffettivo + totalIncassiPrevisto;
+            const totalSpese = totalSpeseEffettivo + totalSpesePrevisto;
+            const dispEffettivo = totalIncassiEffettivo - totalSpeseEffettivo;
+            const dispPrevisto = totalIncassiPrevisto - totalSpesePrevisto;
+            const totalDisp = dispEffettivo + dispPrevisto;
+            const maxCashFlowVal = Math.max(
+                totalIncassiEffettivo, totalIncassiPrevisto,
+                totalSpeseEffettivo, totalSpesePrevisto,
+                Math.abs(dispEffettivo), Math.abs(dispPrevisto)
+            ) || 1;
+            const localGlobalMaxVal = Math.max(maxIncassiVal, maxSpeseVal, maxCashFlowVal, 1);
+            const scaleGlobalVal = externalGlobalMaxVal > 0
+                ? externalGlobalMaxVal
+                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : localGlobalMaxVal);
 
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
@@ -176,7 +303,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
             this.incassi = (data.incassi || []).map(item => {
                 let segments = [];
                 
-                let pStyle = `width: ${(item.previsto / maxIncassiVal) * 100}%;`;
+                let pStyle = `width: ${(item.previsto / scaleGlobalVal) * 100}%;`;
                 if (item.previsto === 0) {
                     pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
@@ -189,29 +316,32 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     itemsJson: JSON.stringify(item.itemsPrevisti || [])
                 });
 
-                if (item.effettivo > 0) {
-                    segments.push({
-                        id: 'effettivo',
-                        value: item.effettivo,
-                        style: `width: ${(item.effettivo / maxIncassiVal) * 100}%;`,
-                        cssClass: 'bar-fill bar-incasso-effettivo clickable',
-                        title: 'Effettivo',
-                        itemsJson: JSON.stringify(item.itemsEffettivi || [])
-                    });
+                let eStyle = `width: ${(item.effettivo / scaleGlobalVal) * 100}%;`;
+                if (item.effettivo === 0) {
+                    eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
                 }
+                segments.push({
+                    id: 'effettivo',
+                    value: item.effettivo,
+                    style: eStyle,
+                    cssClass: 'bar-fill bar-incasso-effettivo clickable',
+                    title: 'Effettivo',
+                    itemsJson: JSON.stringify(item.itemsEffettivi || [])
+                });
 
-                segments = processSegments(segments, maxIncassiVal);
+                segments = processSegments(segments, scaleGlobalVal);
 
                 return {
                     ...item,
-                    segments: segments
+                    segments: segments,
+                    avanzamento: this.calculateProgress(item.effettivo, item.previsto)
                 };
             });
 
             this.spese = (data.spese || []).map(item => {
                 let segments = [];
                 
-                let pStyle = `width: ${(item.previsto / maxSpeseVal) * 100}%;`;
+                let pStyle = `width: ${(item.previsto / scaleGlobalVal) * 100}%;`;
                 if (item.previsto === 0) {
                     pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
@@ -224,44 +354,63 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     itemsJson: JSON.stringify(item.itemsPrevisti || [])
                 });
 
-                if (item.effettivo > 0) {
-                    segments.push({
-                        id: 'effettivo',
-                        value: item.effettivo,
-                        style: `width: ${(item.effettivo / maxSpeseVal) * 100}%;`,
-                        cssClass: 'bar-fill bar-spesa-effettivo clickable',
-                        title: 'Effettivo',
-                        itemsJson: JSON.stringify(item.itemsEffettivi || [])
-                    });
+                let eStyle = `width: ${(item.effettivo / scaleGlobalVal) * 100}%;`;
+                if (item.effettivo === 0) {
+                    eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
                 }
+                segments.push({
+                    id: 'effettivo',
+                    value: item.effettivo,
+                    style: eStyle,
+                    cssClass: 'bar-fill bar-spesa-effettivo clickable',
+                    title: 'Effettivo',
+                    itemsJson: JSON.stringify(item.itemsEffettivi || [])
+                });
 
-                segments = processSegments(segments, maxSpeseVal);
+                segments = processSegments(segments, scaleGlobalVal);
 
                 return {
                     ...item,
-                    segments: segments
+                    segments: segments,
+                    avanzamento: this.calculateProgress(item.effettivo, item.previsto)
                 };
             });
 
-            this.hasData = this.incassi.length > 0 || this.spese.length > 0;
+            if (this.incassi.length === 0) {
+                this.incassi = [{
+                    categoria: 'Non categorizzato',
+                    previsto: 0,
+                    effettivo: 0,
+                    segments: this.createZeroSegments('bar-fill bar-incasso-previsto', 'bar-fill bar-incasso-effettivo'),
+                    avanzamento: this.calculateProgress(0, 0)
+                }];
+            }
+
+            if (this.spese.length === 0) {
+                this.spese = [{
+                    categoria: 'Non categorizzato',
+                    previsto: 0,
+                    effettivo: 0,
+                    segments: this.createZeroSegments('bar-fill bar-spesa-previsto', 'bar-fill bar-spesa-effettivo'),
+                    avanzamento: this.calculateProgress(0, 0)
+                }];
+            }
+
+            this.hasData = true;
+            this.quickSummary = {
+                dateLabel: this.formatDateLabel(this._selectedDate),
+                incassiPrevisti: totalIncassiPrevisto,
+                incassiEffettivi: totalIncassiEffettivo,
+                spesePreviste: totalSpesePrevisto,
+                speseEffettive: totalSpeseEffettivo,
+                disponibilePrevisto: dispPrevisto,
+                disponibileEffettivo: dispEffettivo
+            };
             
             // Cash Flow logic
-            let totalIncassi = totalIncassiEffettivo + totalIncassiPrevisto;
-            let totalSpese = totalSpeseEffettivo + totalSpesePrevisto;
-            
-            let dispEffettivo = totalIncassiEffettivo - totalSpeseEffettivo;
-            let dispPrevisto = totalIncassiPrevisto - totalSpesePrevisto;
-            let totalDisp = dispEffettivo + dispPrevisto;
-
-            let maxCashFlowVal = Math.max(
-                totalIncassiEffettivo, totalIncassiPrevisto,
-                totalSpeseEffettivo, totalSpesePrevisto,
-                Math.abs(dispEffettivo), Math.abs(dispPrevisto)
-            );
-            maxCashFlowVal = maxCashFlowVal > 0 ? maxCashFlowVal : 1;
 
             let cfIncassiSegments = [];
-            let cfIncassiPStyle = `width: ${(totalIncassiPrevisto / maxCashFlowVal) * 100}%;`;
+            let cfIncassiPStyle = `width: ${(totalIncassiPrevisto / scaleGlobalVal) * 100}%;`;
             if (totalIncassiPrevisto === 0) {
                 cfIncassiPStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -273,20 +422,22 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 title: 'Previsto',
                 itemsJson: JSON.stringify(allIncassiPrevistiItems)
             });
-            if (totalIncassiEffettivo > 0) {
-                cfIncassiSegments.push({
-                    id: 'effettivo',
-                    value: totalIncassiEffettivo,
-                    style: `width: ${(totalIncassiEffettivo / maxCashFlowVal) * 100}%;`,
-                    cssClass: 'bar-fill bar-incasso-effettivo clickable',
-                    title: 'Effettivo',
-                    itemsJson: JSON.stringify(allIncassiEffettiviItems)
-                });
+            let cfIncassiEStyle = `width: ${(totalIncassiEffettivo / scaleGlobalVal) * 100}%;`;
+            if (totalIncassiEffettivo === 0) {
+                cfIncassiEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
             }
-            cfIncassiSegments = processSegments(cfIncassiSegments, maxCashFlowVal);
+            cfIncassiSegments.push({
+                id: 'effettivo',
+                value: totalIncassiEffettivo,
+                style: cfIncassiEStyle,
+                cssClass: 'bar-fill bar-incasso-effettivo clickable',
+                title: 'Effettivo',
+                itemsJson: JSON.stringify(allIncassiEffettiviItems)
+            });
+            cfIncassiSegments = processSegments(cfIncassiSegments, scaleGlobalVal);
 
             let cfSpeseSegments = [];
-            let cfSpesePStyle = `width: ${(totalSpesePrevisto / maxCashFlowVal) * 100}%;`;
+            let cfSpesePStyle = `width: ${(totalSpesePrevisto / scaleGlobalVal) * 100}%;`;
             if (totalSpesePrevisto === 0) {
                 cfSpesePStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -298,21 +449,23 @@ export default class BudgetSummaryByCategory extends LightningElement {
                 title: 'Previsto',
                 itemsJson: JSON.stringify(allSpesePrevistiItems)
             });
-            if (totalSpeseEffettivo > 0) {
-                cfSpeseSegments.push({
-                    id: 'effettivo',
-                    value: totalSpeseEffettivo,
-                    style: `width: ${(totalSpeseEffettivo / maxCashFlowVal) * 100}%;`,
-                    cssClass: 'bar-fill bar-spesa-effettivo clickable',
-                    title: 'Effettivo',
-                    itemsJson: JSON.stringify(allSpeseEffettiviItems)
-                });
+            let cfSpeseEStyle = `width: ${(totalSpeseEffettivo / scaleGlobalVal) * 100}%;`;
+            if (totalSpeseEffettivo === 0) {
+                cfSpeseEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
             }
-            cfSpeseSegments = processSegments(cfSpeseSegments, maxCashFlowVal);
+            cfSpeseSegments.push({
+                id: 'effettivo',
+                value: totalSpeseEffettivo,
+                style: cfSpeseEStyle,
+                cssClass: 'bar-fill bar-spesa-effettivo clickable',
+                title: 'Effettivo',
+                itemsJson: JSON.stringify(allSpeseEffettiviItems)
+            });
+            cfSpeseSegments = processSegments(cfSpeseSegments, scaleGlobalVal);
 
             let cfDispSegments = [];
             let dispPrevWidth = Math.max(0, dispPrevisto);
-            let cfDispPStyle = `width: ${(dispPrevWidth / maxCashFlowVal) * 100}%;`;
+            let cfDispPStyle = `width: ${(dispPrevWidth / scaleGlobalVal) * 100}%;`;
             if (dispPrevisto <= 0) {
                 cfDispPStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -329,7 +482,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
             });
 
             let dispEffWidth = Math.max(0, dispEffettivo);
-            let cfDispEStyle = `width: ${(dispEffWidth / maxCashFlowVal) * 100}%;`;
+            let cfDispEStyle = `width: ${(dispEffWidth / scaleGlobalVal) * 100}%;`;
             if (dispEffettivo <= 0) {
                 cfDispEStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -344,26 +497,27 @@ export default class BudgetSummaryByCategory extends LightningElement {
                     { label: 'Totale Spese Effettive', value: -totalSpeseEffettivo }
                 ])
             });
-            cfDispSegments = processSegments(cfDispSegments, maxCashFlowVal);
+            cfDispSegments = processSegments(cfDispSegments, scaleGlobalVal);
 
             this.cashFlow = [];
-            if (totalIncassi > 0 || totalSpese > 0) {
-                this.cashFlow.push({
-                    categoria: 'Totale Incassi',
-                    totale: totalIncassi,
-                    segments: cfIncassiSegments
-                });
-                this.cashFlow.push({
-                    categoria: 'Totale Spese',
-                    totale: totalSpese,
-                    segments: cfSpeseSegments
-                });
-                this.cashFlow.push({
-                    categoria: 'Disponibile',
-                    totale: totalDisp,
-                    segments: cfDispSegments
-                });
-            }
+            this.cashFlow.push({
+                categoria: 'Totale Incassi',
+                totale: totalIncassi,
+                segments: cfIncassiSegments,
+                avanzamento: this.calculateProgress(totalIncassiEffettivo, totalIncassiPrevisto)
+            });
+            this.cashFlow.push({
+                categoria: 'Totale Spese',
+                totale: totalSpese,
+                segments: cfSpeseSegments,
+                avanzamento: this.calculateProgress(totalSpeseEffettivo, totalSpesePrevisto)
+            });
+            this.cashFlow.push({
+                categoria: 'Disponibile',
+                totale: totalDisp,
+                segments: cfDispSegments,
+                avanzamento: this.calculateProgress(dispEffettivo, dispPrevisto)
+            });
 
             this.error = undefined;
         } else if (error) {
@@ -371,6 +525,7 @@ export default class BudgetSummaryByCategory extends LightningElement {
             this.incassi = [];
             this.spese = [];
             this.cashFlow = [];
+            this.quickSummary = null;
             this.hasData = false;
         }
     }
