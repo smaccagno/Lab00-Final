@@ -1,0 +1,29 @@
+.dashboard-date-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.dashboard-date-input {
+    flex: 0 0 240px;
+    min-width: 240px;
+}
+
+.dashboard-date-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.dashboard-date-button {
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .dashboard-date-input {
+        flex-basis: 100%;
+        min-width: 0;
+    }
+}

@@ -4,10 +4,21 @@
         <!-- Global Date Filter -->
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
             <lightning-card>
-                <div class="slds-p-around_medium slds-grid slds-gutters">
-                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                <div class="slds-p-around_medium dashboard-date-toolbar">
+                    <div class="dashboard-date-input">
                         <label class="slds-form-element__label slds-text-title_bold" for="global-date-filter">Filtra per Data (Globale)</label>
                         <lightning-input id="global-date-filter" type="date" variant="label-hidden" value={globalDate} onchange={handleGlobalDateChange}></lightning-input>
+                    </div>
+                    <div class="dashboard-date-actions">
+                        <template for:each={quickDateActions} for:item="action">
+                            <button
+                                key={action.key}
+                                class="slds-button slds-button_neutral dashboard-date-button"
+                                data-action={action.key}
+                                onclick={handleQuickDateClick}>
+                                {action.label}
+                            </button>
+                        </template>
                     </div>
                 </div>
             </lightning-card>

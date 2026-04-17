@@ -3,10 +3,21 @@
         <div class="slds-p-around_medium">
             
             <template if:false={hideDateFilter}>
-                <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                <div class="date-filter-toolbar slds-m-bottom_medium">
+                    <div class="date-filter-input">
                         <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
                         <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>
+                    </div>
+                    <div class="date-filter-actions">
+                        <template for:each={quickDateActions} for:item="action">
+                            <button
+                                key={action.key}
+                                class="slds-button slds-button_neutral date-filter-button"
+                                data-action={action.key}
+                                onclick={handleQuickDateClick}>
+                                {action.label}
+                            </button>
+                        </template>
                     </div>
                 </div>
             </template>

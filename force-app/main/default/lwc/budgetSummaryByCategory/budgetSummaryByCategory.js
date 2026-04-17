@@ -11,6 +11,13 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     @api externalMaxIncassiVal;
     @api externalMaxSpeseVal;
     @api externalMaxCashFlowVal;
+    quickDateActions = [
+        { key: 'today', label: 'Oggi' },
+        { key: 'q1', label: 'Primo Trimestre' },
+        { key: 'q2', label: 'Secondo Trimestre' },
+        { key: 'q3', label: 'Terzo Trimestre' },
+        { key: 'q4', label: 'Quarto Trimestre' }
+    ];
 
     _selectedDate = new Date().toISOString().split('T')[0];
 
@@ -165,6 +172,40 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
     handleDateChange(event) {
         this._selectedDate = event.target.value;
+    }
+
+    getTodayDate() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    getSelectedYear() {
+        if (this._selectedDate) {
+            const year = String(this._selectedDate).split('-')[0];
+            if (/^\d{4}$/.test(year)) {
+                return year;
+            }
+        }
+        return String(new Date().getFullYear());
+    }
+
+    buildQuarterDate(actionKey) {
+        const year = this.getSelectedYear();
+        const quarterMap = {
+            q1: `${year}-03-31`,
+            q2: `${year}-06-30`,
+            q3: `${year}-09-30`,
+            q4: `${year}-12-31`
+        };
+        return quarterMap[actionKey] || this.getTodayDate();
+    }
+
+    handleQuickDateClick(event) {
+        const actionKey = event.currentTarget.dataset.action;
+        if (actionKey === 'today') {
+            this._selectedDate = this.getTodayDate();
+            return;
+        }
+        this._selectedDate = this.buildQuarterDate(actionKey);
     }
 
     calculateProgress(effettivo, previsto) {

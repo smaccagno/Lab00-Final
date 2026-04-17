@@ -17,6 +17,13 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     globalProgramMaxVal = null;
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
+    quickDateActions = [
+        { key: 'today', label: 'Oggi' },
+        { key: 'q1', label: 'Primo Trimestre' },
+        { key: 'q2', label: 'Secondo Trimestre' },
+        { key: 'q3', label: 'Terzo Trimestre' },
+        { key: 'q4', label: 'Quarto Trimestre' }
+    ];
 
     columns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
@@ -80,6 +87,38 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
 
     handleGlobalDateChange(event) {
         this.globalDate = event.target.value;
+        this.programScaleReady = false;
+        this.rebuildTables();
+    }
+
+    getTodayDate() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    getSelectedYear() {
+        if (this.globalDate) {
+            const year = String(this.globalDate).split('-')[0];
+            if (/^\d{4}$/.test(year)) {
+                return year;
+            }
+        }
+        return String(new Date().getFullYear());
+    }
+
+    buildQuarterDate(actionKey) {
+        const year = this.getSelectedYear();
+        const quarterMap = {
+            q1: `${year}-03-31`,
+            q2: `${year}-06-30`,
+            q3: `${year}-09-30`,
+            q4: `${year}-12-31`
+        };
+        return quarterMap[actionKey] || this.getTodayDate();
+    }
+
+    handleQuickDateClick(event) {
+        const actionKey = event.currentTarget.dataset.action;
+        this.globalDate = actionKey === 'today' ? this.getTodayDate() : this.buildQuarterDate(actionKey);
         this.programScaleReady = false;
         this.rebuildTables();
     }
