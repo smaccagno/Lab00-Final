@@ -5419,8 +5419,19 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.medicalCenterIsNew = true;
                     row.validationErrors.medicalCenter = false;
                 } else if (field === 'noProfit') {
-                    row.noProfitIsNew = true;
+                    const matchedNoProfit = (this.nonProfits || []).find(
+                        ente => ente.Name && this.cleanValue(ente.Name).toLowerCase() === filterValue.toLowerCase()
+                    );
+                    row.noProfitIsNew = !matchedNoProfit;
                     row.validationErrors.noProfit = false;
+
+                    // Se l'ente esiste già, usa sempre la categoria associata invece di trascinare
+                    // il testo della cella precedente nel dropdown successivo.
+                    if (matchedNoProfit) {
+                        row.noProfitCategory = matchedNoProfit.Ente_Categoria__c || '';
+                        row.noProfitCategoryIsNew = false;
+                        this.validateField(row, 'noProfitCategory', row.noProfitCategory || '');
+                    }
                 } else if (field === 'noProfitCategory') {
                     // Se viene confermata una categoria, segna come nuovo se non esiste nel dataset
                     const categoryExists = this.categoryOptions.some(
@@ -5610,15 +5621,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }, 200);
             }
 
-            // Per ente no profit, dopo la conferma, apri il dropdown per la categoria
+            // Per ente no profit, dopo la conferma apri la categoria solo se manca/da inserire.
             if (field === 'noProfit') {
+                this.closeDropdown();
                 setTimeout(() => {
+                    const currentRow = this.rows[rowIndex];
+                    if (!currentRow || (currentRow.noProfitCategory && !currentRow.noProfitIsNew)) {
+                        return;
+                    }
                     const categoryCell = this.template.querySelector(
                         `td[data-field="noProfitCategory"][data-row-index="${rowIndex}"]`
                     );
                     if (categoryCell) {
                         // Usa helper che crea un evento "safe" (openDropdown richiede preventDefault/stopPropagation)
-                        this.openDropdownForCell(categoryCell, rowIndex, 'noProfitCategory');
+                        this.openDropdownForCell(
+                            categoryCell,
+                            rowIndex,
+                            'noProfitCategory',
+                            currentRow.noProfitCategory || ''
+                        );
                     }
                 }, 200);
                 return;
@@ -5676,7 +5697,8 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // IMPORTANTE: Leggi sempre dall'input se disponibile per avere il valore più aggiornato
         let filter = '';
         const filterInput = this.template.querySelector('.dropdown-filter');
-        if (filterInput) {
+        const canTrustFilterInput = !!filterInput && document.activeElement === filterInput;
+        if (canTrustFilterInput) {
             // Usa sempre il valore dall'input se disponibile (più aggiornato)
             filter = (filterInput.value || '').toString().toLowerCase().trim();
             // Sincronizza anche dropdownFilter con il valore dell'input
@@ -6241,7 +6263,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     /**
      * Apre il dropdown per una cella specifica (metodo helper)
      */
-    openDropdownForCell(cell, rowIndex, field) {
+    openDropdownForCell(cell, rowIndex, field, forcedFilterValue = null) {
         if (!this.hasDropdown(field)) {
             return;
         }
@@ -6251,10 +6273,13 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
         // Ottieni il valore corrente della cella
         const currentValue = this.rows[rowIndex] ? this.rows[rowIndex][field] || '' : '';
+        const effectiveValue = forcedFilterValue !== null && forcedFilterValue !== undefined
+            ? forcedFilterValue
+            : currentValue;
 
         // Apri il nuovo dropdown
         this.dropdownOpen = { rowIndex, field };
-        this.dropdownFilter = currentValue.toString().trim();
+        this.dropdownFilter = effectiveValue.toString().trim();
         this.updateFilteredOptions();
 
         // Posiziona il dropdown
