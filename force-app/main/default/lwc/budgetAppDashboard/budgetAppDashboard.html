@@ -16,7 +16,12 @@
         <!-- Top: Omnicomprehensive view -->
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_large">
             <template if:true={accountId}>
-                <c-budget-summary-by-category record-id={accountId} filter-date={globalDate} hide-date-filter="true"></c-budget-summary-by-category>
+                <c-budget-summary-by-category
+                    record-id={accountId}
+                    filter-date={globalDate}
+                    hide-date-filter="true"
+                    show-quick-summary="true">
+                </c-budget-summary-by-category>
             </template>
         </div>
 
@@ -28,8 +33,22 @@
                         <div key={prog.Id} class="slds-m-bottom_large slds-box slds-box_small slds-theme_default">
                             <div class="slds-text-align_center slds-m-bottom_medium">
                                 <h3 class="slds-text-heading_medium slds-text-title_bold">{prog.DisplayName}</h3>
+                                <button
+                                    class="slds-button slds-button_neutral slds-m-top_small"
+                                    data-program-id={prog.Id}
+                                    onclick={handleGoToProgramBudget}>
+                                    {prog.ProgramBudgetButtonLabel}
+                                </button>
                             </div>
-                            <c-budget-summary-by-category record-id={prog.Id} filter-date={globalDate} hide-date-filter="true"></c-budget-summary-by-category>
+                            <template if:true={programScaleReady}>
+                                <c-budget-summary-by-category
+                                    record-id={prog.Id}
+                                    filter-date={globalDate}
+                                    hide-date-filter="true"
+                                    show-quick-summary="true"
+                                    external-max-val={globalProgramMaxVal}>
+                                </c-budget-summary-by-category>
+                            </template>
                         </div>
                     </template>
                 </div>
@@ -65,7 +84,16 @@
                         <div class="slds-m-top_medium">
                             <template for:each={yearlyData} for:item="yearGroup">
                                 <div key={yearGroup.anno} class="slds-m-bottom_large">
-                                    <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">Anno: {yearGroup.anno}</h3>
+                                    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                                        <h3 class="slds-text-heading_small slds-text-title_bold slds-text-color_default">Anno: {yearGroup.anno}</h3>
+                                        <button
+                                            class="slds-button slds-button_neutral slds-m-left_small"
+                                            data-budget-year-id={yearGroup.budgetYearId}
+                                            onclick={handleGoToYearBudget}
+                                            disabled={yearGroup.disableNavigate}>
+                                            {yearGroup.navigateLabel}
+                                        </button>
+                                    </div>
                                     <lightning-datatable
                                         key-field="id"
                                         data={yearGroup.data}

@@ -1,21 +1,29 @@
 import { LightningElement, wire, track } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
 import getDashboardData from '@salesforce/apex/BudgetAppDashboardController.getDashboardData';
-import getProgramDetailsData from '@salesforce/apex/BudgetAppDashboardController.getProgramDetailsData';
+import getProgramItems from '@salesforce/apex/BudgetAppDashboardController.getProgramItems';
+import getProgramsScaleValues from '@salesforce/apex/BudgetAppDashboardController.getProgramsScaleValues';
 
-export default class BudgetAppDashboard extends LightningElement {
+export default class BudgetAppDashboard extends NavigationMixin(LightningElement) {
     accountId;
     programs = [];
     programOptions = [];
     selectedProgramId;
     @track yearlyData = null;
     @track programSummaryData = null;
+    rawProgramItems = [];
+    programScaleReady = false;
+    globalProgramMaxVal = null;
+    isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
 
     columns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
         { label: 'Categoria', fieldName: 'categoria', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
         { label: 'Previsto', fieldName: 'previsto', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Effettivo', fieldName: 'effettivo', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } }
+        { label: 'Effettivo', fieldName: 'effettivo', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
+        { label: 'Avanzamento', fieldName: 'avanzamento', type: 'percent', typeAttributes: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, cellAttributes: { class: { fieldName: 'cssClass' } } }
     ];
 
     @wire(getDashboardData)
@@ -24,9 +32,11 @@ export default class BudgetAppDashboard extends LightningElement {
             this.accountId = data.accountId;
             if (data.programs) {
                 this.programs = data.programs.map(p => {
+                    const displayName = p.Program__r ? p.Program__r.Name : p.Name;
                     return {
                         ...p,
-                        DisplayName: p.Program__r ? p.Program__r.Name : p.Name
+                        DisplayName: displayName,
+                        ProgramBudgetButtonLabel: `Vai al budget ${displayName}`
                     };
                 });
                 this.programOptions = this.programs.map(p => {
@@ -38,12 +48,31 @@ export default class BudgetAppDashboard extends LightningElement {
         }
     }
 
-    @wire(getProgramDetailsData, { programId: '$selectedProgramId', selectedDateStr: '$globalDate' })
-    wiredProgramDetails({ error, data }) {
+    @wire(IsConsoleNavigation)
+    wiredIsConsoleNavigation(result) {
+        this.isConsoleNavigation = !!(result && result.data);
+    }
+
+    @wire(getProgramsScaleValues, { accountId: '$accountId', selectedDateStr: '$globalDate' })
+    wiredProgramScales({ error, data }) {
         if (data) {
-            this.processProgramData(data);
+            this.globalProgramMaxVal = data.maxGlobalVal || null;
+            this.programScaleReady = true;
         } else if (error) {
             console.error(error);
+            this.globalProgramMaxVal = null;
+            this.programScaleReady = true;
+        }
+    }
+
+    @wire(getProgramItems, { programId: '$selectedProgramId' })
+    wiredProgramItems({ error, data }) {
+        if (data) {
+            this.rawProgramItems = data;
+            this.rebuildTables();
+        } else if (error) {
+            console.error(error);
+            this.rawProgramItems = [];
             this.yearlyData = null;
             this.programSummaryData = null;
         }
@@ -51,41 +80,220 @@ export default class BudgetAppDashboard extends LightningElement {
 
     handleGlobalDateChange(event) {
         this.globalDate = event.target.value;
+        this.programScaleReady = false;
+        this.rebuildTables();
     }
 
     handleProgramChange(event) {
         this.selectedProgramId = event.detail.value;
+        this.rawProgramItems = [];
+        this.yearlyData = null;
+        this.programSummaryData = null;
     }
 
-    processProgramData(result) {
-        let groupedByYear = {};
-        let programTotals = {};
+    buildProgramPageReference(programId) {
+        return {
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: programId,
+                objectApiName: 'GiftDesignation',
+                actionName: 'view'
+            }
+        };
+    }
+
+    buildBudgetYearPageReference(budgetYearId) {
+        return {
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: budgetYearId,
+                objectApiName: 'Overview_Budget_per_Anno__c',
+                actionName: 'view'
+            }
+        };
+    }
+
+    getProgramDisplayName(programId) {
+        const program = (this.programs || []).find(item => item.Id === programId);
+        return program ? program.DisplayName : 'Programma';
+    }
+
+    async openInConsoleOrNavigate(pageReference) {
+        try {
+            if (this.isConsoleNavigation) {
+                const focusedTabInfo = await getFocusedTabInfo();
+                if (focusedTabInfo && focusedTabInfo.tabId) {
+                    await openSubtab(focusedTabInfo.tabId, {
+                        pageReference,
+                        focus: true
+                    });
+                    return;
+                }
+                await openTab({
+                    pageReference,
+                    focus: true
+                });
+                return;
+            }
+        } catch (error) {
+            // Fallback to standard navigation below.
+            // eslint-disable-next-line no-console
+            console.error(error);
+        }
+
+        this[NavigationMixin.Navigate](pageReference);
+    }
+
+    async handleGoToProgramBudget(event) {
+        const programId = event.currentTarget.dataset.programId;
+        if (!programId) {
+            return;
+        }
+        await this.openInConsoleOrNavigate(this.buildProgramPageReference(programId));
+    }
+
+    async handleGoToYearBudget(event) {
+        const budgetYearId = event.currentTarget.dataset.budgetYearId;
+        if (!budgetYearId) {
+            return;
+        }
+        await this.openInConsoleOrNavigate(this.buildBudgetYearPageReference(budgetYearId));
+    }
+
+    parseDateOnly(value) {
+        if (!value) {
+            return null;
+        }
+
+        let datePart;
+        if (value instanceof Date) {
+            datePart = value.toISOString().slice(0, 10);
+        } else if (typeof value === 'string') {
+            // Supports both 'YYYY-MM-DD' and ISO datetime strings.
+            datePart = value.slice(0, 10);
+        } else {
+            return null;
+        }
+
+        const parsed = new Date(`${datePart}T00:00:00`);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    calculateProgress(effettivo, previsto) {
+        const eff = Number(effettivo) || 0;
+        const prev = Number(previsto) || 0;
+        if (prev > 0) {
+            return eff / prev;
+        }
+        if (prev === 0) {
+            // In percent format, 2 => 200%. Keep zero-denominator case readable.
+            return eff / 100;
+        }
+        return eff / Math.abs(prev);
+    }
+
+    rebuildTables() {
+        if (!this.selectedProgramId || !this.rawProgramItems || this.rawProgramItems.length === 0) {
+            this.yearlyData = null;
+            this.programSummaryData = null;
+            return;
+        }
+
+        const filterDate = this.parseDateOnly(this.globalDate);
+        const aggregateMap = {};
+        const yearBudgetIdMap = {};
+        const selectedProgramName = this.getProgramDisplayName(this.selectedProgramId);
+
+        this.rawProgramItems.forEach(item => {
+            const anno = item.anno || 'N/A';
+            const tipo = item.tipo || 'N/A';
+            const categoria = item.categoria || 'Non categorizzato';
+            const stato = item.stato || '';
+            const amount = Number(item.ammontare) || 0;
+            const budgetYearId = item.budgetYearId;
+
+            if (budgetYearId && !yearBudgetIdMap[anno]) {
+                yearBudgetIdMap[anno] = budgetYearId;
+            }
+
+            if (filterDate) {
+                const itemDate = this.parseDateOnly(item.itemDate);
+                // Date is now the strict driver for tabular logic.
+                // Exclude any item without date or with date after the selected one.
+                if (!itemDate || itemDate > filterDate) {
+                    return;
+                }
+            }
+
+            const key = `${anno}_${tipo}_${categoria}`;
+            if (!aggregateMap[key]) {
+                aggregateMap[key] = {
+                    anno,
+                    tipo,
+                    categoria,
+                    previsto: 0,
+                    effettivo: 0
+                };
+            }
+
+            if (stato === 'Effettiva') {
+                aggregateMap[key].effettivo += amount;
+            } else if (stato === 'Prevista') {
+                aggregateMap[key].previsto += amount;
+            } else if (stato === 'Annullata') {
+                aggregateMap[key].previsto -= amount;
+            }
+        });
+
+        const normalizedRows = [];
+        Object.values(aggregateMap).forEach(row => {
+            let previsto = row.previsto;
+            let effettivo = row.effettivo;
+
+            if (previsto < 0) {
+                effettivo += previsto;
+                previsto = 0;
+            }
+            if (effettivo < 0) {
+                effettivo = 0;
+            }
+            if (effettivo === 0 && previsto === 0) {
+                return;
+            }
+
+            let rowClass = '';
+            if (row.tipo === 'Incasso') rowClass = 'slds-text-color_success';
+            else if (row.tipo === 'Spesa') rowClass = 'slds-text-color_error';
+
+            normalizedRows.push({
+                ...row,
+                previsto,
+                effettivo,
+                avanzamento: this.calculateProgress(effettivo, previsto),
+                cssClass: rowClass
+            });
+        });
+
+        const programTotals = {};
         let totalIncassiPrev = 0, totalIncassiEff = 0;
         let totalSpesePrev = 0, totalSpeseEff = 0;
-        
-        result.forEach(item => {
-            // Skip if both are 0
-            if (item.effettivo === 0 && item.previsto === 0) return;
-            
-            let rowClass = '';
-            if (item.tipo === 'Incasso') rowClass = 'slds-text-color_success';
-            else if (item.tipo === 'Spesa') rowClass = 'slds-text-color_error';
+        const groupedByYear = {};
 
+        normalizedRows.forEach(item => {
             if (!groupedByYear[item.anno]) {
                 groupedByYear[item.anno] = [];
             }
-            groupedByYear[item.anno].push({ ...item, cssClass: rowClass });
+            groupedByYear[item.anno].push({ ...item });
 
-            // Program Summary Aggregation
-            let key = item.tipo + '_' + item.categoria;
+            const key = `${item.tipo}_${item.categoria}`;
             if (!programTotals[key]) {
                 programTotals[key] = {
-                    id: 'tot_' + key,
+                    id: `tot_${key}`,
                     tipo: item.tipo,
                     categoria: item.categoria,
                     previsto: 0,
                     effettivo: 0,
-                    cssClass: rowClass
+                    cssClass: item.cssClass
                 };
             }
             programTotals[key].previsto += item.previsto;
@@ -100,8 +308,13 @@ export default class BudgetAppDashboard extends LightningElement {
             }
         });
 
-        // Build Summary Data
         let summaryData = Object.values(programTotals);
+        summaryData = summaryData.map(row => {
+            return {
+                ...row,
+                avanzamento: this.calculateProgress(row.effettivo, row.previsto)
+            };
+        });
         summaryData.sort((a, b) => {
             if (a.tipo !== b.tipo) {
                 if (a.tipo === 'Incasso') return -1;
@@ -118,6 +331,7 @@ export default class BudgetAppDashboard extends LightningElement {
                 categoria: '',
                 previsto: totalIncassiPrev - totalSpesePrev,
                 effettivo: totalIncassiEff - totalSpeseEff,
+                avanzamento: this.calculateProgress(totalIncassiEff - totalSpeseEff, totalIncassiPrev - totalSpesePrev),
                 cssClass: 'slds-text-title_bold slds-theme_shade'
             });
             this.programSummaryData = summaryData;
@@ -125,11 +339,9 @@ export default class BudgetAppDashboard extends LightningElement {
             this.programSummaryData = null;
         }
 
-        let yearlyDataArray = [];
-        for (let anno in groupedByYear) {
-            let yearRecords = groupedByYear[anno];
-            
-            // Sort records: Incasso first, then Spesa, then Categoria
+        const yearlyDataArray = [];
+        Object.keys(groupedByYear).forEach(anno => {
+            const yearRecords = groupedByYear[anno];
             yearRecords.sort((a, b) => {
                 if (a.tipo !== b.tipo) {
                     if (a.tipo === 'Incasso') return -1;
@@ -139,7 +351,6 @@ export default class BudgetAppDashboard extends LightningElement {
                 return a.categoria.localeCompare(b.categoria);
             });
 
-            // Calculate Cash Flow
             let incassiPrev = 0, incassiEff = 0, spesePrev = 0, speseEff = 0;
             yearRecords.forEach(r => {
                 if (r.tipo === 'Incasso') {
@@ -151,33 +362,28 @@ export default class BudgetAppDashboard extends LightningElement {
                 }
             });
 
-            let cfPrev = incassiPrev - spesePrev;
-            let cfEff = incassiEff - speseEff;
-
-            // Add summary row
             yearRecords.push({
-                id: 'summary_' + anno,
+                id: `summary_${anno}`,
                 tipo: 'CASH FLOW',
                 categoria: '',
-                previsto: cfPrev,
-                effettivo: cfEff,
+                previsto: incassiPrev - spesePrev,
+                effettivo: incassiEff - speseEff,
+                avanzamento: this.calculateProgress(incassiEff - speseEff, incassiPrev - spesePrev),
                 cssClass: 'slds-text-title_bold slds-theme_shade'
             });
 
-            // Assign ids
             yearRecords.forEach((r, idx) => {
-                if (!r.id) r.id = anno + '_' + idx;
+                if (!r.id) r.id = `${anno}_${idx}`;
             });
 
-            yearlyDataArray.push({
-                anno: anno,
-                data: yearRecords
-            });
-        }
+            yearlyDataArray.push({ anno, data: yearRecords });
+            const yearEntry = yearlyDataArray[yearlyDataArray.length - 1];
+            yearEntry.budgetYearId = yearBudgetIdMap[anno] || null;
+            yearEntry.navigateLabel = `Vai al budget ${anno} di ${selectedProgramName}`;
+            yearEntry.disableNavigate = !yearEntry.budgetYearId;
+        });
 
-        // Sort years descending
         yearlyDataArray.sort((a, b) => b.anno.localeCompare(a.anno));
-        
         this.yearlyData = yearlyDataArray.length > 0 ? yearlyDataArray : null;
     }
 }
