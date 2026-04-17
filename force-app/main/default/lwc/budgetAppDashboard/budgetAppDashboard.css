@@ -17,6 +17,10 @@
     align-items: center;
 }
 
+.dashboard-date-month {
+    min-width: 170px;
+}
+
 .dashboard-date-button {
     white-space: nowrap;
 }

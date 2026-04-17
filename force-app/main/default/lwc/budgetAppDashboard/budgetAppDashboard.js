@@ -24,6 +24,20 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         { key: 'q3', label: 'Terzo Trimestre' },
         { key: 'q4', label: 'Quarto Trimestre' }
     ];
+    monthOptions = [
+        { label: 'Gennaio', value: '1' },
+        { label: 'Febbraio', value: '2' },
+        { label: 'Marzo', value: '3' },
+        { label: 'Aprile', value: '4' },
+        { label: 'Maggio', value: '5' },
+        { label: 'Giugno', value: '6' },
+        { label: 'Luglio', value: '7' },
+        { label: 'Agosto', value: '8' },
+        { label: 'Settembre', value: '9' },
+        { label: 'Ottobre', value: '10' },
+        { label: 'Novembre', value: '11' },
+        { label: 'Dicembre', value: '12' }
+    ];
 
     columns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
@@ -116,9 +130,25 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         return quarterMap[actionKey] || this.getTodayDate();
     }
 
+    buildMonthEndDate(monthValue) {
+        const year = Number(this.getSelectedYear());
+        const month = Number(monthValue);
+        if (!year || !month || month < 1 || month > 12) {
+            return this.getTodayDate();
+        }
+        const lastDay = new Date(year, month, 0).getDate();
+        return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+
     handleQuickDateClick(event) {
         const actionKey = event.currentTarget.dataset.action;
         this.globalDate = actionKey === 'today' ? this.getTodayDate() : this.buildQuarterDate(actionKey);
+        this.programScaleReady = false;
+        this.rebuildTables();
+    }
+
+    handleMonthShortcutChange(event) {
+        this.globalDate = this.buildMonthEndDate(event.detail.value);
         this.programScaleReady = false;
         this.rebuildTables();
     }

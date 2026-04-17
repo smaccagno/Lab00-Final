@@ -45,6 +45,9 @@
     gap: 0.5rem;
     align-items: center;
 }
+.date-filter-month {
+    min-width: 170px;
+}
 .date-filter-button {
     white-space: nowrap;
 }

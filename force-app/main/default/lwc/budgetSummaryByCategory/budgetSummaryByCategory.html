@@ -18,6 +18,15 @@
                                 {action.label}
                             </button>
                         </template>
+                        <div class="date-filter-month">
+                            <lightning-combobox
+                                name="monthShortcut"
+                                variant="label-hidden"
+                                placeholder="Mese"
+                                options={monthOptions}
+                                onchange={handleMonthShortcutChange}>
+                            </lightning-combobox>
+                        </div>
                     </div>
                 </div>
             </template>

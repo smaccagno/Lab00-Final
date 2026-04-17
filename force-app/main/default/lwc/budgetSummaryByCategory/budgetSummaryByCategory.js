@@ -18,6 +18,20 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
         { key: 'q3', label: 'Terzo Trimestre' },
         { key: 'q4', label: 'Quarto Trimestre' }
     ];
+    monthOptions = [
+        { label: 'Gennaio', value: '1' },
+        { label: 'Febbraio', value: '2' },
+        { label: 'Marzo', value: '3' },
+        { label: 'Aprile', value: '4' },
+        { label: 'Maggio', value: '5' },
+        { label: 'Giugno', value: '6' },
+        { label: 'Luglio', value: '7' },
+        { label: 'Agosto', value: '8' },
+        { label: 'Settembre', value: '9' },
+        { label: 'Ottobre', value: '10' },
+        { label: 'Novembre', value: '11' },
+        { label: 'Dicembre', value: '12' }
+    ];
 
     _selectedDate = new Date().toISOString().split('T')[0];
 
@@ -199,6 +213,16 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
         return quarterMap[actionKey] || this.getTodayDate();
     }
 
+    buildMonthEndDate(monthValue) {
+        const year = Number(this.getSelectedYear());
+        const month = Number(monthValue);
+        if (!year || !month || month < 1 || month > 12) {
+            return this.getTodayDate();
+        }
+        const lastDay = new Date(year, month, 0).getDate();
+        return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+
     handleQuickDateClick(event) {
         const actionKey = event.currentTarget.dataset.action;
         if (actionKey === 'today') {
@@ -206,6 +230,10 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             return;
         }
         this._selectedDate = this.buildQuarterDate(actionKey);
+    }
+
+    handleMonthShortcutChange(event) {
+        this._selectedDate = this.buildMonthEndDate(event.detail.value);
     }
 
     calculateProgress(effettivo, previsto) {
