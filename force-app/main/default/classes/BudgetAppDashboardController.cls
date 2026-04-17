@@ -32,6 +32,7 @@ public with sharing class BudgetAppDashboardController {
     }
 
     public class ProgramItem {
+        @AuraEnabled public Id programId;
         @AuraEnabled public Id budgetYearId;
         @AuraEnabled public String anno;
         @AuraEnabled public String tipo;
@@ -40,7 +41,8 @@ public with sharing class BudgetAppDashboardController {
         @AuraEnabled public Decimal ammontare;
         @AuraEnabled public Date itemDate;
 
-        public ProgramItem(Id budgetYearId, String anno, String tipo, String categoria, String stato, Decimal ammontare, Date itemDate) {
+        public ProgramItem(Id programId, Id budgetYearId, String anno, String tipo, String categoria, String stato, Decimal ammontare, Date itemDate) {
+            this.programId = programId;
             this.budgetYearId = budgetYearId;
             this.anno = anno;
             this.tipo = tipo;
@@ -214,34 +216,50 @@ public with sharing class BudgetAppDashboardController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<ProgramItem> getProgramItems(Id programId) {
+    public static List<ProgramItem> getProgramItems(Id programId, Id accountId) {
         List<ProgramItem> items = new List<ProgramItem>();
-        if (programId == null) return items;
+        if (programId == null && accountId == null) return items;
 
-        for (Voce_di_Incasso__c vi : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c
-            FROM Voce_di_Incasso__c
-            WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-        ]) {
+        List<Voce_di_Incasso__c> incassi = programId != null
+            ? [
+                SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                FROM Voce_di_Incasso__c
+                WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
+            ]
+            : [
+                SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                FROM Voce_di_Incasso__c
+                WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+            ];
+
+        for (Voce_di_Incasso__c vi : incassi) {
             String anno = vi.Overview_Budget_per_Anno__r.Anno__c;
             if (String.isBlank(anno)) anno = 'N/A';
             String categoria = vi.Categoria__c;
             if (String.isBlank(categoria)) categoria = 'Non categorizzato';
             String stato = vi.Stato__c;
             Decimal ammontare = vi.Ammontare__c != null ? vi.Ammontare__c : 0;
-            items.add(new ProgramItem(vi.Overview_Budget_per_Anno__c, anno, 'Incasso', categoria, stato, ammontare, vi.Data__c));
+            items.add(new ProgramItem(vi.Overview_Budget_per_Anno__r.Budget__c, vi.Overview_Budget_per_Anno__c, anno, 'Incasso', categoria, stato, ammontare, vi.Data__c));
         }
 
-        for (Voce_di_Spesa__c vs : [
-            SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c
-            FROM Voce_di_Spesa__c
-            WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-        ]) {
+        List<Voce_di_Spesa__c> spese = programId != null
+            ? [
+                SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                FROM Voce_di_Spesa__c
+                WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
+            ]
+            : [
+                SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                FROM Voce_di_Spesa__c
+                WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+            ];
+
+        for (Voce_di_Spesa__c vs : spese) {
             String anno = vs.Overview_Budget_per_Anno__r.Anno__c;
             if (String.isBlank(anno)) anno = 'N/A';
             String stato = vs.Stato__c;
             Decimal ammontare = vs.Ammontare__c != null ? vs.Ammontare__c : 0;
-            items.add(new ProgramItem(vs.Overview_Budget_per_Anno__c, anno, 'Spesa', 'Non categorizzato', stato, ammontare, vs.Data__c));
+            items.add(new ProgramItem(vs.Overview_Budget_per_Anno__r.Budget__c, vs.Overview_Budget_per_Anno__c, anno, 'Spesa', 'Non categorizzato', stato, ammontare, vs.Data__c));
         }
 
         return items;

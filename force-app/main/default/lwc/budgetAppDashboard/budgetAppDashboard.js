@@ -5,6 +5,8 @@ import getDashboardData from '@salesforce/apex/BudgetAppDashboardController.getD
 import getProgramItems from '@salesforce/apex/BudgetAppDashboardController.getProgramItems';
 import getProgramsScaleValues from '@salesforce/apex/BudgetAppDashboardController.getProgramsScaleValues';
 
+const ALL_PROGRAMS_VALUE = 'ALL_PROGRAMS';
+
 export default class BudgetAppDashboard extends NavigationMixin(LightningElement) {
     accountId;
     programs = [];
@@ -55,6 +57,26 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         return options;
     }
 
+    get isAllProgramsSelected() {
+        return this.selectedProgramId === ALL_PROGRAMS_VALUE;
+    }
+
+    get requestProgramId() {
+        return this.isAllProgramsSelected ? null : this.selectedProgramId;
+    }
+
+    get requestAccountId() {
+        return this.isAllProgramsSelected ? this.accountId : null;
+    }
+
+    get hasProgramSelection() {
+        return !!this.selectedProgramId;
+    }
+
+    get programSummaryTitle() {
+        return this.isAllProgramsSelected ? 'Totali Tutti i Programmi (Tutti gli anni)' : 'Totali Programma (Tutti gli anni)';
+    }
+
     columns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
         { label: 'Categoria', fieldName: 'categoria', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
@@ -76,9 +98,12 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                         ProgramBudgetButtonLabel: `Vai al budget ${displayName}`
                     };
                 });
-                this.programOptions = this.programs.map(p => {
+                this.programOptions = [{
+                    label: 'Tutti i Programmi',
+                    value: ALL_PROGRAMS_VALUE
+                }, ...this.programs.map(p => {
                     return { label: p.DisplayName, value: p.Id };
-                });
+                })];
             }
         } else if (error) {
             console.error(error);
@@ -102,7 +127,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         }
     }
 
-    @wire(getProgramItems, { programId: '$selectedProgramId' })
+    @wire(getProgramItems, { programId: '$requestProgramId', accountId: '$requestAccountId' })
     wiredProgramItems({ error, data }) {
         if (data) {
             this.rawProgramItems = data;
@@ -219,6 +244,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     getProgramDisplayName(programId) {
+        if (programId === ALL_PROGRAMS_VALUE) {
+            return 'Tutti i Programmi';
+        }
         const program = (this.programs || []).find(item => item.Id === programId);
         return program ? program.DisplayName : 'Programma';
     }
@@ -308,6 +336,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         const aggregateMap = {};
         const yearBudgetIdMap = {};
         const selectedProgramName = this.getProgramDisplayName(this.selectedProgramId);
+        const isAllPrograms = this.isAllProgramsSelected;
 
         this.rawProgramItems.forEach(item => {
             const anno = item.anno || 'N/A';
@@ -317,8 +346,11 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
             const amount = Number(item.ammontare) || 0;
             const budgetYearId = item.budgetYearId;
 
-            if (budgetYearId && !yearBudgetIdMap[anno]) {
+            if (budgetYearId && !isAllPrograms && !yearBudgetIdMap[anno]) {
                 yearBudgetIdMap[anno] = budgetYearId;
+            }
+            if (isAllPrograms) {
+                yearBudgetIdMap[anno] = null;
             }
 
             if (filterDate) {
@@ -484,7 +516,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
             yearlyDataArray.push({ anno, data: yearRecords });
             const yearEntry = yearlyDataArray[yearlyDataArray.length - 1];
             yearEntry.budgetYearId = yearBudgetIdMap[anno] || null;
-            yearEntry.navigateLabel = `Vai al budget ${anno} di ${selectedProgramName}`;
+            yearEntry.navigateLabel = isAllPrograms
+                ? `Vista aggregata ${anno}: navigazione non disponibile`
+                : `Vai al budget ${anno} di ${selectedProgramName}`;
             yearEntry.disableNavigate = !yearEntry.budgetYearId;
         });
 

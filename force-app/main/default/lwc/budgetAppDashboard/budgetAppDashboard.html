@@ -100,7 +100,7 @@
 
                     <template if:true={programSummaryData}>
                         <div class="slds-m-top_large slds-m-bottom_large slds-box slds-theme_default">
-                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">Totali Programma (Tutti gli anni)</h3>
+                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">{programSummaryTitle}</h3>
                             <lightning-datatable
                                 key-field="id"
                                 data={programSummaryData}
@@ -135,7 +135,7 @@
                         </div>
                     </template>
                     <template if:false={yearlyData}>
-                        <template if:true={selectedProgramId}>
+                        <template if:true={hasProgramSelection}>
                             <p class="slds-m-top_medium slds-text-color_weak">Nessun dato disponibile per i filtri selezionati.</p>
                         </template>
                     </template>
