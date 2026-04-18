@@ -8,17 +8,63 @@
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
+        <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Fattura</fullName>
+                <fullName>Personale, Collaborazioni e Compensi</fullName>
                 <default>false</default>
-                <label>Fattura</label>
+                <label>Personale, Collaborazioni e Compensi</label>
             </value>
             <value>
-                <fullName>Altro</fullName>
+                <fullName>Fundraising, Partnership e Sviluppo Ricavi</fullName>
                 <default>false</default>
-                <label>Altro</label>
+                <label>Fundraising, Partnership e Sviluppo Ricavi</label>
+            </value>
+            <value>
+                <fullName>Comunicazione, PR e Marketing</fullName>
+                <default>false</default>
+                <label>Comunicazione, PR e Marketing</label>
+            </value>
+            <value>
+                <fullName>Progetti, Bandi e PMO</fullName>
+                <default>false</default>
+                <label>Progetti, Bandi e PMO</label>
+            </value>
+            <value>
+                <fullName>Amministrazione, Fiscale e Legale</fullName>
+                <default>false</default>
+                <label>Amministrazione, Fiscale e Legale</label>
+            </value>
+            <value>
+                <fullName>Governance, Compliance e Assicurazioni</fullName>
+                <default>false</default>
+                <label>Governance, Compliance e Assicurazioni</label>
+            </value>
+            <value>
+                <fullName>Strumenti Digitali, IT e Piattaforme</fullName>
+                <default>false</default>
+                <label>Strumenti Digitali, IT e Piattaforme</label>
+            </value>
+            <value>
+                <fullName>Eventi, Trasferte e Rappresentanza</fullName>
+                <default>false</default>
+                <label>Eventi, Trasferte e Rappresentanza</label>
+            </value>
+            <value>
+                <fullName>Operations, Logistica e Materiali</fullName>
+                <default>false</default>
+                <label>Operations, Logistica e Materiali</label>
+            </value>
+            <value>
+                <fullName>Sede e Servizi Generali</fullName>
+                <default>false</default>
+                <label>Sede e Servizi Generali</label>
+            </value>
+            <value>
+                <fullName>Finanza, Tesoreria e Riconciliazioni</fullName>
+                <default>false</default>
+                <label>Finanza, Tesoreria e Riconciliazioni</label>
             </value>
         </valueSetDefinition>
     </valueSet>

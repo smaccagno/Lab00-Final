@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sottocategoria__c</fullName>
+    <label>Sottocategoria</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <controllingField>Categoria__c</controllingField>
+        <restricted>true</restricted>
+        <valueSetName>Sottocategoria</valueSetName>
+        <valueSettings>
+            <controllingFieldValue>Personale, Collaborazioni e Compensi</controllingFieldValue>
+            <valueName>Compensi collaboratori e professionisti</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Personale, Collaborazioni e Compensi</controllingFieldValue>
+            <valueName>Payroll e cedolini</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Personale, Collaborazioni e Compensi</controllingFieldValue>
+            <valueName>Rimborsi spese</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Personale, Collaborazioni e Compensi</controllingFieldValue>
+            <valueName>Ritenute d'acconto e adempimenti compensi</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Personale, Collaborazioni e Compensi</controllingFieldValue>
+            <valueName>Emolumenti organi sociali e F24</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Fundraising, Partnership e Sviluppo Ricavi</controllingFieldValue>
+            <valueName>Fundraising management</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Fundraising, Partnership e Sviluppo Ricavi</controllingFieldValue>
+            <valueName>Brand ambassador e partnership</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Fundraising, Partnership e Sviluppo Ricavi</controllingFieldValue>
+            <valueName>Campagne fundraising e donor acquisition</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Fundraising, Partnership e Sviluppo Ricavi</controllingFieldValue>
+            <valueName>Provvigioni e fee commerciali</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Fundraising, Partnership e Sviluppo Ricavi</controllingFieldValue>
+            <valueName>Donazioni e liberalità</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Ufficio stampa e media relations</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Rassegna e monitoraggio media</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Social media management</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Comunicazione istituzionale e content management</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Grafica e materiali di comunicazione</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Produzione audio/video e shooting</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Campaign media e advertising</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Newsletter e marketing automation</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Branding, landing page e asset digitali</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Comunicazione, PR e Marketing</controllingFieldValue>
+            <valueName>Pubblicazioni specialistiche e database media</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Progetti, Bandi e PMO</controllingFieldValue>
+            <valueName>Gestione bandi e progettazione</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Progetti, Bandi e PMO</controllingFieldValue>
+            <valueName>Project management e coordinamento</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Progetti, Bandi e PMO</controllingFieldValue>
+            <valueName>Reporting e monitoraggio</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Progetti, Bandi e PMO</controllingFieldValue>
+            <valueName>Strategia e sviluppo progettuale</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Progetti, Bandi e PMO</controllingFieldValue>
+            <valueName>Formazione e networking professionale</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Amministrazione, Fiscale e Legale</controllingFieldValue>
+            <valueName>Servizi contabili e fiscali</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Amministrazione, Fiscale e Legale</controllingFieldValue>
+            <valueName>Consulenza legale e contrattualistica</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Amministrazione, Fiscale e Legale</controllingFieldValue>
+            <valueName>Servizi notarili e libri sociali</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Amministrazione, Fiscale e Legale</controllingFieldValue>
+            <valueName>Imposte indirette e IVA</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Amministrazione, Fiscale e Legale</controllingFieldValue>
+            <valueName>Bolli e diritti amministrativi</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Governance, Compliance e Assicurazioni</controllingFieldValue>
+            <valueName>Governance e organo di controllo</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Governance, Compliance e Assicurazioni</controllingFieldValue>
+            <valueName>Assicurazioni e polizze</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Governance, Compliance e Assicurazioni</controllingFieldValue>
+            <valueName>INAIL e autoliquidazioni</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>Software collaborazione e cloud</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>Videoconferenze e teamwork</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>IT, sito web, domini e posta elettronica</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>PEC e firma digitale</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>Piattaforme operative di progetto</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Strumenti Digitali, IT e Piattaforme</controllingFieldValue>
+            <valueName>Software specialistici</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Eventi, Trasferte e Rappresentanza</controllingFieldValue>
+            <valueName>Eventi e iniziative</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Eventi, Trasferte e Rappresentanza</controllingFieldValue>
+            <valueName>Viaggi e trasferte</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Eventi, Trasferte e Rappresentanza</controllingFieldValue>
+            <valueName>Meeting e rappresentanza</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Eventi, Trasferte e Rappresentanza</controllingFieldValue>
+            <valueName>Catering e ospitalità</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Operations, Logistica e Materiali</controllingFieldValue>
+            <valueName>Stampe, merchandising e materiali evento</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Operations, Logistica e Materiali</controllingFieldValue>
+            <valueName>Spese postali e cancelleria</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Operations, Logistica e Materiali</controllingFieldValue>
+            <valueName>Logistica, noleggi e mezzi</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Sede e Servizi Generali</controllingFieldValue>
+            <valueName>Sede e domiciliazione legale</valueName>
+        </valueSettings>
+
+        <valueSettings>
+            <controllingFieldValue>Finanza, Tesoreria e Riconciliazioni</controllingFieldValue>
+            <valueName>Tesoreria e trasferimenti interni</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Finanza, Tesoreria e Riconciliazioni</controllingFieldValue>
+            <valueName>Ricariche carta e anticipi</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Finanza, Tesoreria e Riconciliazioni</controllingFieldValue>
+            <valueName>Voci composite o da riclassificare</valueName>
+        </valueSettings>
+    </valueSet>
+</CustomField>
+

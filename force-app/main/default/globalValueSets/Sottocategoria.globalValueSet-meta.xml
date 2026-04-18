@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Compensi collaboratori e professionisti</fullName>
+        <default>false</default>
+        <label>Compensi collaboratori e professionisti</label>
+    </customValue>
+    <customValue>
+        <fullName>Payroll e cedolini</fullName>
+        <default>false</default>
+        <label>Payroll e cedolini</label>
+    </customValue>
+    <customValue>
+        <fullName>Rimborsi spese</fullName>
+        <default>false</default>
+        <label>Rimborsi spese</label>
+    </customValue>
+    <customValue>
+        <fullName>Ritenute d'acconto e adempimenti compensi</fullName>
+        <default>false</default>
+        <label>Ritenute d'acconto e adempimenti compensi</label>
+    </customValue>
+    <customValue>
+        <fullName>Emolumenti organi sociali e F24</fullName>
+        <default>false</default>
+        <label>Emolumenti organi sociali e F24</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Fundraising management</fullName>
+        <default>false</default>
+        <label>Fundraising management</label>
+    </customValue>
+    <customValue>
+        <fullName>Brand ambassador e partnership</fullName>
+        <default>false</default>
+        <label>Brand ambassador e partnership</label>
+    </customValue>
+    <customValue>
+        <fullName>Campagne fundraising e donor acquisition</fullName>
+        <default>false</default>
+        <label>Campagne fundraising e donor acquisition</label>
+    </customValue>
+    <customValue>
+        <fullName>Provvigioni e fee commerciali</fullName>
+        <default>false</default>
+        <label>Provvigioni e fee commerciali</label>
+    </customValue>
+    <customValue>
+        <fullName>Donazioni e liberalità</fullName>
+        <default>false</default>
+        <label>Donazioni e liberalità</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Ufficio stampa e media relations</fullName>
+        <default>false</default>
+        <label>Ufficio stampa e media relations</label>
+    </customValue>
+    <customValue>
+        <fullName>Rassegna e monitoraggio media</fullName>
+        <default>false</default>
+        <label>Rassegna e monitoraggio media</label>
+    </customValue>
+    <customValue>
+        <fullName>Social media management</fullName>
+        <default>false</default>
+        <label>Social media management</label>
+    </customValue>
+    <customValue>
+        <fullName>Comunicazione istituzionale e content management</fullName>
+        <default>false</default>
+        <label>Comunicazione istituzionale e content management</label>
+    </customValue>
+    <customValue>
+        <fullName>Grafica e materiali di comunicazione</fullName>
+        <default>false</default>
+        <label>Grafica e materiali di comunicazione</label>
+    </customValue>
+    <customValue>
+        <fullName>Produzione audio/video e shooting</fullName>
+        <default>false</default>
+        <label>Produzione audio/video e shooting</label>
+    </customValue>
+    <customValue>
+        <fullName>Campaign media e advertising</fullName>
+        <default>false</default>
+        <label>Campaign media e advertising</label>
+    </customValue>
+    <customValue>
+        <fullName>Newsletter e marketing automation</fullName>
+        <default>false</default>
+        <label>Newsletter e marketing automation</label>
+    </customValue>
+    <customValue>
+        <fullName>Branding, landing page e asset digitali</fullName>
+        <default>false</default>
+        <label>Branding, landing page e asset digitali</label>
+    </customValue>
+    <customValue>
+        <fullName>Pubblicazioni specialistiche e database media</fullName>
+        <default>false</default>
+        <label>Pubblicazioni specialistiche e database media</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Gestione bandi e progettazione</fullName>
+        <default>false</default>
+        <label>Gestione bandi e progettazione</label>
+    </customValue>
+    <customValue>
+        <fullName>Project management e coordinamento</fullName>
+        <default>false</default>
+        <label>Project management e coordinamento</label>
+    </customValue>
+    <customValue>
+        <fullName>Reporting e monitoraggio</fullName>
+        <default>false</default>
+        <label>Reporting e monitoraggio</label>
+    </customValue>
+    <customValue>
+        <fullName>Strategia e sviluppo progettuale</fullName>
+        <default>false</default>
+        <label>Strategia e sviluppo progettuale</label>
+    </customValue>
+    <customValue>
+        <fullName>Formazione e networking professionale</fullName>
+        <default>false</default>
+        <label>Formazione e networking professionale</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Servizi contabili e fiscali</fullName>
+        <default>false</default>
+        <label>Servizi contabili e fiscali</label>
+    </customValue>
+    <customValue>
+        <fullName>Consulenza legale e contrattualistica</fullName>
+        <default>false</default>
+        <label>Consulenza legale e contrattualistica</label>
+    </customValue>
+    <customValue>
+        <fullName>Servizi notarili e libri sociali</fullName>
+        <default>false</default>
+        <label>Servizi notarili e libri sociali</label>
+    </customValue>
+    <customValue>
+        <fullName>Imposte indirette e IVA</fullName>
+        <default>false</default>
+        <label>Imposte indirette e IVA</label>
+    </customValue>
+    <customValue>
+        <fullName>Bolli e diritti amministrativi</fullName>
+        <default>false</default>
+        <label>Bolli e diritti amministrativi</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Governance e organo di controllo</fullName>
+        <default>false</default>
+        <label>Governance e organo di controllo</label>
+    </customValue>
+    <customValue>
+        <fullName>Assicurazioni e polizze</fullName>
+        <default>false</default>
+        <label>Assicurazioni e polizze</label>
+    </customValue>
+    <customValue>
+        <fullName>INAIL e autoliquidazioni</fullName>
+        <default>false</default>
+        <label>INAIL e autoliquidazioni</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Software collaborazione e cloud</fullName>
+        <default>false</default>
+        <label>Software collaborazione e cloud</label>
+    </customValue>
+    <customValue>
+        <fullName>Videoconferenze e teamwork</fullName>
+        <default>false</default>
+        <label>Videoconferenze e teamwork</label>
+    </customValue>
+    <customValue>
+        <fullName>IT, sito web, domini e posta elettronica</fullName>
+        <default>false</default>
+        <label>IT, sito web, domini e posta elettronica</label>
+    </customValue>
+    <customValue>
+        <fullName>PEC e firma digitale</fullName>
+        <default>false</default>
+        <label>PEC e firma digitale</label>
+    </customValue>
+    <customValue>
+        <fullName>Piattaforme operative di progetto</fullName>
+        <default>false</default>
+        <label>Piattaforme operative di progetto</label>
+    </customValue>
+    <customValue>
+        <fullName>Software specialistici</fullName>
+        <default>false</default>
+        <label>Software specialistici</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Eventi e iniziative</fullName>
+        <default>false</default>
+        <label>Eventi e iniziative</label>
+    </customValue>
+    <customValue>
+        <fullName>Viaggi e trasferte</fullName>
+        <default>false</default>
+        <label>Viaggi e trasferte</label>
+    </customValue>
+    <customValue>
+        <fullName>Meeting e rappresentanza</fullName>
+        <default>false</default>
+        <label>Meeting e rappresentanza</label>
+    </customValue>
+    <customValue>
+        <fullName>Catering e ospitalità</fullName>
+        <default>false</default>
+        <label>Catering e ospitalità</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Stampe, merchandising e materiali evento</fullName>
+        <default>false</default>
+        <label>Stampe, merchandising e materiali evento</label>
+    </customValue>
+    <customValue>
+        <fullName>Spese postali e cancelleria</fullName>
+        <default>false</default>
+        <label>Spese postali e cancelleria</label>
+    </customValue>
+    <customValue>
+        <fullName>Logistica, noleggi e mezzi</fullName>
+        <default>false</default>
+        <label>Logistica, noleggi e mezzi</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Sede e domiciliazione legale</fullName>
+        <default>false</default>
+        <label>Sede e domiciliazione legale</label>
+    </customValue>
+
+    <customValue>
+        <fullName>Tesoreria e trasferimenti interni</fullName>
+        <default>false</default>
+        <label>Tesoreria e trasferimenti interni</label>
+    </customValue>
+    <customValue>
+        <fullName>Ricariche carta e anticipi</fullName>
+        <default>false</default>
+        <label>Ricariche carta e anticipi</label>
+    </customValue>
+    <customValue>
+        <fullName>Voci composite o da riclassificare</fullName>
+        <default>false</default>
+        <label>Voci composite o da riclassificare</label>
+    </customValue>
+
+    <masterLabel>Sottocategoria</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>
+
