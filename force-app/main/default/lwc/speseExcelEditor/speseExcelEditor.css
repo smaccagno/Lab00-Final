@@ -3,7 +3,10 @@
     border: 1px solid #d8dde6;
     border-radius: 4px;
     max-height: 600px;
-    overflow-y: auto;
+    /* Fondamentale per le picklist: se il contenitore ha overflow-y:auto
+       l'overlay della combobox viene spesso tagliato. */
+    overflow-y: visible;
+    position: relative;
 }
 
 .excel-table {
