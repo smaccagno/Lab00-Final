@@ -40,31 +40,125 @@ public with sharing class SpeseExcelEditorController {
 
     @AuraEnabled(cacheable=true)
     public static Map<String, List<String>> getSottocategorieByCategoria() {
-        // Dependent picklist:
-        // - Categoria__c è controlling
-        // - Sottocategoria__c è dependent
-        List<Schema.PicklistEntry> controllingValues = Voce_di_Spesa__c.Categoria__c.getDescribe().getPicklistValues();
-        Schema.DescribeFieldResult dependentDfr = Voce_di_Spesa__c.Sottocategoria__c.getDescribe();
-        List<Schema.PicklistEntry> dependentValues = dependentDfr.getPicklistValues();
-
-        // Map: controllingValue -> list of valid dependent values
+        // Nota:
+        // A seconda dell'API/versioning, Schema.PicklistEntry.getValidFor() può non essere disponibile/compatibile.
+        // Per evitare blocchi in deploy, manteniamo la mappa controlling -> dependent esplicitamente.
+        // (I valori devono corrispondere a quelli presenti nelle picklist Categoria__c/Sottocategoria__c.)
         Map<String, List<String>> outMap = new Map<String, List<String>>();
 
-        for (Schema.PicklistEntry dep : dependentValues) {
-            List<Integer> validFor = dep.getValidFor();
-            for (Integer idx : validFor) {
-                if (idx == null || idx < 0 || idx >= controllingValues.size()) continue;
-                String controlling = controllingValues[idx].getValue();
-                String dependent = dep.getValue();
-                if (!outMap.containsKey(controlling)) outMap.put(controlling, new List<String>());
-                if (!outMap.get(controlling).contains(dependent)) outMap.get(controlling).add(dependent);
+        outMap.put(
+            'Personale, Collaborazioni e Compensi',
+            new List<String>{
+                'Compensi collaboratori e professionisti',
+                'Payroll e cedolini',
+                'Rimborsi spese',
+                'Ritenute d\'acconto e adempimenti compensi',
+                'Emolumenti organi sociali e F24'
             }
-        }
+        );
 
-        // Ordina in modo stabile per UI
-        for (String k : outMap.keySet()) {
-            outMap.get(k).sort();
-        }
+        outMap.put(
+            'Fundraising, Partnership e Sviluppo Ricavi',
+            new List<String>{
+                'Fundraising management',
+                'Brand ambassador e partnership',
+                'Campagne fundraising e donor acquisition',
+                'Provvigioni e fee commerciali',
+                'Donazioni e liberalità'
+            }
+        );
+
+        outMap.put(
+            'Comunicazione, PR e Marketing',
+            new List<String>{
+                'Ufficio stampa e media relations',
+                'Rassegna e monitoraggio media',
+                'Social media management',
+                'Comunicazione istituzionale e content management',
+                'Grafica e materiali di comunicazione',
+                'Produzione audio/video e shooting',
+                'Campaign media e advertising',
+                'Newsletter e marketing automation',
+                'Branding, landing page e asset digitali',
+                'Pubblicazioni specialistiche e database media'
+            }
+        );
+
+        outMap.put(
+            'Progetti, Bandi e PMO',
+            new List<String>{
+                'Gestione bandi e progettazione',
+                'Project management e coordinamento',
+                'Reporting e monitoraggio',
+                'Strategia e sviluppo progettuale',
+                'Formazione e networking'
+            }
+        );
+
+        outMap.put(
+            'Amministrazione, Fiscale e Legale',
+            new List<String>{
+                'Servizi contabili e fiscali',
+                'Consulenza legale e contrattualistica',
+                'Servizi notarili e libri sociali',
+                'Imposte indirette e IVA'
+            }
+        );
+
+        outMap.put(
+            'Governance, Compliance e Assicurazioni',
+            new List<String>{
+                'Bolli e diritti amministrativi',
+                'Assicurazioni e polizze',
+                'INAIL e autoliquidazioni'
+            }
+        );
+
+        outMap.put(
+            'Strumenti Digitali, IT e Piattaforme',
+            new List<String>{
+                'Software collaborazione e cloud',
+                'Videoconferenze e teamwork',
+                'IT, sito web, domini e posta elettronica',
+                'PEC e firma digitale',
+                'Piattaforme operative di progetto',
+                'Software specialistici'
+            }
+        );
+
+        outMap.put(
+            'Eventi, Trasferte e Rappresentanza',
+            new List<String>{
+                'Eventi e iniziative',
+                'Viaggi e trasferte',
+                'Meeting e rappresentanza',
+                'Catering e ospitalità'
+            }
+        );
+
+        outMap.put(
+            'Operations, Logistica e Materiali',
+            new List<String>{
+                'Stampe, merchandising e materiali evento',
+                'Spese postali e cancelleria'
+            }
+        );
+
+        outMap.put(
+            'Sede e Servizi Generali',
+            new List<String>{
+                'Logistica, noleggi e mezzi'
+            }
+        );
+
+        outMap.put(
+            'Finanza, Tesoreria e Riconciliazioni',
+            new List<String>{
+                'Tesoreria e trasferimenti interni',
+                'Ricariche carta e anticipi'
+            }
+        );
+
         return outMap;
     }
 
