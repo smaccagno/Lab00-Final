@@ -70,5 +70,8 @@
         <mappings>
             <tab>Budget_Dashboard</tab>
         </mappings>
+        <mappings>
+            <tab>SpeseExcelEditor</tab>
+        </mappings>
     </workspaceConfig>
 </CustomApplication>
