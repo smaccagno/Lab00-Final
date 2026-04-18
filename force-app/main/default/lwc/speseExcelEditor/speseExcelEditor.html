@@ -158,7 +158,7 @@
                                 <th>Anno</th>
                                 <th>Categoria</th>
                                 <th>Sottocategoria</th>
-                                <th>Note</th>
+                                <th class="note-col">Note</th>
                                 <th>Data</th>
                                 <th>Ammontare</th>
                                 <th>Stato</th>
@@ -203,14 +203,16 @@
                                         ></lightning-combobox>
                                     </td>
 
-                                    <td>
-                                        <lightning-input
-                                            type="text"
+                                    <td class="note-col-cell">
+                                        <lightning-textarea
                                             value={row.note}
+                                            variant="label-hidden"
                                             data-rowkey={row.rowKey}
                                             data-field="note"
                                             onchange={handleCellChange}
-                                        ></lightning-input>
+                                            class="note-textarea"
+                                            maxlength="32768"
+                                        ></lightning-textarea>
                                     </td>
 
                                     <td>

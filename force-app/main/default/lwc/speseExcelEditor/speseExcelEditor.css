@@ -2,10 +2,11 @@
     overflow-x: auto;
     border: 1px solid #d8dde6;
     border-radius: 4px;
-    max-height: 600px;
-    /* Fondamentale per le picklist: se il contenitore ha overflow-y:auto
-       l'overlay della combobox viene spesso tagliato. */
-    overflow-y: visible;
+    /* Se il contenitore ha un overflow verticale, gli overlay delle combo
+       rischiano di essere tagliati. Lasciamo che scrolli la pagina. */
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow: visible !important;
     position: relative;
 }
 
@@ -24,7 +25,7 @@
 }
 
 .excel-table th {
-    padding: 8px 12px;
+    padding: 6px 10px;
     text-align: left;
     font-weight: 600;
     border: 1px solid #d8dde6;
@@ -35,10 +36,11 @@
 }
 
 .excel-table td {
-    padding: 6px 12px;
+    padding: 4px 8px;
     border: 1px solid #d8dde6;
     background-color: #ffffff;
-    min-height: 32px;
+    min-height: 26px;
+    vertical-align: middle;
 }
 
 .row-number-col {
@@ -61,13 +63,13 @@
 
 .excel-table tbody tr:hover {
     background-color: #f3f3f3;
-    box-shadow: 0 0 0 2px #0176d3;
+    box-shadow: 0 0 0 1px #0176d3;
     z-index: 2;
 }
 
 .excel-table tbody tr.selected-row {
     background-color: #e8f4f8;
-    box-shadow: 0 0 0 2px #2e844a;
+    box-shadow: 0 0 0 1px #2e844a;
     z-index: 1;
 }
 
@@ -78,5 +80,27 @@
 .excel-table tbody tr.row-error td {
     background-color: #fff5f5 !important;
     color: #b40000;
+}
+
+.note-col {
+    min-width: 260px;
+    width: 260px;
+    max-width: 420px;
+}
+
+.note-col-cell {
+    min-width: 260px;
+    width: 260px;
+    max-width: 420px;
+}
+
+/* Assicura che la textarea sfrutti tutta la larghezza della colonna Note */
+.note-col-cell .note-textarea {
+    width: 100%;
+}
+
+/* Evita che il contenitore della textarea tagli testo lungo */
+.note-col-cell lightning-textarea {
+    display: block;
 }
 
