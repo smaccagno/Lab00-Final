@@ -1,55 +1,178 @@
 <template>
-    <lightning-card title="Caricamento Massivo Spese">
-        <div class="slds-p-around_medium">
-            <lightning-textarea
-                label="Incolla i dati da Excel"
-                value={pastedText}
-                onchange={handlePastedTextChange}
-                placeholder="Anno	Categoria	Sottocategoria	Note	Data	Ammontare	Stato"
-            ></lightning-textarea>
+    <!-- Spinner durante la validazione / paste -->
+    <template if:true={isValidating}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Validazione in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Validazione in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono validate le celle e gli errori evidenziati.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
 
-            <div class="slds-m-top_medium slds-grid slds-wrap slds-gutters">
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+    <!-- Spinner durante il salvataggio -->
+    <template if:true={isSaving}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Salvataggio in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Salvataggio in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono creati i record.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Risultati -->
+    <template if:true={showResults}>
+        <lightning-card title="Risultati Salvataggio Spese" icon-name="standard:money">
+            <div class="slds-p-around_medium">
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                    <div class="slds-col">
+                        <lightning-button
+                            label="Nuovo Inserimento"
+                            onclick={startNewEntry}
+                            variant="brand"
+                            icon-name="utility:add"
+                        ></lightning-button>
+                    </div>
+                </div>
+
+                <div class="slds-scrollable_x">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col"><div class="slds-truncate" title="#">#</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Voce di Spesa">Voce di Spesa</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Stato">Stato</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Errore">Errore</div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={saveResults} for:item="r">
+                                <tr key={r.id} class="slds-line-height_reset">
+                                    <td data-label="#"> {r.rowNumber} </td>
+                                    <td data-label="Voce di Spesa">
+                                        <template if:true={r.isSuccess}>
+                                            <a
+                                                href="#"
+                                                class="slds-text-link"
+                                                data-spesa-id={r.spesaId}
+                                                onclick={openSpesaRecord}
+                                            >
+                                                {r.spesaName}
+                                            </a>
+                                        </template>
+                                        <template if:false={r.isSuccess}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Stato">
+                                        <template if:true={r.isSuccess}>
+                                            <span class="slds-badge slds-badge_success">Successo</span>
+                                        </template>
+                                        <template if:false={r.isSuccess}>
+                                            <span class="slds-badge slds-theme_error">Errore</span>
+                                        </template>
+                                    </td>
+                                    <td data-label="Errore">
+                                        <template if:false={r.isSuccess}>
+                                            <div class="slds-truncate">{r.errorMessage}</div>
+                                        </template>
+                                        <template if:true={r.isSuccess}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </lightning-card>
+    </template>
+
+    <!-- Editor righe -->
+    <lightning-card title="Inserisci Spese Multiple" icon-name="standard:money">
+        <div class="slds-p-around_medium">
+            <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                <div class="slds-col">
                     <lightning-button
-                        label="Crea righe"
-                        variant="brand"
-                        onclick={handleCreateRows}
-                        class="slds-m-right_small"
-                    ></lightning-button>
-                    <lightning-button
-                        label="Aggiungi riga"
-                        variant="neutral"
+                        label="Aggiungi Riga"
                         onclick={handleAddRow}
+                        variant="neutral"
+                        icon-name="utility:add"
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Inserisci Valori Copiati"
+                        onclick={pasteFromClipboard}
+                        variant="neutral"
+                        icon-name="utility:paste"
+                        class="slds-m-left_small"
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Elimina Riga Selezionata"
+                        onclick={deleteSelectedRow}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isNoRowSelected}
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Elimina tutte le righe"
+                        onclick={deleteAllRows}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isTableEmpty}
                     ></lightning-button>
                 </div>
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3 slds-text-align_right">
+
+                <div class="slds-col slds-text-align_right">
                     <lightning-button
                         label="Salva (Crea record)"
-                        variant="success"
                         onclick={handleSave}
-                        disabled={isSaveDisabled}
+                        variant="brand"
+                        disabled={isCreatingDisabled}
                     ></lightning-button>
                 </div>
             </div>
 
             <template if:true={rows.length}>
-                <div class="table-wrap slds-m-top_medium">
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                <div class="excel-table-container">
+                    <table class="excel-table" role="grid">
                         <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col">Anno</th>
-                                <th scope="col">Categoria</th>
-                                <th scope="col">Sottocategoria</th>
-                                <th scope="col">Note</th>
-                                <th scope="col">Data</th>
-                                <th scope="col">Ammontare</th>
-                                <th scope="col">Stato</th>
-                                <th scope="col"></th>
+                            <tr>
+                                <th class="row-number-col">#</th>
+                                <th>Anno</th>
+                                <th>Categoria</th>
+                                <th>Sottocategoria</th>
+                                <th>Note</th>
+                                <th>Data</th>
+                                <th>Ammontare</th>
+                                <th>Stato</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template for:each={rows} for:item="row">
-                                <tr key={row.rowKey}>
+                                <tr key={row.rowKey} class={row.rowClass}>
+                                    <td class="row-number-cell" data-rowkey={row.rowKey} onclick={selectRow}>
+                                        <div class="row-number-container" title={row.errorMessage}>
+                                            {row.rowNumber}
+                                        </div>
+                                    </td>
+
                                     <td>
                                         <lightning-input
                                             type="number"
@@ -120,26 +243,7 @@
                                             onchange={handleCellChange}
                                         ></lightning-combobox>
                                     </td>
-
-                                    <td class="actions-col">
-                                        <lightning-button-icon
-                                            icon-name="utility:delete"
-                                            alternative-text="Elimina riga"
-                                            title="Elimina riga"
-                                            variant="bare"
-                                            onclick={handleDeleteRow}
-                                            data-rowkey={row.rowKey}
-                                        ></lightning-button-icon>
-                                    </td>
                                 </tr>
-
-                                <template if:true={row.errorMessage}>
-                                    <tr key={row.rowKey}>
-                                        <td colspan="8" class="row-error">
-                                            {row.errorMessage}
-                                        </td>
-                                    </tr>
-                                </template>
                             </template>
                         </tbody>
                     </table>

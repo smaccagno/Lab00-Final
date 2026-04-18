@@ -15,6 +15,7 @@ public with sharing class SpeseExcelEditorController {
         @AuraEnabled public Integer rowNumber;
         @AuraEnabled public Boolean isSuccess;
         @AuraEnabled public Id spesaId;
+        @AuraEnabled public String spesaName;
         @AuraEnabled public String status;
         @AuraEnabled public String errorMessage;
     }
@@ -46,118 +47,99 @@ public with sharing class SpeseExcelEditorController {
         // (I valori devono corrispondere a quelli presenti nelle picklist Categoria__c/Sottocategoria__c.)
         Map<String, List<String>> outMap = new Map<String, List<String>>();
 
-        outMap.put(
-            'Personale, Collaborazioni e Compensi',
-            new List<String>{
-                'Compensi collaboratori e professionisti',
-                'Payroll e cedolini',
-                'Rimborsi spese',
-                'Ritenute d\'acconto e adempimenti compensi',
-                'Emolumenti organi sociali e F24'
-            }
-        );
+        // Personale, Collaborazioni e Compensi
+        outMap.put('Personale, Collaborazioni e Compensi', new List<String>{
+            'Compensi collaboratori e professionisti',
+            'Payroll e cedolini',
+            'Rimborsi spese',
+            'Ritenute d\'acconto e adempimenti compensi',
+            'Emolumenti organi sociali e F24'
+        });
 
-        outMap.put(
-            'Fundraising, Partnership e Sviluppo Ricavi',
-            new List<String>{
-                'Fundraising management',
-                'Brand ambassador e partnership',
-                'Campagne fundraising e donor acquisition',
-                'Provvigioni e fee commerciali',
-                'Donazioni e liberalità'
-            }
-        );
+        // Fundraising, Partnership e Sviluppo Ricavi
+        outMap.put('Fundraising, Partnership e Sviluppo Ricavi', new List<String>{
+            'Fundraising management',
+            'Brand ambassador e partnership',
+            'Campagne fundraising e donor acquisition',
+            'Provvigioni e fee commerciali',
+            'Donazioni e liberalità'
+        });
 
-        outMap.put(
-            'Comunicazione, PR e Marketing',
-            new List<String>{
-                'Ufficio stampa e media relations',
-                'Rassegna e monitoraggio media',
-                'Social media management',
-                'Comunicazione istituzionale e content management',
-                'Grafica e materiali di comunicazione',
-                'Produzione audio/video e shooting',
-                'Campaign media e advertising',
-                'Newsletter e marketing automation',
-                'Branding, landing page e asset digitali',
-                'Pubblicazioni specialistiche e database media'
-            }
-        );
+        // Comunicazione, PR e Marketing
+        outMap.put('Comunicazione, PR e Marketing', new List<String>{
+            'Ufficio stampa e media relations',
+            'Rassegna e monitoraggio media',
+            'Social media management',
+            'Comunicazione istituzionale e content management',
+            'Grafica e materiali di comunicazione',
+            'Produzione audio/video e shooting',
+            'Campaign media e advertising',
+            'Newsletter e marketing automation',
+            'Branding, landing page e asset digitali',
+            'Pubblicazioni specialistiche e database media'
+        });
 
-        outMap.put(
-            'Progetti, Bandi e PMO',
-            new List<String>{
-                'Gestione bandi e progettazione',
-                'Project management e coordinamento',
-                'Reporting e monitoraggio',
-                'Strategia e sviluppo progettuale',
-                'Formazione e networking'
-            }
-        );
+        // Progetti, Bandi e PMO
+        outMap.put('Progetti, Bandi e PMO', new List<String>{
+            'Gestione bandi e progettazione',
+            'Project management e coordinamento',
+            'Reporting e monitoraggio',
+            'Strategia e sviluppo progettuale',
+            'Formazione e networking professionale'
+        });
 
-        outMap.put(
-            'Amministrazione, Fiscale e Legale',
-            new List<String>{
-                'Servizi contabili e fiscali',
-                'Consulenza legale e contrattualistica',
-                'Servizi notarili e libri sociali',
-                'Imposte indirette e IVA'
-            }
-        );
+        // Amministrazione, Fiscale e Legale
+        outMap.put('Amministrazione, Fiscale e Legale', new List<String>{
+            'Servizi contabili e fiscali',
+            'Consulenza legale e contrattualistica',
+            'Servizi notarili e libri sociali',
+            'Imposte indirette e IVA',
+            'Bolli e diritti amministrativi'
+        });
 
-        outMap.put(
-            'Governance, Compliance e Assicurazioni',
-            new List<String>{
-                'Bolli e diritti amministrativi',
-                'Assicurazioni e polizze',
-                'INAIL e autoliquidazioni'
-            }
-        );
+        // Governance, Compliance e Assicurazioni
+        outMap.put('Governance, Compliance e Assicurazioni', new List<String>{
+            'Governance e organo di controllo',
+            'Assicurazioni e polizze',
+            'INAIL e autoliquidazioni'
+        });
 
-        outMap.put(
-            'Strumenti Digitali, IT e Piattaforme',
-            new List<String>{
-                'Software collaborazione e cloud',
-                'Videoconferenze e teamwork',
-                'IT, sito web, domini e posta elettronica',
-                'PEC e firma digitale',
-                'Piattaforme operative di progetto',
-                'Software specialistici'
-            }
-        );
+        // Strumenti Digitali, IT e Piattaforme
+        outMap.put('Strumenti Digitali, IT e Piattaforme', new List<String>{
+            'Software collaborazione e cloud',
+            'Videoconferenze e teamwork',
+            'IT, sito web, domini e posta elettronica',
+            'PEC e firma digitale',
+            'Piattaforme operative di progetto',
+            'Software specialistici'
+        });
 
-        outMap.put(
-            'Eventi, Trasferte e Rappresentanza',
-            new List<String>{
-                'Eventi e iniziative',
-                'Viaggi e trasferte',
-                'Meeting e rappresentanza',
-                'Catering e ospitalità'
-            }
-        );
+        // Eventi, Trasferte e Rappresentanza
+        outMap.put('Eventi, Trasferte e Rappresentanza', new List<String>{
+            'Eventi e iniziative',
+            'Viaggi e trasferte',
+            'Meeting e rappresentanza',
+            'Catering e ospitalità'
+        });
 
-        outMap.put(
-            'Operations, Logistica e Materiali',
-            new List<String>{
-                'Stampe, merchandising e materiali evento',
-                'Spese postali e cancelleria'
-            }
-        );
+        // Operations, Logistica e Materiali
+        outMap.put('Operations, Logistica e Materiali', new List<String>{
+            'Stampe, merchandising e materiali evento',
+            'Spese postali e cancelleria',
+            'Logistica, noleggi e mezzi'
+        });
 
-        outMap.put(
-            'Sede e Servizi Generali',
-            new List<String>{
-                'Logistica, noleggi e mezzi'
-            }
-        );
+        // Sede e Servizi Generali
+        outMap.put('Sede e Servizi Generali', new List<String>{
+            'Sede e domiciliazione legale'
+        });
 
-        outMap.put(
-            'Finanza, Tesoreria e Riconciliazioni',
-            new List<String>{
-                'Tesoreria e trasferimenti interni',
-                'Ricariche carta e anticipi'
-            }
-        );
+        // Finanza, Tesoreria e Riconciliazioni
+        outMap.put('Finanza, Tesoreria e Riconciliazioni', new List<String>{
+            'Tesoreria e trasferimenti interni',
+            'Ricariche carta e anticipi',
+            'Voci composite o da riclassificare'
+        });
 
         return outMap;
     }
@@ -250,6 +232,7 @@ public with sharing class SpeseExcelEditorController {
             r.isSuccess = false;
             r.status = 'error';
             r.spesaId = null;
+            r.spesaName = null;
 
             String err;
 
@@ -342,6 +325,24 @@ public with sharing class SpeseExcelEditorController {
         Integer successCount = 0;
         for (SpesaResultRow rr : spesaResults) {
             if (rr.isSuccess == true) successCount++;
+        }
+
+        // Riporta anche il nome del record creato (utile per i link in UI)
+        Set<Id> insertedIds = new Set<Id>();
+        for (SpesaResultRow rr : spesaResults) {
+            if (rr.isSuccess == true && rr.spesaId != null) {
+                insertedIds.add(rr.spesaId);
+            }
+        }
+        if (!insertedIds.isEmpty()) {
+            Map<Id, Voce_di_Spesa__c> spesaById = new Map<Id, Voce_di_Spesa__c>(
+                [SELECT Id, Name FROM Voce_di_Spesa__c WHERE Id IN :insertedIds]
+            );
+            for (SpesaResultRow rr : spesaResults) {
+                if (rr.spesaId != null && spesaById.containsKey(rr.spesaId)) {
+                    rr.spesaName = spesaById.get(rr.spesaId).Name;
+                }
+            }
         }
 
         result.put('success', successCount > 0);
