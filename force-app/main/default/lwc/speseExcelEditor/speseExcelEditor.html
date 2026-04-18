@@ -1,0 +1,151 @@
+<template>
+    <lightning-card title="Caricamento Massivo Spese">
+        <div class="slds-p-around_medium">
+            <lightning-textarea
+                label="Incolla i dati da Excel"
+                value={pastedText}
+                onchange={handlePastedTextChange}
+                placeholder="Anno	Categoria	Sottocategoria	Note	Data	Ammontare	Stato"
+            ></lightning-textarea>
+
+            <div class="slds-m-top_medium slds-grid slds-wrap slds-gutters">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <lightning-button
+                        label="Crea righe"
+                        variant="brand"
+                        onclick={handleCreateRows}
+                        class="slds-m-right_small"
+                    ></lightning-button>
+                    <lightning-button
+                        label="Aggiungi riga"
+                        variant="neutral"
+                        onclick={handleAddRow}
+                    ></lightning-button>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3 slds-text-align_right">
+                    <lightning-button
+                        label="Salva (Crea record)"
+                        variant="success"
+                        onclick={handleSave}
+                        disabled={isSaveDisabled}
+                    ></lightning-button>
+                </div>
+            </div>
+
+            <template if:true={rows.length}>
+                <div class="table-wrap slds-m-top_medium">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col">Anno</th>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Sottocategoria</th>
+                                <th scope="col">Note</th>
+                                <th scope="col">Data</th>
+                                <th scope="col">Ammontare</th>
+                                <th scope="col">Stato</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={rows} for:item="row">
+                                <tr key={row.rowKey}>
+                                    <td>
+                                        <lightning-input
+                                            type="number"
+                                            value={row.anno}
+                                            data-rowkey={row.rowKey}
+                                            data-field="anno"
+                                            onchange={handleCellChange}
+                                        ></lightning-input>
+                                    </td>
+
+                                    <td>
+                                        <lightning-combobox
+                                            value={row.categoria}
+                                            options={categoriaOptions}
+                                            data-rowkey={row.rowKey}
+                                            data-field="categoria"
+                                            onchange={handleCellChange}
+                                        ></lightning-combobox>
+                                    </td>
+
+                                    <td>
+                                        <lightning-combobox
+                                            value={row.sottocategoria}
+                                            options={row.sottocategoriaOptions}
+                                            data-rowkey={row.rowKey}
+                                            data-field="sottocategoria"
+                                            onchange={handleCellChange}
+                                        ></lightning-combobox>
+                                    </td>
+
+                                    <td>
+                                        <lightning-input
+                                            type="text"
+                                            value={row.note}
+                                            data-rowkey={row.rowKey}
+                                            data-field="note"
+                                            onchange={handleCellChange}
+                                        ></lightning-input>
+                                    </td>
+
+                                    <td>
+                                        <lightning-input
+                                            type="date"
+                                            value={row.data}
+                                            data-rowkey={row.rowKey}
+                                            data-field="data"
+                                            onchange={handleCellChange}
+                                        ></lightning-input>
+                                    </td>
+
+                                    <td>
+                                        <lightning-input
+                                            type="number"
+                                            step="0.01"
+                                            value={row.ammontare}
+                                            data-rowkey={row.rowKey}
+                                            data-field="ammontare"
+                                            onchange={handleCellChange}
+                                        ></lightning-input>
+                                    </td>
+
+                                    <td>
+                                        <lightning-combobox
+                                            value={row.stato}
+                                            options={statoOptions}
+                                            data-rowkey={row.rowKey}
+                                            data-field="stato"
+                                            onchange={handleCellChange}
+                                        ></lightning-combobox>
+                                    </td>
+
+                                    <td class="actions-col">
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            alternative-text="Elimina riga"
+                                            title="Elimina riga"
+                                            variant="bare"
+                                            onclick={handleDeleteRow}
+                                            data-rowkey={row.rowKey}
+                                        ></lightning-button-icon>
+                                    </td>
+                                </tr>
+
+                                <template if:true={row.errorMessage}>
+                                    <tr key={row.rowKey}>
+                                        <td colspan="8" class="row-error">
+                                            {row.errorMessage}
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>
+

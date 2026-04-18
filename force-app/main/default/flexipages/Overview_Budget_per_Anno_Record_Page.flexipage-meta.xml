@@ -638,18 +638,6 @@
                             <value>NAME</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Anno__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Categoria__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Sottocategoria__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Note__c</value>
-                        </valueListItems>
-                        <valueListItems>
                             <value>Data__c</value>
                         </valueListItems>
                         <valueListItems>

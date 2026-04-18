@@ -49,6 +49,7 @@
     <label>Budget</label>
     <navType>Console</navType>
     <tabs>Budget_Dashboard</tabs>
+    <tabs>SpeseExcelEditor</tabs>
     <tabs>standard-GiftDesignation</tabs>
     <tabs>Voce_di_Incasso__c</tabs>
     <tabs>Voce_di_Spesa__c</tabs>
