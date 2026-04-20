@@ -392,10 +392,9 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 
                 const classify = (seg, pct, neighborPct) => {
                     if (seg.value === 0) {
-                        // Valore zero: la barra è solo un placeholder; mostra la label
-                        // a sinistra, fuori dalla bar-track, per non confonderla col
-                        // valore della barra adiacente.
-                        seg.labelClass = 'segment-label label-left-outside';
+                        // Valore zero: etichetta dentro il placeholder, con
+                        // sfondo leggibile anche quando la barra adiacente è grande.
+                        seg.labelClass = 'segment-label label-zero';
                         return;
                     }
                     if (pct < 4) {
