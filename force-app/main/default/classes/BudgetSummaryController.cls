@@ -168,16 +168,15 @@ public with sharing class BudgetSummaryController {
         }
 
         for (CategorySummary cs : speseMap.values()) {
+            // Le Annullate riducono solo il Previsto della categoria, NON l'Effettivo
+            // (l'Effettivo rappresenta uscite realmente avvenute e non viene intaccato).
             if (cs.previsto < 0) {
-                cs.effettivo += cs.previsto;
                 cs.previsto = 0;
             }
             if (cs.effettivo < 0) cs.effettivo = 0;
             cs.totale = cs.effettivo + cs.previsto;
-            
-            if (cs.totale >= 0) {
-                result.spese.add(cs);
-            }
+
+            result.spese.add(cs);
         }
 
         return result;

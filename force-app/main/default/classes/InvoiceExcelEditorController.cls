@@ -12,6 +12,7 @@ public with sharing class InvoiceExcelEditorController {
             (String.isBlank(reg) ? '' : reg.trim().toLowerCase());
     }
     
+    @TestVisible
     private static String buildLocalitaString(String city, String province, String region) {
         String localita = '';
         if (String.isNotBlank(city)) {
@@ -29,6 +30,7 @@ public with sharing class InvoiceExcelEditorController {
         return localita;
     }
     
+    @TestVisible
     private static Id toIdSafe(Object obj) {
         if (obj == null) return null;
         String s = String.valueOf(obj);
@@ -40,6 +42,7 @@ public with sharing class InvoiceExcelEditorController {
         }
     }
     
+    @TestVisible
     private static Integer toIntegerSafe(Object obj) {
         if (obj == null) return null;
         if (obj instanceof Integer) return (Integer) obj;
@@ -53,6 +56,7 @@ public with sharing class InvoiceExcelEditorController {
         }
     }
     
+    @TestVisible
     private static Decimal toDecimalSafe(Object obj) {
         if (obj == null) return null;
         if (obj instanceof Decimal) return (Decimal) obj;
@@ -89,6 +93,7 @@ public with sharing class InvoiceExcelEditorController {
      * Gestisce AuraHandledException (getMessage può restituire "Script-thrown exception"),
      * DmlException (usa getDmlMessage), e cause annidate.
      */
+    @TestVisible
     private static String getDescriptiveErrorMessage(Exception e) {
         if (e == null) return 'Errore sconosciuto';
         String msg = e.getMessage();
@@ -1404,6 +1409,7 @@ public with sharing class InvoiceExcelEditorController {
      * Crea un record MassiveInvoiceLog__c con il riepilogo completo del caricamento massivo.
      * Supporta sia Tempo Sospeso (fatture + visite) sia Sorriso Sospeso (fatture + biglietti).
      */
+    @TestVisible
     private static void createMassiveInvoiceLog(List<Map<String, Object>> invoiceResults, List<Object> invoiceDataList, Integer invoiceCount, List<String> errors) {
         Boolean isSorrisoLog = false;
         for (Object rowObj : invoiceDataList) {
@@ -1739,6 +1745,7 @@ public with sharing class InvoiceExcelEditorController {
         return String.isNotBlank(reg) ? city + ' (' + reg + ')' : city;
     }
 
+    @TestVisible
     private static String appendErrorMessage(String existing, String toAppend) {
         if (String.isBlank(toAppend)) {
             return existing;
@@ -1757,6 +1764,7 @@ public with sharing class InvoiceExcelEditorController {
         return value.setScale(2).format();
     }
 
+    @TestVisible
     private static String extractDateFromDateTimeString(String rawDateTime) {
         if (String.isBlank(rawDateTime)) return '';
         String normalized = rawDateTime.replace('T', ' ').trim();
@@ -1779,6 +1787,7 @@ public with sharing class InvoiceExcelEditorController {
         return '';
     }
 
+    @TestVisible
     private static String extractTimeFromDateTimeString(String rawDateTime) {
         if (String.isBlank(rawDateTime)) return '';
         String normalized = rawDateTime.replace('T', ' ').trim();
@@ -1800,6 +1809,7 @@ public with sharing class InvoiceExcelEditorController {
     /**
      * Crea un record Invoice__c dai dati forniti
      */
+    @TestVisible
     private static Invoice__c createInvoiceRecord(Map<String, Object> invoiceData, Integer rowNumber, Map<String, Ente_No_Profit__c> entiMap, String programId, String partnerBudgetId) {
         Invoice__c invoice = new Invoice__c();
         
@@ -2599,6 +2609,7 @@ public with sharing class InvoiceExcelEditorController {
                String.valueOf(showDateTime.getTime());
     }
 
+    @TestVisible
     private static Time parseTimeValue(String timeValue) {
         if (String.isBlank(timeValue)) return null;
 
@@ -2641,6 +2652,7 @@ public with sharing class InvoiceExcelEditorController {
      * Replica la logica NewShow flow: cerca uno show esistente (Structure+Name+Type+Datetime),
      * altrimenti lo crea in bulk e restituisce una mappa chiave->Id show.
      */
+    @TestVisible
     private static Map<String, Id> resolveShowsForTickets(
         List<Object> invoiceDataList,
         Map<Integer, Integer> inputRowToInvoiceIndex,

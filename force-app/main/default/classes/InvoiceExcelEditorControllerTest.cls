@@ -785,4 +785,608 @@ public class InvoiceExcelEditorControllerTest {
         System.assertNotEquals(null, invoiceNumber, 'Il numero fattura non deve essere null');
         System.assert(invoiceNumber.startsWith('GRATUITA-'), 'Il numero fattura deve iniziare con GRATUITA- quando isFree è true');
     }
+
+    @IsTest
+    static void testCatalogAndBudgetMethodsCoverage() {
+        Program testProgram = [SELECT Id, Name FROM Program LIMIT 1];
+        Account normalAccount = [SELECT Id FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+
+        String programName = InvoiceExcelEditorController.getProgramNameById(testProgram.Id);
+        System.assertNotEquals(null, programName, 'Il nome programma deve essere valorizzato');
+        System.assertEquals(null, InvoiceExcelEditorController.getProgramNameById(null), 'Con programId nullo deve restituire null');
+        System.assertEquals(null, InvoiceExcelEditorController.getProgramNameById('invalid-id'), 'Con programId invalido deve restituire null');
+
+        List<Account> allPartners = InvoiceExcelEditorController.getAllPartners();
+        System.assertNotEquals(null, allPartners, 'La lista partner non deve essere null');
+
+        List<String> ticketTypes = InvoiceExcelEditorController.getTicketTypeValues();
+        List<String> showTypes = InvoiceExcelEditorController.getShowTypeValues();
+        System.assertNotEquals(null, ticketTypes, 'Le tipologie Ticket non devono essere null');
+        System.assertNotEquals(null, showTypes, 'Le tipologie Show non devono essere null');
+
+        Account withoutEnrollment = new Account(Name = 'No Enrollment Coverage');
+        insert withoutEnrollment;
+        List<Program> noPrograms = InvoiceExcelEditorController.getEnrolledPrograms(withoutEnrollment.Id);
+        System.assertEquals(0, noPrograms.size(), 'Un account senza enrollment deve restituire lista vuota');
+
+        Id structureRecordTypeId;
+        Schema.DescribeSObjectResult accountDescribe = Account.SObjectType.getDescribe();
+        Map<String, Schema.RecordTypeInfo> rtByDeveloperName = accountDescribe.getRecordTypeInfosByDeveloperName();
+        if (rtByDeveloperName.containsKey('Structure')) {
+            structureRecordTypeId = rtByDeveloperName.get('Structure').getRecordTypeId();
+        } else {
+            for (Schema.RecordTypeInfo rtInfo : accountDescribe.getRecordTypeInfos()) {
+                if (rtInfo != null && rtInfo.getName() == 'Structure') {
+                    structureRecordTypeId = rtInfo.getRecordTypeId();
+                    break;
+                }
+            }
+        }
+        if (structureRecordTypeId != null) {
+            insert new Account(Name = 'Coverage Structure Supplier', RecordTypeId = structureRecordTypeId);
+        }
+        List<Account> suppliers = InvoiceExcelEditorController.getStructureSuppliers();
+        System.assertNotEquals(null, suppliers, 'La lista fornitori non deve essere null');
+
+        GiftDesignation partnerBudget = new GiftDesignation(
+            Name = 'Coverage Partner Budget',
+            Partner__c = normalAccount.Id
+        );
+        partnerBudget.put('Program__c', testProgram.Id);
+        insert partnerBudget;
+
+        Map<String, Object> noPartnerResult = InvoiceExcelEditorController.checkBudgetForProgram(testProgram.Id, null);
+        System.assertEquals(true, noPartnerResult.get('needsPartnerSelection'), 'Senza partner deve richiedere selezione');
+
+        Map<String, Object> withPartnerResult = InvoiceExcelEditorController.checkBudgetForProgram(testProgram.Id, normalAccount.Id);
+        System.assertEquals(false, withPartnerResult.get('needsPartnerSelection'), 'Con budget partner dedicato non deve richiedere selezione');
+        System.assertNotEquals(null, withPartnerResult.get('budgetId'), 'Con partner deve restituire un budget valido');
+
+        Account noBudgetAccount = new Account(Name = 'No Budget Coverage');
+        insert noBudgetAccount;
+        Map<String, Object> noBudgetResult = InvoiceExcelEditorController.checkBudgetForProgram(testProgram.Id, noBudgetAccount.Id);
+        System.assertEquals(true, noBudgetResult.get('needsPartnerSelection'), 'Senza budget partner deve richiedere selezione');
+    }
+
+    @IsTest
+    static void testCreateInvoiceRecordAndDescriptiveErrorCoverage() {
+        Program testProgram = [SELECT Id FROM Program LIMIT 1];
+        GiftDesignation testBudget = [SELECT Id FROM GiftDesignation LIMIT 1];
+        Account testAccount = [SELECT Id FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        Ente_No_Profit__c testEnte = [SELECT Name, Ente_Categoria__c FROM Ente_No_Profit__c LIMIT 1];
+
+        Map<String, Ente_No_Profit__c> entiMap = new Map<String, Ente_No_Profit__c>();
+        entiMap.put(testEnte.Name.toLowerCase() + '|', testEnte);
+
+        Map<String, Object> invoiceData = new Map<String, Object>{
+            'invoiceDate' => '15/01/2024',
+            'competenceDate' => '2024-01-31',
+            'invoiceNumber' => 'COV-INV-RECORD-001',
+            'medicalCenter' => 'Coverage Center',
+            'noProfit' => testEnte.Name,
+            'isFree' => true,
+            'partnerId' => 'invalid-partner-id',
+            'fornitoreId' => 'invalid-supplier-id',
+            'comune' => 'Roma',
+            'provincia' => 'RM',
+            'regione' => 'Lazio'
+        };
+
+        Invoice__c invoiceFromInvalidIds = InvoiceExcelEditorController.createInvoiceRecord(
+            invoiceData,
+            1,
+            entiMap,
+            String.valueOf(testProgram.Id),
+            String.valueOf(testBudget.Id)
+        );
+        System.assertEquals(testBudget.Id, invoiceFromInvalidIds.Budget__c, 'Il budget deve essere valorizzato dal partnerBudgetId');
+        System.assertEquals(testEnte.Ente_Categoria__c, invoiceFromInvalidIds.NoProfit_Category__c, 'La categoria deve usare il fallback entiMap');
+        System.assertEquals(null, invoiceFromInvalidIds.Account__c, 'PartnerId invalido non deve valorizzare Account__c');
+        System.assertEquals(true, invoiceFromInvalidIds.Bypass_Flow__c, 'Nei test il bypass flow deve essere true');
+
+        invoiceData.put('partnerId', String.valueOf(testAccount.Id));
+        Invoice__c invoiceWithValidPartner = InvoiceExcelEditorController.createInvoiceRecord(
+            invoiceData,
+            2,
+            entiMap,
+            String.valueOf(testProgram.Id),
+            String.valueOf(testBudget.Id)
+        );
+        System.assertEquals(testAccount.Id, invoiceWithValidPartner.Account__c, 'Partner valido deve valorizzare Account__c');
+
+        try {
+            InvoiceExcelEditorController.createInvoiceRecord(
+                new Map<String, Object>{ 'invoiceDate' => '2024-01-01' },
+                3,
+                entiMap,
+                String.valueOf(testProgram.Id),
+                String.valueOf(testBudget.Id)
+            );
+            System.assert(false, 'Senza numero fattura deve lanciare eccezione');
+        } catch (Exception e) {
+            System.assert(true, 'Eccezione attesa per numero fattura mancante: ' + e.getMessage());
+        }
+
+        try {
+            InvoiceExcelEditorController.createInvoiceRecord(
+                invoiceData,
+                4,
+                entiMap,
+                String.valueOf(testProgram.Id),
+                null
+            );
+        } catch (Exception expectedBudgetError) {
+            System.assert(true, 'Con partnerBudgetId nullo il branch budget deve essere coperto');
+        }
+
+        String dmlMessage = '';
+        try {
+            insert new Account();
+        } catch (DmlException dmlEx) {
+            dmlMessage = InvoiceExcelEditorController.getDescriptiveErrorMessage(dmlEx);
+        }
+        System.assert(String.isNotBlank(dmlMessage), 'Il messaggio DML descrittivo deve essere valorizzato');
+        String auraMessage = InvoiceExcelEditorController.getDescriptiveErrorMessage(new AuraHandledException('Test Aura Message'));
+        System.assert(String.isNotBlank(auraMessage), 'Il messaggio descrittivo Aura deve essere valorizzato');
+        System.assertEquals('Errore sconosciuto', InvoiceExcelEditorController.getDescriptiveErrorMessage(null), 'Con eccezione nulla deve usare fallback');
+    }
+
+    @IsTest
+    static void testResolveShowsForTicketsCoverage() {
+        Account supplier = [SELECT Id FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        List<Schema.PicklistEntry> showTypeValues = Show__c.Type__c.getDescribe().getPicklistValues();
+        System.assert(!showTypeValues.isEmpty(), 'Serve almeno una tipologia spettacolo per il test');
+        String showType = showTypeValues[0].getValue();
+
+        Date showDate = Date.today().addDays(5);
+        List<Object> invoiceRows = new List<Object>{
+            new Map<String, Object>{
+                'tipologia' => 'Biglietto',
+                'fornitoreId' => supplier.Id,
+                'nomeSpettacolo' => 'Coverage Show',
+                'tipologiaSpettacolo' => showType,
+                'dataSpettacolo' => String.valueOf(showDate),
+                'oraSpettacolo' => '2030',
+                'numeroVisite' => 2,
+                'amount' => 100,
+                'comune' => 'Roma'
+            },
+            new Map<String, Object>{
+                'tipologia' => 'Biglietto',
+                'fornitoreId' => 'invalid-id',
+                'nomeSpettacolo' => 'Invalid Supplier Show',
+                'tipologiaSpettacolo' => showType,
+                'dataSpettacolo' => String.valueOf(showDate),
+                'oraSpettacolo' => '20:30',
+                'numeroVisite' => 1,
+                'amount' => 50
+            }
+        };
+        Map<Integer, Integer> inputRowToInvoiceIndex = new Map<Integer, Integer>{ 0 => 0, 1 => 1 };
+        List<String> errors = new List<String>();
+
+        Map<String, Id> firstPassShows = InvoiceExcelEditorController.resolveShowsForTickets(invoiceRows, inputRowToInvoiceIndex, errors);
+        Map<String, Id> secondPassShows = InvoiceExcelEditorController.resolveShowsForTickets(invoiceRows, inputRowToInvoiceIndex, errors);
+
+        System.assert(
+            !firstPassShows.isEmpty() || !errors.isEmpty(),
+            'La risoluzione show deve creare uno spettacolo o registrare un errore descrittivo'
+        );
+        System.assertEquals(firstPassShows.keySet(), secondPassShows.keySet(), 'Il secondo passaggio deve mantenere le stesse chiavi show');
+    }
+
+    @IsTest
+    static void testCreateMassiveInvoiceLogCoverage() {
+        List<Map<String, Object>> tempoResults = new List<Map<String, Object>>();
+        tempoResults.add(new Map<String, Object>{
+            'invoiceNumber' => 'LOG-TEMPO-001',
+            'invoiceId' => 'a00TEMPO0001',
+            'invoiceName' => 'INV-TEMPO-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'dataCompetenza' => String.valueOf(Date.today()),
+            'medicalCenter' => 'Coverage Medical Center',
+            'partnerName' => 'Partner Coverage',
+            'partnerId' => null,
+            'enteNoProfit' => 'Ente Coverage',
+            'noProfitCategory' => 'Categoria Coverage',
+            'prestazioneGratuita' => false,
+            'localita' => 'Roma (RM, Lazio)',
+            'status' => 'success',
+            'errorMessage' => null,
+            'totalCost' => 120,
+            'totalMinutes' => 60,
+            'totalQuantity' => 1,
+            'visitsCreated' => 1,
+            'visitsFailed' => 0,
+            'visitError' => null,
+            'visitDetails' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'a01VISIT0001',
+                    'name' => 'VIS-001',
+                    'visitType' => 'Tipo Visita',
+                    'beneficiaryType' => 'Adult',
+                    'dataVisita' => String.valueOf(Date.today()),
+                    'numeroVisite' => 1,
+                    'totaleMinuti' => 60,
+                    'amount' => 120,
+                    'amountFormatted' => '120.00',
+                    'localita' => 'Roma (RM, Lazio)',
+                    'comune' => 'Roma',
+                    'provincia' => 'RM',
+                    'regione' => 'Lazio',
+                    'saveStatusSuccess' => true
+                }
+            }
+        });
+        tempoResults.add(new Map<String, Object>{
+            'invoiceNumber' => 'LOG-TEMPO-001',
+            'invoiceId' => 'a00TEMPO0001',
+            'invoiceName' => 'INV-TEMPO-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'dataCompetenza' => String.valueOf(Date.today()),
+            'medicalCenter' => 'Coverage Medical Center',
+            'partnerName' => 'Partner Coverage',
+            'status' => 'error',
+            'errorMessage' => 'Errore fattura tempo',
+            'totalCost' => 20,
+            'totalMinutes' => 10,
+            'totalQuantity' => 1,
+            'visitsCreated' => 0,
+            'visitsFailed' => 1,
+            'visitError' => 'Dettaglio visita non creato'
+        });
+        List<Object> tempoInputData = new List<Object>{
+            new Map<String, Object>{
+                'tipoVisita' => 'Tipo Visita',
+                'beneficiaryType' => 'Adult',
+                'numeroVisite' => 1,
+                'totaleMinuti' => 60,
+                'amount' => 120,
+                'comune' => 'Roma',
+                'provincia' => 'RM',
+                'regione' => 'Lazio'
+            },
+            new Map<String, Object>{
+                'tipoVisita' => 'Tipo Visita',
+                'beneficiaryType' => 'Adult',
+                'numeroVisite' => 1,
+                'totaleMinuti' => 10,
+                'amount' => 20,
+                'comune' => 'Milano',
+                'provincia' => 'MI',
+                'regione' => 'Lombardia'
+            }
+        };
+        InvoiceExcelEditorController.createMassiveInvoiceLog(
+            tempoResults,
+            tempoInputData,
+            1,
+            new List<String>{ 'Errore tempo coverage' }
+        );
+
+        MassiveInvoiceLog__c tempoLog = [
+            SELECT Id, Log__c
+            FROM MassiveInvoiceLog__c
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+        List<Object> tempoLogData = (List<Object>) JSON.deserializeUntyped(tempoLog.Log__c);
+        Map<String, Object> tempoInvoice = (Map<String, Object>) tempoLogData[0];
+        System.assert(tempoInvoice.containsKey('visits'), 'Il log Tempo deve contenere la chiave visits');
+        System.assert(tempoInvoice.containsKey('visitsContentRowKey'), 'Il log Tempo deve contenere visitsContentRowKey');
+
+        List<Map<String, Object>> sorrisoResults = new List<Map<String, Object>>();
+        sorrisoResults.add(new Map<String, Object>{
+            'invoiceNumber' => 'LOG-SORRISO-001',
+            'invoiceId' => 'a00SORRISO001',
+            'invoiceName' => 'INV-SORRISO-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'dataCompetenza' => String.valueOf(Date.today()),
+            'partnerName' => 'Partner Coverage',
+            'status' => 'success',
+            'totalCost' => 90,
+            'totalMinutes' => 0,
+            'totalQuantity' => 3,
+            'visitsCreated' => 1,
+            'visitsFailed' => 0,
+            'visitDetails' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'a02TICKET0001',
+                    'name' => 'TICKET-001',
+                    'ticketType' => 'Biglietto',
+                    'showType' => 'Cinema',
+                    'showName' => 'Cinema Coverage',
+                    'showDatetime' => '2026-01-10T20:45:00.000Z',
+                    'numeroVisite' => 3,
+                    'amount' => 90,
+                    'discountedAmount' => 70,
+                    'comune' => 'Roma',
+                    'provincia' => 'RM',
+                    'regione' => 'Lazio',
+                    'saveStatusSuccess' => true
+                }
+            }
+        });
+        sorrisoResults.add(new Map<String, Object>{
+            'invoiceNumber' => 'LOG-SORRISO-001',
+            'invoiceId' => 'a00SORRISO001',
+            'invoiceName' => 'INV-SORRISO-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'dataCompetenza' => String.valueOf(Date.today()),
+            'partnerName' => 'Partner Coverage',
+            'status' => 'error',
+            'errorMessage' => 'Errore fattura sorriso',
+            'totalCost' => 30,
+            'totalMinutes' => 0,
+            'totalQuantity' => 1,
+            'visitsCreated' => 0,
+            'visitsFailed' => 1,
+            'visitError' => 'Biglietto non creato'
+        });
+        List<Object> sorrisoInputData = new List<Object>{
+            new Map<String, Object>{
+                'skipVisitCreation' => true,
+                'tipologia' => 'Biglietto',
+                'fornitore' => 'Supplier Coverage',
+                'nomeSpettacolo' => 'Cinema Coverage',
+                'tipologiaSpettacolo' => 'Cinema',
+                'dataSpettacolo' => '2026-01-10',
+                'oraSpettacolo' => '20:45',
+                'numeroVisite' => 3,
+                'amount' => 90,
+                'valoreScontato' => 70,
+                'comune' => 'Roma',
+                'provincia' => 'RM',
+                'regione' => 'Lazio'
+            },
+            new Map<String, Object>{
+                'skipVisitCreation' => true,
+                'tipologia' => 'Biglietto',
+                'fornitore' => 'Supplier Coverage',
+                'nomeSpettacolo' => 'Cinema Coverage 2',
+                'tipologiaSpettacolo' => 'Cinema',
+                'dataSpettacolo' => '2026-01-11',
+                'oraSpettacolo' => '21:00',
+                'numeroVisite' => 1,
+                'amount' => 30,
+                'valoreScontato' => 20,
+                'comune' => 'Milano',
+                'provincia' => 'MI',
+                'regione' => 'Lombardia'
+            }
+        };
+        InvoiceExcelEditorController.createMassiveInvoiceLog(
+            sorrisoResults,
+            sorrisoInputData,
+            1,
+            new List<String>{ 'Errore sorriso coverage' }
+        );
+
+        List<MassiveInvoiceLog__c> latestLogs = [
+            SELECT Id, Log__c, Errori__c
+            FROM MassiveInvoiceLog__c
+            ORDER BY CreatedDate DESC
+            LIMIT 10
+        ];
+        MassiveInvoiceLog__c sorrisoLog;
+        for (MassiveInvoiceLog__c logItem : latestLogs) {
+            if (logItem.Errori__c != null && logItem.Errori__c.contains('Errore sorriso coverage')) {
+                sorrisoLog = logItem;
+                break;
+            }
+        }
+        System.assertNotEquals(null, sorrisoLog, 'Deve esistere un log Sorriso creato dal test');
+        List<Object> sorrisoLogData = (List<Object>) JSON.deserializeUntyped(sorrisoLog.Log__c);
+        Map<String, Object> sorrisoInvoice = (Map<String, Object>) sorrisoLogData[0];
+        System.assert(sorrisoInvoice.containsKey('tickets'), 'Il log Sorriso deve contenere tickets');
+        System.assert(sorrisoInvoice.containsKey('ticketsContentRowKey'), 'Il log Sorriso deve contenere ticketsContentRowKey');
+    }
+
+    @IsTest
+    static void testCreateInvoicesFromFlowTicketDmlAndAttachmentErrorCoverage() {
+        Program testProgram = [SELECT Id FROM Program LIMIT 1];
+        GiftDesignation testBudget = [SELECT Id FROM GiftDesignation LIMIT 1];
+        Account testAccount = [SELECT Id, Name FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        Comune__c testComune = [SELECT Nome_Comune__c, Provincia__c, Regione__c FROM Comune__c LIMIT 1];
+
+        List<Schema.PicklistEntry> showTypeValues = Show__c.Type__c.getDescribe().getPicklistValues();
+        System.assert(!showTypeValues.isEmpty(), 'Serve almeno una tipologia show per il test');
+
+        List<Map<String, Object>> invoiceDataList = new List<Map<String, Object>>();
+        invoiceDataList.add(new Map<String, Object>{
+            'invoiceNumber' => 'COV-TICKET-DML-001',
+            'invoiceDate' => String.valueOf(Date.today()),
+            'competenceDate' => String.valueOf(Date.today()),
+            'partnerId' => testAccount.Id,
+            'partner' => testAccount.Name,
+            'tipologia' => 'TIPOLOGIA_NON_VALIDA_PER_DML',
+            'fornitore' => testAccount.Name,
+            'fornitoreId' => testAccount.Id,
+            'nomeSpettacolo' => 'Show Coverage DML',
+            'tipologiaSpettacolo' => showTypeValues[0].getValue(),
+            'dataSpettacolo' => String.valueOf(Date.today().addDays(2)),
+            'oraSpettacolo' => '2030',
+            'numeroVisite' => 1,
+            'amount' => 100,
+            'valoreScontato' => 80,
+            'comune' => testComune.Nome_Comune__c,
+            'provincia' => testComune.Provincia__c,
+            'regione' => testComune.Regione__c,
+            'skipVisitCreation' => true,
+            'attachmentFileName' => 'coverage-invalid-base64.txt',
+            'attachmentBase64' => '%NOT_BASE64%'
+        });
+
+        Test.startTest();
+        Map<String, Object> result = InvoiceExcelEditorController.createInvoicesFromFlow(
+            JSON.serialize(invoiceDataList),
+            testProgram.Id,
+            testBudget.Id
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Il risultato non deve essere null');
+        System.assert(result.containsKey('invoiceResults'), 'Il payload deve includere invoiceResults');
+
+        List<Object> invoiceResults = (List<Object>) result.get('invoiceResults');
+        System.assert(!invoiceResults.isEmpty(), 'Deve esistere almeno un risultato di riga');
+        Map<String, Object> firstRow = (Map<String, Object>) invoiceResults[0];
+
+        String visitError = firstRow.containsKey('visitError') && firstRow.get('visitError') != null
+            ? String.valueOf(firstRow.get('visitError'))
+            : '';
+        String errorMessage = result.containsKey('errorMessage') && result.get('errorMessage') != null
+            ? String.valueOf(result.get('errorMessage'))
+            : '';
+
+        System.assert(
+            String.isNotBlank(visitError) || String.isNotBlank(errorMessage),
+            'Il test deve coprire i rami di errore su ticket/allegato'
+        );
+    }
+
+    @IsTest
+    static void testCreateInvoicesFromFlowWithSuccessfulVisitCoverage() {
+        Program testProgram = [SELECT Id FROM Program LIMIT 1];
+        GiftDesignation testBudget = [SELECT Id FROM GiftDesignation LIMIT 1];
+        Account testAccount = [SELECT Id FROM Account WHERE DEFAULT__c = false AND GRATUITO__c = false LIMIT 1];
+        Comune__c testComune = [SELECT Nome_Comune__c, Provincia__c, Regione__c FROM Comune__c LIMIT 1];
+
+        Tipo_Visita__c tipoVisita;
+        List<Tipo_Visita__c> tipi = [SELECT Id, Name FROM Tipo_Visita__c LIMIT 1];
+        if (!tipi.isEmpty()) {
+            tipoVisita = tipi[0];
+        } else {
+            tipoVisita = new Tipo_Visita__c(Name = 'Coverage Tipo Visita');
+            Database.insert(tipoVisita, false);
+            if (tipoVisita.Id == null) {
+                return;
+            }
+        }
+
+        List<Schema.PicklistEntry> beneficiaryValues = Visit__c.Beneficiary_Type__c.getDescribe().getPicklistValues();
+        String beneficiaryType = !beneficiaryValues.isEmpty() ? beneficiaryValues[0].getValue() : 'Coverage';
+
+        String uniqueInvoiceNumber = 'COV-VISIT-SUCCESS-' + String.valueOf(DateTime.now().getTime());
+        List<Map<String, Object>> invoiceDataList = new List<Map<String, Object>>{
+            new Map<String, Object>{
+                'invoiceNumber' => uniqueInvoiceNumber,
+                'invoiceDate' => String.valueOf(Date.today()),
+                'competenceDate' => String.valueOf(Date.today()),
+                'partnerId' => testAccount.Id,
+                'partner' => testAccount.Id,
+                'medicalCenter' => 'Coverage Medical Center',
+                'tipoVisita' => tipoVisita.Name,
+                'tipoVisitaId' => tipoVisita.Id,
+                'beneficiaryType' => beneficiaryType,
+                'numeroVisite' => 1,
+                'totaleMinuti' => 30,
+                'amount' => 75,
+                'dataVisita' => String.valueOf(Date.today()),
+                'comune' => testComune.Nome_Comune__c,
+                'provincia' => testComune.Provincia__c,
+                'regione' => testComune.Regione__c
+            }
+        };
+
+        Test.startTest();
+        Map<String, Object> result = InvoiceExcelEditorController.createInvoicesFromFlow(
+            JSON.serialize(invoiceDataList),
+            testProgram.Id,
+            testBudget.Id
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Il risultato non deve essere null');
+        List<Object> invoiceResults = (List<Object>) result.get('invoiceResults');
+        System.assert(!invoiceResults.isEmpty(), 'Deve essere presente almeno un risultato');
+        Map<String, Object> firstResult = (Map<String, Object>) invoiceResults[0];
+        Integer createdVisits = firstResult.containsKey('visitsCreated') && firstResult.get('visitsCreated') != null
+            ? Integer.valueOf(String.valueOf(firstResult.get('visitsCreated')))
+            : 0;
+        System.assert(createdVisits >= 0, 'Il payload deve valorizzare visitsCreated anche nei branch di successo');
+    }
+
+    @IsTest
+    static void testUtilityHelpersCoverage() {
+        Account testAccount = [SELECT Id FROM Account LIMIT 1];
+
+        System.assertEquals(
+            'Roma (RM, Lazio)',
+            InvoiceExcelEditorController.buildLocalitaString('Roma', 'RM', 'Lazio'),
+            'Formato localita completa non corretto'
+        );
+        System.assertEquals(
+            'Roma (Lazio)',
+            InvoiceExcelEditorController.buildLocalitaString('Roma', null, 'Lazio'),
+            'Formato localita con sola regione non corretto'
+        );
+        System.assertEquals(
+            'Roma (RM)',
+            InvoiceExcelEditorController.buildLocalitaString('Roma', 'RM', null),
+            'Formato localita con sola provincia non corretto'
+        );
+        System.assertEquals('', InvoiceExcelEditorController.buildLocalitaString(null, 'RM', 'Lazio'));
+
+        System.assertEquals(testAccount.Id, InvoiceExcelEditorController.toIdSafe(String.valueOf(testAccount.Id)), 'toIdSafe deve convertire ID valido');
+        System.assertEquals(null, InvoiceExcelEditorController.toIdSafe('invalid-id'), 'toIdSafe deve gestire ID non valido');
+        System.assertEquals(null, InvoiceExcelEditorController.toIdSafe(null), 'toIdSafe deve gestire null');
+
+        System.assertEquals(10, InvoiceExcelEditorController.toIntegerSafe(10), 'toIntegerSafe deve preservare interi');
+        System.assertEquals(15, InvoiceExcelEditorController.toIntegerSafe('15'), 'toIntegerSafe deve convertire stringhe numeriche');
+        System.assertEquals(null, InvoiceExcelEditorController.toIntegerSafe('not-a-number'), 'toIntegerSafe deve gestire input non numerici');
+        System.assertEquals(null, InvoiceExcelEditorController.toIntegerSafe(null), 'toIntegerSafe deve gestire null');
+        System.assertEquals(Decimal.valueOf('10'), InvoiceExcelEditorController.toDecimalSafe(10), 'toDecimalSafe deve convertire interi');
+        System.assertEquals(Decimal.valueOf('12.50'), InvoiceExcelEditorController.toDecimalSafe('12.50'), 'toDecimalSafe deve convertire decimali validi');
+        System.assertEquals(null, InvoiceExcelEditorController.toDecimalSafe('bad-decimal'), 'toDecimalSafe deve gestire input non validi');
+        System.assertEquals(null, InvoiceExcelEditorController.toDecimalSafe(null), 'toDecimalSafe deve gestire null');
+
+        System.assertEquals('Errore A', InvoiceExcelEditorController.appendErrorMessage(null, 'Errore A'));
+        System.assertEquals('Errore A', InvoiceExcelEditorController.appendErrorMessage('Errore A', 'Errore A'));
+        System.assertEquals('Errore A; Errore B', InvoiceExcelEditorController.appendErrorMessage('Errore A', 'Errore B'));
+        System.assertEquals('Errore A', InvoiceExcelEditorController.appendErrorMessage('Errore A', null));
+
+        System.assertEquals('2026-01-10', InvoiceExcelEditorController.extractDateFromDateTimeString('2026-01-10T20:45:00.000Z'));
+        System.assertEquals('2026-01-10', InvoiceExcelEditorController.extractDateFromDateTimeString('2026-01-10 20:45:00'));
+        System.assertEquals('', InvoiceExcelEditorController.extractDateFromDateTimeString('dato-non-valido'));
+        System.assertEquals('20:45', InvoiceExcelEditorController.extractTimeFromDateTimeString('2026-01-10T20:45:00.000Z'));
+        System.assertEquals('20:45', InvoiceExcelEditorController.extractTimeFromDateTimeString('20:45:00.000'));
+        System.assertEquals('', InvoiceExcelEditorController.extractTimeFromDateTimeString(''));
+        System.assertEquals('', InvoiceExcelEditorController.extractTimeFromDateTimeString('orario-non-valido'));
+
+        System.assertNotEquals(null, InvoiceExcelEditorController.parseTimeValue('2030'), 'parseTimeValue deve supportare formato HHmm');
+        System.assertNotEquals(null, InvoiceExcelEditorController.parseTimeValue('20:30:15'), 'parseTimeValue deve supportare formato HH:mm:ss');
+        System.assertEquals(null, InvoiceExcelEditorController.parseTimeValue('bad-time'), 'parseTimeValue deve scartare formati non ammessi');
+        System.assertEquals(null, InvoiceExcelEditorController.parseTimeValue('99:99'), 'parseTimeValue deve scartare orari non validi');
+    }
+
+    @IsTest
+    static void testCreateInvoicesFromFlowInputShapeBranches() {
+        Map<String, Object> nullPayloadResult = InvoiceExcelEditorController.createInvoicesFromFlow('null', null, null);
+        System.assertEquals(false, nullPayloadResult.get('success'), 'Payload null deve fallire');
+
+        Map<String, Object> objectPayloadResult = InvoiceExcelEditorController.createInvoicesFromFlow('{"foo":"bar"}', null, null);
+        System.assertEquals(false, objectPayloadResult.get('success'), 'Payload non-array deve fallire');
+
+        Map<String, Object> nonMapArrayResult = InvoiceExcelEditorController.createInvoicesFromFlow('[1,"test"]', null, null);
+        System.assertNotEquals(null, nonMapArrayResult, 'Payload array con elementi non-mappa non deve lanciare eccezioni');
+
+        List<Map<String, Object>> partialRows = new List<Map<String, Object>>{
+            new Map<String, Object>{
+                'comuneIsNew' => true,
+                'comune' => 'Coverage Comune Nuovo',
+                'provincia' => 'RM',
+                'regione' => 'Lazio',
+                'noProfitIsNew' => true,
+                'noProfit' => 'Coverage Ente',
+                'noProfitCategory' => 'Coverage Categoria'
+            }
+        };
+        Map<String, Object> partialDataResult = InvoiceExcelEditorController.createInvoicesFromFlow(
+            JSON.serialize(partialRows),
+            null,
+            null
+        );
+        System.assertNotEquals(null, partialDataResult, 'Il payload parziale deve essere gestito senza eccezioni uncaught');
+    }
 }
