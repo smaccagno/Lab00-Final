@@ -628,18 +628,24 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             this.cashFlow.push({
                 categoria: 'Totale Incassi',
                 totale: totalIncassi,
+                previsto: totalIncassiPrevisto,
+                effettivo: totalIncassiEffettivo,
                 segments: cfIncassiSegments,
                 avanzamento: this.calculateProgress(totalIncassiEffettivo, totalIncassiPrevisto)
             });
             this.cashFlow.push({
                 categoria: 'Totale Spese',
                 totale: totalSpese,
+                previsto: totalSpesePrevisto,
+                effettivo: totalSpeseEffettivo,
                 segments: cfSpeseSegments,
                 avanzamento: this.calculateProgress(totalSpeseEffettivo, totalSpesePrevisto)
             });
             this.cashFlow.push({
                 categoria: 'Disponibile',
                 totale: totalDisp,
+                previsto: dispPrevisto,
+                effettivo: dispEffettivo,
                 segments: cfDispSegments,
                 avanzamento: this.calculateProgress(dispEffettivo, dispPrevisto)
             });
