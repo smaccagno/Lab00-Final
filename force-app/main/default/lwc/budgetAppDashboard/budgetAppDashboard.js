@@ -77,7 +77,22 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     get programSummaryTitle() {
-        return this.isAllProgramsSelected ? 'Totali Tutti i Programmi (Tutti gli anni)' : 'Totali Programma (Tutti gli anni)';
+        const base = this.isAllProgramsSelected
+            ? 'Totali Tutti i Programmi'
+            : 'Totali Programma';
+        const formatted = this.formatDateForLabel(this.globalDate);
+        return formatted
+            ? `${base} (Tutti gli anni da inizio programma alla data: ${formatted})`
+            : `${base} (Tutti gli anni)`;
+    }
+
+    formatDateForLabel(value) {
+        const d = this.parseDateOnly(value);
+        if (!d) return '';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
     }
 
     get programButtons() {
@@ -562,6 +577,16 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
 
             yearlyDataArray.push({ anno, data: yearRecords });
             const yearEntry = yearlyDataArray[yearlyDataArray.length - 1];
+            const annoNumber = Number(anno);
+            const formattedDate = this.formatDateForLabel(this.globalDate);
+            if (filterDate && annoNumber && !Number.isNaN(annoNumber)) {
+                const endOfYear = new Date(annoNumber, 11, 31);
+                yearEntry.label = filterDate >= endOfYear
+                    ? `Anno: ${anno}`
+                    : `Anno: ${anno} fino alla data ${formattedDate}`;
+            } else {
+                yearEntry.label = `Anno: ${anno}`;
+            }
             yearEntry.budgetYearId = yearBudgetIdMap[anno] || null;
             yearEntry.navigateLabel = isAllPrograms
                 ? `Vista aggregata ${anno}: navigazione non disponibile`
