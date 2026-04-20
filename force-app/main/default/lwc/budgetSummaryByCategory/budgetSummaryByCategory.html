@@ -97,9 +97,10 @@
                         </h3>
                         
                         <template for:each={cashFlow} for:item="item">
-                            <div key={item.categoria} class={item.rowClass}>
+                            <div key={item.categoria} class="bar-row-group">
+                                <div class="bar-category-name" title={item.categoria}>{item.categoria}</div>
+                                <div class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
-                                    <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
                                         <span class="bar-info-prev">Previsto:&nbsp;<lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
                                         <span class="bar-info-eff">Effettivo:&nbsp;<lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
@@ -118,6 +119,7 @@
                                 </div>
                                 <div class="bar-progress">
                                     <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
+                                </div>
                                 </div>
                             </div>
                         </template>
@@ -133,9 +135,10 @@
                         </h3>
                         
                         <template for:each={incassi} for:item="item">
-                            <div key={item.categoria} class={item.rowClass}>
+                            <div key={item.categoria} class="bar-row-group">
+                                <div class="bar-category-name" title={item.categoria}>{item.categoria}</div>
+                                <div class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
-                                    <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
                                         <span class="bar-info-prev">Previsto:&nbsp;<lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
                                         <span class="bar-info-eff">Effettivo:&nbsp;<lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
@@ -154,6 +157,7 @@
                                 </div>
                                 <div class="bar-progress">
                                     <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
+                                </div>
                                 </div>
                             </div>
                         </template>
@@ -167,9 +171,10 @@
                         </h3>
                         
                         <template for:each={spese} for:item="item">
-                            <div key={item.categoria} class={item.rowClass}>
+                            <div key={item.categoria} class="bar-row-group">
+                                <div class="bar-category-name" title={item.categoria}>{item.categoria}</div>
+                                <div class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
-                                    <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
                                         <span class="bar-info-prev">Previsto:&nbsp;<lightning-formatted-number value={item.previsto} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
                                         <span class="bar-info-eff">Effettivo:&nbsp;<lightning-formatted-number value={item.effettivo} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number></span>
@@ -188,6 +193,7 @@
                                 </div>
                                 <div class="bar-progress">
                                     <lightning-formatted-number value={item.avanzamento} format-style="percent" minimum-fraction-digits="1" maximum-fraction-digits="1"></lightning-formatted-number>
+                                </div>
                                 </div>
                             </div>
                         </template>

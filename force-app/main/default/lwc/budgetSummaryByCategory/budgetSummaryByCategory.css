@@ -62,7 +62,7 @@
 .bar-row {
     display: flex;
     align-items: center;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0;
 }
 .bar-label {
     width: 120px;
@@ -80,27 +80,25 @@
     flex-shrink: 0;
     padding-right: 0.75rem;
     position: relative;
-    align-self: stretch;
+    height: 28px;
     line-height: 1.15;
 }
-.bar-info-name {
-    position: absolute;
-    top: -0.55rem;
-    right: 0.75rem;
+.bar-row-group {
+    margin-bottom: 0.75rem;
+}
+.bar-category-name {
     font-weight: bold;
     color: #444;
     font-size: 0.82rem;
+    padding-left: 220px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100% - 0.75rem);
-    text-align: right;
+    margin-bottom: 0.15rem;
+    line-height: 1.1;
 }
 .bar-info-values {
     position: absolute;
-    top: 50%;
+    top: 0;
     right: 0.75rem;
-    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     align-items: flex-end;
