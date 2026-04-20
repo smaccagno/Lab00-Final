@@ -38,6 +38,14 @@
     }
 }
 
+.dashboard-accordion {
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1rem;
+}
+
 .program-switcher {
     display: flex;
     flex-wrap: wrap;
