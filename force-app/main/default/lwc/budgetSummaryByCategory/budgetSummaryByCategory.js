@@ -375,10 +375,15 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 totalSpeseEffettivo, totalSpesePrevisto,
                 Math.abs(dispEffettivo), Math.abs(dispPrevisto)
             ) || 1;
-            const localGlobalMaxVal = Math.max(maxIncassiVal, maxSpeseVal, maxCashFlowVal, 1);
-            const scaleGlobalVal = externalGlobalMaxVal > 0
+            // Scala autonoma per incassi/spese (categorie): non dipende dal Cash Flow totale
+            const localCategoriesMaxVal = Math.max(maxIncassiVal, maxSpeseVal, 1);
+            const scaleCategoriesVal = externalGlobalMaxVal > 0
                 ? externalGlobalMaxVal
-                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : localGlobalMaxVal);
+                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : localCategoriesMaxVal);
+            // Scala autonoma per Cash Flow: basata sulla barra più grande del Cash Flow
+            const scaleCashFlowVal = externalGlobalMaxVal > 0
+                ? externalGlobalMaxVal
+                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : maxCashFlowVal);
 
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
@@ -407,7 +412,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             this.incassi = (data.incassi || []).map(item => {
                 let segments = [];
                 
-                let pStyle = `width: ${(item.previsto / scaleGlobalVal) * 100}%;`;
+                let pStyle = `width: ${(item.previsto / scaleCategoriesVal) * 100}%;`;
                 if (item.previsto === 0) {
                     pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
@@ -420,7 +425,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     itemsJson: JSON.stringify(item.itemsPrevisti || [])
                 });
 
-                let eStyle = `width: ${(item.effettivo / scaleGlobalVal) * 100}%;`;
+                let eStyle = `width: ${(item.effettivo / scaleCategoriesVal) * 100}%;`;
                 if (item.effettivo === 0) {
                     eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
                 }
@@ -433,7 +438,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     itemsJson: JSON.stringify(item.itemsEffettivi || [])
                 });
 
-                segments = processSegments(segments, scaleGlobalVal);
+                segments = processSegments(segments, scaleCategoriesVal);
 
                 return {
                     ...item,
@@ -445,7 +450,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             this.spese = (data.spese || []).map(item => {
                 let segments = [];
                 
-                let pStyle = `width: ${(item.previsto / scaleGlobalVal) * 100}%;`;
+                let pStyle = `width: ${(item.previsto / scaleCategoriesVal) * 100}%;`;
                 if (item.previsto === 0) {
                     pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
                 }
@@ -458,7 +463,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     itemsJson: JSON.stringify(item.itemsPrevisti || [])
                 });
 
-                let eStyle = `width: ${(item.effettivo / scaleGlobalVal) * 100}%;`;
+                let eStyle = `width: ${(item.effettivo / scaleCategoriesVal) * 100}%;`;
                 if (item.effettivo === 0) {
                     eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
                 }
@@ -471,7 +476,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     itemsJson: JSON.stringify(item.itemsEffettivi || [])
                 });
 
-                segments = processSegments(segments, scaleGlobalVal);
+                segments = processSegments(segments, scaleCategoriesVal);
 
                 return {
                     ...item,
@@ -514,7 +519,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             // Cash Flow logic
 
             let cfIncassiSegments = [];
-            let cfIncassiPStyle = `width: ${(totalIncassiPrevisto / scaleGlobalVal) * 100}%;`;
+            let cfIncassiPStyle = `width: ${(totalIncassiPrevisto / scaleCashFlowVal) * 100}%;`;
             if (totalIncassiPrevisto === 0) {
                 cfIncassiPStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -526,7 +531,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 title: 'Previsto',
                 itemsJson: JSON.stringify(allIncassiPrevistiItems)
             });
-            let cfIncassiEStyle = `width: ${(totalIncassiEffettivo / scaleGlobalVal) * 100}%;`;
+            let cfIncassiEStyle = `width: ${(totalIncassiEffettivo / scaleCashFlowVal) * 100}%;`;
             if (totalIncassiEffettivo === 0) {
                 cfIncassiEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
             }
@@ -538,10 +543,10 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 title: 'Effettivo',
                 itemsJson: JSON.stringify(allIncassiEffettiviItems)
             });
-            cfIncassiSegments = processSegments(cfIncassiSegments, scaleGlobalVal);
+            cfIncassiSegments = processSegments(cfIncassiSegments, scaleCashFlowVal);
 
             let cfSpeseSegments = [];
-            let cfSpesePStyle = `width: ${(totalSpesePrevisto / scaleGlobalVal) * 100}%;`;
+            let cfSpesePStyle = `width: ${(totalSpesePrevisto / scaleCashFlowVal) * 100}%;`;
             if (totalSpesePrevisto === 0) {
                 cfSpesePStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -553,7 +558,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 title: 'Previsto',
                 itemsJson: JSON.stringify(allSpesePrevistiItems)
             });
-            let cfSpeseEStyle = `width: ${(totalSpeseEffettivo / scaleGlobalVal) * 100}%;`;
+            let cfSpeseEStyle = `width: ${(totalSpeseEffettivo / scaleCashFlowVal) * 100}%;`;
             if (totalSpeseEffettivo === 0) {
                 cfSpeseEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
             }
@@ -565,11 +570,11 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 title: 'Effettivo',
                 itemsJson: JSON.stringify(allSpeseEffettiviItems)
             });
-            cfSpeseSegments = processSegments(cfSpeseSegments, scaleGlobalVal);
+            cfSpeseSegments = processSegments(cfSpeseSegments, scaleCashFlowVal);
 
             let cfDispSegments = [];
             let dispPrevWidth = Math.max(0, dispPrevisto);
-            let cfDispPStyle = `width: ${(dispPrevWidth / scaleGlobalVal) * 100}%;`;
+            let cfDispPStyle = `width: ${(dispPrevWidth / scaleCashFlowVal) * 100}%;`;
             if (dispPrevisto <= 0) {
                 cfDispPStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -586,7 +591,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             });
 
             let dispEffWidth = Math.max(0, dispEffettivo);
-            let cfDispEStyle = `width: ${(dispEffWidth / scaleGlobalVal) * 100}%;`;
+            let cfDispEStyle = `width: ${(dispEffWidth / scaleCashFlowVal) * 100}%;`;
             if (dispEffettivo <= 0) {
                 cfDispEStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
             }
@@ -601,7 +606,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     { label: 'Totale Spese Effettive', value: -totalSpeseEffettivo }
                 ])
             });
-            cfDispSegments = processSegments(cfDispSegments, scaleGlobalVal);
+            cfDispSegments = processSegments(cfDispSegments, scaleCashFlowVal);
 
             this.cashFlow = [];
             this.cashFlow.push({

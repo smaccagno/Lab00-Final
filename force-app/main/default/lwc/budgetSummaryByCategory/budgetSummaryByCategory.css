@@ -2,6 +2,10 @@
     width: 100%;
     padding: 0.5rem 0;
 }
+.section-separator {
+    border-top: 2px solid #d8dde6;
+    margin: 1.25rem 0;
+}
 .quick-summary {
     border: 1px solid #d8dde6;
     border-radius: 0.25rem;
