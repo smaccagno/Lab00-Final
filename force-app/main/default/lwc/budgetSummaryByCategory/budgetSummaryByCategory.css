@@ -79,7 +79,7 @@
     background-color: #f3f3f3;
     height: 24px;
     border-radius: 4px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
 }
 .bar-progress {
@@ -144,6 +144,18 @@
     transform: translateY(-50%);
     color: #333;
     text-shadow: none;
+    padding: 0 0.4rem;
+}
+.segment-label.label-left-outside {
+    position: absolute;
+    right: 100%;
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #333;
+    text-shadow: none;
+    padding: 0 0.4rem;
+    white-space: nowrap;
 }
 .bar-incasso-effettivo {
     background-color: #2e844a; /* SLDS Success */

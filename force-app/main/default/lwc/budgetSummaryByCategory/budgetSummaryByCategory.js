@@ -390,29 +390,38 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
                 
+                const classify = (seg, pct, neighborPct) => {
+                    if (seg.value === 0) {
+                        // Valore zero: la barra è solo un placeholder; mostra la label
+                        // a sinistra, fuori dalla bar-track, per non confonderla col
+                        // valore della barra adiacente.
+                        seg.labelClass = 'segment-label label-left-outside';
+                        return;
+                    }
+                    if (pct < 4) {
+                        // Barra molto piccola: label fuori a destra per leggibilità.
+                        seg.labelClass = 'segment-label label-outside';
+                        return;
+                    }
+                    if (neighborPct != null && (pct - neighborPct < 15 && pct < 85)) {
+                        seg.labelClass = 'segment-label label-outside';
+                        return;
+                    }
+                    if (pct < 12) {
+                        seg.labelClass = 'segment-label label-outside';
+                        return;
+                    }
+                    seg.labelClass = 'segment-label';
+                };
+
                 if (segments.length === 2) {
                     let pct0 = (segments[0].value / maxVal) * 100;
                     let pct1 = (segments[1].value / maxVal) * 100;
-                    
-                    if ((pct0 - pct1 < 15 && pct0 < 85) || pct0 < 12) {
-                        segments[0].labelClass = 'segment-label label-outside';
-                    } else {
-                        segments[0].labelClass = 'segment-label';
-                    }
-                    // Se la barra più piccola è troppo vicina al placeholder dello 0,
-                    // sposta la label fuori a destra per renderla leggibile.
-                    if (segments[1].value > 0 && pct1 < 4) {
-                        segments[1].labelClass = 'segment-label label-outside';
-                    } else {
-                        segments[1].labelClass = 'segment-label';
-                    }
+                    classify(segments[0], pct0, pct1);
+                    classify(segments[1], pct1, null);
                 } else if (segments.length === 1) {
                     let pct0 = (segments[0].value / maxVal) * 100;
-                    if (pct0 < 12) {
-                        segments[0].labelClass = 'segment-label label-outside';
-                    } else {
-                        segments[0].labelClass = 'segment-label';
-                    }
+                    classify(segments[0], pct0, null);
                 }
                 return segments;
             };
