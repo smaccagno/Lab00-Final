@@ -244,12 +244,12 @@ public with sharing class BudgetAppDashboardController {
 
         List<Voce_di_Spesa__c> spese = programId != null
             ? [
-                SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
             ]
             : [
-                SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
+                SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
             ];
@@ -257,9 +257,10 @@ public with sharing class BudgetAppDashboardController {
         for (Voce_di_Spesa__c vs : spese) {
             String anno = vs.Overview_Budget_per_Anno__r.Anno__c;
             if (String.isBlank(anno)) anno = 'N/A';
+            String categoria = String.isNotBlank(vs.Categoria__c) ? vs.Categoria__c : 'Non categorizzato';
             String stato = vs.Stato__c;
             Decimal ammontare = vs.Ammontare__c != null ? vs.Ammontare__c : 0;
-            items.add(new ProgramItem(vs.Overview_Budget_per_Anno__r.Budget__c, vs.Overview_Budget_per_Anno__c, anno, 'Spesa', 'Non categorizzato', stato, ammontare, vs.Data__c));
+            items.add(new ProgramItem(vs.Overview_Budget_per_Anno__r.Budget__c, vs.Overview_Budget_per_Anno__c, anno, 'Spesa', categoria, stato, ammontare, vs.Data__c));
         }
 
         return items;
