@@ -21,6 +21,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     globalProgramCashFlowMaxVal = null;
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
+    activeAccordionSections = ['overview', 'programs'];
     quickDateActions = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
@@ -247,6 +248,13 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         this.rawProgramItems = [];
         this.yearlyData = null;
         this.programSummaryData = null;
+    }
+
+    handleAccordionToggle(event) {
+        const openSections = event.detail.openSections;
+        this.activeAccordionSections = Array.isArray(openSections)
+            ? openSections
+            : (openSections ? [openSections] : []);
     }
 
     handleProgramButtonClick(event) {

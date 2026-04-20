@@ -43,22 +43,22 @@
             </lightning-card>
         </div>
 
-        <!-- Top: Omnicomprehensive view -->
-        <div class="slds-col slds-size_1-of-1 slds-m-bottom_large">
-            <template if:true={accountId}>
-                <c-budget-summary-by-category
-                    record-id={accountId}
-                    filter-date={globalDate}
-                    hide-date-filter="true"
-                    show-quick-summary="true">
-                </c-budget-summary-by-category>
-            </template>
-        </div>
-
-        <!-- Unified Programs Box -->
+        <!-- Accordion wrapping overall and per-program sections -->
         <div class="slds-col slds-size_1-of-1">
-            <lightning-card title="Dettaglio per Programma" icon-name="standard:budget">
-                <div class="slds-p-around_medium">
+            <lightning-accordion allow-multiple-sections-open active-section-name={activeAccordionSections} onsectiontoggle={handleAccordionToggle}>
+                <lightning-accordion-section name="overview" label="Vista Omnicomprensiva">
+                    <template if:true={accountId}>
+                        <c-budget-summary-by-category
+                            record-id={accountId}
+                            filter-date={globalDate}
+                            hide-date-filter="true"
+                            show-quick-summary="true">
+                        </c-budget-summary-by-category>
+                    </template>
+                </lightning-accordion-section>
+
+                <lightning-accordion-section name="programs" label="Dettaglio per Programma">
+                    <div class="slds-p-around_small">
                     <!-- Program switcher buttons -->
                     <div class="program-switcher slds-m-bottom_medium">
                         <template for:each={programButtons} for:item="prog">
@@ -142,8 +142,9 @@
                     <template if:false={hasProgramSelection}>
                         <p class="slds-text-color_weak">Seleziona un programma per visualizzare grafico e dettaglio tabellare.</p>
                     </template>
-                </div>
-            </lightning-card>
+                    </div>
+                </lightning-accordion-section>
+            </lightning-accordion>
         </div>
     </div>
 </template>
