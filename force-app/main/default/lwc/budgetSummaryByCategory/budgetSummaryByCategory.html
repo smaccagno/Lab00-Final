@@ -110,6 +110,9 @@
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
                                              data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
+                                            <span class={seg.labelClass}>
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
                                         </div>
                                     </template>
                                 </div>
@@ -143,6 +146,9 @@
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
                                              data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
+                                            <span class={seg.labelClass}>
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
                                         </div>
                                     </template>
                                 </div>
@@ -174,6 +180,9 @@
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
                                              data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
+                                            <span class={seg.labelClass}>
+                                                <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </span>
                                         </div>
                                     </template>
                                 </div>

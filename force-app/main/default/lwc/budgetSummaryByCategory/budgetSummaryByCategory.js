@@ -389,38 +389,27 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
-                
-                const classify = (seg, pct, neighborPct) => {
-                    if (seg.value === 0) {
-                        // Valore zero: etichetta dentro il placeholder, con
-                        // sfondo leggibile anche quando la barra adiacente è grande.
-                        seg.labelClass = 'segment-label label-zero';
-                        return;
+
+                const classify = (seg, pct, verticalClass) => {
+                    // verticalClass: 'label-top' (barra più lunga) oppure 'label-bottom' (più corta).
+                    const base = `segment-label ${verticalClass}`;
+                    if (pct < 10) {
+                        // Barra piccola o zero: label posizionata subito a destra
+                        // del segmento, fuori dal fill ma allineata in altezza.
+                        seg.labelClass = `${base} label-outside`;
+                    } else {
+                        seg.labelClass = base;
                     }
-                    if (pct < 4) {
-                        // Barra molto piccola: label fuori a destra per leggibilità.
-                        seg.labelClass = 'segment-label label-outside';
-                        return;
-                    }
-                    if (neighborPct != null && (pct - neighborPct < 15 && pct < 85)) {
-                        seg.labelClass = 'segment-label label-outside';
-                        return;
-                    }
-                    if (pct < 12) {
-                        seg.labelClass = 'segment-label label-outside';
-                        return;
-                    }
-                    seg.labelClass = 'segment-label';
                 };
 
                 if (segments.length === 2) {
                     let pct0 = (segments[0].value / maxVal) * 100;
                     let pct1 = (segments[1].value / maxVal) * 100;
-                    classify(segments[0], pct0, pct1);
-                    classify(segments[1], pct1, null);
+                    classify(segments[0], pct0, 'label-top');
+                    classify(segments[1], pct1, 'label-bottom');
                 } else if (segments.length === 1) {
                     let pct0 = (segments[0].value / maxVal) * 100;
-                    classify(segments[0], pct0, null);
+                    classify(segments[0], pct0, 'label-top');
                 }
                 return segments;
             };
