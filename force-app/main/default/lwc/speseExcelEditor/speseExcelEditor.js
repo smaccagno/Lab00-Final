@@ -128,8 +128,23 @@ export default class SpeseExcelEditor extends LightningElement {
     }
 
     handleWindowClick(event) {
-        if (this.cellActionMenuOpen && !event.target.closest('.cell-action-menu') && !event.target.closest('td[data-field]')) {
-            this.closeCellActionMenu();
+        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const hitsComponent = path.some(node => {
+            if (!node || node.nodeType !== 1) return false;
+            const cls = node.classList;
+            if (!cls) return false;
+            return (
+                cls.contains('cell-action-menu') ||
+                cls.contains('cell-editor-overlay') ||
+                cls.contains('editable-cell') ||
+                cls.contains('note-cell') ||
+                cls.contains('row-number-cell') ||
+                node.tagName === 'C-SPESE-EXCEL-EDITOR'
+            );
+        });
+        if (!hitsComponent) {
+            if (this.cellActionMenuOpen) this.closeCellActionMenu();
+            if (this.editorOpen) this.closeEditor();
         }
     }
 
@@ -192,6 +207,14 @@ export default class SpeseExcelEditor extends LightningElement {
 
         if (!field) return;
 
+        event.stopPropagation();
+
+        // Per le picklist apriamo direttamente il dropdown, come nei massivi esistenti.
+        if (['categoria', 'sottocategoria', 'stato'].includes(field)) {
+            this.openEditorForCell(rowIndex, field, cell);
+            return;
+        }
+
         this.openCellActionMenu(rowIndex, field, cell);
     }
 
@@ -206,6 +229,7 @@ export default class SpeseExcelEditor extends LightningElement {
         const field = cell.dataset.field;
         if (!field) return;
 
+        event.stopPropagation();
         this.selectedRowIndex = rowIndex;
         this.recomputeRows();
         this.openEditorForCell(rowIndex, field, cell);

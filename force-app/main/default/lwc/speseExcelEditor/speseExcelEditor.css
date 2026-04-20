@@ -64,25 +64,37 @@
     padding: 2px 6px;
 }
 
-.excel-table tbody tr:hover {
-    background-color: #f3f3f3;
-    box-shadow: 0 0 0 1px #0176d3;
-    z-index: 2;
+.excel-table tbody tr {
+    position: relative;
 }
 
-.excel-table tbody tr.selected-row {
-    background-color: #e8f4f8;
-    box-shadow: 0 0 0 1px #2e844a;
-    z-index: 1;
+.excel-table tbody tr:hover td {
+    background-color: #f7f9fb;
 }
 
-.excel-table tbody tr.row-error {
-    background-color: #fff5f5;
+.excel-table tbody tr.selected-row td {
+    background-color: #e8f4f8 !important;
+}
+
+.excel-table tbody tr.selected-row .row-number-cell {
+    background-color: #2e844a !important;
+    color: #ffffff !important;
+    border-color: #2e844a !important;
+}
+
+.excel-table tbody tr.selected-row td:first-child,
+.excel-table tbody tr.selected-row td:last-child {
+    box-shadow: inset 0 0 0 2px #2e844a;
 }
 
 .excel-table tbody tr.row-error td {
     background-color: #fff5f5 !important;
-    color: #b40000;
+}
+
+.excel-table tbody tr.row-error .row-number-cell {
+    background-color: #c23934 !important;
+    color: #ffffff !important;
+    border-color: #c23934 !important;
 }
 
 .editable-cell {
@@ -168,14 +180,16 @@
     transform: rotate(-45deg);
 }
 
-.invalid-cell {
+.excel-table tbody tr td.invalid-cell,
+.excel-table tbody tr.selected-row td.invalid-cell,
+.excel-table tbody tr.row-error td.invalid-cell {
     border: 2px solid #c23934 !important;
     background-color: #fef7f7 !important;
+    color: #b40000;
 }
 
-.invalid-cell:focus {
-    border: 2px solid #c23934 !important;
-    background-color: #fef7f7 !important;
+.excel-table tbody tr td.invalid-cell:focus {
+    outline: none;
 }
 
 .cell-action-menu {
@@ -374,25 +388,3 @@
         width: 240px;
     }
 }
-.note-col {
-    min-width: 260px;
-    width: 260px;
-    max-width: 420px;
-}
-
-.note-col-cell {
-    min-width: 260px;
-    width: 260px;
-    max-width: 420px;
-}
-
-/* Assicura che la textarea sfrutti tutta la larghezza della colonna Note */
-.note-col-cell .note-textarea {
-    width: 100%;
-}
-
-/* Evita che il contenitore della textarea tagli testo lungo */
-.note-col-cell lightning-textarea {
-    display: block;
-}
-
