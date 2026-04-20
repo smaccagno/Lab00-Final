@@ -2,8 +2,7 @@
     overflow-x: auto;
     border: 1px solid #d8dde6;
     border-radius: 4px;
-    /* Se il contenitore ha un overflow verticale, gli overlay delle combo
-       rischiano di essere tagliati. Lasciamo che scrolli la pagina. */
+    /* Niente clipping verticale: gli overlay devono poter uscire dal componente. */
     max-height: none !important;
     overflow-y: visible !important;
     overflow: visible !important;
@@ -15,6 +14,7 @@
     border-collapse: collapse;
     background-color: #ffffff;
     font-size: 0.875rem;
+    table-layout: auto;
 }
 
 .excel-table thead {
@@ -44,16 +44,19 @@
 }
 
 .row-number-col {
-    width: 44px;
-    min-width: 44px;
+    width: 50px;
+    min-width: 50px;
 }
 
 .row-number-cell {
-    width: 44px;
-    min-width: 44px;
+    width: 50px;
+    min-width: 50px;
     text-align: center;
     cursor: pointer;
-    background-color: #f3f3f3;
+    background-color: #fafaf9;
+    user-select: none;
+    font-weight: 600;
+    color: #706e6b;
 }
 
 .row-number-container {
@@ -82,6 +85,295 @@
     color: #b40000;
 }
 
+.editable-cell {
+    min-width: 120px;
+    position: relative;
+    cursor: pointer;
+}
+
+.editable-cell-header {
+    min-width: 120px;
+}
+
+.note-col {
+    min-width: 280px;
+    width: 320px;
+}
+
+.note-cell {
+    min-width: 280px;
+    width: 320px;
+    max-width: 480px;
+}
+
+.cell-content-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 20px;
+    display: inline-block;
+    padding-right: 18px;
+}
+
+.note-content-wrapper {
+    white-space: normal;
+}
+
+.cell-display {
+    display: inline-block;
+    width: 100%;
+    min-height: 20px;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.note-display {
+    white-space: pre-wrap;
+}
+
+.cell-clear-button {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.cell-clear-button:hover {
+    opacity: 0.9;
+    background-color: #ecebea;
+}
+
+.cell-clear-button::before,
+.cell-clear-button::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 2px;
+    width: 8px;
+    height: 1px;
+    background: #706e6b;
+}
+
+.cell-clear-button::before {
+    transform: rotate(45deg);
+}
+
+.cell-clear-button::after {
+    transform: rotate(-45deg);
+}
+
+.invalid-cell {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+.invalid-cell:focus {
+    border: 2px solid #c23934 !important;
+    background-color: #fef7f7 !important;
+}
+
+.cell-action-menu {
+    position: fixed;
+    z-index: 10002;
+    background-color: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+}
+
+.cell-action-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 3px;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    color: #080707;
+    transition: background-color 0.1s;
+}
+
+.cell-action-menu-btn:hover {
+    background-color: #f3f3f3;
+}
+
+.cell-action-menu-btn lightning-icon {
+    --sds-c-icon-color-foreground: #706e6b;
+}
+
+.cell-editor-overlay {
+    position: fixed;
+    z-index: 10003;
+    background-color: white;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #0070d2;
+    border-radius: 4px;
+    max-width: min(520px, calc(100vw - 24px));
+}
+
+.cell-editor-input,
+.cell-editor-filter {
+    width: 100%;
+    font-size: 0.875rem;
+    padding: 6px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.cell-editor-input:focus,
+.cell-editor-filter:focus,
+.cell-editor-textarea:focus {
+    border-color: #005fb2;
+    box-shadow: 0 0 3px rgba(0, 112, 210, 0.3);
+}
+
+.cell-editor-textarea {
+    width: 100%;
+    min-height: 110px;
+    font-size: 0.875rem;
+    padding: 6px 8px;
+    border: 1px solid #0070d2;
+    border-radius: 3px;
+    outline: none;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.cell-editor-help {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #706e6b;
+}
+
+.cell-editor-dropdown-list {
+    margin-top: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    background: #ffffff;
+}
+
+.cell-editor-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: none;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.cell-editor-dropdown-item:hover {
+    background-color: #f3f3f3;
+}
+
+.cell-editor-dropdown-empty {
+    padding: 8px 10px;
+    color: #706e6b;
+    font-size: 0.8125rem;
+}
+
+.cell-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.cell-action-copy,
+.cell-action-paste {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    background-color: #f3f3f3;
+    transition: background-color 0.1s;
+}
+
+.cell-action-copy:hover,
+.cell-action-paste:hover {
+    background-color: #e0e5ea;
+}
+
+.cell-action-copy lightning-icon,
+.cell-action-paste lightning-icon {
+    --sds-c-icon-color-foreground: #706e6b;
+}
+
+.numeric-field-confirm-button,
+.numeric-field-cancel-button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.numeric-field-confirm-button {
+    background-color: #2e844a;
+    opacity: 0.9;
+}
+
+.numeric-field-confirm-button:hover {
+    opacity: 1;
+    background-color: #256e3e;
+}
+
+.numeric-field-cancel-button {
+    background-color: #c23934;
+    opacity: 0.9;
+}
+
+.numeric-field-cancel-button:hover {
+    opacity: 1;
+    background-color: #a32924;
+}
+
+.numeric-field-confirm-button lightning-icon,
+.numeric-field-cancel-button lightning-icon {
+    --sds-c-icon-color-foreground: white;
+    --sds-c-icon-color-background: transparent;
+    --sds-c-icon-width: 12px;
+    --sds-c-icon-height: 12px;
+}
+
+@media (max-width: 900px) {
+    .note-col,
+    .note-cell {
+        min-width: 220px;
+        width: 240px;
+    }
+}
 .note-col {
     min-width: 260px;
     width: 260px;
