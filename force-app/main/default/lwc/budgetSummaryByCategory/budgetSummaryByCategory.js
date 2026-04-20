@@ -301,7 +301,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             {
                 id: 'previsto',
                 value: 0,
-                style: 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);',
+                style: 'width: 4px;',
                 cssClass: `${previstoClass} clickable`,
                 title: 'Previsto',
                 itemsJson: '[]',
@@ -430,7 +430,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 
                 let pStyle = `width: ${(item.previsto / scaleCategoriesVal) * 100}%;`;
                 if (item.previsto === 0) {
-                    pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                    pStyle = `width: 4px;`;
                 }
                 segments.push({
                     id: 'previsto',
@@ -443,7 +443,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
                 let eStyle = `width: ${(item.effettivo / scaleCategoriesVal) * 100}%;`;
                 if (item.effettivo === 0) {
-                    eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
+                    eStyle = 'width: 4px;';
                 }
                 segments.push({
                     id: 'effettivo',
@@ -468,7 +468,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 
                 let pStyle = `width: ${(item.previsto / scaleCategoriesVal) * 100}%;`;
                 if (item.previsto === 0) {
-                    pStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                    pStyle = `width: 4px;`;
                 }
                 segments.push({
                     id: 'previsto',
@@ -481,7 +481,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
                 let eStyle = `width: ${(item.effettivo / scaleCategoriesVal) * 100}%;`;
                 if (item.effettivo === 0) {
-                    eStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
+                    eStyle = 'width: 4px;';
                 }
                 segments.push({
                     id: 'effettivo',
@@ -537,7 +537,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             let cfIncassiSegments = [];
             let cfIncassiPStyle = `width: ${(totalIncassiPrevisto / scaleCashFlowVal) * 100}%;`;
             if (totalIncassiPrevisto === 0) {
-                cfIncassiPStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                cfIncassiPStyle = `width: 4px;`;
             }
             cfIncassiSegments.push({
                 id: 'previsto',
@@ -549,7 +549,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             });
             let cfIncassiEStyle = `width: ${(totalIncassiEffettivo / scaleCashFlowVal) * 100}%;`;
             if (totalIncassiEffettivo === 0) {
-                cfIncassiEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
+                cfIncassiEStyle = 'width: 4px;';
             }
             cfIncassiSegments.push({
                 id: 'effettivo',
@@ -564,7 +564,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             let cfSpeseSegments = [];
             let cfSpesePStyle = `width: ${(totalSpesePrevisto / scaleCashFlowVal) * 100}%;`;
             if (totalSpesePrevisto === 0) {
-                cfSpesePStyle = `width: 35px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                cfSpesePStyle = `width: 4px;`;
             }
             cfSpeseSegments.push({
                 id: 'previsto',
@@ -576,7 +576,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             });
             let cfSpeseEStyle = `width: ${(totalSpeseEffettivo / scaleCashFlowVal) * 100}%;`;
             if (totalSpeseEffettivo === 0) {
-                cfSpeseEStyle = 'width: 35px; border-right: 1px solid rgba(255,255,255,0.5);';
+                cfSpeseEStyle = 'width: 4px;';
             }
             cfSpeseSegments.push({
                 id: 'effettivo',
@@ -592,7 +592,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             let dispPrevWidth = Math.max(0, dispPrevisto);
             let cfDispPStyle = `width: ${(dispPrevWidth / scaleCashFlowVal) * 100}%;`;
             if (dispPrevisto <= 0) {
-                cfDispPStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                cfDispPStyle = `width: 4px;`;
             }
             cfDispSegments.push({
                 id: 'previsto',
@@ -609,7 +609,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             let dispEffWidth = Math.max(0, dispEffettivo);
             let cfDispEStyle = `width: ${(dispEffWidth / scaleCashFlowVal) * 100}%;`;
             if (dispEffettivo <= 0) {
-                cfDispEStyle = `width: 45px; border-right: 1px solid rgba(255,255,255,0.5);`;
+                cfDispEStyle = `width: 4px;`;
             }
             cfDispSegments.push({
                 id: 'effettivo',
