@@ -459,6 +459,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 return {
                     ...item,
                     segments: segments,
+                    rowClass: 'bar-row row-incasso',
                     avanzamento: this.calculateProgress(item.effettivo, item.previsto)
                 };
             });
@@ -497,6 +498,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 return {
                     ...item,
                     segments: segments,
+                    rowClass: 'bar-row row-spesa',
                     avanzamento: this.calculateProgress(item.effettivo, item.previsto)
                 };
             });
@@ -507,6 +509,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     previsto: 0,
                     effettivo: 0,
                     segments: this.createZeroSegments('bar-fill bar-incasso-previsto', 'bar-fill bar-incasso-effettivo'),
+                    rowClass: 'bar-row row-incasso',
                     avanzamento: this.calculateProgress(0, 0)
                 }];
             }
@@ -517,6 +520,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     previsto: 0,
                     effettivo: 0,
                     segments: this.createZeroSegments('bar-fill bar-spesa-previsto', 'bar-fill bar-spesa-effettivo'),
+                    rowClass: 'bar-row row-spesa',
                     avanzamento: this.calculateProgress(0, 0)
                 }];
             }
@@ -631,6 +635,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 previsto: totalIncassiPrevisto,
                 effettivo: totalIncassiEffettivo,
                 segments: cfIncassiSegments,
+                rowClass: 'bar-row row-incasso',
                 avanzamento: this.calculateProgress(totalIncassiEffettivo, totalIncassiPrevisto)
             });
             this.cashFlow.push({
@@ -639,6 +644,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 previsto: totalSpesePrevisto,
                 effettivo: totalSpeseEffettivo,
                 segments: cfSpeseSegments,
+                rowClass: 'bar-row row-spesa',
                 avanzamento: this.calculateProgress(totalSpeseEffettivo, totalSpesePrevisto)
             });
             this.cashFlow.push({
@@ -647,6 +653,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 previsto: dispPrevisto,
                 effettivo: dispEffettivo,
                 segments: cfDispSegments,
+                rowClass: 'bar-row row-disp',
                 avanzamento: this.calculateProgress(dispEffettivo, dispPrevisto)
             });
 

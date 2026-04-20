@@ -107,13 +107,37 @@
 .bar-info-prev,
 .bar-info-eff {
     white-space: nowrap;
+    font-weight: 700;
+    padding: 0 0.35rem;
+    border-radius: 3px;
+    margin-top: 0.1rem;
 }
-.bar-info-prev {
-    color: #6b6b6b;
+/* Incassi */
+.row-incasso .bar-info-prev {
+    background-color: #91c8a0;
+    color: #1b3a24;
 }
-.bar-info-eff {
-    color: #2b2b2b;
-    font-weight: 600;
+.row-incasso .bar-info-eff {
+    background-color: #2e844a;
+    color: #fff;
+}
+/* Spese */
+.row-spesa .bar-info-prev {
+    background-color: #f28b96;
+    color: #4a0b12;
+}
+.row-spesa .bar-info-eff {
+    background-color: #ea001e;
+    color: #fff;
+}
+/* Disponibile */
+.row-disp .bar-info-prev {
+    background-color: #89c2f5;
+    color: #0a2a47;
+}
+.row-disp .bar-info-eff {
+    background-color: #0176d3;
+    color: #fff;
 }
 .bar-track {
     flex-grow: 1;

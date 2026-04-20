@@ -97,7 +97,7 @@
                         </h3>
                         
                         <template for:each={cashFlow} for:item="item">
-                            <div key={item.categoria} class="bar-row">
+                            <div key={item.categoria} class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
                                     <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
@@ -130,7 +130,7 @@
                         </h3>
                         
                         <template for:each={incassi} for:item="item">
-                            <div key={item.categoria} class="bar-row">
+                            <div key={item.categoria} class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
                                     <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
@@ -161,7 +161,7 @@
                         </h3>
                         
                         <template for:each={spese} for:item="item">
-                            <div key={item.categoria} class="bar-row">
+                            <div key={item.categoria} class={item.rowClass}>
                                 <div class="bar-info" title={item.categoria}>
                                     <div class="bar-info-name">{item.categoria}</div>
                                     <div class="bar-info-values">
