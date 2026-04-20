@@ -390,27 +390,22 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
 
-                const classify = (seg, pct, verticalClass) => {
-                    // verticalClass: 'label-top' (barra più lunga) oppure 'label-bottom' (più corta).
+                const classify = (seg, pct) => {
+                    // Previsto sempre in alto, Effettivo sempre in basso, così da
+                    // restare coerente con le badge laterali Previsto/Effettivo.
+                    const verticalClass = seg.id === 'previsto' ? 'label-top' : 'label-bottom';
                     const base = `segment-label ${verticalClass}`;
                     if (pct < 10) {
-                        // Barra piccola o zero: label posizionata subito a destra
-                        // del segmento, fuori dal fill ma allineata in altezza.
                         seg.labelClass = `${base} label-outside`;
                     } else {
                         seg.labelClass = base;
                     }
                 };
 
-                if (segments.length === 2) {
-                    let pct0 = (segments[0].value / maxVal) * 100;
-                    let pct1 = (segments[1].value / maxVal) * 100;
-                    classify(segments[0], pct0, 'label-top');
-                    classify(segments[1], pct1, 'label-bottom');
-                } else if (segments.length === 1) {
-                    let pct0 = (segments[0].value / maxVal) * 100;
-                    classify(segments[0], pct0, 'label-top');
-                }
+                segments.forEach(seg => {
+                    const pct = (seg.value / maxVal) * 100;
+                    classify(seg, pct);
+                });
                 return segments;
             };
 
