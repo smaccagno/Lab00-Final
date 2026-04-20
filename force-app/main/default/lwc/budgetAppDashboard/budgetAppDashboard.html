@@ -55,90 +55,92 @@
             </template>
         </div>
 
-        <!-- Left column: Charts per program -->
-        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
-            <lightning-card title="Grafici per Programma" icon-name="standard:budget">
+        <!-- Unified Programs Box -->
+        <div class="slds-col slds-size_1-of-1">
+            <lightning-card title="Dettaglio per Programma" icon-name="standard:budget">
                 <div class="slds-p-around_medium">
-                    <template for:each={programs} for:item="prog">
-                        <div key={prog.Id} class="slds-m-bottom_large slds-box slds-box_small slds-theme_default">
-                            <div class="slds-text-align_center slds-m-bottom_medium">
-                                <h3 class="slds-text-heading_medium slds-text-title_bold">{prog.DisplayName}</h3>
-                                <button
-                                    class="slds-button slds-button_neutral slds-m-top_small"
-                                    data-program-id={prog.Id}
-                                    onclick={handleGoToProgramBudget}>
-                                    {prog.ProgramBudgetButtonLabel}
-                                </button>
-                            </div>
-                            <template if:true={programScaleReady}>
-                                <c-budget-summary-by-category
-                                    record-id={prog.Id}
-                                    filter-date={globalDate}
-                                    hide-date-filter="true"
-                                    show-quick-summary="true"
-                                    external-max-categories-val={globalProgramCategoriesMaxVal}
-                                    external-max-cash-flow-val={globalProgramCashFlowMaxVal}>
-                                </c-budget-summary-by-category>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </lightning-card>
-        </div>
-
-        <!-- Right column: Tabular data per program -->
-        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
-            <lightning-card title="Dettaglio Tabellare per Anno" icon-name="standard:report">
-                <div class="slds-p-around_medium">
-                    <lightning-combobox
-                        name="programSelect"
-                        label="Seleziona Programma"
-                        value={selectedProgramId}
-                        placeholder="Seleziona un programma"
-                        options={programOptions}
-                        onchange={handleProgramChange}>
-                    </lightning-combobox>
-
-                    <template if:true={programSummaryData}>
-                        <div class="slds-m-top_large slds-m-bottom_large slds-box slds-theme_default">
-                            <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">{programSummaryTitle}</h3>
-                            <lightning-datatable
-                                key-field="id"
-                                data={programSummaryData}
-                                columns={columns}
-                                hide-checkbox-column>
-                            </lightning-datatable>
-                        </div>
-                    </template>
-
-                    <template if:true={yearlyData}>
-                        <div class="slds-m-top_medium">
-                            <template for:each={yearlyData} for:item="yearGroup">
-                                <div key={yearGroup.anno} class="slds-m-bottom_large">
-                                    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
-                                        <h3 class="slds-text-heading_small slds-text-title_bold slds-text-color_default">Anno: {yearGroup.anno}</h3>
-                                        <button
-                                            class="slds-button slds-button_neutral slds-m-left_small"
-                                            data-budget-year-id={yearGroup.budgetYearId}
-                                            onclick={handleGoToYearBudget}
-                                            disabled={yearGroup.disableNavigate}>
-                                            {yearGroup.navigateLabel}
-                                        </button>
-                                    </div>
-                                    <lightning-datatable
-                                        key-field="id"
-                                        data={yearGroup.data}
-                                        columns={columns}
-                                        hide-checkbox-column>
-                                    </lightning-datatable>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                    <template if:false={yearlyData}>
-                        <template if:true={hasProgramSelection}>
-                            <p class="slds-m-top_medium slds-text-color_weak">Nessun dato disponibile per i filtri selezionati.</p>
+                    <!-- Program switcher buttons -->
+                    <div class="program-switcher slds-m-bottom_medium">
+                        <template for:each={programButtons} for:item="prog">
+                            <button
+                                key={prog.Id}
+                                class={prog.buttonClass}
+                                data-program-id={prog.Id}
+                                onclick={handleProgramButtonClick}>
+                                {prog.DisplayName}
+                            </button>
                         </template>
+                    </div>
+
+                    <template if:true={hasProgramSelection}>
+                        <div class="program-detail-grid">
+                            <!-- Chart side -->
+                            <div class="program-detail-chart">
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                                    <h3 class="slds-text-heading_small slds-text-title_bold">{selectedProgramName}</h3>
+                                    <button
+                                        class="slds-button slds-button_neutral"
+                                        data-program-id={selectedProgramId}
+                                        onclick={handleGoToProgramBudget}>
+                                        {selectedProgramButtonLabel}
+                                    </button>
+                                </div>
+                                <template if:true={programScaleReady}>
+                                    <c-budget-summary-by-category
+                                        record-id={selectedProgramId}
+                                        filter-date={globalDate}
+                                        hide-date-filter="true"
+                                        show-quick-summary="true"
+                                        external-max-categories-val={globalProgramCategoriesMaxVal}
+                                        external-max-cash-flow-val={globalProgramCashFlowMaxVal}>
+                                    </c-budget-summary-by-category>
+                                </template>
+                            </div>
+
+                            <!-- Table side -->
+                            <div class="program-detail-table">
+                                <template if:true={programSummaryData}>
+                                    <div class="slds-m-bottom_large slds-box slds-theme_default">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold slds-text-color_default">{programSummaryTitle}</h3>
+                                        <lightning-datatable
+                                            key-field="id"
+                                            data={programSummaryData}
+                                            columns={columns}
+                                            hide-checkbox-column>
+                                        </lightning-datatable>
+                                    </div>
+                                </template>
+
+                                <template if:true={yearlyData}>
+                                    <template for:each={yearlyData} for:item="yearGroup">
+                                        <div key={yearGroup.anno} class="slds-m-bottom_large">
+                                            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                                                <h3 class="slds-text-heading_small slds-text-title_bold slds-text-color_default">Anno: {yearGroup.anno}</h3>
+                                                <button
+                                                    class="slds-button slds-button_neutral slds-m-left_small"
+                                                    data-budget-year-id={yearGroup.budgetYearId}
+                                                    onclick={handleGoToYearBudget}
+                                                    disabled={yearGroup.disableNavigate}>
+                                                    {yearGroup.navigateLabel}
+                                                </button>
+                                            </div>
+                                            <lightning-datatable
+                                                key-field="id"
+                                                data={yearGroup.data}
+                                                columns={columns}
+                                                hide-checkbox-column>
+                                            </lightning-datatable>
+                                        </div>
+                                    </template>
+                                </template>
+                                <template if:false={yearlyData}>
+                                    <p class="slds-m-top_medium slds-text-color_weak">Nessun dato disponibile per i filtri selezionati.</p>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    <template if:false={hasProgramSelection}>
+                        <p class="slds-text-color_weak">Seleziona un programma per visualizzare grafico e dettaglio tabellare.</p>
                     </template>
                 </div>
             </lightning-card>

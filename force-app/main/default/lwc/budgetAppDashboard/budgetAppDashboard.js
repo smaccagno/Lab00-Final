@@ -79,6 +79,26 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         return this.isAllProgramsSelected ? 'Totali Tutti i Programmi (Tutti gli anni)' : 'Totali Programma (Tutti gli anni)';
     }
 
+    get programButtons() {
+        return (this.programs || []).map(p => {
+            const isSelected = p.Id === this.selectedProgramId;
+            return {
+                ...p,
+                buttonClass: isSelected
+                    ? 'slds-button slds-button_brand program-switcher-button is-selected'
+                    : 'slds-button slds-button_neutral program-switcher-button'
+            };
+        });
+    }
+
+    get selectedProgramName() {
+        return this.getProgramDisplayName(this.selectedProgramId);
+    }
+
+    get selectedProgramButtonLabel() {
+        return `Vai al budget ${this.selectedProgramName}`;
+    }
+
     columns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
         { label: 'Categoria', fieldName: 'categoria', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
@@ -100,12 +120,12 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                         ProgramBudgetButtonLabel: `Vai al budget ${displayName}`
                     };
                 });
-                this.programOptions = [{
-                    label: 'Tutti i Programmi',
-                    value: ALL_PROGRAMS_VALUE
-                }, ...this.programs.map(p => {
+                this.programOptions = this.programs.map(p => {
                     return { label: p.DisplayName, value: p.Id };
-                })];
+                });
+                if (!this.selectedProgramId && this.programs.length > 0) {
+                    this.selectedProgramId = this.programs[0].Id;
+                }
             }
         } else if (error) {
             console.error(error);
@@ -224,6 +244,17 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
 
     handleProgramChange(event) {
         this.selectedProgramId = event.detail.value;
+        this.rawProgramItems = [];
+        this.yearlyData = null;
+        this.programSummaryData = null;
+    }
+
+    handleProgramButtonClick(event) {
+        const programId = event.currentTarget.dataset.programId;
+        if (!programId || programId === this.selectedProgramId) {
+            return;
+        }
+        this.selectedProgramId = programId;
         this.rawProgramItems = [];
         this.yearlyData = null;
         this.programSummaryData = null;
