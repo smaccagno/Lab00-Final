@@ -17,6 +17,8 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     rawProgramItems = [];
     programScaleReady = false;
     globalProgramMaxVal = null;
+    globalProgramCategoriesMaxVal = null;
+    globalProgramCashFlowMaxVal = null;
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
     quickDateActions = [
@@ -119,10 +121,16 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     wiredProgramScales({ error, data }) {
         if (data) {
             this.globalProgramMaxVal = data.maxGlobalVal || null;
+            const maxIncassi = Number(data.maxIncassiVal) || 0;
+            const maxSpese = Number(data.maxSpeseVal) || 0;
+            this.globalProgramCategoriesMaxVal = Math.max(maxIncassi, maxSpese) || null;
+            this.globalProgramCashFlowMaxVal = Number(data.maxCashFlowVal) || null;
             this.programScaleReady = true;
         } else if (error) {
             console.error(error);
             this.globalProgramMaxVal = null;
+            this.globalProgramCategoriesMaxVal = null;
+            this.globalProgramCashFlowMaxVal = null;
             this.programScaleReady = true;
         }
     }

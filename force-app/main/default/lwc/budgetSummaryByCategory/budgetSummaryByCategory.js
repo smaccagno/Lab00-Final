@@ -11,6 +11,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     @api externalMaxIncassiVal;
     @api externalMaxSpeseVal;
     @api externalMaxCashFlowVal;
+    @api externalMaxCategoriesVal;
     quickDateActions = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
@@ -359,12 +360,13 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             // Evita divisioni per zero
             maxIncassiVal = maxIncassiVal > 0 ? maxIncassiVal : 1;
             maxSpeseVal = maxSpeseVal > 0 ? maxSpeseVal : 1;
-            const externalGlobalMaxVal = Number(this.externalMaxVal);
-            const externalLegacyMaxVal = Math.max(
+            const externalGlobalMaxVal = Number(this.externalMaxVal) || 0;
+            const externalCategoriesMaxVal = Math.max(
+                Number(this.externalMaxCategoriesVal) || 0,
                 Number(this.externalMaxIncassiVal) || 0,
-                Number(this.externalMaxSpeseVal) || 0,
-                Number(this.externalMaxCashFlowVal) || 0
+                Number(this.externalMaxSpeseVal) || 0
             );
+            const externalCashFlowMaxVal = Number(this.externalMaxCashFlowVal) || 0;
             const totalIncassi = totalIncassiEffettivo + totalIncassiPrevisto;
             const totalSpese = totalSpeseEffettivo + totalSpesePrevisto;
             const dispEffettivo = totalIncassiEffettivo - totalSpeseEffettivo;
@@ -379,11 +381,11 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             const localCategoriesMaxVal = Math.max(maxIncassiVal, maxSpeseVal, 1);
             const scaleCategoriesVal = externalGlobalMaxVal > 0
                 ? externalGlobalMaxVal
-                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : localCategoriesMaxVal);
+                : (externalCategoriesMaxVal > 0 ? externalCategoriesMaxVal : localCategoriesMaxVal);
             // Scala autonoma per Cash Flow: basata sulla barra più grande del Cash Flow
             const scaleCashFlowVal = externalGlobalMaxVal > 0
                 ? externalGlobalMaxVal
-                : (externalLegacyMaxVal > 0 ? externalLegacyMaxVal : maxCashFlowVal);
+                : (externalCashFlowMaxVal > 0 ? externalCashFlowMaxVal : maxCashFlowVal);
 
             const processSegments = (segments, maxVal) => {
                 segments.sort((a, b) => b.value - a.value);
@@ -397,7 +399,13 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                     } else {
                         segments[0].labelClass = 'segment-label';
                     }
-                    segments[1].labelClass = 'segment-label';
+                    // Se la barra più piccola è troppo vicina al placeholder dello 0,
+                    // sposta la label fuori a destra per renderla leggibile.
+                    if (segments[1].value > 0 && pct1 < 4) {
+                        segments[1].labelClass = 'segment-label label-outside';
+                    } else {
+                        segments[1].labelClass = 'segment-label';
+                    }
                 } else if (segments.length === 1) {
                     let pct0 = (segments[0].value / maxVal) * 100;
                     if (pct0 < 12) {
