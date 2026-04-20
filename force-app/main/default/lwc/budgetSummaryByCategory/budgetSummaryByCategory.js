@@ -305,16 +305,16 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
                 cssClass: `${previstoClass} clickable`,
                 title: 'Previsto',
                 itemsJson: '[]',
-                labelClass: 'segment-label label-outside'
+                labelClass: 'segment-label label-top label-outside'
             },
             {
                 id: 'effettivo',
                 value: 0,
-                style: 'width: 18px; border-right: 1px solid rgba(255,255,255,0.5);',
+                style: 'width: 4px;',
                 cssClass: `${effettivoClass} clickable`,
                 title: 'Effettivo',
                 itemsJson: '[]',
-                labelClass: 'segment-label'
+                labelClass: 'segment-label label-bottom label-outside'
             }
         ];
     }
