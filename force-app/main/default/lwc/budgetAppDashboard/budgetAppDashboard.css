@@ -115,6 +115,114 @@
     box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.2);
 }
 
+.program-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.65rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #eef1f6;
+}
+
+.program-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.7rem;
+    background: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+    font-family: inherit;
+    min-height: 68px;
+}
+
+.program-card:hover {
+    box-shadow: 0 4px 10px rgba(22, 50, 92, 0.1);
+    transform: translateY(-1px);
+    border-color: #b7c4d6;
+}
+
+.program-card:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.35);
+}
+
+.program-card.is-selected {
+    border-color: #0176d3;
+    box-shadow: 0 0 0 1px #0176d3, 0 6px 14px rgba(1, 118, 211, 0.18);
+    background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
+}
+
+.program-card-avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0176d3 0%, #014f8e 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.03em;
+}
+
+.program-card.is-selected .program-card-avatar {
+    background: linear-gradient(135deg, #2e844a 0%, #1b5a30 100%);
+}
+
+.program-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.program-card-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #16325c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.program-card-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.program-card-track {
+    flex: 1;
+    height: 5px;
+    background: #ededed;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.program-card-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #91c8a0 0%, #2e844a 100%);
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+}
+
+.program-card-progress-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #547190;
+    min-width: 32px;
+    text-align: right;
+}
+
 .program-detail-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

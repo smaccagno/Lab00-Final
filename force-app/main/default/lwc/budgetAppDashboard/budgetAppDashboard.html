@@ -135,15 +135,25 @@
                         </div>
                     </div>
 
-                    <!-- Program switcher buttons -->
-                    <div class="program-switcher slds-m-bottom_medium">
-                        <template for:each={programButtons} for:item="prog">
+                    <!-- Program switcher: card with avanzamento -->
+                    <div class="program-cards slds-m-bottom_medium">
+                        <template for:each={programCards} for:item="prog">
                             <button
                                 key={prog.Id}
-                                class={prog.buttonClass}
+                                class={prog.cardClass}
                                 data-program-id={prog.Id}
-                                onclick={handleProgramButtonClick}>
-                                {prog.DisplayName}
+                                onclick={handleProgramButtonClick}
+                                title={prog.DisplayName}>
+                                <span class="program-card-avatar">{prog.initial}</span>
+                                <span class="program-card-body">
+                                    <span class="program-card-name">{prog.DisplayName}</span>
+                                    <span class="program-card-progress">
+                                        <span class="program-card-track">
+                                            <span class="program-card-fill" style={prog.progressStyle}></span>
+                                        </span>
+                                        <span class="program-card-progress-label">{prog.progressLabel}</span>
+                                    </span>
+                                </span>
                             </button>
                         </template>
                     </div>

@@ -159,6 +159,69 @@ public with sharing class BudgetAppDashboardController {
         try { return Date.valueOf(selectedDateStr); } catch (Exception e) { return null; }
     }
 
+    public class ProgramKpi {
+        @AuraEnabled public Id programId;
+        @AuraEnabled public Decimal incassiTotale;
+        @AuraEnabled public Decimal speseTotale;
+        @AuraEnabled public Decimal avanzamentoIncassi;
+        @AuraEnabled public Decimal avanzamentoSpese;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<ProgramKpi> getProgramsKpis(Id accountId, String selectedDateStr) {
+        List<ProgramKpi> result = new List<ProgramKpi>();
+        if (accountId == null) return result;
+
+        Date filterDate = parseDate(selectedDateStr);
+        Map<Id, BudgetAggregator.AmountPair> incByProgram = new Map<Id, BudgetAggregator.AmountPair>();
+        Map<Id, BudgetAggregator.AmountPair> speByProgram = new Map<Id, BudgetAggregator.AmountPair>();
+
+        for (Voce_di_Incasso__c vi : [
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            FROM Voce_di_Incasso__c
+            WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+        ]) {
+            Id pid = vi.Overview_Budget_per_Anno__r.Budget__c;
+            if (pid == null) continue;
+            if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
+            if (!incByProgram.containsKey(pid)) incByProgram.put(pid, new BudgetAggregator.AmountPair());
+            BudgetAggregator.accumulate(incByProgram.get(pid), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
+        }
+
+        for (Voce_di_Spesa__c vs : [
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            FROM Voce_di_Spesa__c
+            WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+        ]) {
+            Id pid = vs.Overview_Budget_per_Anno__r.Budget__c;
+            if (pid == null) continue;
+            if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
+            if (!speByProgram.containsKey(pid)) speByProgram.put(pid, new BudgetAggregator.AmountPair());
+            BudgetAggregator.accumulate(speByProgram.get(pid), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
+        }
+
+        Set<Id> allPrograms = new Set<Id>();
+        allPrograms.addAll(incByProgram.keySet());
+        allPrograms.addAll(speByProgram.keySet());
+
+        for (Id pid : allPrograms) {
+            BudgetAggregator.AmountPair inc = incByProgram.containsKey(pid) ? incByProgram.get(pid) : new BudgetAggregator.AmountPair();
+            BudgetAggregator.AmountPair spe = speByProgram.containsKey(pid) ? speByProgram.get(pid) : new BudgetAggregator.AmountPair();
+            BudgetAggregator.finalizePair(inc);
+            BudgetAggregator.finalizePair(spe);
+
+            ProgramKpi k = new ProgramKpi();
+            k.programId = pid;
+            k.incassiTotale = inc.totale;
+            k.speseTotale = spe.totale;
+            k.avanzamentoIncassi = inc.totale > 0 ? (inc.effettivo / inc.totale) * 100 : 0;
+            k.avanzamentoSpese = spe.totale > 0 ? (spe.effettivo / spe.totale) * 100 : 0;
+            result.add(k);
+        }
+
+        return result;
+    }
+
     public class DashboardKpis {
         @AuraEnabled public Decimal incassiEffettivo;
         @AuraEnabled public Decimal incassiPrevisto;

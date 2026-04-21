@@ -4,6 +4,7 @@ import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lig
 import getDashboardData from '@salesforce/apex/BudgetAppDashboardController.getDashboardData';
 import getProgramItems from '@salesforce/apex/BudgetAppDashboardController.getProgramItems';
 import getProgramsScaleValues from '@salesforce/apex/BudgetAppDashboardController.getProgramsScaleValues';
+import getProgramsKpis from '@salesforce/apex/BudgetAppDashboardController.getProgramsKpis';
 
 const ALL_PROGRAMS_VALUE = 'ALL_PROGRAMS';
 
@@ -19,6 +20,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     globalProgramMaxVal = null;
     globalProgramCategoriesMaxVal = null;
     globalProgramCashFlowMaxVal = null;
+    programsKpisByProgramId = {};
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
     activeAccordionSections = ['overview', 'programs'];
@@ -166,6 +168,34 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         });
     }
 
+    get programCards() {
+        return (this.programs || []).map(p => {
+            const isSelected = p.Id === this.selectedProgramId;
+            const kpi = this.programsKpisByProgramId[p.Id];
+            const avanzamento = kpi ? Number(kpi.avanzamentoIncassi) || 0 : 0;
+            const clamped = Math.min(100, Math.max(0, avanzamento));
+            const hasData = !!kpi;
+            return {
+                Id: p.Id,
+                DisplayName: p.DisplayName,
+                initial: this.buildInitial(p.DisplayName),
+                progressLabel: hasData ? `${clamped.toFixed(0)}%` : '—',
+                progressStyle: `width: ${clamped}%`,
+                progressEmpty: !hasData,
+                cardClass: isSelected
+                    ? 'program-card is-selected'
+                    : 'program-card'
+            };
+        });
+    }
+
+    buildInitial(name) {
+        if (!name) return '?';
+        const parts = String(name).trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+
     get selectedProgramName() {
         return this.getProgramDisplayName(this.selectedProgramId);
     }
@@ -227,6 +257,18 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
             this.globalProgramCategoriesMaxVal = null;
             this.globalProgramCashFlowMaxVal = null;
             this.programScaleReady = true;
+        }
+    }
+
+    @wire(getProgramsKpis, { accountId: '$accountId', selectedDateStr: '$globalDate' })
+    wiredProgramsKpis({ error, data }) {
+        if (data) {
+            const map = {};
+            data.forEach(k => { map[k.programId] = k; });
+            this.programsKpisByProgramId = map;
+        } else if (error) {
+            console.error(error);
+            this.programsKpisByProgramId = {};
         }
     }
 
