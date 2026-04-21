@@ -78,29 +78,18 @@ public with sharing class RetrieveBudgetAnno {
       return emptyResult;
     }
 
-    // 1. Partner dell’utente (SAFE)
-    debugInfo.add(
-      'SOQL: SELECT CompanyName FROM User WHERE Id = \'' +
-      UserInfo.getUserId() +
-      '\''
-    );
+    // 1. Partner dell'utente
     User curUser = [
       SELECT CompanyName
       FROM User
       WHERE Id = :UserInfo.getUserId()
       LIMIT 1
     ];
-    debugInfo.add('User.CompanyName = ' + curUser.CompanyName);
     if (String.isBlank(curUser.CompanyName)) {
       debugInfo.add('CompanyName vuoto, stop flusso');
       return emptyResult;
     }
 
-    debugInfo.add(
-      'SOQL: SELECT Id FROM Account WHERE Nome_Donatore__c = \'' +
-      String.escapeSingleQuotes(curUser.CompanyName) +
-      '\' AND Type = \'Partner\''
-    );
     List<Account> partnerList = [
       SELECT Id
       FROM Account
@@ -112,16 +101,8 @@ public with sharing class RetrieveBudgetAnno {
       return emptyResult;
     }
     Id partnerId = partnerList[0].Id;
-    debugInfo.add('Account Partner trovato: ' + partnerId);
 
-    // 2. GiftDesignation (Budget) del partner per quel Programma (SAFE)
-    debugInfo.add(
-      'SOQL: SELECT Id FROM GiftDesignation WHERE Partner__c = \'' +
-      partnerId +
-      '\' AND Program__c = \'' +
-      programId +
-      '\''
-    );
+    // 2. GiftDesignation (Budget) del partner per quel Programma
     List<GiftDesignation> gds = [
       SELECT Id
       FROM GiftDesignation
@@ -133,12 +114,8 @@ public with sharing class RetrieveBudgetAnno {
       return emptyResult;
     }
     Id budgetId = gds[0].Id;
-    debugInfo.add('GiftDesignation trovata: ' + budgetId);
 
-    // 3. Config dinamica dei campi (SAFE sul Program)
-    debugInfo.add(
-      'SOQL: SELECT Name FROM Program WHERE Id = \'' + programId + '\''
-    );
+    // 3. Config dinamica dei campi
     List<Program> progs = [
       SELECT Name
       FROM Program
@@ -150,7 +127,6 @@ public with sharing class RetrieveBudgetAnno {
       return emptyResult;
     }
     String progDevName = progs[0].Name.replace(' ', '_');
-    debugInfo.add('Program Name: ' + progs[0].Name + ' → key: ' + progDevName);
 
     Set<String> targets = new Set<String>{ 'Overview_Budget_per_Anno__c' };
     Map<String, List<ProgramFieldConfigUtil.FieldConf>> confMap = ProgramFieldConfigUtil.getFieldConfig(
@@ -197,10 +173,6 @@ public with sharing class RetrieveBudgetAnno {
       ' FROM   Overview_Budget_per_Anno__c' +
       ' WHERE  Budget__c = :budgetId';
 
-    debugInfo.add(
-      'SOQL dinamica: ' +
-      q.replace(':budgetId', '\'' + String.valueOf(budgetId) + '\'')
-    );
     List<Overview_Budget_per_Anno__c> rows = Database.query(q);
     debugInfo.add('Record restituiti: ' + rows.size());
 
@@ -224,13 +196,8 @@ public with sharing class RetrieveBudgetAnno {
         WHERE Id = :UserInfo.getUserId()
         LIMIT 1
       ];
-      System.debug(
-        LoggingLevel.WARN,
-        'DBG › CompanyName utente: ' + u.CompanyName
-      );
 
       if (String.isBlank(u.CompanyName)) {
-        System.debug(LoggingLevel.WARN, 'DBG › CompanyName vuoto → esco');
         return null;
       }
 
@@ -241,17 +208,9 @@ public with sharing class RetrieveBudgetAnno {
         LIMIT 1
       ];
       if (accts.isEmpty()) {
-        System.debug(
-          LoggingLevel.WARN,
-          'DBG › Nessun Account Partner per CompanyName ' + u.CompanyName
-        );
         return null;
       }
       Id partnerId = accts[0].Id;
-      System.debug(
-        LoggingLevel.WARN,
-        'DBG › Account Partner trovato: ' + partnerId
-      );
 
       List<GiftDesignation> gds = [
         SELECT Id, Name
@@ -260,22 +219,14 @@ public with sharing class RetrieveBudgetAnno {
         LIMIT 1
       ];
       if (gds.isEmpty()) {
-        System.debug(
-          LoggingLevel.WARN,
-          'DBG › Nessuna GiftDesignation collegata al Partner ' + partnerId
-        );
         return null;
       }
-      System.debug(
-        LoggingLevel.WARN,
-        'DBG › GiftDesignation trovata: ' + gds[0].Id
-      );
 
       return gds[0].Id;
     } catch (Exception e) {
       System.debug(
         LoggingLevel.ERROR,
-        'DBG › ERRORE getDefaultRecordId – ' +
+        'RetrieveBudgetAnno.getDefaultRecordId – ' +
           e.getTypeName() +
           ' – ' +
           e.getMessage()
@@ -301,11 +252,6 @@ public with sharing class RetrieveBudgetAnno {
     }
 
     // Qui il chiamante passa un Budget__c reale; se non esiste, non troveremo sample
-    debugInfo.add(
-      'SOQL: SELECT Id, Programma__c, Programma__r.Name FROM Overview_Budget_per_Anno__c WHERE Budget__c = \'' +
-      String.valueOf(parentId) +
-      ' LIMIT 1'
-    );
     List<Overview_Budget_per_Anno__c> samples = [
       SELECT Id, Programma__c, Programma__r.Name
       FROM Overview_Budget_per_Anno__c
@@ -317,11 +263,8 @@ public with sharing class RetrieveBudgetAnno {
       return emptyRes;
     }
     Overview_Budget_per_Anno__c sample = samples[0];
-    debugInfo.add('Sample trovato: ' + sample.Id);
-    debugInfo.add('Programma__c: ' + sample.Programma__c);
 
     String programDevName = sample.Programma__r.Name.replace(' ', '_');
-    debugInfo.add('Program Name: ' + sample.Programma__r.Name + ' → key: ' + programDevName);
 
     Set<String> targets = new Set<String>{ 'Overview_Budget_per_Anno__c' };
     Map<String, List<ProgramFieldConfigUtil.FieldConf>> confMap = ProgramFieldConfigUtil.getFieldConfig(
@@ -366,10 +309,6 @@ public with sharing class RetrieveBudgetAnno {
       ' FROM   Overview_Budget_per_Anno__c' +
       ' WHERE  Budget__c = :parentId';
 
-    debugInfo.add(
-      'SOQL dinamica: ' +
-      query.replace(':parentId', '\'' + String.valueOf(parentId) + '\'')
-    );
     List<Overview_Budget_per_Anno__c> records = Database.query(query);
     debugInfo.add('Record restituiti: ' + records.size());
 
@@ -396,11 +335,6 @@ public with sharing class RetrieveBudgetAnno {
       return emptyRes;
     }
 
-    debugInfo.add(
-      'SOQL: SELECT Id, Programma__c, Programma__r.Name FROM Overview_Budget_per_Anno__c WHERE Id = \'' +
-      String.valueOf(recordId) +
-      ' LIMIT 1'
-    );
     List<Overview_Budget_per_Anno__c> targets = [
       SELECT Id, Programma__c, Programma__r.Name
       FROM Overview_Budget_per_Anno__c
@@ -412,11 +346,8 @@ public with sharing class RetrieveBudgetAnno {
       return emptyRes;
     }
     Overview_Budget_per_Anno__c target = targets[0];
-    debugInfo.add('Record trovato: ' + target.Id);
-    debugInfo.add('Programma__c: ' + target.Programma__c);
 
     String programDevName = target.Programma__r.Name.replace(' ', '_');
-    debugInfo.add('Program Name: ' + target.Programma__r.Name + ' → key: ' + programDevName);
 
     Set<String> objTargets = new Set<String>{ 'Overview_Budget_per_Anno__c' };
     Map<String, List<ProgramFieldConfigUtil.FieldConf>> confMap = ProgramFieldConfigUtil.getFieldConfig(
@@ -461,10 +392,6 @@ public with sharing class RetrieveBudgetAnno {
       ' FROM   Overview_Budget_per_Anno__c' +
       ' WHERE  Id = :recordId';
 
-    debugInfo.add(
-      'SOQL dinamica: ' +
-      query.replace(':recordId', '\'' + String.valueOf(recordId) + '\'')
-    );
     List<Overview_Budget_per_Anno__c> records = Database.query(query);
     debugInfo.add('Record restituiti: ' + records.size());
 
