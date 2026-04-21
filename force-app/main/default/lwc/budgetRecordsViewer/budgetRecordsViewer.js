@@ -2,6 +2,7 @@ import { LightningElement, wire, track } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import getViewerOptions from '@salesforce/apex/BudgetAppDashboardController.getViewerOptions';
 import getViewerRecords from '@salesforce/apex/BudgetAppDashboardController.getViewerRecords';
+import getViewerTotals from '@salesforce/apex/BudgetAppDashboardController.getViewerTotals';
 
 const PROGRAMMA_COLUMN = { label: 'Programma', fieldName: 'programUrl', type: 'url',
     typeAttributes: { label: { fieldName: 'programName' }, target: '_blank' } };
@@ -321,83 +322,26 @@ export default class BudgetRecordsViewer extends LightningElement {
         this.fetchData();
     }
 
-    calculateProgress(effettivo, previsto) {
-        const eff = Number(effettivo) || 0;
-        const prev = Number(previsto) || 0;
-        if (prev > 0) return eff / prev;
-        if (prev === 0) return eff / 100;
-        return eff / Math.abs(prev);
-    }
-
-    buildTotals(records) {
-        if (!records || records.length === 0) return [];
-        const aggregateMap = {};
-        records.forEach(r => {
-            const tipo = r.tipo || 'N/A';
-            const categoria = r.categoria || 'Non categorizzato';
-            const stato = r.stato || '';
-            const amount = Number(r.ammontare) || 0;
-            const key = `${tipo}_${categoria}`;
-            if (!aggregateMap[key]) {
-                aggregateMap[key] = { tipo, categoria, previsto: 0, effettivo: 0 };
-            }
-            if (stato === 'Effettiva') aggregateMap[key].effettivo += amount;
-            else if (stato === 'Prevista') aggregateMap[key].previsto += amount;
-            else if (stato === 'Annullata') aggregateMap[key].previsto -= amount;
-        });
-
-        const rows = [];
-        let totIncPrev = 0, totIncEff = 0, totSpePrev = 0, totSpeEff = 0;
-        Object.values(aggregateMap).forEach(row => {
-            let previsto = row.previsto;
-            let effettivo = row.effettivo;
-            if (previsto < 0) { effettivo += previsto; previsto = 0; }
-            if (effettivo < 0) effettivo = 0;
-            if (effettivo === 0 && previsto === 0) return;
-
-            let cssClass = '';
-            if (row.tipo === 'Incasso') cssClass = 'slds-text-color_success';
-            else if (row.tipo === 'Spesa') cssClass = 'slds-text-color_error';
-
-            if (row.tipo === 'Incasso') { totIncPrev += previsto; totIncEff += effettivo; }
-            else if (row.tipo === 'Spesa') { totSpePrev += previsto; totSpeEff += effettivo; }
-
-            rows.push({
-                id: `agg_${row.tipo}_${row.categoria}`,
-                tipo: row.tipo,
-                categoria: row.categoria,
-                previsto,
-                effettivo,
-                avanzamento: this.calculateProgress(effettivo, previsto),
-                cssClass
-            });
-        });
-
-        rows.sort((a, b) => {
-            if (a.tipo !== b.tipo) {
-                if (a.tipo === 'Incasso') return -1;
-                if (b.tipo === 'Incasso') return 1;
-                return a.tipo.localeCompare(b.tipo);
-            }
-            return a.categoria.localeCompare(b.categoria);
-        });
-
-        if (rows.length > 0) {
-            rows.push({
-                id: 'tot_cashflow',
-                tipo: 'CASH FLOW TOTALE',
-                categoria: '',
-                previsto: totIncPrev - totSpePrev,
-                effettivo: totIncEff - totSpeEff,
-                avanzamento: this.calculateProgress(totIncEff - totSpeEff, totIncPrev - totSpePrev),
-                cssClass: 'slds-text-title_bold slds-theme_shade'
-            });
-        }
-        return rows;
-    }
-
     get hasTotals() {
         return this.totalsRows && this.totalsRows.length > 0;
+    }
+
+    @wire(getViewerTotals, {
+        programId: '$programId',
+        anno: '$anno',
+        tipo: '$tipo',
+        categoria: '$categoria',
+        sottocategoria: '$sottocategoria',
+        selectedDateStr: '$filterDate'
+    })
+    wiredTotals({ data, error }) {
+        if (!this.optionsReady) return;
+        if (data) {
+            this.totalsRows = data;
+        } else if (error) {
+            console.error(error);
+            this.totalsRows = [];
+        }
     }
 
     fetchData() {
@@ -414,13 +358,11 @@ export default class BudgetRecordsViewer extends LightningElement {
         })
             .then(data => {
                 this.records = data || [];
-                this.totalsRows = this.buildTotals(this.records);
             })
             .catch(err => {
                 console.error(err);
                 this.error = (err && err.body && err.body.message) || 'Errore nel caricamento dei dati.';
                 this.records = [];
-                this.totalsRows = [];
             })
             .finally(() => {
                 this.loading = false;

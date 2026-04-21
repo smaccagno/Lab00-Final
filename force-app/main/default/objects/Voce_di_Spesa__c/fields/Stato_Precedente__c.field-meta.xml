@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Stato_Precedente__c</fullName>
+    <description>Popolato automaticamente dal trigger quando Stato__c diventa Annullata: registra il valore di Stato__c immediatamente precedente (Prevista o Effettiva). Usato da BudgetAggregator per erodere il totale corretto.</description>
+    <label>Stato Precedente</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Prevista</fullName>
+                <default>false</default>
+                <label>Prevista</label>
+            </value>
+            <value>
+                <fullName>Effettiva</fullName>
+                <default>false</default>
+                <label>Effettiva</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

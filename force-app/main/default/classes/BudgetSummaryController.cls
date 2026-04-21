@@ -38,7 +38,7 @@ public with sharing class BudgetSummaryController {
         @AuraEnabled public Decimal totale;
         @AuraEnabled public List<ItemDetail> itemsEffettivi;
         @AuraEnabled public List<ItemDetail> itemsPrevisti;
-        
+
         public CategorySummary(String categoria) {
             this.categoria = categoria;
             this.effettivo = 0;
@@ -52,7 +52,7 @@ public with sharing class BudgetSummaryController {
     public class BudgetSummary {
         @AuraEnabled public List<CategorySummary> incassi;
         @AuraEnabled public List<CategorySummary> spese;
-        
+
         public BudgetSummary() {
             this.incassi = new List<CategorySummary>();
             this.spese = new List<CategorySummary>();
@@ -62,44 +62,44 @@ public with sharing class BudgetSummaryController {
     @AuraEnabled(cacheable=true)
     public static BudgetSummary getSummary(Id recordId, Date filterDate) {
         BudgetSummary result = new BudgetSummary();
-        
+
         if (recordId == null) return result;
 
         String sObjName = recordId.getSObjectType().getDescribe().getName();
-        
+
         List<Voce_di_Incasso__c> incassiList = new List<Voce_di_Incasso__c>();
         List<Voce_di_Spesa__c> speseList = new List<Voce_di_Spesa__c>();
 
         if (sObjName == 'Overview_Budget_per_Anno__c') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__c = :recordId
             ];
         } else if (sObjName == 'GiftDesignation') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
         } else if (sObjName == 'Account') {
             incassiList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
+                SELECT Id, Name, Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Transazione__c, Transazione__r.Name
                 FROM Voce_di_Incasso__c
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
             ];
@@ -107,83 +107,83 @@ public with sharing class BudgetSummaryController {
             return result;
         }
 
-        // Aggregate Incassi
         Map<String, CategorySummary> incassiMap = new Map<String, CategorySummary>();
         for (Voce_di_Incasso__c vi : incassiList) {
-            String cat = vi.Categoria__c;
-            if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = vi.Stato__c;
-            Decimal tot = vi.Ammontare__c;
-            if (tot == null) tot = 0;
+            if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
 
-            if (!incassiMap.containsKey(cat)) {
-                incassiMap.put(cat, new CategorySummary(cat));
-            }
-            
-            if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
-                if (stato == 'Effettiva') {
-                    incassiMap.get(cat).effettivo += tot;
-                    incassiMap.get(cat).itemsEffettivi.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
-                } else if (stato == 'Prevista') {
-                    incassiMap.get(cat).previsto += tot;
-                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name, tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
-                } else if (stato == 'Annullata') {
-                    incassiMap.get(cat).previsto -= tot;
-                    incassiMap.get(cat).itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name + ' (Annullata)', -tot, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
+            String cat = BudgetAggregator.normalizeCategoria(vi.Categoria__c);
+            if (!incassiMap.containsKey(cat)) incassiMap.put(cat, new CategorySummary(cat));
+            CategorySummary cs = incassiMap.get(cat);
+
+            Decimal amount = vi.Ammontare__c == null ? 0 : vi.Ammontare__c;
+            String stato = vi.Stato__c;
+            String statoPrec = vi.Stato_Precedente__c;
+
+            if (stato == BudgetAggregator.STATO_EFFETTIVA) {
+                cs.effettivo += amount;
+                cs.itemsEffettivi.add(new ItemDetail(vi.Id, vi.Name, amount, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
+            } else if (stato == BudgetAggregator.STATO_PREVISTA) {
+                cs.previsto += amount;
+                cs.itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name, amount, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
+            } else if (stato == BudgetAggregator.STATO_ANNULLATA) {
+                if (statoPrec == BudgetAggregator.STATO_PREVISTA) {
+                    cs.previsto -= amount;
+                    cs.itemsPrevisti.add(new ItemDetail(vi.Id, vi.Name + ' (Annullata da Prevista)', -amount, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
+                } else if (statoPrec == BudgetAggregator.STATO_EFFETTIVA) {
+                    cs.effettivo -= amount;
+                    cs.itemsEffettivi.add(new ItemDetail(vi.Id, vi.Name + ' (Annullata da Effettiva)', -amount, vi.Data__c, cat, stato, vi.Transazione__c, vi.Transazione__r?.Name));
                 }
             }
         }
 
         for (CategorySummary cs : incassiMap.values()) {
-            if (cs.previsto < 0) {
-                cs.effettivo += cs.previsto; // se il previsto va in negativo, intacca l'effettivo
-                cs.previsto = 0;
-            }
-            if (cs.effettivo < 0) cs.effettivo = 0;
-            cs.totale = cs.effettivo + cs.previsto;
-            
-            if (cs.totale >= 0) {
-                result.incassi.add(cs);
-            }
+            BudgetAggregator.AmountPair p = new BudgetAggregator.AmountPair();
+            p.previsto = cs.previsto;
+            p.effettivo = cs.effettivo;
+            BudgetAggregator.finalizePair(p);
+            cs.previsto = p.previsto;
+            cs.effettivo = p.effettivo;
+            cs.totale = p.totale;
+            if (cs.totale >= 0) result.incassi.add(cs);
         }
 
-        // Aggregate Spese
         Map<String, CategorySummary> speseMap = new Map<String, CategorySummary>();
         for (Voce_di_Spesa__c vs : speseList) {
-            String cat = vs.Categoria__c;
-            if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = vs.Stato__c;
-            Decimal tot = vs.Ammontare__c;
-            if (tot == null) tot = 0;
+            if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
 
-            if (!speseMap.containsKey(cat)) {
-                speseMap.put(cat, new CategorySummary(cat));
-            }
-            
-            if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
-                if (stato == 'Effettiva') {
-                    speseMap.get(cat).effettivo += tot;
-                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
-                } else if (stato == 'Prevista') {
-                    speseMap.get(cat).previsto += tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
-                } else if (stato == 'Annullata') {
-                    // Sottrae il totale alla categoria (dal previsto)
-                    speseMap.get(cat).previsto -= tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata)', -tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
+            String cat = BudgetAggregator.normalizeCategoria(vs.Categoria__c);
+            if (!speseMap.containsKey(cat)) speseMap.put(cat, new CategorySummary(cat));
+            CategorySummary cs = speseMap.get(cat);
+
+            Decimal amount = vs.Ammontare__c == null ? 0 : vs.Ammontare__c;
+            String stato = vs.Stato__c;
+            String statoPrec = vs.Stato_Precedente__c;
+
+            if (stato == BudgetAggregator.STATO_EFFETTIVA) {
+                cs.effettivo += amount;
+                cs.itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, amount, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
+            } else if (stato == BudgetAggregator.STATO_PREVISTA) {
+                cs.previsto += amount;
+                cs.itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, amount, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
+            } else if (stato == BudgetAggregator.STATO_ANNULLATA) {
+                if (statoPrec == BudgetAggregator.STATO_PREVISTA) {
+                    cs.previsto -= amount;
+                    cs.itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata da Prevista)', -amount, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
+                } else if (statoPrec == BudgetAggregator.STATO_EFFETTIVA) {
+                    cs.effettivo -= amount;
+                    cs.itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata da Effettiva)', -amount, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
                 }
             }
         }
 
         for (CategorySummary cs : speseMap.values()) {
-            // Le Annullate riducono solo il Previsto della categoria, NON l'Effettivo
-            // (l'Effettivo rappresenta uscite realmente avvenute e non viene intaccato).
-            if (cs.previsto < 0) {
-                cs.previsto = 0;
-            }
-            if (cs.effettivo < 0) cs.effettivo = 0;
-            cs.totale = cs.effettivo + cs.previsto;
-
+            BudgetAggregator.AmountPair p = new BudgetAggregator.AmountPair();
+            p.previsto = cs.previsto;
+            p.effettivo = cs.effettivo;
+            BudgetAggregator.finalizePair(p);
+            cs.previsto = p.previsto;
+            cs.effettivo = p.effettivo;
+            cs.totale = p.totale;
             result.spese.add(cs);
         }
 

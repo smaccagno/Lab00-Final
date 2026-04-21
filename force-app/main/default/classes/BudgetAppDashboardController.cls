@@ -67,119 +67,67 @@ public with sharing class BudgetAppDashboardController {
         }
     }
 
-    private class AmountPair {
-        public Decimal previsto = 0;
-        public Decimal effettivo = 0;
-    }
-
     @AuraEnabled(cacheable=true)
     public static ScaleValues getProgramsScaleValues(Id accountId, String selectedDateStr) {
         ScaleValues result = new ScaleValues();
         if (accountId == null) return result;
 
-        Date filterDate = null;
-        if (String.isNotBlank(selectedDateStr)) {
-            try {
-                filterDate = Date.valueOf(selectedDateStr);
-            } catch (Exception e) {
-                // Keep null filterDate if parsing fails.
-            }
-        }
+        Date filterDate = parseDate(selectedDateStr);
 
-        Map<String, AmountPair> incassiByProgramCategory = new Map<String, AmountPair>();
-        Map<String, AmountPair> speseByProgramCategory = new Map<String, AmountPair>();
-        Map<Id, AmountPair> incassiTotalsByProgram = new Map<Id, AmountPair>();
-        Map<Id, AmountPair> speseTotalsByProgram = new Map<Id, AmountPair>();
+        Map<String, BudgetAggregator.AmountPair> incassiByProgramCategory = new Map<String, BudgetAggregator.AmountPair>();
+        Map<String, BudgetAggregator.AmountPair> speseByProgramCategory = new Map<String, BudgetAggregator.AmountPair>();
+        Map<Id, BudgetAggregator.AmountPair> incassiTotalsByProgram = new Map<Id, BudgetAggregator.AmountPair>();
+        Map<Id, BudgetAggregator.AmountPair> speseTotalsByProgram = new Map<Id, BudgetAggregator.AmountPair>();
 
         for (Voce_di_Incasso__c vi : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
         ]) {
             Id programId = vi.Overview_Budget_per_Anno__r.Budget__c;
             if (programId == null) continue;
-            String categoria = String.isBlank(vi.Categoria__c) ? 'Non categorizzato' : vi.Categoria__c;
-            String stato = vi.Stato__c;
-            Decimal amount = vi.Ammontare__c == null ? 0 : vi.Ammontare__c;
+            if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
 
+            String categoria = BudgetAggregator.normalizeCategoria(vi.Categoria__c);
             String key = String.valueOf(programId) + '::' + categoria;
             if (!incassiByProgramCategory.containsKey(key)) {
-                incassiByProgramCategory.put(key, new AmountPair());
+                incassiByProgramCategory.put(key, new BudgetAggregator.AmountPair());
             }
             if (!incassiTotalsByProgram.containsKey(programId)) {
-                incassiTotalsByProgram.put(programId, new AmountPair());
+                incassiTotalsByProgram.put(programId, new BudgetAggregator.AmountPair());
             }
-
-            AmountPair pair = incassiByProgramCategory.get(key);
-            AmountPair totalPair = incassiTotalsByProgram.get(programId);
-
-            Boolean includeEffettivo = filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate;
-            if (stato == 'Effettiva') {
-                if (includeEffettivo) {
-                    pair.effettivo += amount;
-                    totalPair.effettivo += amount;
-                }
-            } else if (stato == 'Prevista') {
-                pair.previsto += amount;
-                totalPair.previsto += amount;
-            } else if (stato == 'Annullata') {
-                pair.previsto -= amount;
-                totalPair.previsto -= amount;
-            }
+            BudgetAggregator.accumulate(incassiByProgramCategory.get(key), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
+            BudgetAggregator.accumulate(incassiTotalsByProgram.get(programId), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
         }
 
         for (Voce_di_Spesa__c vs : [
-            SELECT Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
         ]) {
             Id programId = vs.Overview_Budget_per_Anno__r.Budget__c;
             if (programId == null) continue;
-            String categoria = 'Non categorizzato';
-            String stato = vs.Stato__c;
-            Decimal amount = vs.Ammontare__c == null ? 0 : vs.Ammontare__c;
+            if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
 
+            String categoria = BudgetAggregator.normalizeCategoria(vs.Categoria__c);
             String key = String.valueOf(programId) + '::' + categoria;
             if (!speseByProgramCategory.containsKey(key)) {
-                speseByProgramCategory.put(key, new AmountPair());
+                speseByProgramCategory.put(key, new BudgetAggregator.AmountPair());
             }
             if (!speseTotalsByProgram.containsKey(programId)) {
-                speseTotalsByProgram.put(programId, new AmountPair());
+                speseTotalsByProgram.put(programId, new BudgetAggregator.AmountPair());
             }
-
-            AmountPair pair = speseByProgramCategory.get(key);
-            AmountPair totalPair = speseTotalsByProgram.get(programId);
-
-            Boolean includeEffettivo = filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate;
-            if (stato == 'Effettiva') {
-                if (includeEffettivo) {
-                    pair.effettivo += amount;
-                    totalPair.effettivo += amount;
-                }
-            } else if (stato == 'Prevista') {
-                pair.previsto += amount;
-                totalPair.previsto += amount;
-            } else if (stato == 'Annullata') {
-                pair.previsto -= amount;
-                totalPair.previsto -= amount;
-            }
+            BudgetAggregator.accumulate(speseByProgramCategory.get(key), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
+            BudgetAggregator.accumulate(speseTotalsByProgram.get(programId), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
         }
 
-        for (AmountPair pair : incassiByProgramCategory.values()) {
-            if (pair.previsto < 0) {
-                pair.effettivo += pair.previsto;
-                pair.previsto = 0;
-            }
-            if (pair.effettivo < 0) pair.effettivo = 0;
+        for (BudgetAggregator.AmountPair pair : incassiByProgramCategory.values()) {
+            BudgetAggregator.finalizePair(pair);
             result.maxIncassiVal = Math.max(result.maxIncassiVal, Math.max(pair.effettivo, pair.previsto));
         }
 
-        for (AmountPair pair : speseByProgramCategory.values()) {
-            if (pair.previsto < 0) {
-                pair.effettivo += pair.previsto;
-                pair.previsto = 0;
-            }
-            if (pair.effettivo < 0) pair.effettivo = 0;
+        for (BudgetAggregator.AmountPair pair : speseByProgramCategory.values()) {
+            BudgetAggregator.finalizePair(pair);
             result.maxSpeseVal = Math.max(result.maxSpeseVal, Math.max(pair.effettivo, pair.previsto));
         }
 
@@ -187,19 +135,10 @@ public with sharing class BudgetAppDashboardController {
         programIds.addAll(incassiTotalsByProgram.keySet());
         programIds.addAll(speseTotalsByProgram.keySet());
         for (Id programId : programIds) {
-            AmountPair inc = incassiTotalsByProgram.containsKey(programId) ? incassiTotalsByProgram.get(programId) : new AmountPair();
-            AmountPair spe = speseTotalsByProgram.containsKey(programId) ? speseTotalsByProgram.get(programId) : new AmountPair();
-
-            if (inc.previsto < 0) {
-                inc.effettivo += inc.previsto;
-                inc.previsto = 0;
-            }
-            if (inc.effettivo < 0) inc.effettivo = 0;
-            if (spe.previsto < 0) {
-                spe.effettivo += spe.previsto;
-                spe.previsto = 0;
-            }
-            if (spe.effettivo < 0) spe.effettivo = 0;
+            BudgetAggregator.AmountPair inc = incassiTotalsByProgram.containsKey(programId) ? incassiTotalsByProgram.get(programId) : new BudgetAggregator.AmountPair();
+            BudgetAggregator.AmountPair spe = speseTotalsByProgram.containsKey(programId) ? speseTotalsByProgram.get(programId) : new BudgetAggregator.AmountPair();
+            BudgetAggregator.finalizePair(inc);
+            BudgetAggregator.finalizePair(spe);
 
             Decimal dispEff = inc.effettivo - spe.effettivo;
             Decimal dispPrev = inc.previsto - spe.previsto;
@@ -213,6 +152,11 @@ public with sharing class BudgetAppDashboardController {
         result.maxGlobalVal = Math.max(result.maxIncassiVal, Math.max(result.maxSpeseVal, result.maxCashFlowVal));
 
         return result;
+    }
+
+    private static Date parseDate(String selectedDateStr) {
+        if (String.isBlank(selectedDateStr)) return null;
+        try { return Date.valueOf(selectedDateStr); } catch (Exception e) { return null; }
     }
 
     @AuraEnabled(cacheable=true)
@@ -629,103 +573,201 @@ public with sharing class BudgetAppDashboardController {
         List<YearSummary> results = new List<YearSummary>();
         if (programId == null) return results;
 
-        Date filterDate = null;
-        if (String.isNotBlank(selectedDateStr)) {
-            try {
-                filterDate = Date.valueOf(selectedDateStr);
-            } catch (Exception e) {
-                System.debug('Error parsing date: ' + e.getMessage());
-            }
-        }
-
+        Date filterDate = parseDate(selectedDateStr);
         Map<String, YearSummary> yearToTypeToCatToSummary = new Map<String, YearSummary>();
+        Map<String, BudgetAggregator.AmountPair> pairByKey = new Map<String, BudgetAggregator.AmountPair>();
 
         for (Voce_di_Incasso__c vi : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+            SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
         ]) {
-            String anno = vi.Overview_Budget_per_Anno__r.Anno__c;
-            if (String.isBlank(anno)) anno = 'N/A';
-            String cat = vi.Categoria__c;
-            if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = vi.Stato__c;
-            Decimal tot = vi.Ammontare__c != null ? vi.Ammontare__c : 0;
+            if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
 
+            String anno = String.isBlank(vi.Overview_Budget_per_Anno__r.Anno__c) ? 'N/A' : vi.Overview_Budget_per_Anno__r.Anno__c;
+            String cat = BudgetAggregator.normalizeCategoria(vi.Categoria__c);
             String key = anno + '_Incasso_' + cat;
             if (!yearToTypeToCatToSummary.containsKey(key)) {
                 yearToTypeToCatToSummary.put(key, new YearSummary(anno, 'Incasso', cat));
+                pairByKey.put(key, new BudgetAggregator.AmountPair());
             }
-            YearSummary ys = yearToTypeToCatToSummary.get(key);
-
-            if (filterDate == null || vi.Data__c == null || vi.Data__c <= filterDate) {
-                if (stato == 'Effettiva') {
-                    ys.effettivo += tot;
-                } else if (stato == 'Prevista') {
-                    ys.previsto += tot;
-                } else if (stato == 'Annullata') {
-                    ys.previsto -= tot;
-                }
-            } else {
-                if (stato == 'Prevista') {
-                    ys.previsto += tot;
-                } else if (stato == 'Annullata') {
-                    ys.previsto -= tot;
-                }
-            }
+            BudgetAggregator.accumulate(pairByKey.get(key), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
         }
 
         for (Voce_di_Spesa__c vs : [
-            SELECT Categoria__c, Stato__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+            SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
         ]) {
-            String anno = vs.Overview_Budget_per_Anno__r.Anno__c;
-            if (String.isBlank(anno)) anno = 'N/A';
-            String cat = vs.Categoria__c;
-            if (String.isBlank(cat)) cat = 'Non categorizzato';
-            String stato = vs.Stato__c;
-            Decimal tot = vs.Ammontare__c != null ? vs.Ammontare__c : 0;
+            if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
 
+            String anno = String.isBlank(vs.Overview_Budget_per_Anno__r.Anno__c) ? 'N/A' : vs.Overview_Budget_per_Anno__r.Anno__c;
+            String cat = BudgetAggregator.normalizeCategoria(vs.Categoria__c);
             String key = anno + '_Spesa_' + cat;
             if (!yearToTypeToCatToSummary.containsKey(key)) {
                 yearToTypeToCatToSummary.put(key, new YearSummary(anno, 'Spesa', cat));
+                pairByKey.put(key, new BudgetAggregator.AmountPair());
             }
+            BudgetAggregator.accumulate(pairByKey.get(key), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
+        }
+
+        for (String key : yearToTypeToCatToSummary.keySet()) {
             YearSummary ys = yearToTypeToCatToSummary.get(key);
-
-            if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
-                if (stato == 'Effettiva') {
-                    ys.effettivo += tot;
-                } else if (stato == 'Prevista') {
-                    ys.previsto += tot;
-                } else if (stato == 'Annullata') {
-                    ys.previsto -= tot;
-                }
-            } else {
-                if (stato == 'Prevista') {
-                    ys.previsto += tot;
-                } else if (stato == 'Annullata') {
-                    ys.previsto -= tot;
-                }
-            }
+            BudgetAggregator.AmountPair p = pairByKey.get(key);
+            BudgetAggregator.finalizePair(p);
+            ys.previsto = p.previsto;
+            ys.effettivo = p.effettivo;
+            if (ys.effettivo != 0 || ys.previsto != 0) results.add(ys);
         }
 
-        // Adjust negative previsto and calculate totale
-        for (YearSummary ys : yearToTypeToCatToSummary.values()) {
-            if (ys.previsto < 0) {
-                ys.effettivo += ys.previsto;
-                ys.previsto = 0;
-            }
-            if (ys.effettivo < 0) ys.effettivo = 0;
-            
-            if (ys.effettivo != 0 || ys.previsto != 0) {
-                results.add(ys);
-            }
-        }
-
-        // Sort by year descending, then type, then category
-        // We can just return and let LWC sort or sort here.
-        // Let's sort in LWC for simplicity, or just return as is.
         return results;
+    }
+
+    public class ViewerTotalRow {
+        @AuraEnabled public String id;
+        @AuraEnabled public String tipo;
+        @AuraEnabled public String categoria;
+        @AuraEnabled public Decimal previsto;
+        @AuraEnabled public Decimal effettivo;
+        @AuraEnabled public Decimal avanzamento;
+        @AuraEnabled public String cssClass;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<ViewerTotalRow> getViewerTotals(Id programId, String anno, String tipo, String categoria, String sottocategoria, String selectedDateStr) {
+        List<ViewerTotalRow> rows = new List<ViewerTotalRow>();
+
+        Id partnerAccountId = null;
+        if (programId == null) {
+            List<Account> accs = [SELECT Id FROM Account WHERE Name = 'Lab00' LIMIT 1];
+            if (accs.isEmpty()) return rows;
+            partnerAccountId = accs[0].Id;
+        }
+
+        Date filterDate = parseDate(selectedDateStr);
+        Boolean hasYear = String.isNotBlank(anno);
+        String annoStr = hasYear ? anno.trim() : null;
+        Boolean hasCategoria = String.isNotBlank(categoria);
+        Boolean hasSottocategoria = String.isNotBlank(sottocategoria);
+        String tipoNorm = String.isBlank(tipo) ? null : tipo;
+        Boolean wantIncasso = tipoNorm == null || tipoNorm == 'Incasso';
+        Boolean wantSpesa = tipoNorm == null || tipoNorm == 'Spesa';
+
+        Map<String, BudgetAggregator.AmountPair> incassiByCat = new Map<String, BudgetAggregator.AmountPair>();
+        Map<String, BudgetAggregator.AmountPair> speseByCat = new Map<String, BudgetAggregator.AmountPair>();
+
+        if (wantIncasso) {
+            List<Voce_di_Incasso__c> incassi = programId != null
+                ? [
+                    SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+                    FROM Voce_di_Incasso__c
+                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
+                ]
+                : [
+                    SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+                    FROM Voce_di_Incasso__c
+                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
+                ];
+            for (Voce_di_Incasso__c vi : incassi) {
+                if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
+                if (hasYear) {
+                    String a = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Anno__c : null;
+                    if (String.isBlank(a) || a != annoStr) continue;
+                }
+                if (hasCategoria && (vi.Categoria__c == null || vi.Categoria__c != categoria)) continue;
+
+                String cat = BudgetAggregator.normalizeCategoria(vi.Categoria__c);
+                if (!incassiByCat.containsKey(cat)) incassiByCat.put(cat, new BudgetAggregator.AmountPair());
+                BudgetAggregator.accumulate(incassiByCat.get(cat), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
+            }
+        }
+
+        if (wantSpesa) {
+            List<Voce_di_Spesa__c> spese = programId != null
+                ? [
+                    SELECT Categoria__c, Sottocategoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+                    FROM Voce_di_Spesa__c
+                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
+                ]
+                : [
+                    SELECT Categoria__c, Sottocategoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
+                    FROM Voce_di_Spesa__c
+                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
+                ];
+            for (Voce_di_Spesa__c vs : spese) {
+                if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
+                if (hasYear) {
+                    String a = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Anno__c : null;
+                    if (String.isBlank(a) || a != annoStr) continue;
+                }
+                if (hasCategoria && (vs.Categoria__c == null || vs.Categoria__c != categoria)) continue;
+                if (hasSottocategoria && (vs.Sottocategoria__c == null || vs.Sottocategoria__c != sottocategoria)) continue;
+
+                String cat = BudgetAggregator.normalizeCategoria(vs.Categoria__c);
+                if (!speseByCat.containsKey(cat)) speseByCat.put(cat, new BudgetAggregator.AmountPair());
+                BudgetAggregator.accumulate(speseByCat.get(cat), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
+            }
+        }
+
+        List<String> incCats = new List<String>(incassiByCat.keySet());
+        incCats.sort();
+        Decimal totIncPrev = 0, totIncEff = 0;
+        for (String cat : incCats) {
+            BudgetAggregator.AmountPair p = incassiByCat.get(cat);
+            BudgetAggregator.finalizePair(p);
+            if (p.previsto == 0 && p.effettivo == 0) continue;
+            rows.add(buildTotalRow('Incasso', cat, p, 'slds-text-color_success'));
+            totIncPrev += p.previsto;
+            totIncEff += p.effettivo;
+        }
+
+        List<String> speCats = new List<String>(speseByCat.keySet());
+        speCats.sort();
+        Decimal totSpePrev = 0, totSpeEff = 0;
+        for (String cat : speCats) {
+            BudgetAggregator.AmountPair p = speseByCat.get(cat);
+            BudgetAggregator.finalizePair(p);
+            if (p.previsto == 0 && p.effettivo == 0) continue;
+            rows.add(buildTotalRow('Spesa', cat, p, 'slds-text-color_error'));
+            totSpePrev += p.previsto;
+            totSpeEff += p.effettivo;
+        }
+
+        if (!rows.isEmpty()) {
+            BudgetAggregator.AmountPair cashFlow = new BudgetAggregator.AmountPair();
+            cashFlow.previsto = totIncPrev - totSpePrev;
+            cashFlow.effettivo = totIncEff - totSpeEff;
+            ViewerTotalRow cashRow = new ViewerTotalRow();
+            cashRow.id = 'tot_cashflow';
+            cashRow.tipo = 'CASH FLOW TOTALE';
+            cashRow.categoria = '';
+            cashRow.previsto = cashFlow.previsto;
+            cashRow.effettivo = cashFlow.effettivo;
+            cashRow.avanzamento = computeAvanzamento(cashFlow.effettivo, cashFlow.previsto);
+            cashRow.cssClass = 'slds-text-title_bold slds-theme_shade';
+            rows.add(cashRow);
+        }
+
+        return rows;
+    }
+
+    private static ViewerTotalRow buildTotalRow(String tipo, String categoria, BudgetAggregator.AmountPair p, String cssClass) {
+        ViewerTotalRow row = new ViewerTotalRow();
+        row.id = 'agg_' + tipo + '_' + categoria;
+        row.tipo = tipo;
+        row.categoria = categoria;
+        row.previsto = p.previsto;
+        row.effettivo = p.effettivo;
+        row.avanzamento = computeAvanzamento(p.effettivo, p.previsto);
+        row.cssClass = cssClass;
+        return row;
+    }
+
+    private static Decimal computeAvanzamento(Decimal effettivo, Decimal previsto) {
+        Decimal eff = effettivo == null ? 0 : effettivo;
+        Decimal prev = previsto == null ? 0 : previsto;
+        if (prev > 0) return eff / prev;
+        if (prev == 0) return eff / 100;
+        return eff / Math.abs(prev);
     }
 }
