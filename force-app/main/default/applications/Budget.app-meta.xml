@@ -49,6 +49,7 @@
     <label>Budget</label>
     <navType>Console</navType>
     <tabs>Budget_Dashboard</tabs>
+    <tabs>Budget_Designer</tabs>
     <tabs>Budget_Records_Viewer</tabs>
     <tabs>SpeseExcelEditor</tabs>
     <tabs>standard-GiftDesignation</tabs>
@@ -73,6 +74,9 @@
         </mappings>
         <mappings>
             <tab>Budget_Records_Viewer</tab>
+        </mappings>
+        <mappings>
+            <tab>Budget_Designer</tab>
         </mappings>
         <mappings>
             <tab>SpeseExcelEditor</tab>

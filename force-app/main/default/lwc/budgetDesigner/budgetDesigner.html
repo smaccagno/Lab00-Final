@@ -1,0 +1,377 @@
+<template>
+    <div class="designer-root">
+        <header class="designer-hero">
+            <div class="designer-hero-title">
+                <lightning-icon icon-name="utility:sketch" size="small" class="designer-hero-icon"></lightning-icon>
+                <h1>Budget Designer</h1>
+            </div>
+            <div class="designer-hero-meta">
+                <span>Progetta le voci Previste per un anno. Al termine potrai trasformarle in record Salesforce.</span>
+            </div>
+        </header>
+
+        <div class="designer-layout">
+            <!-- Sidebar setup -->
+            <aside class="designer-sidebar" aria-label="Impostazioni progetto">
+                <div class="designer-card">
+                    <div class="designer-card-head">
+                        <lightning-icon icon-name="utility:settings" size="x-small"></lightning-icon>
+                        <h2>Impostazioni</h2>
+                    </div>
+                    <lightning-combobox
+                        label="Anno"
+                        value={anno}
+                        options={annoOptions}
+                        onchange={handleAnnoChange}>
+                    </lightning-combobox>
+                    <lightning-input
+                        type="date"
+                        label="Data di riferimento"
+                        value={dataTarget}
+                        field-level-help="Data usata come default per ogni nuova voce inserita. Puoi modificarla voce per voce."
+                        onchange={handleDataTargetChange}>
+                    </lightning-input>
+                </div>
+
+                <div class="designer-card designer-actions-card">
+                    <div class="designer-card-head">
+                        <lightning-icon icon-name="utility:package" size="x-small"></lightning-icon>
+                        <h2>Azioni progetto</h2>
+                    </div>
+                    <template if:true={hasDraftItems}>
+                        <lightning-button
+                            label="Esporta JSON"
+                            icon-name="utility:download"
+                            onclick={handleExportJson}
+                            variant="neutral"
+                            class="designer-action">
+                        </lightning-button>
+                        <lightning-button
+                            label="Svuota progetto"
+                            icon-name="utility:delete"
+                            onclick={handleResetClick}
+                            variant="destructive-text"
+                            class="designer-action">
+                        </lightning-button>
+                    </template>
+                    <lightning-button
+                        label="Trasforma in record"
+                        icon-name="utility:save"
+                        variant="brand"
+                        disabled
+                        title="Funzionalità in arrivo"
+                        class="designer-action designer-action--primary">
+                    </lightning-button>
+                    <p class="designer-hint">La creazione dei record Salesforce verrà configurata nel prossimo step.</p>
+                </div>
+
+                <template if:true={saveToast}>
+                    <div class="designer-toast" role="status">
+                        <lightning-icon icon-name="utility:success" size="xx-small" alternative-text="Ok"></lightning-icon>
+                        {saveToast}
+                    </div>
+                </template>
+            </aside>
+
+            <!-- Main panel -->
+            <section class="designer-main">
+                <!-- Incassi -->
+                <div class="designer-section">
+                    <div class="designer-section-title designer-section-title--incassi">
+                        <lightning-icon icon-name="utility:arrowup" size="small" variant="success"></lightning-icon>
+                        <span>Incassi Previsti</span>
+                        <span class="designer-count-badge designer-count-badge--incassi">{incassi.length}</span>
+                    </div>
+
+                    <template if:false={optionsReady}>
+                        <p class="designer-loading">Caricamento categorie…</p>
+                    </template>
+
+                    <template for:each={incassiCategoryCards} for:item="cat">
+                        <div key={cat.key} class="designer-category">
+                            <div class="designer-category-head">
+                                <div class="designer-category-name">{cat.categoria}</div>
+                                <div class="designer-category-meta">
+                                    <span class="designer-category-total">{cat.formattedTotal}</span>
+                                    <button
+                                        class="slds-button slds-button_neutral designer-add-btn"
+                                        data-type="Incasso"
+                                        data-categoria={cat.categoria}
+                                        onclick={handleToggleForm}>
+                                        {cat.addButtonLabel}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <template if:true={cat.isFormOpen}>
+                                <div class="designer-inline-form" aria-label={formTitle}>
+                                    <lightning-input
+                                        type="text"
+                                        label="Nome voce (opzionale)"
+                                        value={formName}
+                                        placeholder="Es. Donazione quadrimestrale"
+                                        onchange={handleFormNameChange}>
+                                    </lightning-input>
+                                    <lightning-input
+                                        type="date"
+                                        label="Data prevista"
+                                        value={formData}
+                                        onchange={handleFormDataChange}>
+                                    </lightning-input>
+                                    <lightning-input
+                                        type="number"
+                                        label="Ammontare (€)"
+                                        value={formAmount}
+                                        step="0.01"
+                                        min="0"
+                                        onchange={handleFormAmountChange}>
+                                    </lightning-input>
+                                    <div class="designer-form-actions">
+                                        <lightning-button
+                                            label="Aggiungi"
+                                            variant="brand"
+                                            disabled={canSubmitFormDisabled}
+                                            onclick={handleSubmitForm}>
+                                        </lightning-button>
+                                        <lightning-button
+                                            label="Chiudi"
+                                            variant="neutral"
+                                            onclick={closeForm}>
+                                        </lightning-button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template if:true={cat.hasItems}>
+                                <ul class="designer-item-list">
+                                    <template for:each={cat.items} for:item="item">
+                                        <li key={item.id} class="designer-item">
+                                            <div class="designer-item-main">
+                                                <span class="designer-item-name">{item.name}</span>
+                                                <span class="designer-item-date">{item.formattedDate}</span>
+                                            </div>
+                                            <div class="designer-item-side">
+                                                <span class="designer-item-amount">{item.formattedAmount}</span>
+                                                <button
+                                                    class="designer-item-remove"
+                                                    data-id={item.id}
+                                                    data-type="Incasso"
+                                                    title="Rimuovi"
+                                                    onclick={handleRemoveItem}>
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Spese -->
+                <div class="designer-section">
+                    <div class="designer-section-title designer-section-title--spese">
+                        <lightning-icon icon-name="utility:arrowdown" size="small" variant="error"></lightning-icon>
+                        <span>Spese Previste</span>
+                        <span class="designer-count-badge designer-count-badge--spese">{spese.length}</span>
+                    </div>
+
+                    <template if:false={optionsReady}>
+                        <p class="designer-loading">Caricamento categorie…</p>
+                    </template>
+
+                    <template for:each={speseCategoryCards} for:item="cat">
+                        <div key={cat.key} class="designer-category">
+                            <div class="designer-category-head">
+                                <div class="designer-category-name">{cat.categoria}</div>
+                                <div class="designer-category-meta">
+                                    <span class="designer-category-total">{cat.formattedTotal}</span>
+                                    <button
+                                        class="slds-button slds-button_neutral designer-add-btn"
+                                        data-type="Spesa"
+                                        data-categoria={cat.categoria}
+                                        onclick={handleToggleForm}>
+                                        {cat.addButtonLabel}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <template if:true={cat.isFormOpen}>
+                                <div class="designer-inline-form" aria-label={formTitle}>
+                                    <lightning-input
+                                        type="text"
+                                        label="Nome voce (opzionale)"
+                                        value={formName}
+                                        placeholder="Es. Affitto sede Q1"
+                                        onchange={handleFormNameChange}>
+                                    </lightning-input>
+                                    <template if:true={cat.hasSubs}>
+                                        <lightning-combobox
+                                            label="Sottocategoria"
+                                            value={formSottocategoria}
+                                            options={activeFormSubOptions}
+                                            onchange={handleFormSottoChange}>
+                                        </lightning-combobox>
+                                    </template>
+                                    <lightning-input
+                                        type="date"
+                                        label="Data prevista"
+                                        value={formData}
+                                        onchange={handleFormDataChange}>
+                                    </lightning-input>
+                                    <lightning-input
+                                        type="number"
+                                        label="Ammontare (€)"
+                                        value={formAmount}
+                                        step="0.01"
+                                        min="0"
+                                        onchange={handleFormAmountChange}>
+                                    </lightning-input>
+                                    <lightning-textarea
+                                        label="Note (opzionale)"
+                                        value={formNote}
+                                        onchange={handleFormNoteChange}>
+                                    </lightning-textarea>
+                                    <div class="designer-form-actions">
+                                        <lightning-button
+                                            label="Aggiungi"
+                                            variant="brand"
+                                            disabled={canSubmitFormDisabled}
+                                            onclick={handleSubmitForm}>
+                                        </lightning-button>
+                                        <lightning-button
+                                            label="Chiudi"
+                                            variant="neutral"
+                                            onclick={closeForm}>
+                                        </lightning-button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template if:true={cat.hasItems}>
+                                <ul class="designer-item-list">
+                                    <template for:each={cat.items} for:item="item">
+                                        <li key={item.id} class="designer-item">
+                                            <div class="designer-item-main">
+                                                <span class="designer-item-name">{item.name}</span>
+                                                <span class="designer-item-sub">{item.subLabel}</span>
+                                                <span class="designer-item-date">{item.formattedDate}</span>
+                                            </div>
+                                            <div class="designer-item-side">
+                                                <span class="designer-item-amount">{item.formattedAmount}</span>
+                                                <button
+                                                    class="designer-item-remove"
+                                                    data-id={item.id}
+                                                    data-type="Spesa"
+                                                    title="Rimuovi"
+                                                    onclick={handleRemoveItem}>
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </section>
+
+            <!-- Vista Omnicomprensiva -->
+            <aside class="designer-overview" aria-label="Vista omnicomprensiva">
+                <div class="designer-overview-inner">
+                    <div class="designer-card-head">
+                        <lightning-icon icon-name="utility:chart" size="x-small"></lightning-icon>
+                        <h2>Vista Omnicomprensiva</h2>
+                    </div>
+
+                    <div class="kpi-stack">
+                        <div class="kpi-card kpi-card--incassi">
+                            <div class="kpi-label">Totale Incassi Previsti</div>
+                            <div class="kpi-value kpi-value--incassi">{totalIncassiLabel}</div>
+                            <div class="kpi-meta">{incassi.length} voci</div>
+                        </div>
+
+                        <div class="kpi-card kpi-card--spese">
+                            <div class="kpi-label">Totale Spese Previste</div>
+                            <div class="kpi-value kpi-value--spese">{totalSpeseLabel}</div>
+                            <div class="kpi-meta">{spese.length} voci</div>
+                        </div>
+
+                        <div class={cashFlowCardClass}>
+                            <div class="kpi-label">Saldo Previsto</div>
+                            <div class={cashFlowValueClass}>{cashFlowLabel}</div>
+                            <template if:true={cashFlowPositive}>
+                                <div class="kpi-meta">Flusso positivo</div>
+                            </template>
+                            <template if:false={cashFlowPositive}>
+                                <div class="kpi-meta">Flusso negativo</div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <template if:true={incassiByCategoryBars.length}>
+                        <div class="overview-block">
+                            <h3>Incassi per categoria</h3>
+                            <template for:each={incassiByCategoryBars} for:item="bar">
+                                <div key={bar.key} class="overview-bar-row">
+                                    <span class="overview-bar-label" title={bar.categoria}>{bar.categoria}</span>
+                                    <span class="overview-bar-track">
+                                        <span class="overview-bar-fill overview-bar-fill--incassi" style={bar.style}></span>
+                                    </span>
+                                    <span class="overview-bar-value">{bar.formattedTotal}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:true={speseByCategoryBars.length}>
+                        <div class="overview-block">
+                            <h3>Spese per categoria</h3>
+                            <template for:each={speseByCategoryBars} for:item="bar">
+                                <div key={bar.key} class="overview-bar-row">
+                                    <span class="overview-bar-label" title={bar.categoria}>{bar.categoria}</span>
+                                    <span class="overview-bar-track">
+                                        <span class="overview-bar-fill overview-bar-fill--spese" style={bar.style}></span>
+                                    </span>
+                                    <span class="overview-bar-value">{bar.formattedTotal}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:false={hasDraftItems}>
+                        <div class="overview-empty">
+                            <lightning-icon icon-name="utility:chart" size="large"></lightning-icon>
+                            <p>Nessuna voce ancora pianificata.</p>
+                            <p class="overview-empty-hint">Aggiungi una voce a sinistra per vedere il budget popolarsi qui.</p>
+                        </div>
+                    </template>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Modal conferma reset -->
+        <template if:true={confirmReset}>
+            <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="designer-reset-title" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Chiudi" onclick={handleResetCancel}>
+                            <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        </button>
+                        <h2 id="designer-reset-title" class="slds-modal__title slds-hyphenate">Svuotare il progetto?</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>Verranno rimosse tutte le voci (Incassi e Spese). L'operazione non può essere annullata.</p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Annulla" variant="neutral" onclick={handleResetCancel}></lightning-button>
+                        <lightning-button label="Svuota" variant="destructive" onclick={handleResetConfirm} class="slds-m-left_small"></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </template>
+    </div>
+</template>
