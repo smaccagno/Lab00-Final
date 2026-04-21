@@ -22,7 +22,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
     activeAccordionSections = ['overview', 'programs'];
-    quickDateActions = [
+    quickDateActionsRaw = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
         { key: 'q2', label: 'Secondo Trimestre' },
@@ -46,6 +46,65 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
 
     get selectedYear() {
         return this.getSelectedYear();
+    }
+
+    get quickDateActions() {
+        const activeKey = this.getActiveQuickDateKey();
+        return this.quickDateActionsRaw.map(a => ({
+            ...a,
+            buttonClass: a.key === activeKey
+                ? 'slds-button slds-button_brand dashboard-date-button is-active'
+                : 'slds-button slds-button_neutral dashboard-date-button'
+        }));
+    }
+
+    getActiveQuickDateKey() {
+        const d = this.globalDate;
+        if (!d) return null;
+        if (d === this.getTodayDate()) return 'today';
+        const year = String(d).split('-')[0];
+        if (d === `${year}-03-31`) return 'q1';
+        if (d === `${year}-06-30`) return 'q2';
+        if (d === `${year}-09-30`) return 'q3';
+        if (d === `${year}-12-31`) return 'q4';
+        return null;
+    }
+
+    get activeChips() {
+        const chips = [];
+        const year = this.getSelectedYear();
+        if (year) {
+            chips.push({ key: 'year', label: `Anno ${year}`, removable: false });
+        }
+        const quickKey = this.getActiveQuickDateKey();
+        if (quickKey) {
+            const action = this.quickDateActionsRaw.find(a => a.key === quickKey);
+            if (action) chips.push({ key: `qd-${quickKey}`, label: action.label, removable: true });
+        } else if (this.globalDate) {
+            chips.push({
+                key: 'date',
+                label: `al ${this.formatDateForLabel(this.globalDate)}`,
+                removable: true
+            });
+        }
+        return chips;
+    }
+
+    get hasActiveChips() {
+        return this.activeChips.length > 0;
+    }
+
+    get formattedGlobalDate() {
+        return this.formatDateForLabel(this.globalDate) || '—';
+    }
+
+    handleChipRemove(event) {
+        const key = event.currentTarget.dataset.chip;
+        if (key && (key === 'date' || key.startsWith('qd-'))) {
+            this.globalDate = this.getTodayDate();
+            this.programScaleReady = false;
+            this.rebuildTables();
+        }
     }
 
     get yearOptions() {

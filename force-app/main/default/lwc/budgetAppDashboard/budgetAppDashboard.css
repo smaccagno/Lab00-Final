@@ -1,3 +1,56 @@
+.dashboard-hero {
+    background: linear-gradient(135deg, #f4f6fb 0%, #e8eef7 100%);
+    border: 1px solid #d3dbe8;
+    border-radius: 0.5rem;
+    padding: 1.15rem 1.35rem 1.1rem 1.35rem;
+    box-shadow: 0 2px 6px rgba(22, 50, 92, 0.06);
+}
+
+.dashboard-hero-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.9rem;
+}
+
+.dashboard-hero-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.dashboard-hero-title h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #16325c;
+    letter-spacing: -0.01em;
+}
+
+.dashboard-hero-icon {
+    --sds-c-icon-color-foreground-default: #0176d3;
+}
+
+.dashboard-hero-date {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #547190;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(22, 50, 92, 0.08);
+}
+
+.dashboard-hero-date strong {
+    color: #16325c;
+    font-weight: 700;
+    margin-left: 0.15rem;
+}
+
 .dashboard-date-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -78,4 +131,72 @@
     .program-detail-grid {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+.dashboard-date-button.is-active {
+    box-shadow: 0 0 0 1px rgba(1, 118, 211, 0.3), 0 2px 4px rgba(1, 118, 211, 0.25);
+    font-weight: 700;
+}
+
+.dashboard-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.9rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed rgba(22, 50, 92, 0.15);
+}
+
+.dashboard-chip-intro {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #547190;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 0.25rem;
+}
+
+.dashboard-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    background: #ffffff;
+    border: 1px solid #c6d1e3;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: #16325c;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(22, 50, 92, 0.06);
+}
+
+.dashboard-chip-label {
+    line-height: 1.2;
+}
+
+.dashboard-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    color: #547190;
+    transition: background-color 0.15s ease;
+}
+
+.dashboard-chip-remove:hover,
+.dashboard-chip-remove:focus {
+    background: rgba(234, 0, 30, 0.1);
+    color: #ea001e;
+    outline: none;
+}
+
+.dashboard-chip-remove lightning-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
 }

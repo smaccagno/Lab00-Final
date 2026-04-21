@@ -3,8 +3,19 @@
         
         <!-- Global Date Filter -->
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-            <lightning-card>
-                <div class="slds-p-around_medium dashboard-date-toolbar">
+            <div class="dashboard-hero">
+                <div class="dashboard-hero-header">
+                    <div class="dashboard-hero-title">
+                        <lightning-icon icon-name="utility:knowledge_base" size="small" class="dashboard-hero-icon"></lightning-icon>
+                        <h1>Budget Dashboard</h1>
+                    </div>
+                    <div class="dashboard-hero-date">
+                        <lightning-icon icon-name="utility:event" size="xx-small" alternative-text="Data"></lightning-icon>
+                        <span>Situazione al <strong>{formattedGlobalDate}</strong></span>
+                    </div>
+                </div>
+
+                <div class="dashboard-date-toolbar">
                     <div class="dashboard-date-year">
                         <lightning-combobox
                             name="globalYearFilter"
@@ -23,7 +34,7 @@
                         <template for:each={quickDateActions} for:item="action">
                             <button
                                 key={action.key}
-                                class="slds-button slds-button_neutral dashboard-date-button"
+                                class={action.buttonClass}
                                 data-action={action.key}
                                 onclick={handleQuickDateClick}>
                                 {action.label}
@@ -40,7 +51,27 @@
                         </div>
                     </div>
                 </div>
-            </lightning-card>
+
+                <template if:true={hasActiveChips}>
+                    <div class="dashboard-chip-row" role="list" aria-label="Filtri attivi">
+                        <span class="dashboard-chip-intro">Filtri attivi:</span>
+                        <template for:each={activeChips} for:item="chip">
+                            <span key={chip.key} class="dashboard-chip" role="listitem">
+                                <span class="dashboard-chip-label">{chip.label}</span>
+                                <template if:true={chip.removable}>
+                                    <button
+                                        class="dashboard-chip-remove"
+                                        data-chip={chip.key}
+                                        title="Rimuovi filtro"
+                                        onclick={handleChipRemove}>
+                                        <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                    </button>
+                                </template>
+                            </span>
+                        </template>
+                    </div>
+                </template>
+            </div>
         </div>
 
         <!-- KPI cards -->
@@ -86,7 +117,7 @@
                             <template for:each={quickDateActions} for:item="action">
                                 <button
                                     key={action.key}
-                                    class="slds-button slds-button_neutral dashboard-date-button"
+                                    class={action.buttonClass}
                                     data-action={action.key}
                                     onclick={handleQuickDateClick}>
                                     {action.label}
