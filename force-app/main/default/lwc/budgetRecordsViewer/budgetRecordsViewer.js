@@ -193,19 +193,27 @@ export default class BudgetRecordsViewer extends LightningElement {
     }
 
     get headerSubtitle() {
+        return this.breadcrumbItems.map(b => b.label).join(' · ');
+    }
+
+    get breadcrumbItems() {
         const parts = [];
         if (!this.programId) {
-            parts.push('Tutti i programmi');
+            parts.push({ key: 'program', label: 'Tutti i programmi' });
         } else {
             const program = this.programOptions.find(p => p.value === this.programId);
-            if (program) parts.push(program.label);
+            if (program) parts.push({ key: 'program', label: program.label });
         }
-        if (this.anno) parts.push(`Anno ${this.anno}`); else parts.push('Tutti gli anni');
-        if (this.tipo) parts.push(this.tipo);
-        if (this.categoria) parts.push(this.categoria);
-        if (this.sottocategoria) parts.push(this.sottocategoria);
-        if (this.filterDate) parts.push(`fino al ${this.formatDate(this.filterDate)}`);
-        return parts.join(' · ');
+        parts.push({ key: 'anno', label: this.anno ? `Anno ${this.anno}` : 'Tutti gli anni' });
+        if (this.tipo) parts.push({ key: 'tipo', label: this.tipo });
+        if (this.categoria) parts.push({ key: 'categoria', label: this.categoria });
+        if (this.sottocategoria) parts.push({ key: 'sotto', label: this.sottocategoria });
+        if (this.filterDate) parts.push({ key: 'date', label: `fino al ${this.formatDate(this.filterDate)}` });
+        return parts.map((p, idx) => ({ ...p, isLast: idx === parts.length - 1 }));
+    }
+
+    get hasActiveFilters() {
+        return !!(this.programId || this.anno || this.tipo || this.categoria || this.sottocategoria || this.filterDate);
     }
 
     get exportFileName() {
