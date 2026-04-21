@@ -71,7 +71,20 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     cashFlow = [];
     quickSummary = null;
     hasData = false;
+    loading = true;
     error;
+
+    get showSkeleton() {
+        return this.loading && !this.hasData && !this.error;
+    }
+
+    get incassiCountLabel() {
+        return this.incassi ? String(this.incassi.length) : '0';
+    }
+
+    get speseCountLabel() {
+        return this.spese ? String(this.spese.length) : '0';
+    }
 
     tooltipVisible = false;
     tooltipStyle = '';
@@ -273,6 +286,20 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
         this.modalVisible = false;
     }
 
+    _escHandler = (event) => {
+        if (event.key === 'Escape' && this.modalVisible) {
+            this.closeModal();
+        }
+    };
+
+    connectedCallback() {
+        document.addEventListener('keydown', this._escHandler);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('keydown', this._escHandler);
+    }
+
     handleDateChange(event) {
         this._selectedDate = event.target.value;
     }
@@ -392,6 +419,7 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
     @wire(getSummary, { recordId: '$recordId', filterDate: '$_selectedDate' })
     wiredSummary({ error, data }) {
+        this.loading = false;
         if (data) {
             let maxIncassiVal = 0;
             let maxSpeseVal = 0;

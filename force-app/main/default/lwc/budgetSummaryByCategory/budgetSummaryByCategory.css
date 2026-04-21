@@ -222,22 +222,33 @@
     padding: 0 0.35rem;
 }
 .bar-incasso-effettivo {
-    background-color: #2e844a; /* SLDS Success */
+    background: linear-gradient(180deg, #3a9a5a 0%, #216b3a 100%);
 }
 .bar-incasso-previsto {
-    background-color: #91c8a0; /* Lighter green */
+    background: linear-gradient(180deg, #a8d3b3 0%, #7eb892 100%);
 }
 .bar-spesa-effettivo {
-    background-color: #ea001e; /* SLDS Error */
+    background: linear-gradient(180deg, #f02836 0%, #a80017 100%);
 }
 .bar-spesa-previsto {
-    background-color: #f28b96; /* Lighter red */
+    background: linear-gradient(180deg, #f5a2ac 0%, #e27584 100%);
 }
 .bar-disp-effettivo {
-    background-color: #0176d3; /* SLDS Brand */
+    background: linear-gradient(180deg, #148ae0 0%, #014f8e 100%);
 }
 .bar-disp-previsto {
-    background-color: #89c2f5; /* Lighter blue */
+    background: linear-gradient(180deg, #9ed0ff 0%, #6ba9dd 100%);
+}
+
+.bar-fill.clickable {
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bar-fill.clickable:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
 }
 .bar-value {
     margin-left: 0.75rem;
@@ -330,4 +341,123 @@
 }
 .clickable:hover {
     filter: brightness(1.1);
+}
+
+/* Section titles */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+}
+
+.section-title--incassi {
+    color: #1b5a30;
+    background: linear-gradient(90deg, rgba(46, 132, 74, 0.08) 0%, rgba(46, 132, 74, 0) 70%);
+    border-left: 3px solid #2e844a;
+}
+
+.section-title--spese {
+    color: #a00015;
+    background: linear-gradient(90deg, rgba(234, 0, 30, 0.08) 0%, rgba(234, 0, 30, 0) 70%);
+    border-left: 3px solid #ea001e;
+}
+
+.section-title--cashflow {
+    color: #16325c;
+    background: linear-gradient(90deg, rgba(22, 50, 92, 0.06) 0%, rgba(22, 50, 92, 0) 70%);
+    border-left: 3px solid #16325c;
+}
+
+.section-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid currentColor;
+    margin-left: 0.25rem;
+}
+
+.section-count-badge--incassi { color: #2e844a; }
+.section-count-badge--spese { color: #a00015; }
+
+/* Legend pill */
+.legend-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #eef1f6;
+}
+
+.legend-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem 0.25rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #2f2f2f;
+    background: #ffffff;
+    border: 1px solid #dbe0e8;
+    position: relative;
+}
+
+.legend-pill::before {
+    content: '';
+    position: absolute;
+    left: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.legend-pill--incasso-eff::before { background: linear-gradient(180deg, #3a9a5a 0%, #216b3a 100%); }
+.legend-pill--incasso-prev::before { background: linear-gradient(180deg, #a8d3b3 0%, #7eb892 100%); }
+.legend-pill--spesa-eff::before { background: linear-gradient(180deg, #f02836 0%, #a80017 100%); }
+.legend-pill--spesa-prev::before { background: linear-gradient(180deg, #f5a2ac 0%, #e27584 100%); }
+.legend-pill--disp-eff::before { background: linear-gradient(180deg, #148ae0 0%, #014f8e 100%); }
+.legend-pill--disp-prev::before { background: linear-gradient(180deg, #9ed0ff 0%, #6ba9dd 100%); }
+
+/* Skeleton */
+.chart-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 0;
+}
+
+.chart-skeleton-row {
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f3f3f3 25%, #ececec 50%, #f3f3f3 75%);
+    background-size: 200% 100%;
+    animation: chart-skeleton-loading 1.4s ease-in-out infinite;
+}
+
+.chart-skeleton-row--title {
+    width: 40%;
+    height: 20px;
+}
+
+.chart-skeleton-row--short {
+    width: 70%;
+}
+
+@keyframes chart-skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
