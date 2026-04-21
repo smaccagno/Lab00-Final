@@ -228,7 +228,7 @@
     background: linear-gradient(180deg, #a8d3b3 0%, #7eb892 100%);
 }
 .bar-spesa-effettivo {
-    background: linear-gradient(180deg, #f02836 0%, #a80017 100%);
+    background: linear-gradient(180deg, #f05565 0%, #c9263a 100%);
 }
 .bar-spesa-previsto {
     background: linear-gradient(180deg, #f5a2ac 0%, #e27584 100%);
@@ -427,7 +427,7 @@
 
 .legend-pill--incasso-eff::before { background: linear-gradient(180deg, #3a9a5a 0%, #216b3a 100%); }
 .legend-pill--incasso-prev::before { background: linear-gradient(180deg, #a8d3b3 0%, #7eb892 100%); }
-.legend-pill--spesa-eff::before { background: linear-gradient(180deg, #f02836 0%, #a80017 100%); }
+.legend-pill--spesa-eff::before { background: linear-gradient(180deg, #f05565 0%, #c9263a 100%); }
 .legend-pill--spesa-prev::before { background: linear-gradient(180deg, #f5a2ac 0%, #e27584 100%); }
 .legend-pill--disp-eff::before { background: linear-gradient(180deg, #148ae0 0%, #014f8e 100%); }
 .legend-pill--disp-prev::before { background: linear-gradient(180deg, #9ed0ff 0%, #6ba9dd 100%); }
