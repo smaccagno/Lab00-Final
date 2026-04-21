@@ -441,11 +441,65 @@ public with sharing class BudgetAppDashboardController {
         @AuraEnabled public String budgetYearName;
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<ViewerRecord> getViewerRecords(Id programId, String anno, String tipo, String categoria, String sottocategoria, String selectedDateStr) {
-        List<ViewerRecord> result = new List<ViewerRecord>();
+    public class ViewerRecordsResult {
+        @AuraEnabled public List<ViewerRecord> rows;
+        @AuraEnabled public Boolean truncated;
+        @AuraEnabled public Integer limitApplied;
 
-        // When programId is null, fall back to the Lab00 partner scope (all programs).
+        public ViewerRecordsResult() {
+            this.rows = new List<ViewerRecord>();
+            this.truncated = false;
+            this.limitApplied = 0;
+        }
+    }
+
+    // Safety cap sui risultati del viewer. Sopra questa soglia la tabella
+    // risulta troncata (warning visivo nel LWC).
+    private static final Integer VIEWER_RECORDS_LIMIT = 10000;
+    private static final Integer VIEWER_TOTALS_LIMIT = 50000;
+
+    private class QueryBuilder {
+        String sobj;
+        String fields;
+        List<String> conditions = new List<String>();
+        Map<String, Object> binds = new Map<String, Object>();
+        String orderByClause;
+        Integer limitSize;
+        Integer bindCounter = 0;
+
+        QueryBuilder(String sobj) { this.sobj = sobj; }
+        QueryBuilder withFields(String f) { this.fields = f; return this; }
+        QueryBuilder orderBy(String clause) { this.orderByClause = clause; return this; }
+        QueryBuilder withLimit(Integer n) { this.limitSize = n; return this; }
+
+        QueryBuilder whereEq(String field, Object value) {
+            String bindKey = 'b' + (bindCounter++);
+            conditions.add(field + ' = :' + bindKey);
+            binds.put(bindKey, value);
+            return this;
+        }
+
+        QueryBuilder whereDateOrBefore(String field, Date filterDate) {
+            String bindKey = 'b' + (bindCounter++);
+            conditions.add('(' + field + ' = null OR ' + field + ' <= :' + bindKey + ')');
+            binds.put(bindKey, filterDate);
+            return this;
+        }
+
+        List<SObject> execute() {
+            String soql = 'SELECT ' + fields + ' FROM ' + sobj;
+            if (!conditions.isEmpty()) soql += ' WHERE ' + String.join(conditions, ' AND ');
+            if (orderByClause != null) soql += ' ORDER BY ' + orderByClause;
+            if (limitSize != null) soql += ' LIMIT ' + limitSize;
+            return Database.queryWithBinds(soql, binds, AccessLevel.SYSTEM_MODE);
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static ViewerRecordsResult getViewerRecords(Id programId, String anno, String tipo, String categoria, String sottocategoria, String selectedDateStr) {
+        ViewerRecordsResult result = new ViewerRecordsResult();
+        result.limitApplied = VIEWER_RECORDS_LIMIT;
+
         Id partnerAccountId = null;
         if (programId == null) {
             List<Account> accs = [SELECT Id FROM Account WHERE Name = 'Lab00' LIMIT 1];
@@ -453,128 +507,126 @@ public with sharing class BudgetAppDashboardController {
             partnerAccountId = accs[0].Id;
         }
 
-        Date filterDate = null;
-        if (String.isNotBlank(selectedDateStr)) {
-            try { filterDate = Date.valueOf(selectedDateStr); } catch (Exception e) { /* ignore */ }
-        }
-
-        Boolean hasYear = String.isNotBlank(anno);
-        String annoStr = hasYear ? anno.trim() : null;
-        Boolean hasCategoria = String.isNotBlank(categoria);
-        Boolean hasSottocategoria = String.isNotBlank(sottocategoria);
+        Date filterDate = parseDate(selectedDateStr);
+        String annoStr = String.isNotBlank(anno) ? anno.trim() : null;
         String tipoNorm = String.isBlank(tipo) ? null : tipo;
-
         Boolean wantIncasso = tipoNorm == null || tipoNorm == 'Incasso';
         Boolean wantSpesa = tipoNorm == null || tipoNorm == 'Spesa';
 
-        if (wantIncasso) {
-            List<Voce_di_Incasso__c> incassi = programId != null
-                ? [
-                    SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c,
-                           Transazione__c, Transazione__r.Name,
-                           Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, Overview_Budget_per_Anno__r.Budget__r.Name, Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                    FROM Voce_di_Incasso__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-                    ORDER BY Data__c DESC NULLS LAST, Name
-                ]
-                : [
-                    SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c,
-                           Transazione__c, Transazione__r.Name,
-                           Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, Overview_Budget_per_Anno__r.Budget__r.Name, Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                    FROM Voce_di_Incasso__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
-                    ORDER BY Data__c DESC NULLS LAST, Name
-                ];
-            for (Voce_di_Incasso__c vi : incassi) {
-                if (filterDate != null && vi.Data__c != null && vi.Data__c > filterDate) continue;
-                if (hasYear) {
-                    String a = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Anno__c : null;
-                    if (String.isBlank(a) || a != annoStr) continue;
-                }
-                if (hasCategoria && (vi.Categoria__c == null || vi.Categoria__c != categoria)) continue;
-                // Sottocategoria not applicable to Incasso → skip filter.
+        // Richiediamo LIMIT+1 per capire se abbiamo troncato.
+        Integer remainingBudget = VIEWER_RECORDS_LIMIT + 1;
 
-                ViewerRecord row = new ViewerRecord();
-                row.tipo = 'Incasso';
-                row.recordId = vi.Id;
-                row.name = vi.Name;
-                row.url = '/' + vi.Id;
-                if (vi.Overview_Budget_per_Anno__r != null) {
-                    row.programId = vi.Overview_Budget_per_Anno__r.Budget__c;
-                    if (vi.Overview_Budget_per_Anno__r.Budget__r != null) {
-                        row.programName = vi.Overview_Budget_per_Anno__r.Budget__r.Program__r != null && String.isNotBlank(vi.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name)
-                            ? vi.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                            : vi.Overview_Budget_per_Anno__r.Budget__r.Name;
-                    }
-                    row.programUrl = row.programId != null ? '/' + row.programId : null;
-                }
-                row.anno = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Anno__c : null;
-                row.categoria = vi.Categoria__c;
-                row.stato = vi.Stato__c;
-                row.ammontare = vi.Ammontare__c;
-                row.data = vi.Data__c;
-                row.transazioneId = vi.Transazione__c;
-                row.transazioneName = vi.Transazione__r != null ? vi.Transazione__r.Name : null;
-                row.transazioneUrl = vi.Transazione__c != null ? '/' + vi.Transazione__c : null;
-                row.budgetYearId = vi.Overview_Budget_per_Anno__c;
-                row.budgetYearName = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Name : null;
-                result.add(row);
+        if (wantIncasso && remainingBudget > 0) {
+            QueryBuilder qb = new QueryBuilder('Voce_di_Incasso__c')
+                .withFields('Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c, ' +
+                            'Transazione__c, Transazione__r.Name, ' +
+                            'Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, ' +
+                            'Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, ' +
+                            'Overview_Budget_per_Anno__r.Budget__r.Name, ' +
+                            'Overview_Budget_per_Anno__r.Budget__r.Program__r.Name');
+            applyViewerScope(qb, programId, partnerAccountId);
+            applyViewerCommonFilters(qb, annoStr, categoria, filterDate);
+            // Sottocategoria non applicabile agli Incassi.
+            qb.orderBy('Data__c DESC NULLS LAST, Name').withLimit(remainingBudget);
+
+            List<Voce_di_Incasso__c> incassi = (List<Voce_di_Incasso__c>) qb.execute();
+            remainingBudget -= incassi.size();
+            for (Voce_di_Incasso__c vi : incassi) {
+                if (result.rows.size() >= VIEWER_RECORDS_LIMIT) { result.truncated = true; break; }
+                result.rows.add(buildIncassoRow(vi));
             }
         }
 
-        if (wantSpesa) {
-            List<Voce_di_Spesa__c> spese = programId != null
-                ? [
-                    SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c, Anno__c,
-                           Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, Overview_Budget_per_Anno__r.Budget__r.Name, Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                    FROM Voce_di_Spesa__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-                    ORDER BY Data__c DESC NULLS LAST, Name
-                ]
-                : [
-                    SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c, Anno__c,
-                           Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, Overview_Budget_per_Anno__r.Budget__r.Name, Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                    FROM Voce_di_Spesa__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
-                    ORDER BY Data__c DESC NULLS LAST, Name
-                ];
-            for (Voce_di_Spesa__c vs : spese) {
-                if (filterDate != null && vs.Data__c != null && vs.Data__c > filterDate) continue;
-                if (hasYear) {
-                    String a = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Anno__c : null;
-                    if (String.isBlank(a) || a != annoStr) continue;
-                }
-                if (hasCategoria && (vs.Categoria__c == null || vs.Categoria__c != categoria)) continue;
-                if (hasSottocategoria && (vs.Sottocategoria__c == null || vs.Sottocategoria__c != sottocategoria)) continue;
+        if (wantSpesa && remainingBudget > 0 && !result.truncated) {
+            QueryBuilder qb = new QueryBuilder('Voce_di_Spesa__c')
+                .withFields('Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, ' +
+                            'Ammontare__c, Data__c, Anno__c, ' +
+                            'Overview_Budget_per_Anno__c, Overview_Budget_per_Anno__r.Name, ' +
+                            'Overview_Budget_per_Anno__r.Anno__c, Overview_Budget_per_Anno__r.Budget__c, ' +
+                            'Overview_Budget_per_Anno__r.Budget__r.Name, ' +
+                            'Overview_Budget_per_Anno__r.Budget__r.Program__r.Name');
+            applyViewerScope(qb, programId, partnerAccountId);
+            applyViewerCommonFilters(qb, annoStr, categoria, filterDate);
+            if (String.isNotBlank(sottocategoria)) qb.whereEq('Sottocategoria__c', sottocategoria);
+            qb.orderBy('Data__c DESC NULLS LAST, Name').withLimit(remainingBudget);
 
-                ViewerRecord row = new ViewerRecord();
-                row.tipo = 'Spesa';
-                row.recordId = vs.Id;
-                row.name = vs.Name;
-                row.url = '/' + vs.Id;
-                if (vs.Overview_Budget_per_Anno__r != null) {
-                    row.programId = vs.Overview_Budget_per_Anno__r.Budget__c;
-                    if (vs.Overview_Budget_per_Anno__r.Budget__r != null) {
-                        row.programName = vs.Overview_Budget_per_Anno__r.Budget__r.Program__r != null && String.isNotBlank(vs.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name)
-                            ? vs.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
-                            : vs.Overview_Budget_per_Anno__r.Budget__r.Name;
-                    }
-                    row.programUrl = row.programId != null ? '/' + row.programId : null;
-                }
-                row.anno = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Anno__c : null;
-                row.categoria = vs.Categoria__c;
-                row.sottocategoria = vs.Sottocategoria__c;
-                row.note = vs.Note__c;
-                row.stato = vs.Stato__c;
-                row.ammontare = vs.Ammontare__c;
-                row.data = vs.Data__c;
-                row.budgetYearId = vs.Overview_Budget_per_Anno__c;
-                row.budgetYearName = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Name : null;
-                result.add(row);
+            List<Voce_di_Spesa__c> spese = (List<Voce_di_Spesa__c>) qb.execute();
+            for (Voce_di_Spesa__c vs : spese) {
+                if (result.rows.size() >= VIEWER_RECORDS_LIMIT) { result.truncated = true; break; }
+                result.rows.add(buildSpesaRow(vs));
             }
         }
 
         return result;
+    }
+
+    private static void applyViewerScope(QueryBuilder qb, Id programId, Id partnerAccountId) {
+        if (programId != null) {
+            qb.whereEq('Overview_Budget_per_Anno__r.Budget__c', programId);
+        } else {
+            qb.whereEq('Overview_Budget_per_Anno__r.Budget__r.Partner__c', partnerAccountId);
+        }
+    }
+
+    private static void applyViewerCommonFilters(QueryBuilder qb, String annoStr, String categoria, Date filterDate) {
+        if (String.isNotBlank(annoStr)) qb.whereEq('Overview_Budget_per_Anno__r.Anno__c', annoStr);
+        if (String.isNotBlank(categoria)) qb.whereEq('Categoria__c', categoria);
+        if (filterDate != null) qb.whereDateOrBefore('Data__c', filterDate);
+    }
+
+    private static ViewerRecord buildIncassoRow(Voce_di_Incasso__c vi) {
+        ViewerRecord row = new ViewerRecord();
+        row.tipo = 'Incasso';
+        row.recordId = vi.Id;
+        row.name = vi.Name;
+        row.url = '/' + vi.Id;
+        if (vi.Overview_Budget_per_Anno__r != null) {
+            row.programId = vi.Overview_Budget_per_Anno__r.Budget__c;
+            if (vi.Overview_Budget_per_Anno__r.Budget__r != null) {
+                row.programName = vi.Overview_Budget_per_Anno__r.Budget__r.Program__r != null && String.isNotBlank(vi.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name)
+                    ? vi.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
+                    : vi.Overview_Budget_per_Anno__r.Budget__r.Name;
+            }
+            row.programUrl = row.programId != null ? '/' + row.programId : null;
+        }
+        row.anno = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Anno__c : null;
+        row.categoria = vi.Categoria__c;
+        row.stato = vi.Stato__c;
+        row.ammontare = vi.Ammontare__c;
+        row.data = vi.Data__c;
+        row.transazioneId = vi.Transazione__c;
+        row.transazioneName = vi.Transazione__r != null ? vi.Transazione__r.Name : null;
+        row.transazioneUrl = vi.Transazione__c != null ? '/' + vi.Transazione__c : null;
+        row.budgetYearId = vi.Overview_Budget_per_Anno__c;
+        row.budgetYearName = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Name : null;
+        return row;
+    }
+
+    private static ViewerRecord buildSpesaRow(Voce_di_Spesa__c vs) {
+        ViewerRecord row = new ViewerRecord();
+        row.tipo = 'Spesa';
+        row.recordId = vs.Id;
+        row.name = vs.Name;
+        row.url = '/' + vs.Id;
+        if (vs.Overview_Budget_per_Anno__r != null) {
+            row.programId = vs.Overview_Budget_per_Anno__r.Budget__c;
+            if (vs.Overview_Budget_per_Anno__r.Budget__r != null) {
+                row.programName = vs.Overview_Budget_per_Anno__r.Budget__r.Program__r != null && String.isNotBlank(vs.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name)
+                    ? vs.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
+                    : vs.Overview_Budget_per_Anno__r.Budget__r.Name;
+            }
+            row.programUrl = row.programId != null ? '/' + row.programId : null;
+        }
+        row.anno = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Anno__c : null;
+        row.categoria = vs.Categoria__c;
+        row.sottocategoria = vs.Sottocategoria__c;
+        row.note = vs.Note__c;
+        row.stato = vs.Stato__c;
+        row.ammontare = vs.Ammontare__c;
+        row.data = vs.Data__c;
+        row.budgetYearId = vs.Overview_Budget_per_Anno__c;
+        row.budgetYearName = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Name : null;
+        return row;
     }
 
     public class IncassoRow {
@@ -779,10 +831,7 @@ public with sharing class BudgetAppDashboardController {
         }
 
         Date filterDate = parseDate(selectedDateStr);
-        Boolean hasYear = String.isNotBlank(anno);
-        String annoStr = hasYear ? anno.trim() : null;
-        Boolean hasCategoria = String.isNotBlank(categoria);
-        Boolean hasSottocategoria = String.isNotBlank(sottocategoria);
+        String annoStr = String.isNotBlank(anno) ? anno.trim() : null;
         String tipoNorm = String.isBlank(tipo) ? null : tipo;
         Boolean wantIncasso = tipoNorm == null || tipoNorm == 'Incasso';
         Boolean wantSpesa = tipoNorm == null || tipoNorm == 'Spesa';
@@ -791,25 +840,13 @@ public with sharing class BudgetAppDashboardController {
         Map<String, BudgetAggregator.AmountPair> speseByCat = new Map<String, BudgetAggregator.AmountPair>();
 
         if (wantIncasso) {
-            List<Voce_di_Incasso__c> incassi = programId != null
-                ? [
-                    SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
-                    FROM Voce_di_Incasso__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-                ]
-                : [
-                    SELECT Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
-                    FROM Voce_di_Incasso__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
-                ];
+            QueryBuilder qb = new QueryBuilder('Voce_di_Incasso__c')
+                .withFields('Categoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c')
+                .withLimit(VIEWER_TOTALS_LIMIT);
+            applyViewerScope(qb, programId, partnerAccountId);
+            applyViewerCommonFilters(qb, annoStr, categoria, filterDate);
+            List<Voce_di_Incasso__c> incassi = (List<Voce_di_Incasso__c>) qb.execute();
             for (Voce_di_Incasso__c vi : incassi) {
-                if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
-                if (hasYear) {
-                    String a = vi.Overview_Budget_per_Anno__r != null ? vi.Overview_Budget_per_Anno__r.Anno__c : null;
-                    if (String.isBlank(a) || a != annoStr) continue;
-                }
-                if (hasCategoria && (vi.Categoria__c == null || vi.Categoria__c != categoria)) continue;
-
                 String cat = BudgetAggregator.normalizeCategoria(vi.Categoria__c);
                 if (!incassiByCat.containsKey(cat)) incassiByCat.put(cat, new BudgetAggregator.AmountPair());
                 BudgetAggregator.accumulate(incassiByCat.get(cat), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
@@ -817,26 +854,14 @@ public with sharing class BudgetAppDashboardController {
         }
 
         if (wantSpesa) {
-            List<Voce_di_Spesa__c> spese = programId != null
-                ? [
-                    SELECT Categoria__c, Sottocategoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
-                    FROM Voce_di_Spesa__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__c = :programId
-                ]
-                : [
-                    SELECT Categoria__c, Sottocategoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Anno__c
-                    FROM Voce_di_Spesa__c
-                    WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :partnerAccountId
-                ];
+            QueryBuilder qb = new QueryBuilder('Voce_di_Spesa__c')
+                .withFields('Categoria__c, Sottocategoria__c, Stato__c, Stato_Precedente__c, Ammontare__c, Data__c')
+                .withLimit(VIEWER_TOTALS_LIMIT);
+            applyViewerScope(qb, programId, partnerAccountId);
+            applyViewerCommonFilters(qb, annoStr, categoria, filterDate);
+            if (String.isNotBlank(sottocategoria)) qb.whereEq('Sottocategoria__c', sottocategoria);
+            List<Voce_di_Spesa__c> spese = (List<Voce_di_Spesa__c>) qb.execute();
             for (Voce_di_Spesa__c vs : spese) {
-                if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
-                if (hasYear) {
-                    String a = vs.Overview_Budget_per_Anno__r != null ? vs.Overview_Budget_per_Anno__r.Anno__c : null;
-                    if (String.isBlank(a) || a != annoStr) continue;
-                }
-                if (hasCategoria && (vs.Categoria__c == null || vs.Categoria__c != categoria)) continue;
-                if (hasSottocategoria && (vs.Sottocategoria__c == null || vs.Sottocategoria__c != sottocategoria)) continue;
-
                 String cat = BudgetAggregator.normalizeCategoria(vs.Categoria__c);
                 if (!speseByCat.containsKey(cat)) speseByCat.put(cat, new BudgetAggregator.AmountPair());
                 BudgetAggregator.accumulate(speseByCat.get(cat), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);

@@ -79,6 +79,14 @@
                     </template>
                 </nav>
 
+                <!-- Avviso risultato troncato -->
+                <template if:true={truncated}>
+                    <div class="viewer-truncated-banner" role="status">
+                        <lightning-icon icon-name="utility:warning" size="x-small" alternative-text="Avviso" class="viewer-truncated-icon"></lightning-icon>
+                        <span>{truncatedMessage}</span>
+                    </div>
+                </template>
+
                 <!-- Totali sticky -->
                 <template if:true={hasTotals}>
                     <div class="viewer-totals viewer-totals--sticky">
@@ -116,6 +124,7 @@
                             data={records}
                             columns={columns}
                             hide-checkbox-column
+                            onrowaction={handleRowAction}
                             resize-column-disabled="false">
                         </lightning-datatable>
                     </div>

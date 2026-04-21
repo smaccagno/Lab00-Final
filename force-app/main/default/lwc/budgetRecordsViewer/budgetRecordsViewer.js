@@ -1,15 +1,21 @@
 import { LightningElement, wire, track } from 'lwc';
-import { CurrentPageReference } from 'lightning/navigation';
+import { NavigationMixin, CurrentPageReference } from 'lightning/navigation';
+import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
 import getViewerOptions from '@salesforce/apex/BudgetAppDashboardController.getViewerOptions';
 import getViewerRecords from '@salesforce/apex/BudgetAppDashboardController.getViewerRecords';
 import getViewerTotals from '@salesforce/apex/BudgetAppDashboardController.getViewerTotals';
 
-const PROGRAMMA_COLUMN = { label: 'Programma', fieldName: 'programUrl', type: 'url',
-    typeAttributes: { label: { fieldName: 'programName' }, target: '_blank' } };
+const NOME_COLUMN = { label: 'Nome', type: 'button',
+    typeAttributes: { label: { fieldName: 'name' }, name: 'open_record', variant: 'base', title: { fieldName: 'name' }, disabled: { fieldName: 'recordDisabled' } } };
+
+const PROGRAMMA_COLUMN = { label: 'Programma', type: 'button',
+    typeAttributes: { label: { fieldName: 'programName' }, name: 'open_program', variant: 'base', title: { fieldName: 'programName' }, disabled: { fieldName: 'programDisabled' } } };
+
+const TRANSAZIONE_COLUMN = { label: 'Transazione', type: 'button',
+    typeAttributes: { label: { fieldName: 'transazioneName' }, name: 'open_transazione', variant: 'base', title: { fieldName: 'transazioneName' }, disabled: { fieldName: 'transazioneDisabled' } } };
 
 const INCASSO_COLUMNS = [
-    { label: 'Nome', fieldName: 'url', type: 'url',
-      typeAttributes: { label: { fieldName: 'name' }, target: '_blank' } },
+    NOME_COLUMN,
     PROGRAMMA_COLUMN,
     { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
     { label: 'Data', fieldName: 'data', type: 'date-local',
@@ -18,14 +24,12 @@ const INCASSO_COLUMNS = [
     { label: 'Stato', fieldName: 'stato', type: 'text', initialWidth: 110 },
     { label: 'Ammontare', fieldName: 'ammontare', type: 'currency',
       typeAttributes: { currencyCode: 'EUR' }, initialWidth: 130 },
-    { label: 'Transazione', fieldName: 'transazioneUrl', type: 'url',
-      typeAttributes: { label: { fieldName: 'transazioneName' }, target: '_blank' } },
+    TRANSAZIONE_COLUMN,
     { label: 'Budget Anno', fieldName: 'budgetYearName', type: 'text' }
 ];
 
 const SPESA_COLUMNS = [
-    { label: 'Nome', fieldName: 'url', type: 'url',
-      typeAttributes: { label: { fieldName: 'name' }, target: '_blank' } },
+    NOME_COLUMN,
     PROGRAMMA_COLUMN,
     { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
     { label: 'Data', fieldName: 'data', type: 'date-local',
@@ -41,8 +45,7 @@ const SPESA_COLUMNS = [
 
 const MIXED_COLUMNS = [
     { label: 'Tipo', fieldName: 'tipo', type: 'text', initialWidth: 90 },
-    { label: 'Nome', fieldName: 'url', type: 'url',
-      typeAttributes: { label: { fieldName: 'name' }, target: '_blank' } },
+    NOME_COLUMN,
     PROGRAMMA_COLUMN,
     { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
     { label: 'Data', fieldName: 'data', type: 'date-local',
@@ -53,12 +56,11 @@ const MIXED_COLUMNS = [
     { label: 'Stato', fieldName: 'stato', type: 'text', initialWidth: 110 },
     { label: 'Ammontare', fieldName: 'ammontare', type: 'currency',
       typeAttributes: { currencyCode: 'EUR' }, initialWidth: 130 },
-    { label: 'Transazione', fieldName: 'transazioneUrl', type: 'url',
-      typeAttributes: { label: { fieldName: 'transazioneName' }, target: '_blank' } },
+    TRANSAZIONE_COLUMN,
     { label: 'Budget Anno', fieldName: 'budgetYearName', type: 'text' }
 ];
 
-export default class BudgetRecordsViewer extends LightningElement {
+export default class BudgetRecordsViewer extends NavigationMixin(LightningElement) {
     @track programId = '';
     @track anno = '';
     @track tipo = '';
@@ -70,6 +72,14 @@ export default class BudgetRecordsViewer extends LightningElement {
     @track totalsRows = [];
     @track loading = false;
     @track error;
+    @track truncated = false;
+    @track recordsLimit = 0;
+    isConsoleNavigation = false;
+
+    @wire(IsConsoleNavigation)
+    wiredIsConsoleNavigation(result) {
+        this.isConsoleNavigation = !!(result && result.data);
+    }
 
     totalsColumns = [
         { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
@@ -216,6 +226,12 @@ export default class BudgetRecordsViewer extends LightningElement {
         return !!(this.programId || this.anno || this.tipo || this.categoria || this.sottocategoria || this.filterDate);
     }
 
+    get truncatedMessage() {
+        if (!this.truncated) return '';
+        const limit = this.recordsLimit || this.records.length;
+        return `Risultato troncato ai primi ${limit.toLocaleString('it-IT')} record. Restringi i filtri per vedere i rimanenti.`;
+    }
+
     get exportFileName() {
         const program = this.programOptions.find(p => p.value === this.programId);
         const safeProgram = ((program && program.label) || 'Programma').replace(/[^\w\-]+/g, '_');
@@ -352,6 +368,48 @@ export default class BudgetRecordsViewer extends LightningElement {
         }
     }
 
+    handleRowAction(event) {
+        const actionName = event.detail?.action?.name;
+        const row = event.detail?.row;
+        if (!row) return;
+
+        let recordId = null;
+        let objectApiName = null;
+        if (actionName === 'open_record') {
+            recordId = row.recordId;
+            objectApiName = row.tipo === 'Spesa' ? 'Voce_di_Spesa__c' : 'Voce_di_Incasso__c';
+        } else if (actionName === 'open_program') {
+            recordId = row.programId;
+            objectApiName = 'GiftDesignation';
+        } else if (actionName === 'open_transazione') {
+            recordId = row.transazioneId;
+            objectApiName = 'GiftTransaction';
+        }
+
+        if (!recordId) return;
+        this.openInConsoleOrNavigate({
+            type: 'standard__recordPage',
+            attributes: { recordId, objectApiName, actionName: 'view' }
+        });
+    }
+
+    async openInConsoleOrNavigate(pageReference) {
+        try {
+            if (this.isConsoleNavigation) {
+                const focusedTabInfo = await getFocusedTabInfo();
+                if (focusedTabInfo && focusedTabInfo.tabId) {
+                    await openSubtab(focusedTabInfo.tabId, { pageReference, focus: true });
+                    return;
+                }
+                await openTab({ pageReference, focus: true });
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        this[NavigationMixin.Navigate](pageReference);
+    }
+
     fetchData() {
         if (!this.optionsReady) return;
         this.loading = true;
@@ -365,12 +423,27 @@ export default class BudgetRecordsViewer extends LightningElement {
             selectedDateStr: this.filterDate || null
         })
             .then(data => {
-                this.records = data || [];
+                if (data && Array.isArray(data.rows)) {
+                    this.records = data.rows.map(r => ({
+                        ...r,
+                        recordDisabled: !r.recordId,
+                        programDisabled: !r.programId,
+                        transazioneDisabled: !r.transazioneId
+                    }));
+                    this.truncated = !!data.truncated;
+                    this.recordsLimit = data.limitApplied || 0;
+                } else {
+                    this.records = [];
+                    this.truncated = false;
+                    this.recordsLimit = 0;
+                }
             })
             .catch(err => {
                 console.error(err);
                 this.error = (err && err.body && err.body.message) || 'Errore nel caricamento dei dati.';
                 this.records = [];
+                this.truncated = false;
+                this.recordsLimit = 0;
             })
             .finally(() => {
                 this.loading = false;
