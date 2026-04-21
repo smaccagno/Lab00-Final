@@ -39,109 +39,70 @@ public with sharing class SpeseExcelEditorController {
         return values;
     }
 
+    /**
+     * Costruisce dinamicamente la mappa controlling (Categoria__c) -> dependent (Sottocategoria__c)
+     * leggendo i metadata del picklist. Preferito all'hardcode: gli admin possono aggiungere/modificare
+     * valori in Setup senza redeploy.
+     *
+     * Come funziona validFor: per ogni PicklistEntry dependent restituisce un byte array base64 dove
+     * il bit i-esimo (MSB-first nel byte ⌊i/8⌋) indica se il controlling value di indice i è valido.
+     * Accediamo a validFor via JSON.serialize(entry) (Schema.PicklistEntry.getValidFor() non è esposta
+     * pubblicamente ma il campo è presente nella forma serializzata).
+     */
     @AuraEnabled(cacheable=true)
     public static Map<String, List<String>> getSottocategorieByCategoria() {
-        // Nota:
-        // A seconda dell'API/versioning, Schema.PicklistEntry.getValidFor() può non essere disponibile/compatibile.
-        // Per evitare blocchi in deploy, manteniamo la mappa controlling -> dependent esplicitamente.
-        // (I valori devono corrispondere a quelli presenti nelle picklist Categoria__c/Sottocategoria__c.)
         Map<String, List<String>> outMap = new Map<String, List<String>>();
 
-        // Personale, Collaborazioni e Compensi
-        outMap.put('Personale, Collaborazioni e Compensi', new List<String>{
-            'Compensi collaboratori e professionisti',
-            'Payroll e cedolini',
-            'Rimborsi spese',
-            'Ritenute d\'acconto e adempimenti compensi',
-            'Emolumenti organi sociali e F24'
-        });
+        List<Schema.PicklistEntry> controllingEntries = Voce_di_Spesa__c.Categoria__c.getDescribe().getPicklistValues();
+        List<String> controllingValues = new List<String>();
+        for (Schema.PicklistEntry ctrl : controllingEntries) {
+            if (ctrl.isActive()) {
+                controllingValues.add(ctrl.getValue());
+                outMap.put(ctrl.getValue(), new List<String>());
+            }
+        }
 
-        // Fundraising, Partnership e Sviluppo Ricavi
-        outMap.put('Fundraising, Partnership e Sviluppo Ricavi', new List<String>{
-            'Fundraising management',
-            'Brand ambassador e partnership',
-            'Campagne fundraising e donor acquisition',
-            'Provvigioni e fee commerciali',
-            'Donazioni e liberalità'
-        });
-
-        // Comunicazione, PR e Marketing
-        outMap.put('Comunicazione, PR e Marketing', new List<String>{
-            'Ufficio stampa e media relations',
-            'Rassegna e monitoraggio media',
-            'Social media management',
-            'Comunicazione istituzionale e content management',
-            'Grafica e materiali di comunicazione',
-            'Produzione audio/video e shooting',
-            'Campaign media e advertising',
-            'Newsletter e marketing automation',
-            'Branding, landing page e asset digitali',
-            'Pubblicazioni specialistiche e database media'
-        });
-
-        // Progetti, Bandi e PMO
-        outMap.put('Progetti, Bandi e PMO', new List<String>{
-            'Gestione bandi e progettazione',
-            'Project management e coordinamento',
-            'Reporting e monitoraggio',
-            'Strategia e sviluppo progettuale',
-            'Formazione e networking professionale'
-        });
-
-        // Amministrazione, Fiscale e Legale
-        outMap.put('Amministrazione, Fiscale e Legale', new List<String>{
-            'Servizi contabili e fiscali',
-            'Consulenza legale e contrattualistica',
-            'Servizi notarili e libri sociali',
-            'Imposte indirette e IVA',
-            'Bolli e diritti amministrativi'
-        });
-
-        // Governance, Compliance e Assicurazioni
-        outMap.put('Governance, Compliance e Assicurazioni', new List<String>{
-            'Governance e organo di controllo',
-            'Assicurazioni e polizze',
-            'INAIL e autoliquidazioni'
-        });
-
-        // Strumenti Digitali, IT e Piattaforme
-        outMap.put('Strumenti Digitali, IT e Piattaforme', new List<String>{
-            'Software collaborazione e cloud',
-            'Videoconferenze e teamwork',
-            'IT, sito web, domini e posta elettronica',
-            'PEC e firma digitale',
-            'Piattaforme operative di progetto',
-            'Software specialistici'
-        });
-
-        // Eventi, Trasferte e Rappresentanza
-        outMap.put('Eventi, Trasferte e Rappresentanza', new List<String>{
-            'Eventi e iniziative',
-            'Viaggi e trasferte',
-            'Meeting e rappresentanza',
-            'Catering e ospitalità'
-        });
-
-        // Operations, Logistica e Materiali
-        outMap.put('Operations, Logistica e Materiali', new List<String>{
-            'Stampe, merchandising e materiali evento',
-            'Spese postali e cancelleria',
-            'Logistica, noleggi e mezzi'
-        });
-
-        // Sede e Servizi Generali
-        outMap.put('Sede e Servizi Generali', new List<String>{
-            'Sede e domiciliazione legale'
-        });
-
-        // Finanza, Tesoreria e Riconciliazioni
-        outMap.put('Finanza, Tesoreria e Riconciliazioni', new List<String>{
-            'Tesoreria e trasferimenti interni',
-            'Ricariche carta e anticipi',
-            'Voci composite o da riclassificare'
-        });
+        for (Schema.PicklistEntry dep : Voce_di_Spesa__c.Sottocategoria__c.getDescribe().getPicklistValues()) {
+            if (!dep.isActive()) continue;
+            Object validForRaw = ((Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(dep))).get('validFor');
+            if (validForRaw == null) continue;
+            String validForBase64 = String.valueOf(validForRaw);
+            if (String.isBlank(validForBase64)) continue;
+            List<Integer> validForBytes = decodeBase64ToBytes(validForBase64);
+            for (Integer i = 0; i < controllingValues.size(); i++) {
+                Integer byteIndex = i / 8;
+                Integer bitIndex = 7 - Math.mod(i, 8);
+                if (byteIndex < validForBytes.size()
+                    && (validForBytes[byteIndex] & (1 << bitIndex)) != 0) {
+                    outMap.get(controllingValues.get(i)).add(dep.getValue());
+                }
+            }
+        }
 
         return outMap;
+    }
+
+    private static List<Integer> decodeBase64ToBytes(String b64) {
+        Blob b = EncodingUtil.base64Decode(b64);
+        String hex = EncodingUtil.convertToHex(b);
+        List<Integer> bytes = new List<Integer>();
+        for (Integer i = 0; i < hex.length(); i += 2) {
+            bytes.add(hexPairToInt(hex.substring(i, i + 2)));
+        }
+        return bytes;
+    }
+
+    private static Integer hexPairToInt(String pair) {
+        return hexCharToInt(pair.substring(0, 1)) * 16 + hexCharToInt(pair.substring(1, 2));
+    }
+
+    private static Integer hexCharToInt(String c) {
+        String lc = c.toLowerCase();
+        if (lc == '0') return 0; if (lc == '1') return 1; if (lc == '2') return 2; if (lc == '3') return 3;
+        if (lc == '4') return 4; if (lc == '5') return 5; if (lc == '6') return 6; if (lc == '7') return 7;
+        if (lc == '8') return 8; if (lc == '9') return 9; if (lc == 'a') return 10; if (lc == 'b') return 11;
+        if (lc == 'c') return 12; if (lc == 'd') return 13; if (lc == 'e') return 14; if (lc == 'f') return 15;
+        return 0;
     }
 
     @AuraEnabled
