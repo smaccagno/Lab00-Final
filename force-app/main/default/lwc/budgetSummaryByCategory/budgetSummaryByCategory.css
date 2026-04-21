@@ -266,14 +266,18 @@
 .custom-tooltip {
     position: fixed;
     z-index: 9999;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.98);
     border: 1px solid #ccc;
     border-radius: 4px;
     padding: 0.5rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    pointer-events: none;
-    min-width: 200px;
-    max-width: 300px;
+    pointer-events: auto;
+    min-width: 220px;
+    max-width: min(720px, 90vw);
+    width: max-content;
+    max-height: 60vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     font-size: 0.8rem;
     color: #333;
 }
@@ -291,13 +295,31 @@
 .tooltip-list-item {
     display: flex;
     justify-content: space-between;
-    padding: 0.1rem 0;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #ececec;
+}
+.tooltip-list-item:last-child {
+    border-bottom: none;
+}
+.tooltip-item-value {
+    flex: 0 0 auto;
+}
+.tooltip-item-link {
+    color: #0176d3;
+    text-decoration: none;
+    cursor: pointer;
+}
+.tooltip-item-link:hover {
+    text-decoration: underline;
 }
 .tooltip-item-label {
     margin-right: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    flex: 1 1 auto;
 }
 .tooltip-item-value {
     font-weight: bold;

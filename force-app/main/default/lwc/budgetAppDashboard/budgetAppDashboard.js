@@ -355,6 +355,44 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         await this.openInConsoleOrNavigate(this.buildBudgetYearPageReference(budgetYearId));
     }
 
+    buildRecordsViewerPageReference(anno) {
+        const state = {
+            c__programId: this.selectedProgramId,
+            c__filterDate: this.globalDate || ''
+        };
+        if (anno) {
+            state.c__anno = String(anno);
+        }
+        return {
+            type: 'standard__navItemPage',
+            attributes: { apiName: 'Budget_Records_Viewer' },
+            state
+        };
+    }
+
+    async openRecordsViewer(anno) {
+        if (!this.selectedProgramId) return;
+        const pageRef = this.buildRecordsViewerPageReference(anno);
+        try {
+            if (this.isConsoleNavigation) {
+                await openTab({ pageReference: pageRef, focus: true });
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        this[NavigationMixin.Navigate](pageRef);
+    }
+
+    handleOpenRecordsViewerAllYears() {
+        this.openRecordsViewer(null);
+    }
+
+    handleOpenRecordsViewerYear(event) {
+        const anno = event.currentTarget.dataset.anno;
+        this.openRecordsViewer(anno);
+    }
+
     parseDateOnly(value) {
         if (!value) {
             return null;

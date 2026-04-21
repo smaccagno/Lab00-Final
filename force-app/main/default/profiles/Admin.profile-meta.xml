@@ -4293,6 +4293,10 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>Budget_Records_Viewer</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>SpeseExcelEditor</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

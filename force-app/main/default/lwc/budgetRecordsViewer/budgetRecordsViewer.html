@@ -1,0 +1,103 @@
+<template>
+    <lightning-card title="Dettaglio Voci di Budget" icon-name="standard:financial_account">
+        <div slot="actions" class="slds-text-color_weak slds-text-body_small">{headerSubtitle}</div>
+
+        <template if:true={loading}>
+            <lightning-spinner alternative-text="Caricamento" size="small"></lightning-spinner>
+        </template>
+
+        <template if:true={error}>
+            <div class="slds-p-around_medium slds-text-color_error">{error}</div>
+        </template>
+
+        <div class="slds-p-around_medium">
+            <!-- Filters -->
+            <div class="filters-grid slds-m-bottom_medium">
+                <lightning-combobox
+                    label="Programma"
+                    value={programId}
+                    options={programOptions}
+                    onchange={handleProgramChange}>
+                </lightning-combobox>
+                <lightning-combobox
+                    label="Anno"
+                    value={anno}
+                    options={annoOptions}
+                    onchange={handleAnnoChange}>
+                </lightning-combobox>
+                <lightning-combobox
+                    label="Tipo"
+                    value={tipo}
+                    options={tipoOptions}
+                    onchange={handleTipoChange}>
+                </lightning-combobox>
+                <lightning-combobox
+                    label="Categoria"
+                    value={categoria}
+                    options={categoriaOptions}
+                    onchange={handleCategoriaChange}>
+                </lightning-combobox>
+                <lightning-combobox
+                    label="Sottocategoria"
+                    value={sottocategoria}
+                    options={sottocategoriaOptions}
+                    disabled={sottocategoriaDisabled}
+                    onchange={handleSottocategoriaChange}>
+                </lightning-combobox>
+                <lightning-input
+                    type="date"
+                    label="Filtra per data (≤)"
+                    value={filterDate}
+                    onchange={handleDateChange}>
+                </lightning-input>
+                <div class="filters-actions">
+                    <lightning-button
+                        label="Reset filtri"
+                        onclick={handleResetFilters}
+                        variant="neutral">
+                    </lightning-button>
+                </div>
+            </div>
+
+            <!-- Totals -->
+            <template if:true={hasTotals}>
+                <div class="slds-m-bottom_large slds-box slds-theme_default">
+                    <h2 class="slds-text-heading_small slds-m-bottom_small slds-text-title_bold">Totali per Tipo e Categoria</h2>
+                    <lightning-datatable
+                        key-field="id"
+                        data={totalsRows}
+                        columns={totalsColumns}
+                        hide-checkbox-column>
+                    </lightning-datatable>
+                </div>
+            </template>
+
+            <!-- Table -->
+            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                <h2 class="slds-text-heading_small">{recordsCountLabel}</h2>
+                <template if:true={hasRecords}>
+                    <c-export-to-excel
+                        json-data={exportData}
+                        file-name={exportFileName}
+                        button-label="Esporta in Excel"
+                        variant="brand">
+                    </c-export-to-excel>
+                </template>
+            </div>
+            <template if:true={hasRecords}>
+                <div class="viewer-table-wrapper">
+                    <lightning-datatable
+                        key-field="recordId"
+                        data={records}
+                        columns={columns}
+                        hide-checkbox-column
+                        resize-column-disabled="false">
+                    </lightning-datatable>
+                </div>
+            </template>
+            <template if:false={hasRecords}>
+                <p class="slds-text-color_weak">Nessun record per i filtri selezionati.</p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

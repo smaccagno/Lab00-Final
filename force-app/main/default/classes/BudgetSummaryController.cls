@@ -5,17 +5,25 @@ public with sharing class BudgetSummaryController {
         @AuraEnabled public Decimal amount;
         @AuraEnabled public Date itemDate;
         @AuraEnabled public String category;
+        @AuraEnabled public String subcategory;
+        @AuraEnabled public String note;
         @AuraEnabled public String status;
         @AuraEnabled public Id sourceTransactionId;
         @AuraEnabled public String sourceTransactionName;
         @AuraEnabled public String url;
 
         public ItemDetail(Id recordId, String name, Decimal amount, Date itemDate, String category, String status, Id sourceTransactionId, String sourceTransactionName) {
+            this(recordId, name, amount, itemDate, category, null, null, status, sourceTransactionId, sourceTransactionName);
+        }
+
+        public ItemDetail(Id recordId, String name, Decimal amount, Date itemDate, String category, String subcategory, String note, String status, Id sourceTransactionId, String sourceTransactionName) {
             this.recordId = recordId;
             this.name = name;
             this.amount = amount;
             this.itemDate = itemDate;
             this.category = category;
+            this.subcategory = subcategory;
+            this.note = note;
             this.status = status;
             this.sourceTransactionId = sourceTransactionId;
             this.sourceTransactionName = sourceTransactionName;
@@ -69,7 +77,7 @@ public with sharing class BudgetSummaryController {
                 WHERE Overview_Budget_per_Anno__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__c = :recordId
             ];
@@ -80,7 +88,7 @@ public with sharing class BudgetSummaryController {
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__c = :recordId
             ];
@@ -91,7 +99,7 @@ public with sharing class BudgetSummaryController {
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
             ];
             speseList = [
-                SELECT Id, Name, Categoria__c, Stato__c, Ammontare__c, Data__c
+                SELECT Id, Name, Categoria__c, Sottocategoria__c, Note__c, Stato__c, Ammontare__c, Data__c
                 FROM Voce_di_Spesa__c
                 WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :recordId
             ];
@@ -155,14 +163,14 @@ public with sharing class BudgetSummaryController {
             if (filterDate == null || vs.Data__c == null || vs.Data__c <= filterDate) {
                 if (stato == 'Effettiva') {
                     speseMap.get(cat).effettivo += tot;
-                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null, null));
+                    speseMap.get(cat).itemsEffettivi.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
                 } else if (stato == 'Prevista') {
                     speseMap.get(cat).previsto += tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, stato, null, null));
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name, tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
                 } else if (stato == 'Annullata') {
                     // Sottrae il totale alla categoria (dal previsto)
                     speseMap.get(cat).previsto -= tot;
-                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata)', -tot, vs.Data__c, cat, stato, null, null));
+                    speseMap.get(cat).itemsPrevisti.add(new ItemDetail(vs.Id, vs.Name + ' (Annullata)', -tot, vs.Data__c, cat, vs.Sottocategoria__c, vs.Note__c, stato, null, null));
                 }
             }
         }

@@ -97,22 +97,49 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     }
 
     handleMouseOver(event) {
+        this._cancelTooltipHide();
         const itemsJson = event.currentTarget.dataset.items;
         const title = event.currentTarget.dataset.title;
+        const scope = event.currentTarget.dataset.scope || 'category';
         if (itemsJson) {
             let parsedItems = JSON.parse(itemsJson);
-            // Deduplicate items with same name, summing their values for tooltip
-            let itemsMap = {};
-            parsedItems.forEach(item => {
-                let label = item.name || item.label;
-                let val = item.amount !== undefined ? item.amount : item.value;
-                if (itemsMap[label]) {
-                    itemsMap[label].value += val;
-                } else {
-                    itemsMap[label] = { label: label, value: val };
-                }
-            });
-            this.tooltipItems = Object.values(itemsMap).filter(item => item.value !== 0);
+            const tooltipItems = parsedItems
+                .filter(item => item && item.name !== undefined)
+                .map(item => {
+                    const amount = item.amount !== undefined ? item.amount : item.value;
+                    const parts = [];
+                    if (scope === 'total') {
+                        parts.push(item.category || 'Non categorizzato');
+                    }
+                    parts.push(item.subcategory || '—');
+                    parts.push(item.note ? item.note : '—');
+                    return {
+                        label: parts.join(' · '),
+                        value: amount,
+                        recordId: item.recordId || null,
+                        url: item.url || (item.recordId ? '/' + item.recordId : null),
+                        hasLink: !!item.recordId
+                    };
+                })
+                .filter(i => i.value !== 0);
+
+            // Fallback per elementi "sintetici" (Disponibile) privi di name/amount.
+            if (tooltipItems.length === 0) {
+                const syntheticItems = parsedItems
+                    .filter(item => item && (item.label !== undefined || item.name !== undefined))
+                    .map(item => ({
+                        label: item.name || item.label,
+                        value: item.amount !== undefined ? item.amount : item.value,
+                        recordId: item.recordId || null,
+                        url: item.url || (item.recordId ? '/' + item.recordId : null),
+                        hasLink: !!item.recordId
+                    }))
+                    .filter(i => i.value !== 0);
+                this.tooltipItems = syntheticItems;
+            } else {
+                this.tooltipItems = tooltipItems;
+            }
+            this.tooltipItems = this.tooltipItems.map((it, idx) => ({ ...it, _key: `${idx}-${it.recordId || it.label}` }));
             this.tooltipTitle = title;
             if (this.tooltipItems.length > 0) {
                 this.tooltipVisible = true;
@@ -122,15 +149,59 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
     handleMouseMove(event) {
         if (this.tooltipVisible) {
-            // Offset slightly from cursor
-            const x = event.clientX + 15;
-            const y = event.clientY + 15;
+            const offset = 15;
+            const margin = 8;
+            const tooltipEl = this.template.querySelector('.custom-tooltip');
+            const ttW = tooltipEl ? tooltipEl.offsetWidth : 280;
+            const ttH = tooltipEl ? tooltipEl.offsetHeight : 200;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            let x = event.clientX + offset;
+            let y = event.clientY + offset;
+            if (x + ttW + margin > vw) {
+                x = Math.max(margin, event.clientX - ttW - offset);
+            }
+            if (y + ttH + margin > vh) {
+                y = Math.max(margin, vh - ttH - margin);
+            }
             this.tooltipStyle = `left: ${x}px; top: ${y}px;`;
         }
     }
 
     handleMouseOut() {
+        this._scheduleTooltipHide();
+    }
+
+    handleTooltipEnter() {
+        this._cancelTooltipHide();
+    }
+
+    handleTooltipLeave() {
         this.tooltipVisible = false;
+    }
+
+    handleTooltipItemClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const recordId = event.currentTarget.dataset.recordId;
+        if (recordId) {
+            this.openRecordInConsole(recordId);
+            this.tooltipVisible = false;
+        }
+    }
+
+    _scheduleTooltipHide() {
+        this._cancelTooltipHide();
+        this._tooltipHideTimer = setTimeout(() => {
+            this.tooltipVisible = false;
+        }, 180);
+    }
+
+    _cancelTooltipHide() {
+        if (this._tooltipHideTimer) {
+            clearTimeout(this._tooltipHideTimer);
+            this._tooltipHideTimer = null;
+        }
     }
 
     handleBarClick(event) {

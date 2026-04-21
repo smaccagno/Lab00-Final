@@ -109,7 +109,7 @@
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
-                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
+                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson} data-scope="total"
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
                                             <span class={seg.labelClass}>
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
@@ -147,7 +147,7 @@
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
-                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
+                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson} data-scope="category"
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
                                             <span class={seg.labelClass}>
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
@@ -183,7 +183,7 @@
                                 <div class="bar-track">
                                     <template for:each={item.segments} for:item="seg">
                                         <div key={seg.id} class={seg.cssClass} style={seg.style}
-                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson}
+                                             data-title={seg.title} data-category={item.categoria} data-items={seg.itemsJson} data-scope="category"
                                              onmouseover={handleMouseOver} onmousemove={handleMouseMove} onmouseout={handleMouseOut} onclick={handleBarClick}>
                                             <span class={seg.labelClass}>
                                                 <lightning-formatted-number value={seg.value} format-style="currency" currency-code="EUR" maximum-fraction-digits="0"></lightning-formatted-number>
@@ -238,12 +238,23 @@
 
             <!-- Tooltip -->
             <template if:true={tooltipVisible}>
-                <div class="custom-tooltip" style={tooltipStyle}>
+                <div class="custom-tooltip" style={tooltipStyle}
+                     onmouseenter={handleTooltipEnter}
+                     onmouseleave={handleTooltipLeave}>
                     <div class="tooltip-title">{tooltipTitle}</div>
                     <ul class="tooltip-list">
                         <template for:each={tooltipItems} for:item="tItem" for:index="idx">
-                            <li key={tItem.label} class="tooltip-list-item">
-                                <span class="tooltip-item-label" title={tItem.label}>{tItem.label}</span>
+                            <li key={tItem._key} class="tooltip-list-item">
+                                <template if:true={tItem.hasLink}>
+                                    <a href={tItem.url}
+                                       class="tooltip-item-label tooltip-item-link"
+                                       title={tItem.label}
+                                       data-record-id={tItem.recordId}
+                                       onclick={handleTooltipItemClick}>{tItem.label}</a>
+                                </template>
+                                <template if:false={tItem.hasLink}>
+                                    <span class="tooltip-item-label" title={tItem.label}>{tItem.label}</span>
+                                </template>
                                 <span class="tooltip-item-value">
                                     <lightning-formatted-number value={tItem.value} format-style="currency" currency-code="EUR"></lightning-formatted-number>
                                 </span>
