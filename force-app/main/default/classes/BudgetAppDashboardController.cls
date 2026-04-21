@@ -159,6 +159,77 @@ public with sharing class BudgetAppDashboardController {
         try { return Date.valueOf(selectedDateStr); } catch (Exception e) { return null; }
     }
 
+    public class DashboardKpis {
+        @AuraEnabled public Decimal incassiEffettivo;
+        @AuraEnabled public Decimal incassiPrevisto;
+        @AuraEnabled public Decimal incassiTotale;
+        @AuraEnabled public Decimal speseEffettivo;
+        @AuraEnabled public Decimal spesePrevisto;
+        @AuraEnabled public Decimal speseTotale;
+        @AuraEnabled public Decimal cashFlowEffettivo;
+        @AuraEnabled public Decimal cashFlowPrevisto;
+        @AuraEnabled public Decimal cashFlowTotale;
+        @AuraEnabled public Decimal avanzamentoIncassi;
+        @AuraEnabled public Decimal avanzamentoSpese;
+
+        public DashboardKpis() {
+            this.incassiEffettivo = 0; this.incassiPrevisto = 0; this.incassiTotale = 0;
+            this.speseEffettivo = 0; this.spesePrevisto = 0; this.speseTotale = 0;
+            this.cashFlowEffettivo = 0; this.cashFlowPrevisto = 0; this.cashFlowTotale = 0;
+            this.avanzamentoIncassi = 0; this.avanzamentoSpese = 0;
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static DashboardKpis getDashboardKpis(Id accountId, String selectedDateStr) {
+        DashboardKpis kpis = new DashboardKpis();
+        if (accountId == null) return kpis;
+
+        Date filterDate = parseDate(selectedDateStr);
+        BudgetAggregator.AmountPair inc = new BudgetAggregator.AmountPair();
+        BudgetAggregator.AmountPair spe = new BudgetAggregator.AmountPair();
+
+        for (Voce_di_Incasso__c vi : [
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c
+            FROM Voce_di_Incasso__c
+            WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+        ]) {
+            if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
+            BudgetAggregator.accumulate(inc, vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
+        }
+        BudgetAggregator.finalizePair(inc);
+
+        for (Voce_di_Spesa__c vs : [
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c
+            FROM Voce_di_Spesa__c
+            WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
+        ]) {
+            if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
+            BudgetAggregator.accumulate(spe, vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
+        }
+        BudgetAggregator.finalizePair(spe);
+
+        kpis.incassiEffettivo = inc.effettivo;
+        kpis.incassiPrevisto = inc.previsto;
+        kpis.incassiTotale = inc.totale;
+        kpis.speseEffettivo = spe.effettivo;
+        kpis.spesePrevisto = spe.previsto;
+        kpis.speseTotale = spe.totale;
+        kpis.cashFlowEffettivo = inc.effettivo - spe.effettivo;
+        kpis.cashFlowPrevisto = inc.previsto - spe.previsto;
+        kpis.cashFlowTotale = inc.totale - spe.totale;
+
+        // Avanzamento = effettivo / (previsto + effettivo) se il budget totale e' > 0
+        if (inc.totale > 0) {
+            kpis.avanzamentoIncassi = (inc.effettivo / inc.totale) * 100;
+        }
+        if (spe.totale > 0) {
+            kpis.avanzamentoSpese = (spe.effettivo / spe.totale) * 100;
+        }
+
+        return kpis;
+    }
+
     @AuraEnabled(cacheable=true)
     public static List<ProgramItem> getProgramItems(Id programId, Id accountId) {
         List<ProgramItem> items = new List<ProgramItem>();

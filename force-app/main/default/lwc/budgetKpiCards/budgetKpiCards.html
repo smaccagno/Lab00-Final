@@ -1,0 +1,102 @@
+<template>
+    <div class="kpi-container">
+        <template if:true={error}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small">{error}</div>
+        </template>
+
+        <template if:true={loading}>
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-skeleton"></div>
+                <div class="kpi-card kpi-skeleton"></div>
+                <div class="kpi-card kpi-skeleton"></div>
+                <div class="kpi-card kpi-skeleton"></div>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="kpi-header">
+                <span class="kpi-header-label">Panoramica Budget</span>
+                <span class="kpi-header-date">{formattedFilterDate}</span>
+            </div>
+
+            <div class="kpi-grid">
+                <!-- Incassi -->
+                <div class="kpi-card kpi-card--incassi">
+                    <div class="kpi-card-head">
+                        <lightning-icon icon-name="utility:money" size="small" class="kpi-icon kpi-icon--incassi"></lightning-icon>
+                        <span class="kpi-label">Totale Incassi</span>
+                    </div>
+                    <div class="kpi-value kpi-value--incassi">{incassiTotaleLabel}</div>
+                    <div class="kpi-breakdown">
+                        <span class="kpi-breakdown-item">
+                            <span class="kpi-dot kpi-dot--incassi-eff"></span>
+                            Effettivo <strong>{incassiEffettivoLabel}</strong>
+                        </span>
+                        <span class="kpi-breakdown-item">
+                            <span class="kpi-dot kpi-dot--incassi-prev"></span>
+                            Previsto <strong>{incassiPrevistoLabel}</strong>
+                        </span>
+                    </div>
+                    <div class="kpi-progress">
+                        <div class="kpi-progress-track">
+                            <div class="kpi-progress-fill kpi-progress-fill--incassi" style={avanzamentoIncassiBarStyle}></div>
+                        </div>
+                        <span class="kpi-progress-label">{incassiAvanzamento}</span>
+                    </div>
+                </div>
+
+                <!-- Spese -->
+                <div class="kpi-card kpi-card--spese">
+                    <div class="kpi-card-head">
+                        <lightning-icon icon-name="utility:cart" size="small" class="kpi-icon kpi-icon--spese"></lightning-icon>
+                        <span class="kpi-label">Totale Spese</span>
+                    </div>
+                    <div class="kpi-value kpi-value--spese">{speseTotaleLabel}</div>
+                    <div class="kpi-breakdown">
+                        <span class="kpi-breakdown-item">
+                            <span class="kpi-dot kpi-dot--spese-eff"></span>
+                            Effettivo <strong>{speseEffettivoLabel}</strong>
+                        </span>
+                        <span class="kpi-breakdown-item">
+                            <span class="kpi-dot kpi-dot--spese-prev"></span>
+                            Previsto <strong>{spesePrevistoLabel}</strong>
+                        </span>
+                    </div>
+                    <div class="kpi-progress">
+                        <div class="kpi-progress-track">
+                            <div class="kpi-progress-fill kpi-progress-fill--spese" style={avanzamentoSpeseBarStyle}></div>
+                        </div>
+                        <span class="kpi-progress-label">{speseAvanzamento}</span>
+                    </div>
+                </div>
+
+                <!-- Cash Flow -->
+                <div class={cashFlowCardClass}>
+                    <div class="kpi-card-head">
+                        <lightning-icon icon-name="utility:trending" size="small" class="kpi-icon kpi-icon--cashflow"></lightning-icon>
+                        <span class="kpi-label">Cash Flow Totale</span>
+                    </div>
+                    <div class={cashFlowValueClass}>{cashFlowTotaleLabel}</div>
+                    <div class="kpi-breakdown">
+                        <span class="kpi-breakdown-item">
+                            Effettivo <strong>{cashFlowEffettivoLabel}</strong>
+                        </span>
+                        <span class="kpi-breakdown-item">
+                            Previsto <strong>{cashFlowPrevistoLabel}</strong>
+                        </span>
+                    </div>
+                    <div class="kpi-cashflow-note">
+                        <template if:true={cashFlowPositive}>
+                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Positivo"></lightning-icon>
+                            Flusso positivo
+                        </template>
+                        <template if:false={cashFlowPositive}>
+                            <lightning-icon icon-name="utility:warning" size="xx-small" alternative-text="Negativo"></lightning-icon>
+                            Flusso negativo
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

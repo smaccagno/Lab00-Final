@@ -43,6 +43,13 @@
             </lightning-card>
         </div>
 
+        <!-- KPI cards -->
+        <template if:true={accountId}>
+            <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+                <c-budget-kpi-cards account-id={accountId} filter-date={globalDate}></c-budget-kpi-cards>
+            </div>
+        </template>
+
         <!-- Accordion wrapping overall and per-program sections -->
         <div class="slds-col slds-size_1-of-1 dashboard-accordion">
             <lightning-accordion allow-multiple-sections-open active-section-name={activeAccordionSections} onsectiontoggle={handleAccordionToggle}>
