@@ -280,6 +280,16 @@
                 />
             </template>
 
+            <template if:true={isEditorDateInput}>
+                <input
+                    type="date"
+                    class="cell-editor-input cell-editor-date-input"
+                    value={editorDateValue}
+                    onchange={handleEditorDateChange}
+                    onkeydown={handleEditorKeyDown}
+                />
+            </template>
+
             <template if:true={isEditorDropdown}>
                 <input
                     type="text"

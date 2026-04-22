@@ -89,7 +89,18 @@ export default class SpeseExcelEditor extends LightningElement {
     }
 
     get isEditorInput() {
-        return this.editorOpen && (this.editorType === 'text' || this.editorType === 'date');
+        return this.editorOpen && this.editorType === 'text';
+    }
+
+    get isEditorDateInput() {
+        return this.editorOpen && this.editorType === 'date';
+    }
+
+    get editorDateValue() {
+        // <input type="date"> only accepts yyyy-MM-dd. The row may still
+        // carry a raw/normalized string — reuse parseDate to be robust.
+        const parsed = this.parseDate(this.editorValue);
+        return parsed || '';
     }
 
     get editorPlaceholder() {
@@ -302,6 +313,15 @@ export default class SpeseExcelEditor extends LightningElement {
             } else if (editorType === 'textarea') {
                 const textarea = this.template.querySelector('.cell-editor-textarea');
                 if (textarea) textarea.focus();
+            } else if (editorType === 'date') {
+                const dateInput = this.template.querySelector('.cell-editor-date-input');
+                if (dateInput) {
+                    dateInput.focus();
+                    // Open the native picker where supported (Chrome/Edge).
+                    if (typeof dateInput.showPicker === 'function') {
+                        try { dateInput.showPicker(); } catch (e) { /* ignore */ }
+                    }
+                }
             } else {
                 const input = this.template.querySelector('.cell-editor-input');
                 if (input) {
@@ -339,6 +359,14 @@ export default class SpeseExcelEditor extends LightningElement {
 
     handleEditorInput(event) {
         this.editorValue = event.target.value;
+    }
+
+    handleEditorDateChange(event) {
+        // Native <input type="date"> already returns yyyy-MM-dd.
+        const v = event.target.value || '';
+        this.editorValue = v;
+        // Confirm inline so the user doesn't have to click the check icon.
+        if (v) this.handleEditorConfirm();
     }
 
     handleEditorFilterInput(event) {

@@ -85,7 +85,16 @@ export default class IncassiExcelEditor extends LightningElement {
     }
 
     get isEditorInput() {
-        return this.editorOpen && (this.editorType === 'text' || this.editorType === 'date');
+        return this.editorOpen && this.editorType === 'text';
+    }
+
+    get isEditorDateInput() {
+        return this.editorOpen && this.editorType === 'date';
+    }
+
+    get editorDateValue() {
+        const parsed = this.parseDate(this.editorValue);
+        return parsed || '';
     }
 
     get editorPlaceholder() {
@@ -283,6 +292,14 @@ export default class IncassiExcelEditor extends LightningElement {
             if (editorType === 'dropdown') {
                 const filter = this.template.querySelector('.cell-editor-filter');
                 if (filter) filter.focus();
+            } else if (editorType === 'date') {
+                const dateInput = this.template.querySelector('.cell-editor-date-input');
+                if (dateInput) {
+                    dateInput.focus();
+                    if (typeof dateInput.showPicker === 'function') {
+                        try { dateInput.showPicker(); } catch (e) { /* ignore */ }
+                    }
+                }
             } else {
                 const input = this.template.querySelector('.cell-editor-input');
                 if (input) {
@@ -315,6 +332,12 @@ export default class IncassiExcelEditor extends LightningElement {
 
     handleEditorInput(event) {
         this.editorValue = event.target.value;
+    }
+
+    handleEditorDateChange(event) {
+        const v = event.target.value || '';
+        this.editorValue = v;
+        if (v) this.handleEditorConfirm();
     }
 
     handleEditorFilterInput(event) {
