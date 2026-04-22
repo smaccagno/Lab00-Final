@@ -1,5 +1,11 @@
-import { LightningElement, wire, track } from 'lwc';
-import getViewerOptions from '@salesforce/apex/BudgetAppDashboardController.getViewerOptions';
+import { LightningElement, track, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
+import { getPicklistValues } from 'lightning/uiObjectInfoApi';
+import INCASSO_OBJECT from '@salesforce/schema/Voce_di_Incasso__c';
+import SPESA_OBJECT from '@salesforce/schema/Voce_di_Spesa__c';
+import INCASSO_CATEGORIA from '@salesforce/schema/Voce_di_Incasso__c.Categoria__c';
+import SPESA_CATEGORIA from '@salesforce/schema/Voce_di_Spesa__c.Categoria__c';
+import SPESA_SOTTOCATEGORIA from '@salesforce/schema/Voce_di_Spesa__c.Sottocategoria__c';
 
 const STORAGE_KEY = 'budgetDesigner.draft.v2';
 const LEGACY_STORAGE_KEY = 'budgetDesigner.draft.v1';
@@ -29,6 +35,10 @@ export default class BudgetDesigner extends LightningElement {
     @track sottocategorieByCategoria = {};
     @track annoOptions = [];
 
+    // Record type ids resolved from the object info (needed by getPicklistValues).
+    _incassoRecordTypeId;
+    _spesaRecordTypeId;
+
     // Draft "nuova riga" sempre presente in fondo a ciascuna griglia.
     @track draftIncasso = this.blankIncassoRow();
     @track draftSpesa = this.blankSpesaRow();
@@ -38,18 +48,79 @@ export default class BudgetDesigner extends LightningElement {
 
     connectedCallback() {
         this.restoreDraft();
+        // Year options are independent from picklist loading.
+        this.annoOptions = this.buildYearOptions([]);
     }
 
-    @wire(getViewerOptions)
-    wiredOptions({ data, error }) {
+    // ── Object info: used to obtain the master record type id so that
+    //    getPicklistValues returns every value defined on the picklist.
+    @wire(getObjectInfo, { objectApiName: INCASSO_OBJECT })
+    wiredIncassoInfo({ data }) {
         if (data) {
-            this.categorieIncasso = data.categorieIncasso || [];
-            this.categorieSpesa = data.categorieSpesa || [];
-            this.sottocategorieByCategoria = data.sottocategorieByCategoria || {};
-            this.annoOptions = this.buildYearOptions(data.anni || []);
+            this._incassoRecordTypeId = data.defaultRecordTypeId;
+        }
+    }
+
+    @wire(getObjectInfo, { objectApiName: SPESA_OBJECT })
+    wiredSpesaInfo({ data }) {
+        if (data) {
+            this._spesaRecordTypeId = data.defaultRecordTypeId;
+        }
+    }
+
+    // ── Picklist values via the UI API (same pattern as Salesforce's own UI)
+    @wire(getPicklistValues, {
+        recordTypeId: '$_incassoRecordTypeId',
+        fieldApiName: INCASSO_CATEGORIA
+    })
+    wiredIncassoCategoria({ data }) {
+        if (data && data.values) {
+            this.categorieIncasso = data.values.map(v => v.value);
+            this.maybeMarkReady();
+        }
+    }
+
+    @wire(getPicklistValues, {
+        recordTypeId: '$_spesaRecordTypeId',
+        fieldApiName: SPESA_CATEGORIA
+    })
+    wiredSpesaCategoria({ data }) {
+        if (data && data.values) {
+            this.categorieSpesa = data.values.map(v => v.value);
+            this.maybeMarkReady();
+        }
+    }
+
+    @wire(getPicklistValues, {
+        recordTypeId: '$_spesaRecordTypeId',
+        fieldApiName: SPESA_SOTTOCATEGORIA
+    })
+    wiredSpesaSottocategoria({ data }) {
+        if (data && data.values && data.controllerValues) {
+            // data.controllerValues: { "<Categoria name>": <index> }
+            // data.values[i].validFor: [<index>, ...]
+            const indexToCategoria = {};
+            for (const [catName, idx] of Object.entries(data.controllerValues)) {
+                indexToCategoria[idx] = catName;
+            }
+            const out = {};
+            for (const v of data.values) {
+                if (!Array.isArray(v.validFor)) continue;
+                for (const idx of v.validFor) {
+                    const cat = indexToCategoria[idx];
+                    if (!cat) continue;
+                    if (!out[cat]) out[cat] = [];
+                    out[cat].push(v.value);
+                }
+            }
+            this.sottocategorieByCategoria = out;
+            this.maybeMarkReady();
+        }
+    }
+
+    maybeMarkReady() {
+        if (this.categorieIncasso.length && this.categorieSpesa.length) {
             this.optionsReady = true;
-        } else if (error) {
-            console.error(error);
         }
     }
 
