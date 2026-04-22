@@ -2,11 +2,11 @@
     <div class="designer-root">
         <header class="designer-hero">
             <div class="designer-hero-title">
-                <lightning-icon icon-name="utility:sketch" size="small" class="designer-hero-icon"></lightning-icon>
+                <lightning-icon icon-name="utility:table" size="small" class="designer-hero-icon"></lightning-icon>
                 <h1>Budget Designer</h1>
             </div>
             <div class="designer-hero-meta">
-                <span>Progetta le voci Previste per un anno. Al termine potrai trasformarle in record Salesforce.</span>
+                <span>Progetta le voci Previste per un anno come in un foglio di calcolo. Al termine potrai trasformarle in record Salesforce.</span>
             </div>
         </header>
 
@@ -28,7 +28,7 @@
                         type="date"
                         label="Data di riferimento"
                         value={dataTarget}
-                        field-level-help="Data usata come default per ogni nuova voce inserita. Puoi modificarla voce per voce."
+                        field-level-help="Data default per le nuove voci. Puoi sovrascriverla cella per cella."
                         onchange={handleDataTargetChange}>
                     </lightning-input>
                 </div>
@@ -73,208 +73,357 @@
                 </template>
             </aside>
 
-            <!-- Main panel -->
-            <section class="designer-main">
-                <!-- Incassi -->
-                <div class="designer-section">
-                    <div class="designer-section-title designer-section-title--incassi">
-                        <lightning-icon icon-name="utility:arrowup" size="small" variant="success"></lightning-icon>
-                        <span>Incassi Previsti</span>
-                        <span class="designer-count-badge designer-count-badge--incassi">{incassi.length}</span>
-                    </div>
-
-                    <template if:false={optionsReady}>
-                        <p class="designer-loading">Caricamento categorie…</p>
-                    </template>
-
-                    <template for:each={incassiCategoryCards} for:item="cat">
-                        <div key={cat.key} class="designer-category">
-                            <div class="designer-category-head">
-                                <div class="designer-category-name">{cat.categoria}</div>
-                                <div class="designer-category-meta">
-                                    <span class="designer-category-total">{cat.formattedTotal}</span>
-                                    <button
-                                        class="slds-button slds-button_neutral designer-add-btn"
-                                        data-type="Incasso"
-                                        data-categoria={cat.categoria}
-                                        onclick={handleToggleForm}>
-                                        {cat.addButtonLabel}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <template if:true={cat.isFormOpen}>
-                                <div class="designer-inline-form" aria-label={formTitle}>
-                                    <lightning-input
-                                        type="text"
-                                        label="Nome voce (opzionale)"
-                                        value={formName}
-                                        placeholder="Es. Donazione quadrimestrale"
-                                        onchange={handleFormNameChange}>
-                                    </lightning-input>
-                                    <lightning-input
-                                        type="date"
-                                        label="Data prevista"
-                                        value={formData}
-                                        onchange={handleFormDataChange}>
-                                    </lightning-input>
-                                    <lightning-input
-                                        type="number"
-                                        label="Ammontare (€)"
-                                        value={formAmount}
-                                        step="0.01"
-                                        min="0"
-                                        onchange={handleFormAmountChange}>
-                                    </lightning-input>
-                                    <div class="designer-form-actions">
-                                        <lightning-button
-                                            label="Aggiungi"
-                                            variant="brand"
-                                            disabled={canSubmitFormDisabled}
-                                            onclick={handleSubmitForm}>
-                                        </lightning-button>
-                                        <lightning-button
-                                            label="Chiudi"
-                                            variant="neutral"
-                                            onclick={closeForm}>
-                                        </lightning-button>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <template if:true={cat.hasItems}>
-                                <ul class="designer-item-list">
-                                    <template for:each={cat.items} for:item="item">
-                                        <li key={item.id} class="designer-item">
-                                            <div class="designer-item-main">
-                                                <span class="designer-item-name">{item.name}</span>
-                                                <span class="designer-item-date">{item.formattedDate}</span>
-                                            </div>
-                                            <div class="designer-item-side">
-                                                <span class="designer-item-amount">{item.formattedAmount}</span>
-                                                <button
-                                                    class="designer-item-remove"
-                                                    data-id={item.id}
-                                                    data-type="Incasso"
-                                                    title="Rimuovi"
-                                                    onclick={handleRemoveItem}>
-                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
-                                                </button>
-                                            </div>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </template>
-                        </div>
-                    </template>
+            <!-- Foglio Incassi -->
+            <section class="designer-sheet">
+                <div class="sheet-title sheet-title--incassi">
+                    <lightning-icon icon-name="utility:arrowup" size="small" variant="success"></lightning-icon>
+                    <span>Incassi Previsti</span>
+                    <span class="sheet-count-badge sheet-count-badge--incassi">{incassi.length}</span>
                 </div>
 
-                <!-- Spese -->
-                <div class="designer-section">
-                    <div class="designer-section-title designer-section-title--spese">
-                        <lightning-icon icon-name="utility:arrowdown" size="small" variant="error"></lightning-icon>
-                        <span>Spese Previste</span>
-                        <span class="designer-count-badge designer-count-badge--spese">{spese.length}</span>
-                    </div>
+                <div class="sheet-wrapper">
+                    <table class="sheet" role="grid" aria-label="Foglio Incassi Previsti">
+                        <colgroup>
+                            <col class="col-cat"/>
+                            <col class="col-name"/>
+                            <col class="col-date"/>
+                            <col class="col-amount"/>
+                            <col class="col-actions"/>
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Data prevista</th>
+                                <th scope="col" class="col-amount">Ammontare</th>
+                                <th scope="col" aria-label="Azioni"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={incassiRows} for:item="row">
+                                <tr key={row.id} class="sheet-row">
+                                    <td>
+                                        <lightning-combobox
+                                            variant="label-hidden"
+                                            value={row.categoria}
+                                            options={row.categoriaOptions}
+                                            data-id={row.id}
+                                            data-field="categoria"
+                                            onchange={handleIncassoCellChange}>
+                                        </lightning-combobox>
+                                    </td>
+                                    <td>
+                                        <lightning-input
+                                            type="text"
+                                            variant="label-hidden"
+                                            value={row.name}
+                                            placeholder="Nome voce"
+                                            data-id={row.id}
+                                            data-field="name"
+                                            onchange={handleIncassoCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td>
+                                        <lightning-input
+                                            type="date"
+                                            variant="label-hidden"
+                                            value={row.data}
+                                            data-id={row.id}
+                                            data-field="data"
+                                            onchange={handleIncassoCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td class="col-amount">
+                                        <lightning-input
+                                            type="number"
+                                            variant="label-hidden"
+                                            value={row.ammontare}
+                                            step="0.01"
+                                            min="0"
+                                            formatter="currency"
+                                            data-id={row.id}
+                                            data-field="ammontare"
+                                            onchange={handleIncassoCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td class="col-actions">
+                                        <button class="sheet-row-remove"
+                                                title="Rimuovi riga"
+                                                data-id={row.id}
+                                                onclick={handleIncassoRemove}>
+                                            <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
 
-                    <template if:false={optionsReady}>
-                        <p class="designer-loading">Caricamento categorie…</p>
-                    </template>
-
-                    <template for:each={speseCategoryCards} for:item="cat">
-                        <div key={cat.key} class="designer-category">
-                            <div class="designer-category-head">
-                                <div class="designer-category-name">{cat.categoria}</div>
-                                <div class="designer-category-meta">
-                                    <span class="designer-category-total">{cat.formattedTotal}</span>
-                                    <button
-                                        class="slds-button slds-button_neutral designer-add-btn"
-                                        data-type="Spesa"
-                                        data-categoria={cat.categoria}
-                                        onclick={handleToggleForm}>
-                                        {cat.addButtonLabel}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <template if:true={cat.isFormOpen}>
-                                <div class="designer-inline-form" aria-label={formTitle}>
+                            <!-- Riga draft (sempre visibile) -->
+                            <tr class="sheet-row sheet-row--draft">
+                                <td>
+                                    <lightning-combobox
+                                        variant="label-hidden"
+                                        value={draftIncassoView.categoria}
+                                        options={draftIncassoView.categoriaOptions}
+                                        data-scope="draft-incasso"
+                                        data-field="categoria"
+                                        onchange={handleDraftIncassoChange}>
+                                    </lightning-combobox>
+                                </td>
+                                <td>
                                     <lightning-input
                                         type="text"
-                                        label="Nome voce (opzionale)"
-                                        value={formName}
-                                        placeholder="Es. Affitto sede Q1"
-                                        onchange={handleFormNameChange}>
+                                        variant="label-hidden"
+                                        value={draftIncassoView.name}
+                                        placeholder="Nome voce"
+                                        data-scope="draft-incasso"
+                                        data-field="name"
+                                        onchange={handleDraftIncassoChange}>
                                     </lightning-input>
-                                    <template if:true={cat.hasSubs}>
-                                        <lightning-combobox
-                                            label="Sottocategoria"
-                                            value={formSottocategoria}
-                                            options={activeFormSubOptions}
-                                            onchange={handleFormSottoChange}>
-                                        </lightning-combobox>
-                                    </template>
+                                </td>
+                                <td>
                                     <lightning-input
                                         type="date"
-                                        label="Data prevista"
-                                        value={formData}
-                                        onchange={handleFormDataChange}>
+                                        variant="label-hidden"
+                                        value={draftIncassoView.data}
+                                        placeholder={dataTarget}
+                                        data-scope="draft-incasso"
+                                        data-field="data"
+                                        onchange={handleDraftIncassoChange}>
                                     </lightning-input>
+                                </td>
+                                <td class="col-amount">
                                     <lightning-input
                                         type="number"
-                                        label="Ammontare (€)"
-                                        value={formAmount}
+                                        variant="label-hidden"
+                                        value={draftIncassoView.ammontare}
                                         step="0.01"
                                         min="0"
-                                        onchange={handleFormAmountChange}>
+                                        placeholder="0"
+                                        formatter="currency"
+                                        data-scope="draft-incasso"
+                                        data-field="ammontare"
+                                        onchange={handleDraftIncassoChange}>
                                     </lightning-input>
-                                    <lightning-textarea
-                                        label="Note (opzionale)"
-                                        value={formNote}
-                                        onchange={handleFormNoteChange}>
-                                    </lightning-textarea>
-                                    <div class="designer-form-actions">
-                                        <lightning-button
-                                            label="Aggiungi"
-                                            variant="brand"
-                                            disabled={canSubmitFormDisabled}
-                                            onclick={handleSubmitForm}>
-                                        </lightning-button>
-                                        <lightning-button
-                                            label="Chiudi"
-                                            variant="neutral"
-                                            onclick={closeForm}>
-                                        </lightning-button>
-                                    </div>
-                                </div>
+                                </td>
+                                <td class="col-actions">
+                                    <button class="sheet-row-add"
+                                            title="Aggiungi riga"
+                                            disabled={draftIncassoAddDisabled}
+                                            onclick={handleDraftIncassoSubmit}>
+                                        <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="sheet-total-row">
+                                <th scope="row" colspan="3">Totale Incassi</th>
+                                <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Foglio Spese -->
+            <section class="designer-sheet">
+                <div class="sheet-title sheet-title--spese">
+                    <lightning-icon icon-name="utility:arrowdown" size="small" variant="error"></lightning-icon>
+                    <span>Spese Previste</span>
+                    <span class="sheet-count-badge sheet-count-badge--spese">{spese.length}</span>
+                </div>
+
+                <div class="sheet-wrapper">
+                    <table class="sheet" role="grid" aria-label="Foglio Spese Previste">
+                        <colgroup>
+                            <col class="col-cat"/>
+                            <col class="col-subcat"/>
+                            <col class="col-name"/>
+                            <col class="col-date"/>
+                            <col class="col-amount"/>
+                            <col class="col-note"/>
+                            <col class="col-actions"/>
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Sottocategoria</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Data prevista</th>
+                                <th scope="col" class="col-amount">Ammontare</th>
+                                <th scope="col">Note</th>
+                                <th scope="col" aria-label="Azioni"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={speseRows} for:item="row">
+                                <tr key={row.id} class="sheet-row">
+                                    <td>
+                                        <lightning-combobox
+                                            variant="label-hidden"
+                                            value={row.categoria}
+                                            options={row.categoriaOptions}
+                                            data-id={row.id}
+                                            data-field="categoria"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-combobox>
+                                    </td>
+                                    <td>
+                                        <lightning-combobox
+                                            variant="label-hidden"
+                                            value={row.sottocategoria}
+                                            options={row.subOptions}
+                                            disabled={row.subDisabled}
+                                            data-id={row.id}
+                                            data-field="sottocategoria"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-combobox>
+                                    </td>
+                                    <td>
+                                        <lightning-input
+                                            type="text"
+                                            variant="label-hidden"
+                                            value={row.name}
+                                            placeholder="Nome voce"
+                                            data-id={row.id}
+                                            data-field="name"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td>
+                                        <lightning-input
+                                            type="date"
+                                            variant="label-hidden"
+                                            value={row.data}
+                                            data-id={row.id}
+                                            data-field="data"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td class="col-amount">
+                                        <lightning-input
+                                            type="number"
+                                            variant="label-hidden"
+                                            value={row.ammontare}
+                                            step="0.01"
+                                            min="0"
+                                            formatter="currency"
+                                            data-id={row.id}
+                                            data-field="ammontare"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td>
+                                        <lightning-input
+                                            type="text"
+                                            variant="label-hidden"
+                                            value={row.note}
+                                            placeholder="Note"
+                                            data-id={row.id}
+                                            data-field="note"
+                                            onchange={handleSpesaCellChange}>
+                                        </lightning-input>
+                                    </td>
+                                    <td class="col-actions">
+                                        <button class="sheet-row-remove"
+                                                title="Rimuovi riga"
+                                                data-id={row.id}
+                                                onclick={handleSpesaRemove}>
+                                            <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                        </button>
+                                    </td>
+                                </tr>
                             </template>
 
-                            <template if:true={cat.hasItems}>
-                                <ul class="designer-item-list">
-                                    <template for:each={cat.items} for:item="item">
-                                        <li key={item.id} class="designer-item">
-                                            <div class="designer-item-main">
-                                                <span class="designer-item-name">{item.name}</span>
-                                                <span class="designer-item-sub">{item.subLabel}</span>
-                                                <span class="designer-item-date">{item.formattedDate}</span>
-                                            </div>
-                                            <div class="designer-item-side">
-                                                <span class="designer-item-amount">{item.formattedAmount}</span>
-                                                <button
-                                                    class="designer-item-remove"
-                                                    data-id={item.id}
-                                                    data-type="Spesa"
-                                                    title="Rimuovi"
-                                                    onclick={handleRemoveItem}>
-                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
-                                                </button>
-                                            </div>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </template>
-                        </div>
-                    </template>
+                            <!-- Riga draft -->
+                            <tr class="sheet-row sheet-row--draft">
+                                <td>
+                                    <lightning-combobox
+                                        variant="label-hidden"
+                                        value={draftSpesaView.categoria}
+                                        options={draftSpesaView.categoriaOptions}
+                                        data-scope="draft-spesa"
+                                        data-field="categoria"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-combobox>
+                                </td>
+                                <td>
+                                    <lightning-combobox
+                                        variant="label-hidden"
+                                        value={draftSpesaView.sottocategoria}
+                                        options={draftSpesaView.subOptions}
+                                        disabled={draftSpesaView.subDisabled}
+                                        data-scope="draft-spesa"
+                                        data-field="sottocategoria"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-combobox>
+                                </td>
+                                <td>
+                                    <lightning-input
+                                        type="text"
+                                        variant="label-hidden"
+                                        value={draftSpesaView.name}
+                                        placeholder="Nome voce"
+                                        data-scope="draft-spesa"
+                                        data-field="name"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-input>
+                                </td>
+                                <td>
+                                    <lightning-input
+                                        type="date"
+                                        variant="label-hidden"
+                                        value={draftSpesaView.data}
+                                        placeholder={dataTarget}
+                                        data-scope="draft-spesa"
+                                        data-field="data"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-input>
+                                </td>
+                                <td class="col-amount">
+                                    <lightning-input
+                                        type="number"
+                                        variant="label-hidden"
+                                        value={draftSpesaView.ammontare}
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0"
+                                        formatter="currency"
+                                        data-scope="draft-spesa"
+                                        data-field="ammontare"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-input>
+                                </td>
+                                <td>
+                                    <lightning-input
+                                        type="text"
+                                        variant="label-hidden"
+                                        value={draftSpesaView.note}
+                                        placeholder="Note"
+                                        data-scope="draft-spesa"
+                                        data-field="note"
+                                        onchange={handleDraftSpesaChange}>
+                                    </lightning-input>
+                                </td>
+                                <td class="col-actions">
+                                    <button class="sheet-row-add"
+                                            title="Aggiungi riga"
+                                            disabled={draftSpesaAddDisabled}
+                                            onclick={handleDraftSpesaSubmit}>
+                                        <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="sheet-total-row">
+                                <th scope="row" colspan="4">Totale Spese</th>
+                                <td class="col-amount sheet-total-value sheet-total-value--spese">{totalSpeseLabel}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </section>
 
@@ -292,13 +441,11 @@
                             <div class="kpi-value kpi-value--incassi">{totalIncassiLabel}</div>
                             <div class="kpi-meta">{incassi.length} voci</div>
                         </div>
-
                         <div class="kpi-card kpi-card--spese">
                             <div class="kpi-label">Totale Spese Previste</div>
                             <div class="kpi-value kpi-value--spese">{totalSpeseLabel}</div>
                             <div class="kpi-meta">{spese.length} voci</div>
                         </div>
-
                         <div class={cashFlowCardClass}>
                             <div class="kpi-label">Saldo Previsto</div>
                             <div class={cashFlowValueClass}>{cashFlowLabel}</div>
@@ -345,7 +492,7 @@
                         <div class="overview-empty">
                             <lightning-icon icon-name="utility:chart" size="large"></lightning-icon>
                             <p>Nessuna voce ancora pianificata.</p>
-                            <p class="overview-empty-hint">Aggiungi una voce a sinistra per vedere il budget popolarsi qui.</p>
+                            <p class="overview-empty-hint">Aggiungi una riga per vedere il budget popolarsi qui.</p>
                         </div>
                     </template>
                 </div>

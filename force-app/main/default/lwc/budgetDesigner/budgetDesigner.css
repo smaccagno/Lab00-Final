@@ -46,14 +46,14 @@
 /* Layout */
 .designer-layout {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr) 340px;
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
     gap: 1rem;
     align-items: start;
 }
 
 @media (max-width: 1280px) {
     .designer-layout {
-        grid-template-columns: 240px minmax(0, 1fr);
+        grid-template-columns: 220px minmax(0, 1fr);
     }
     .designer-overview {
         grid-column: 1 / -1;
@@ -66,7 +66,7 @@
     }
 }
 
-/* Card generica */
+/* Card generica (sidebar + overview) */
 .designer-card {
     background: #ffffff;
     border: 1px solid #e1e5eb;
@@ -154,46 +154,50 @@
     --sds-c-icon-color-foreground-default: #2e844a;
 }
 
-/* Main sections */
-.designer-main {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.designer-section {
+/* Sheet (foglio stile excel) */
+.designer-sheet {
     background: #ffffff;
     border: 1px solid #e1e5eb;
     border-radius: 10px;
-    padding: 1rem 1.1rem 1.1rem 1.1rem;
+    padding: 0.9rem 1rem 1rem 1rem;
     box-shadow: 0 1px 2px rgba(22, 50, 92, 0.04);
+    min-width: 0;
 }
 
-.designer-section-title {
+.designer-sheet + .designer-sheet {
+    margin-top: 1rem;
+}
+
+@media (min-width: 900px) {
+    .designer-layout > .designer-sheet:nth-of-type(2) {
+        /* Stack entrambi i fogli nella colonna centrale */
+    }
+}
+
+.sheet-title {
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     padding: 0.55rem 0.75rem;
     border-radius: 6px;
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.75rem;
 }
 
-.designer-section-title--incassi {
+.sheet-title--incassi {
     color: #1b5a30;
     background: linear-gradient(90deg, rgba(46, 132, 74, 0.08) 0%, rgba(46, 132, 74, 0) 70%);
     border-left: 3px solid #2e844a;
 }
 
-.designer-section-title--spese {
+.sheet-title--spese {
     color: #a00015;
     background: linear-gradient(90deg, rgba(234, 0, 30, 0.08) 0%, rgba(234, 0, 30, 0) 70%);
     border-left: 3px solid #ea001e;
 }
 
-.designer-count-badge {
+.sheet-count-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -208,159 +212,113 @@
     margin-left: 0.25rem;
 }
 
-.designer-loading {
-    color: #7a8aa0;
-    font-size: 0.85rem;
-    margin: 0.5rem 0;
-}
-
-/* Category block */
-.designer-category {
-    background: #f9fbfe;
-    border: 1px solid #dee5ef;
-    border-radius: 8px;
-    padding: 0.7rem 0.85rem 0.65rem 0.85rem;
-    margin-bottom: 0.65rem;
-}
-
-.designer-category-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
-
-.designer-category-name {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #16325c;
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-
-.designer-category-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    flex-shrink: 0;
-}
-
-.designer-category-total {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #547190;
-}
-
-.designer-add-btn {
-    font-size: 0.78rem;
-    padding: 0 0.65rem;
-    min-height: 28px;
-    line-height: 26px;
-}
-
-/* Inline form */
-.designer-inline-form {
-    margin-top: 0.65rem;
-    padding: 0.75rem 0.85rem;
-    background: #ffffff;
-    border: 1px dashed #c6d1e3;
-    border-radius: 8px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.65rem;
-}
-
-.designer-inline-form lightning-textarea,
-.designer-inline-form .designer-form-actions {
-    grid-column: 1 / -1;
-}
-
-.designer-form-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-}
-
-@media (max-width: 680px) {
-    .designer-inline-form {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Item list */
-.designer-item-list {
-    list-style: none;
-    margin: 0.6rem 0 0 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.designer-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.45rem 0.65rem;
-    background: #ffffff;
-    border: 1px solid #e4ebf3;
+.sheet-wrapper {
+    overflow-x: auto;
+    border: 1px solid #d7dde8;
     border-radius: 6px;
-    font-size: 0.84rem;
-    transition: background-color 0.15s ease;
+    background: #fff;
 }
 
-.designer-item:hover {
-    background: #f4f7fc;
+.sheet {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    font-size: 0.85rem;
+    table-layout: fixed;
 }
 
-.designer-item-main {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.6rem;
-    align-items: baseline;
-    min-width: 0;
-}
-
-.designer-item-name {
+.sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, #f4f6fb 0%, #e8eef7 100%);
     color: #16325c;
-    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #d3dbe8;
+    border-right: 1px solid #e1e5eb;
+    white-space: nowrap;
 }
 
-.designer-item-sub {
-    color: #547190;
-    font-size: 0.78rem;
-    background: #edf2f8;
-    padding: 0.08rem 0.45rem;
-    border-radius: 999px;
+.sheet thead th:last-child {
+    border-right: none;
 }
 
-.designer-item-date {
-    color: #7a8aa0;
-    font-size: 0.78rem;
+.sheet tbody td {
+    padding: 2px 4px;
+    border-bottom: 1px solid #eef1f6;
+    border-right: 1px solid #eef1f6;
+    vertical-align: middle;
+    background: #fff;
 }
 
-.designer-item-side {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
+.sheet tbody td:last-child {
+    border-right: none;
 }
 
-.designer-item-amount {
-    font-weight: 700;
-    color: #16325c;
-    font-variant-numeric: tabular-nums;
+.sheet tbody tr:hover td {
+    background: #fafcff;
 }
 
-.designer-item-remove {
+.sheet-row--draft td {
+    background: #fffdf2;
+    border-top: 1px dashed #e0d27a;
+}
+
+.sheet-row--draft:hover td {
+    background: #fff9df;
+}
+
+/* Column widths */
+.sheet .col-cat { width: 22%; }
+.sheet .col-subcat { width: 16%; }
+.sheet .col-name { width: 18%; }
+.sheet .col-date { width: 12%; }
+.sheet .col-amount { width: 12%; text-align: right; }
+.sheet .col-note { width: 16%; }
+.sheet .col-actions { width: 40px; text-align: center; }
+
+.sheet td.col-amount {
+    text-align: right;
+}
+
+.sheet td.col-actions {
+    text-align: center;
+}
+
+/* Nascondi le borderature degli input interni per dare l'effetto cella */
+.sheet lightning-input,
+.sheet lightning-combobox {
+    --sds-c-input-spacing-vertical-start: 2px;
+    --sds-c-input-spacing-vertical-end: 2px;
+    display: block;
+}
+
+.sheet lightning-input .slds-input,
+.sheet lightning-combobox .slds-combobox__input {
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.sheet lightning-input .slds-input:focus,
+.sheet lightning-combobox .slds-combobox__input:focus {
+    border-color: #0176d3 !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 1px #0176d3 !important;
+}
+
+/* Row actions */
+.sheet-row-remove,
+.sheet-row-add {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     background: transparent;
@@ -369,12 +327,51 @@
     color: #7a8aa0;
 }
 
-.designer-item-remove:hover,
-.designer-item-remove:focus {
+.sheet-row-remove:hover,
+.sheet-row-remove:focus {
     background: rgba(234, 0, 30, 0.12);
     color: #ea001e;
     outline: none;
 }
+
+.sheet-row-add:hover:not([disabled]),
+.sheet-row-add:focus:not([disabled]) {
+    background: rgba(46, 132, 74, 0.15);
+    color: #1b5a30;
+    outline: none;
+}
+
+.sheet-row-add[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Footer totali */
+.sheet tfoot .sheet-total-row th,
+.sheet tfoot .sheet-total-row td {
+    background: #f4f6fb;
+    color: #16325c;
+    font-weight: 700;
+    padding: 0.55rem 0.7rem;
+    border-top: 2px solid #d3dbe8;
+    border-right: 1px solid #e1e5eb;
+    text-transform: none;
+}
+
+.sheet tfoot .sheet-total-row th {
+    text-align: right;
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.sheet-total-value {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.9rem;
+}
+
+.sheet-total-value--incassi { color: #1b5a30; }
+.sheet-total-value--spese { color: #a00015; }
 
 /* Overview (dx) */
 .designer-overview {

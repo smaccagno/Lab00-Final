@@ -1,7 +1,8 @@
 import { LightningElement, wire, track } from 'lwc';
 import getViewerOptions from '@salesforce/apex/BudgetAppDashboardController.getViewerOptions';
 
-const STORAGE_KEY = 'budgetDesigner.draft.v1';
+const STORAGE_KEY = 'budgetDesigner.draft.v2';
+const LEGACY_STORAGE_KEY = 'budgetDesigner.draft.v1';
 
 function newId() {
     return 'item-' + Math.random().toString(36).slice(2, 10);
@@ -26,17 +27,11 @@ export default class BudgetDesigner extends LightningElement {
     @track categorieIncasso = [];
     @track categorieSpesa = [];
     @track sottocategorieByCategoria = {};
-    @track programOptions = [];
     @track annoOptions = [];
 
-    // Form state per "aggiungi voce"
-    @track activeFormCategoryType = null;  // 'Incasso' | 'Spesa'
-    @track activeFormCategory = null;
-    @track formName = '';
-    @track formData = todayISO();
-    @track formAmount = '';
-    @track formSottocategoria = '';
-    @track formNote = '';
+    // Draft "nuova riga" sempre presente in fondo a ciascuna griglia.
+    @track draftIncasso = this.blankIncassoRow();
+    @track draftSpesa = this.blankSpesaRow();
 
     @track saveToast = '';
     @track confirmReset = false;
@@ -51,7 +46,6 @@ export default class BudgetDesigner extends LightningElement {
             this.categorieIncasso = data.categorieIncasso || [];
             this.categorieSpesa = data.categorieSpesa || [];
             this.sottocategorieByCategoria = data.sottocategorieByCategoria || {};
-            this.programOptions = (data.programs || []).map(p => ({ label: p.label, value: p.value }));
             this.annoOptions = this.buildYearOptions(data.anni || []);
             this.optionsReady = true;
         } else if (error) {
@@ -66,53 +60,88 @@ export default class BudgetDesigner extends LightningElement {
         return Array.from(set).sort().reverse().map(y => ({ label: y, value: y }));
     }
 
-    // Getter per render
-
-    get incassiCategoryCards() {
-        return this.categorieIncasso.map(cat => {
-            const items = this.incassi.filter(i => i.categoria === cat);
-            const total = items.reduce((sum, i) => sum + (Number(i.ammontare) || 0), 0);
-            const isFormOpen = this.activeFormCategoryType === 'Incasso' && this.activeFormCategory === cat;
-            return {
-                key: 'inc-' + cat,
-                categoria: cat,
-                items: items.map(i => ({ ...i, formattedAmount: this.formatCurrency(i.ammontare), formattedDate: this.formatDate(i.data) })),
-                total,
-                formattedTotal: this.formatCurrency(total),
-                count: items.length,
-                hasItems: items.length > 0,
-                isFormOpen,
-                addButtonLabel: isFormOpen ? 'Chiudi' : '+ Aggiungi voce'
-            };
-        });
+    blankIncassoRow() {
+        return { categoria: '', name: '', data: '', ammontare: '' };
     }
 
-    get speseCategoryCards() {
-        return this.categorieSpesa.map(cat => {
-            const items = this.spese.filter(i => i.categoria === cat);
-            const total = items.reduce((sum, i) => sum + (Number(i.ammontare) || 0), 0);
-            const isFormOpen = this.activeFormCategoryType === 'Spesa' && this.activeFormCategory === cat;
-            const subOptions = (this.sottocategorieByCategoria[cat] || []).map(s => ({ label: s, value: s }));
-            return {
-                key: 'spe-' + cat,
-                categoria: cat,
-                items: items.map(i => ({
-                    ...i,
-                    formattedAmount: this.formatCurrency(i.ammontare),
-                    formattedDate: this.formatDate(i.data),
-                    subLabel: i.sottocategoria || '—'
-                })),
-                total,
-                formattedTotal: this.formatCurrency(total),
-                count: items.length,
-                hasItems: items.length > 0,
-                hasSubs: subOptions.length > 0,
-                subOptions: [{ label: 'Nessuna', value: '' }, ...subOptions],
-                isFormOpen,
-                addButtonLabel: isFormOpen ? 'Chiudi' : '+ Aggiungi voce'
-            };
-        });
+    blankSpesaRow() {
+        return { categoria: '', sottocategoria: '', name: '', data: '', ammontare: '', note: '' };
     }
+
+    // Options per combobox
+    get incassoCategoriaOptions() {
+        return [
+            { label: '— Scegli —', value: '' },
+            ...this.categorieIncasso.map(c => ({ label: c, value: c }))
+        ];
+    }
+
+    get speseCategoriaOptions() {
+        return [
+            { label: '— Scegli —', value: '' },
+            ...this.categorieSpesa.map(c => ({ label: c, value: c }))
+        ];
+    }
+
+    subOptionsFor(categoria) {
+        const subs = this.sottocategorieByCategoria[categoria] || [];
+        return [
+            { label: 'Nessuna', value: '' },
+            ...subs.map(s => ({ label: s, value: s }))
+        ];
+    }
+
+    // Righe materializzate
+    get incassiRows() {
+        return this.incassi.map(r => ({
+            ...r,
+            categoriaOptions: this.incassoCategoriaOptions,
+            formattedAmount: this.formatCurrency(r.ammontare)
+        }));
+    }
+
+    get speseRows() {
+        return this.spese.map(r => ({
+            ...r,
+            categoriaOptions: this.speseCategoriaOptions,
+            subOptions: this.subOptionsFor(r.categoria),
+            subDisabled: !(this.sottocategorieByCategoria[r.categoria] && this.sottocategorieByCategoria[r.categoria].length),
+            formattedAmount: this.formatCurrency(r.ammontare)
+        }));
+    }
+
+    get draftIncassoView() {
+        return {
+            ...this.draftIncasso,
+            categoriaOptions: this.incassoCategoriaOptions,
+            canAdd: this.isIncassoDraftValid(this.draftIncasso)
+        };
+    }
+
+    get draftSpesaView() {
+        return {
+            ...this.draftSpesa,
+            categoriaOptions: this.speseCategoriaOptions,
+            subOptions: this.subOptionsFor(this.draftSpesa.categoria),
+            subDisabled: !(this.sottocategorieByCategoria[this.draftSpesa.categoria] && this.sottocategorieByCategoria[this.draftSpesa.categoria].length),
+            canAdd: this.isSpesaDraftValid(this.draftSpesa)
+        };
+    }
+
+    get draftIncassoAddDisabled() { return !this.draftIncassoView.canAdd; }
+    get draftSpesaAddDisabled() { return !this.draftSpesaView.canAdd; }
+
+    isIncassoDraftValid(r) {
+        const a = Number(r.ammontare);
+        return !!r.categoria && Number.isFinite(a) && a > 0;
+    }
+
+    isSpesaDraftValid(r) {
+        const a = Number(r.ammontare);
+        return !!r.categoria && Number.isFinite(a) && a > 0;
+    }
+
+    // Totals
 
     get totalIncassi() {
         return this.incassi.reduce((s, i) => s + (Number(i.ammontare) || 0), 0);
@@ -149,63 +178,46 @@ export default class BudgetDesigner extends LightningElement {
         return this.totalItems > 0;
     }
 
+    // Aggregates per overview-bars (per categoria)
     get incassiByCategoryBars() {
         const total = this.totalIncassi;
         if (total === 0) return [];
-        return this.incassiCategoryCards
-            .filter(c => c.count > 0)
-            .map(c => ({
-                key: c.key,
-                categoria: c.categoria,
-                formattedTotal: c.formattedTotal,
-                percent: (c.total / total) * 100,
-                style: `width: ${Math.max(2, (c.total / total) * 100)}%`
+        const map = new Map();
+        for (const r of this.incassi) {
+            const k = r.categoria || 'Non categorizzato';
+            map.set(k, (map.get(k) || 0) + (Number(r.ammontare) || 0));
+        }
+        return Array.from(map.entries())
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, val], idx) => ({
+                key: 'incbar-' + idx,
+                categoria: cat,
+                formattedTotal: this.formatCurrency(val),
+                style: `width: ${Math.max(2, (val / total) * 100)}%`
             }));
     }
 
     get speseByCategoryBars() {
         const total = this.totalSpese;
         if (total === 0) return [];
-        return this.speseCategoryCards
-            .filter(c => c.count > 0)
-            .map(c => ({
-                key: c.key,
-                categoria: c.categoria,
-                formattedTotal: c.formattedTotal,
-                percent: (c.total / total) * 100,
-                style: `width: ${Math.max(2, (c.total / total) * 100)}%`
+        const map = new Map();
+        for (const r of this.spese) {
+            const k = r.categoria || 'Non categorizzato';
+            map.set(k, (map.get(k) || 0) + (Number(r.ammontare) || 0));
+        }
+        return Array.from(map.entries())
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, val], idx) => ({
+                key: 'spebar-' + idx,
+                categoria: cat,
+                formattedTotal: this.formatCurrency(val),
+                style: `width: ${Math.max(2, (val / total) * 100)}%`
             }));
     }
 
-    get formTitle() {
-        if (!this.activeFormCategoryType || !this.activeFormCategory) return '';
-        return `Nuova voce ${this.activeFormCategoryType} · ${this.activeFormCategory}`;
-    }
-
-    get isFormSpesa() {
-        return this.activeFormCategoryType === 'Spesa';
-    }
-
-    get activeFormSubOptions() {
-        if (!this.isFormSpesa || !this.activeFormCategory) return [];
-        const subs = this.sottocategorieByCategoria[this.activeFormCategory] || [];
-        return [{ label: 'Nessuna', value: '' }, ...subs.map(s => ({ label: s, value: s }))];
-    }
-
-    get activeFormHasSubs() {
-        return this.activeFormSubOptions.length > 1;
-    }
-
-    get canSubmitForm() {
-        const a = Number(this.formAmount);
-        return Number.isFinite(a) && a > 0;
-    }
-
-    get canSubmitFormDisabled() {
-        return !this.canSubmitForm;
-    }
-
-    // Handlers
+    // Handlers setup
 
     handleAnnoChange(event) {
         this.anno = event.detail.value;
@@ -214,81 +226,110 @@ export default class BudgetDesigner extends LightningElement {
 
     handleDataTargetChange(event) {
         this.dataTarget = event.target.value || todayISO();
-        // Aggiorna il default del form corrente
-        this.formData = this.dataTarget;
         this.persistDraft();
     }
 
-    handleToggleForm(event) {
-        const { type, categoria } = event.currentTarget.dataset;
-        if (this.activeFormCategoryType === type && this.activeFormCategory === categoria) {
-            this.closeForm();
-            return;
-        }
-        this.activeFormCategoryType = type;
-        this.activeFormCategory = categoria;
-        this.formName = '';
-        this.formAmount = '';
-        this.formData = this.dataTarget;
-        this.formSottocategoria = '';
-        this.formNote = '';
+    // Handlers celle incassi esistenti
+    handleIncassoCellChange(event) {
+        const { id, field } = event.currentTarget.dataset;
+        const value = this.readEventValue(event);
+        this.incassi = this.incassi.map(r => r.id === id ? { ...r, [field]: value } : r);
+        this.persistDraft();
     }
 
-    closeForm() {
-        this.activeFormCategoryType = null;
-        this.activeFormCategory = null;
-        this.formName = '';
-        this.formAmount = '';
-        this.formSottocategoria = '';
-        this.formNote = '';
+    handleIncassoRemove(event) {
+        const id = event.currentTarget.dataset.id;
+        this.incassi = this.incassi.filter(r => r.id !== id);
+        this.persistDraft();
     }
 
-    handleFormNameChange(event) { this.formName = event.target.value; }
-    handleFormDataChange(event) { this.formData = event.target.value; }
-    handleFormAmountChange(event) { this.formAmount = event.target.value; }
-    handleFormSottoChange(event) { this.formSottocategoria = event.detail.value; }
-    handleFormNoteChange(event) { this.formNote = event.target.value; }
+    // Handlers celle draft incasso
+    handleDraftIncassoChange(event) {
+        const field = event.currentTarget.dataset.field;
+        const value = this.readEventValue(event);
+        this.draftIncasso = { ...this.draftIncasso, [field]: value };
+    }
 
-    handleSubmitForm() {
-        if (!this.canSubmitForm) return;
-        const amount = Number(this.formAmount);
-        if (this.activeFormCategoryType === 'Incasso') {
-            this.incassi = [...this.incassi, {
-                id: newId(),
-                categoria: this.activeFormCategory,
-                name: (this.formName || this.activeFormCategory).trim(),
-                data: this.formData || this.dataTarget,
-                ammontare: amount,
-                note: ''
-            }];
-        } else {
-            this.spese = [...this.spese, {
-                id: newId(),
-                categoria: this.activeFormCategory,
-                sottocategoria: this.formSottocategoria || null,
-                name: (this.formName || this.activeFormCategory).trim(),
-                data: this.formData || this.dataTarget,
-                ammontare: amount,
-                note: (this.formNote || '').trim()
-            }];
-        }
+    handleDraftIncassoSubmit() {
+        if (!this.isIncassoDraftValid(this.draftIncasso)) return;
+        const r = this.draftIncasso;
+        this.incassi = [...this.incassi, {
+            id: newId(),
+            categoria: r.categoria,
+            name: (r.name || r.categoria).trim(),
+            data: r.data || this.dataTarget,
+            ammontare: Number(r.ammontare),
+            note: ''
+        }];
+        this.draftIncasso = this.blankIncassoRow();
         this.persistDraft();
         this.flashSaveToast('Voce aggiunta');
-        // Mantieni il form aperto per inserimenti multipli veloci: pulisci i soli campi.
-        this.formName = '';
-        this.formAmount = '';
-        this.formSottocategoria = '';
-        this.formNote = '';
+        this.focusAfterAdd('incasso');
     }
 
-    handleRemoveItem(event) {
-        const { id, type } = event.currentTarget.dataset;
-        if (type === 'Incasso') {
-            this.incassi = this.incassi.filter(i => i.id !== id);
-        } else {
-            this.spese = this.spese.filter(i => i.id !== id);
-        }
+    // Handlers celle spese esistenti
+    handleSpesaCellChange(event) {
+        const { id, field } = event.currentTarget.dataset;
+        const value = this.readEventValue(event);
+        this.spese = this.spese.map(r => {
+            if (r.id !== id) return r;
+            const updated = { ...r, [field]: value };
+            if (field === 'categoria' && r.categoria !== value) updated.sottocategoria = '';
+            return updated;
+        });
         this.persistDraft();
+    }
+
+    handleSpesaRemove(event) {
+        const id = event.currentTarget.dataset.id;
+        this.spese = this.spese.filter(r => r.id !== id);
+        this.persistDraft();
+    }
+
+    handleDraftSpesaChange(event) {
+        const field = event.currentTarget.dataset.field;
+        const value = this.readEventValue(event);
+        const updated = { ...this.draftSpesa, [field]: value };
+        if (field === 'categoria' && this.draftSpesa.categoria !== value) {
+            updated.sottocategoria = '';
+        }
+        this.draftSpesa = updated;
+    }
+
+    handleDraftSpesaSubmit() {
+        if (!this.isSpesaDraftValid(this.draftSpesa)) return;
+        const r = this.draftSpesa;
+        this.spese = [...this.spese, {
+            id: newId(),
+            categoria: r.categoria,
+            sottocategoria: r.sottocategoria || null,
+            name: (r.name || r.categoria).trim(),
+            data: r.data || this.dataTarget,
+            ammontare: Number(r.ammontare),
+            note: (r.note || '').trim()
+        }];
+        this.draftSpesa = this.blankSpesaRow();
+        this.persistDraft();
+        this.flashSaveToast('Voce aggiunta');
+        this.focusAfterAdd('spesa');
+    }
+
+    readEventValue(event) {
+        if (event.detail && 'value' in event.detail) return event.detail.value;
+        if (event.target) return event.target.value;
+        return undefined;
+    }
+
+    focusAfterAdd(which) {
+        // Riporta il cursore sulla prima cella del draft (UX da spreadsheet).
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => {
+            const selector = which === 'incasso'
+                ? '[data-scope="draft-incasso"][data-field="categoria"]'
+                : '[data-scope="draft-spesa"][data-field="categoria"]';
+            const el = this.template.querySelector(selector);
+            if (el && typeof el.focus === 'function') el.focus();
+        }, 40);
     }
 
     handleResetClick() {
@@ -298,7 +339,8 @@ export default class BudgetDesigner extends LightningElement {
     handleResetConfirm() {
         this.incassi = [];
         this.spese = [];
-        this.closeForm();
+        this.draftIncasso = this.blankIncassoRow();
+        this.draftSpesa = this.blankSpesaRow();
         this.persistDraft();
         this.confirmReset = false;
         this.flashSaveToast('Progetto svuotato');
@@ -334,23 +376,20 @@ export default class BudgetDesigner extends LightningElement {
     persistDraft() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.buildDraftPayload()));
-        } catch (e) {
-            // Se localStorage non disponibile (incognito policy), non bloccare.
-        }
+        } catch (e) { /* quota/private-mode, ignora */ }
     }
 
     restoreDraft() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            let raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
             if (!raw) return;
             const draft = JSON.parse(raw);
             if (draft.anno) this.anno = draft.anno;
             if (draft.dataTarget) this.dataTarget = draft.dataTarget;
             if (Array.isArray(draft.incassi)) this.incassi = draft.incassi;
             if (Array.isArray(draft.spese)) this.spese = draft.spese;
-        } catch (e) {
-            // Ignora payload corrotto.
-        }
+        } catch (e) { /* payload corrotto: ignora */ }
     }
 
     flashSaveToast(msg) {
@@ -363,18 +402,11 @@ export default class BudgetDesigner extends LightningElement {
 
     formatCurrency(value) {
         const n = Number(value);
-        if (!Number.isFinite(n)) return '€ 0';
+        if (!Number.isFinite(n)) return '';
         return new Intl.NumberFormat('it-IT', {
             style: 'currency',
             currency: 'EUR',
             maximumFractionDigits: 0
         }).format(n);
-    }
-
-    formatDate(value) {
-        if (!value) return '';
-        const parts = String(value).slice(0, 10).split('-');
-        if (parts.length !== 3) return value;
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 }
