@@ -89,6 +89,7 @@
 
                 <!-- Totali sticky (collapses to header + cashflow on scroll) -->
                 <template if:true={hasTotals}>
+                    <div class="viewer-totals-sentinel" aria-hidden="true"></div>
                     <div class={totalsContainerClass}>
                         <div class="viewer-totals-header">
                             <lightning-icon icon-name="utility:chart" size="x-small" class="viewer-totals-icon"></lightning-icon>
@@ -126,7 +127,6 @@
                             </table>
                         </div>
                     </div>
-                    <div class="viewer-totals-sentinel" aria-hidden="true"></div>
                 </template>
 
                 <!-- Table header -->
