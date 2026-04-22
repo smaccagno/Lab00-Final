@@ -403,7 +403,12 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
                 // When it becomes visible again, we're at the top: expand.
                 this.totalsCompact = !entry.isIntersecting;
             },
-            { threshold: 0, rootMargin: '0px' }
+            // Negative top margin adds hysteresis: the sentinel must travel
+            // ~80px above the viewport top before we mark the totals as
+            // compact, and must come back that same distance before we
+            // re-expand. This prevents a feedback loop between the shrink
+            // and the browser's scroll-anchoring adjustment.
+            { threshold: 0, rootMargin: '-80px 0px 0px 0px' }
         );
         this._totalsObserver.observe(sentinel);
     }
