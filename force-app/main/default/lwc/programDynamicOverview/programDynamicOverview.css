@@ -400,6 +400,11 @@
 /* ---------- Tables ---------------------------------------- */
 .pdo-table-wrapper {
     width: 100%;
+    border: 1px solid #d7dde8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(22, 50, 92, 0.04);
 }
 
 .full-width,
@@ -410,10 +415,11 @@
 
 .slds-table thead th .slds-truncate { white-space: pre-line; }
 
-/* Highlight classes still used by aggregated donor-per-year rows */
-.highlight-gray  { background: #f4f4f4; }
-.highlight-green { background: #e6f9e6; }
-.highlight-blue  { background: #e6f0ff; }
+/* Highlight classes (used on host element too — shadow-DOM overrides
+   are in the js-injected stylesheet) */
+.highlight-gray  { background: #f6f7fb; }
+.highlight-green { background: #eef7ee; }
+.highlight-blue  { background: #eef2fc; }
 
 /* ---------- Split list (per budget) ----------------------- */
 .pdo-split-list {

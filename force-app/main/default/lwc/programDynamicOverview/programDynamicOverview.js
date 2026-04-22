@@ -1524,15 +1524,106 @@ export default class ProgramDynamicOverview extends LightningElement {
   }
 
   renderedCallback() {
-    // 1) patch CSS per le intestazioni delle datatable
+    // 1) Business skin for lightning-datatable shadow DOM
     this.template.querySelectorAll("lightning-datatable").forEach((dt) => {
       if (!dt.dataset.headerFixed && dt.shadowRoot) {
         const style = document.createElement("style");
         style.textContent = `
-                thead th .slds-truncate {
-                    white-space: pre-line !important;
-                    max-width: 100% !important;
-                }`;
+            /* Wrap */
+            .slds-scrollable_x, .slds-scrollable {
+                border-radius: 6px;
+            }
+
+            /* Table base */
+            .slds-table {
+                background: #ffffff;
+                font-size: 0.82rem;
+            }
+
+            /* Header band */
+            .slds-table thead th {
+                background: linear-gradient(180deg, #f4f6fb 0%, #e8eef7 100%) !important;
+                color: #16325c !important;
+                border-bottom: 1px solid #d3dbe8 !important;
+                border-right: 1px solid #e1e5eb !important;
+                padding: 0.45rem 0.7rem !important;
+            }
+            .slds-table thead th:last-child { border-right: none !important; }
+
+            .slds-table thead th .slds-truncate,
+            .slds-table thead th a,
+            .slds-table thead th span {
+                color: #16325c !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.04em !important;
+                font-size: 0.68rem !important;
+                white-space: pre-line !important;
+                max-width: 100% !important;
+                line-height: 1.25 !important;
+            }
+
+            /* Totals inside the label are separated by \\n — keep them visible */
+            .slds-table thead th .slds-truncate {
+                padding: 0.1rem 0;
+            }
+
+            /* Row number column: softer */
+            .slds-table thead th.slds-cell_action-mode,
+            .slds-table thead th[aria-label*="Row number"] {
+                background: #eef2f8 !important;
+            }
+            .slds-row-number, .slds-table th[scope="row"] {
+                background: #f8fafc !important;
+                color: #7a8aa0 !important;
+                font-weight: 600 !important;
+                font-size: 0.72rem !important;
+                border-right: 1px solid #e1e5eb !important;
+            }
+
+            /* Body cells */
+            .slds-table tbody td, .slds-table tbody th {
+                padding: 0.45rem 0.7rem !important;
+                border-bottom: 1px solid #eef1f6 !important;
+                border-right: 1px solid #eef1f6 !important;
+                color: #2f3a4a !important;
+                vertical-align: middle !important;
+            }
+            .slds-table tbody td:last-child,
+            .slds-table tbody th:last-child { border-right: none !important; }
+
+            .slds-table tbody tr:hover td,
+            .slds-table tbody tr:hover th {
+                background: #fafcff !important;
+            }
+
+            /* Numeric / currency cells → tabular-nums, right-align */
+            .slds-table tbody td.slds-text-align_right,
+            .slds-table tbody td lightning-formatted-number,
+            .slds-table tbody td lightning-formatted-text,
+            .slds-table tbody td .slds-truncate {
+                font-variant-numeric: tabular-nums;
+            }
+
+            /* Row highlight classes (already used by aggregated per-year rows) */
+            tr.highlight-gray  td, tr.highlight-gray  th { background: #f6f7fb !important; }
+            tr.highlight-green td, tr.highlight-green th { background: #eef7ee !important; }
+            tr.highlight-blue  td, tr.highlight-blue  th { background: #eef2fc !important; }
+            tr.highlight-gray:hover  td, tr.highlight-gray:hover  th { background: #eef0f7 !important; }
+            tr.highlight-green:hover td, tr.highlight-green:hover th { background: #e4f1e4 !important; }
+            tr.highlight-blue:hover  td, tr.highlight-blue:hover  th { background: #e1e7fa !important; }
+
+            /* Link cells (the url-type columns) */
+            .slds-table a, .slds-table lightning-formatted-url a {
+                color: #0176d3 !important;
+                font-weight: 600 !important;
+                text-decoration: none !important;
+            }
+            .slds-table a:hover, .slds-table lightning-formatted-url a:hover {
+                color: #014f8e !important;
+                text-decoration: underline !important;
+            }
+        `;
         dt.shadowRoot.appendChild(style);
         dt.dataset.headerFixed = "true";
       }
