@@ -210,3 +210,286 @@
     margin: 0 0 0.65rem 0;
     max-width: 420px;
 }
+
+/* ==========================================================================
+   Professional sheet-style tables (records + totals)
+   ========================================================================== */
+
+.rv-sheet-wrapper {
+    overflow-x: auto;
+    border: 1px solid #d7dde8;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.rv-sheet {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    font-size: 0.85rem;
+    table-layout: auto;
+}
+
+.rv-sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, #f4f6fb 0%, #e8eef7 100%);
+    color: #16325c;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #d3dbe8;
+    border-right: 1px solid #e1e5eb;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.rv-sheet thead th:last-child {
+    border-right: none;
+}
+
+.rv-sheet thead th.col-num,
+.rv-sheet tbody td.col-num {
+    text-align: right;
+}
+
+.rv-sheet tbody td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid #eef1f6;
+    border-right: 1px solid #eef1f6;
+    vertical-align: middle;
+    color: #2f3a4a;
+    background: #fff;
+}
+
+.rv-sheet tbody td:last-child {
+    border-right: none;
+}
+
+.rv-sheet tbody tr:hover:not(.rv-totals-row--cashflow) td {
+    background: #fafcff;
+}
+
+/* Column widths — records table */
+.rv-sheet--records .col-type { width: 90px; }
+.rv-sheet--records .col-year { width: 70px; }
+.rv-sheet--records .col-date { width: 100px; white-space: nowrap; }
+.rv-sheet--records .col-status { width: 110px; }
+.rv-sheet--records .col-num { width: 120px; }
+.rv-sheet--records .col-note { max-width: 220px; }
+.rv-sheet--records .col-note,
+.rv-sheet--records .col-name,
+.rv-sheet--records .col-prog,
+.rv-sheet--records .col-cat,
+.rv-sheet--records .col-sub,
+.rv-sheet--records .col-trans,
+.rv-sheet--records .col-bya {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Totals table */
+.rv-sheet--totals .col-type { width: 100px; }
+.rv-sheet--totals .col-progress { min-width: 180px; width: 22%; }
+
+/* Type pills (records & totals) */
+.rv-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.rv-type--incasso {
+    background: rgba(46, 132, 74, 0.12);
+    color: #1b5a30;
+    border-color: rgba(46, 132, 74, 0.35);
+}
+
+.rv-type--spesa {
+    background: rgba(201, 38, 58, 0.1);
+    color: #a00015;
+    border-color: rgba(201, 38, 58, 0.3);
+}
+
+.rv-type--cashflow {
+    background: rgba(1, 118, 211, 0.12);
+    color: #014f8e;
+    border-color: rgba(1, 118, 211, 0.35);
+}
+
+.rv-type--neutral {
+    background: #eef1f6;
+    color: #547190;
+    border-color: #c6d1e3;
+}
+
+/* Status badges */
+.rv-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.35;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.rv-status--effettiva {
+    background: rgba(46, 132, 74, 0.14);
+    color: #1b5a30;
+    border-color: rgba(46, 132, 74, 0.35);
+}
+
+.rv-status--prevista {
+    background: rgba(1, 118, 211, 0.1);
+    color: #014f8e;
+    border-color: rgba(1, 118, 211, 0.35);
+}
+
+.rv-status--annullata {
+    background: #f4f6fb;
+    color: #7a8aa0;
+    border-color: #c6d1e3;
+    text-decoration: line-through;
+    text-decoration-color: rgba(122, 138, 160, 0.6);
+}
+
+.rv-status--neutral {
+    background: #eef1f6;
+    color: #547190;
+    border-color: #c6d1e3;
+}
+
+/* Amount column */
+.rv-amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rv-amount--incasso { color: #1b5a30; }
+.rv-amount--spesa { color: #a00015; }
+
+/* Button-style link inside cell */
+.rv-link {
+    display: inline;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: #0176d3;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rv-link:hover,
+.rv-link:focus {
+    text-decoration: underline;
+    color: #014f8e;
+    outline: none;
+}
+
+.rv-muted {
+    color: #7a8aa0;
+    font-style: italic;
+}
+
+/* Totals cashflow row */
+.rv-totals-row--cashflow td {
+    background: linear-gradient(90deg, #f4f6fb 0%, #eaf1f9 100%);
+    border-top: 2px solid #c6d1e3;
+    font-weight: 700;
+    color: #014f8e;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+.rv-totals-row--cashflow td.col-num {
+    color: #014f8e;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.rv-totals-row td.col-num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #16325c;
+}
+
+/* Progress bar inline */
+.rv-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rv-progress-track {
+    flex: 1;
+    height: 6px;
+    background: #eef1f6;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.rv-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease-out;
+    background: linear-gradient(90deg, #9ec6f0 0%, #0176d3 100%);
+}
+
+.rv-progress-fill--incasso {
+    background: linear-gradient(90deg, #91c8a0 0%, #2e844a 100%);
+}
+
+.rv-progress-fill--spesa {
+    background: linear-gradient(90deg, #f5a2ac 0%, #c9263a 100%);
+}
+
+.rv-progress-fill--cashflow {
+    background: linear-gradient(90deg, #9ec6f0 0%, #014f8e 100%);
+}
+
+.rv-progress-label {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #16325c;
+    min-width: 52px;
+    text-align: right;
+}
+
+/* Remove inner border from the totals wrapper (we already have .viewer-totals container styling) */
+.viewer-totals .rv-sheet-wrapper {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+/* Main records wrapper: align with viewer-table-wrapper */
+.viewer-table-wrapper {
+    padding: 0;
+}

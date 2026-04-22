@@ -94,12 +94,37 @@
                             <lightning-icon icon-name="utility:chart" size="x-small" class="viewer-totals-icon"></lightning-icon>
                             <h2 class="viewer-totals-title">Totali per Tipo e Categoria</h2>
                         </div>
-                        <lightning-datatable
-                            key-field="id"
-                            data={totalsRows}
-                            columns={totalsColumns}
-                            hide-checkbox-column>
-                        </lightning-datatable>
+                        <div class="rv-sheet-wrapper">
+                            <table class="rv-sheet rv-sheet--totals">
+                                <thead>
+                                    <tr>
+                                        <th class="col-type">Tipo</th>
+                                        <th class="col-cat">Categoria</th>
+                                        <th class="col-num">Previsto</th>
+                                        <th class="col-num">Effettivo</th>
+                                        <th class="col-progress">Avanzamento</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template for:each={displayTotals} for:item="row">
+                                        <tr key={row.id} class={row.rowClass}>
+                                            <td class="col-type"><span class={row.pillClass}>{row.typeLabel}</span></td>
+                                            <td class="col-cat">{row.categoria}</td>
+                                            <td class="col-num">{row.previstoFmt}</td>
+                                            <td class="col-num">{row.effettivoFmt}</td>
+                                            <td class="col-progress">
+                                                <div class="rv-progress">
+                                                    <span class="rv-progress-track">
+                                                        <span class={row.progressFillClass} style={row.progressStyle}></span>
+                                                    </span>
+                                                    <span class="rv-progress-label">{row.avanzamentoFmt}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </template>
 
@@ -119,14 +144,89 @@
                 <!-- Table or empty -->
                 <template if:true={hasRecords}>
                     <div class="viewer-table-wrapper">
-                        <lightning-datatable
-                            key-field="recordId"
-                            data={records}
-                            columns={columns}
-                            hide-checkbox-column
-                            onrowaction={handleRowAction}
-                            resize-column-disabled="false">
-                        </lightning-datatable>
+                        <table class="rv-sheet rv-sheet--records">
+                            <thead>
+                                <tr>
+                                    <template if:true={showTipoColumn}>
+                                        <th class="col-type">Tipo</th>
+                                    </template>
+                                    <th class="col-name">Nome</th>
+                                    <th class="col-prog">Programma</th>
+                                    <th class="col-year">Anno</th>
+                                    <th class="col-date">Data</th>
+                                    <th class="col-cat">Categoria</th>
+                                    <template if:true={showSottocategoriaColumn}>
+                                        <th class="col-sub">Sottocategoria</th>
+                                    </template>
+                                    <template if:true={showNoteColumn}>
+                                        <th class="col-note">Note</th>
+                                    </template>
+                                    <th class="col-status">Stato</th>
+                                    <th class="col-num">Ammontare</th>
+                                    <template if:true={showTransazioneColumn}>
+                                        <th class="col-trans">Transazione</th>
+                                    </template>
+                                    <th class="col-bya">Budget Anno</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={displayRecords} for:item="row">
+                                    <tr key={row.recordId} class="rv-row">
+                                        <template if:true={showTipoColumn}>
+                                            <td class="col-type"><span class={row.tipoPillClass}>{row.tipoLabel}</span></td>
+                                        </template>
+                                        <td class="col-name">
+                                            <template if:true={row.canOpenRecord}>
+                                                <button class="rv-link"
+                                                        data-record-id={row.recordId}
+                                                        data-tipo={row.tipo}
+                                                        onclick={handleOpenRecord}
+                                                        title={row.name}>{row.name}</button>
+                                            </template>
+                                            <template if:false={row.canOpenRecord}>
+                                                <span class="rv-muted">{row.name}</span>
+                                            </template>
+                                        </td>
+                                        <td class="col-prog">
+                                            <template if:true={row.canOpenProgram}>
+                                                <button class="rv-link"
+                                                        data-program-id={row.programId}
+                                                        onclick={handleOpenProgram}
+                                                        title={row.programName}>{row.programName}</button>
+                                            </template>
+                                            <template if:false={row.canOpenProgram}>
+                                                <span class="rv-muted">{row.programName}</span>
+                                            </template>
+                                        </td>
+                                        <td class="col-year">{row.anno}</td>
+                                        <td class="col-date">{row.dataFormatted}</td>
+                                        <td class="col-cat">{row.categoria}</td>
+                                        <template if:true={showSottocategoriaColumn}>
+                                            <td class="col-sub">{row.sottocategoria}</td>
+                                        </template>
+                                        <template if:true={showNoteColumn}>
+                                            <td class="col-note">{row.note}</td>
+                                        </template>
+                                        <td class="col-status"><span class={row.statoPillClass}>{row.statoLabel}</span></td>
+                                        <td class={row.amountClass}>{row.ammontareFormatted}</td>
+                                        <template if:true={showTransazioneColumn}>
+                                            <td class="col-trans">
+                                                <template if:true={row.canOpenTransazione}>
+                                                    <button class="rv-link"
+                                                            data-transazione-id={row.transazioneId}
+                                                            onclick={handleOpenTransazione}
+                                                            title={row.transazioneName}>{row.transazioneName}</button>
+                                                </template>
+                                                <template if:false={row.canOpenTransazione}>
+                                                    <span class="rv-muted">{row.transazioneName}</span>
+                                                </template>
+                                            </td>
+                                        </template>
+                                        <td class="col-bya">{row.budgetYearName}</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
                     </div>
                 </template>
                 <template if:false={hasRecords}>

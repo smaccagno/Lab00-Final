@@ -5,60 +5,8 @@ import getViewerOptions from '@salesforce/apex/BudgetAppDashboardController.getV
 import getViewerRecords from '@salesforce/apex/BudgetAppDashboardController.getViewerRecords';
 import getViewerTotals from '@salesforce/apex/BudgetAppDashboardController.getViewerTotals';
 
-const NOME_COLUMN = { label: 'Nome', type: 'button',
-    typeAttributes: { label: { fieldName: 'name' }, name: 'open_record', variant: 'base', title: { fieldName: 'name' }, disabled: { fieldName: 'recordDisabled' } } };
-
-const PROGRAMMA_COLUMN = { label: 'Programma', type: 'button',
-    typeAttributes: { label: { fieldName: 'programName' }, name: 'open_program', variant: 'base', title: { fieldName: 'programName' }, disabled: { fieldName: 'programDisabled' } } };
-
-const TRANSAZIONE_COLUMN = { label: 'Transazione', type: 'button',
-    typeAttributes: { label: { fieldName: 'transazioneName' }, name: 'open_transazione', variant: 'base', title: { fieldName: 'transazioneName' }, disabled: { fieldName: 'transazioneDisabled' } } };
-
-const INCASSO_COLUMNS = [
-    NOME_COLUMN,
-    PROGRAMMA_COLUMN,
-    { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
-    { label: 'Data', fieldName: 'data', type: 'date-local',
-      typeAttributes: { day: '2-digit', month: '2-digit', year: 'numeric' }, initialWidth: 110 },
-    { label: 'Categoria', fieldName: 'categoria', type: 'text' },
-    { label: 'Stato', fieldName: 'stato', type: 'text', initialWidth: 110 },
-    { label: 'Ammontare', fieldName: 'ammontare', type: 'currency',
-      typeAttributes: { currencyCode: 'EUR' }, initialWidth: 130 },
-    TRANSAZIONE_COLUMN,
-    { label: 'Budget Anno', fieldName: 'budgetYearName', type: 'text' }
-];
-
-const SPESA_COLUMNS = [
-    NOME_COLUMN,
-    PROGRAMMA_COLUMN,
-    { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
-    { label: 'Data', fieldName: 'data', type: 'date-local',
-      typeAttributes: { day: '2-digit', month: '2-digit', year: 'numeric' }, initialWidth: 110 },
-    { label: 'Categoria', fieldName: 'categoria', type: 'text' },
-    { label: 'Sottocategoria', fieldName: 'sottocategoria', type: 'text' },
-    { label: 'Note', fieldName: 'note', type: 'text', wrapText: true },
-    { label: 'Stato', fieldName: 'stato', type: 'text', initialWidth: 110 },
-    { label: 'Ammontare', fieldName: 'ammontare', type: 'currency',
-      typeAttributes: { currencyCode: 'EUR' }, initialWidth: 130 },
-    { label: 'Budget Anno', fieldName: 'budgetYearName', type: 'text' }
-];
-
-const MIXED_COLUMNS = [
-    { label: 'Tipo', fieldName: 'tipo', type: 'text', initialWidth: 90 },
-    NOME_COLUMN,
-    PROGRAMMA_COLUMN,
-    { label: 'Anno', fieldName: 'anno', type: 'text', initialWidth: 80 },
-    { label: 'Data', fieldName: 'data', type: 'date-local',
-      typeAttributes: { day: '2-digit', month: '2-digit', year: 'numeric' }, initialWidth: 110 },
-    { label: 'Categoria', fieldName: 'categoria', type: 'text' },
-    { label: 'Sottocategoria', fieldName: 'sottocategoria', type: 'text' },
-    { label: 'Note', fieldName: 'note', type: 'text', wrapText: true },
-    { label: 'Stato', fieldName: 'stato', type: 'text', initialWidth: 110 },
-    { label: 'Ammontare', fieldName: 'ammontare', type: 'currency',
-      typeAttributes: { currencyCode: 'EUR' }, initialWidth: 130 },
-    TRANSAZIONE_COLUMN,
-    { label: 'Budget Anno', fieldName: 'budgetYearName', type: 'text' }
-];
+const EURO_FORMATTER = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+const PERCENT_FORMATTER = new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export default class BudgetRecordsViewer extends NavigationMixin(LightningElement) {
     @track programId = '';
@@ -80,14 +28,6 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
     wiredIsConsoleNavigation(result) {
         this.isConsoleNavigation = !!(result && result.data);
     }
-
-    totalsColumns = [
-        { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Categoria', fieldName: 'categoria', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Previsto', fieldName: 'previsto', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Effettivo', fieldName: 'effettivo', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Avanzamento', fieldName: 'avanzamento', type: 'percent', typeAttributes: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, cellAttributes: { class: { fieldName: 'cssClass' } } }
-    ];
 
     programOptions = [];
     annoOptions = [];
@@ -187,14 +127,107 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
         return !subs || subs.length === 0;
     }
 
-    get columns() {
-        if (this.tipo === 'Incasso') return INCASSO_COLUMNS;
-        if (this.tipo === 'Spesa') return SPESA_COLUMNS;
-        return MIXED_COLUMNS;
-    }
+    get showTipoColumn() { return !this.tipo; }
+    get showSottocategoriaColumn() { return this.tipo !== 'Incasso'; }
+    get showNoteColumn() { return this.tipo !== 'Incasso'; }
+    get showTransazioneColumn() { return this.tipo !== 'Spesa'; }
 
     get hasRecords() {
         return this.records && this.records.length > 0;
+    }
+
+    formatEuro(value) {
+        if (value == null || value === '') return '';
+        const n = Number(value);
+        return EURO_FORMATTER.format(Number.isFinite(n) ? n : 0);
+    }
+
+    formatPercentValue(value) {
+        const n = Number(value);
+        return PERCENT_FORMATTER.format(Number.isFinite(n) ? n : 0);
+    }
+
+    statoMeta(stato) {
+        switch (stato) {
+            case 'Effettiva':
+                return { pillClass: 'rv-status rv-status--effettiva', label: 'Effettiva' };
+            case 'Prevista':
+                return { pillClass: 'rv-status rv-status--prevista', label: 'Prevista' };
+            case 'Annullata':
+                return { pillClass: 'rv-status rv-status--annullata', label: 'Annullata' };
+            default:
+                return { pillClass: 'rv-status rv-status--neutral', label: stato || '—' };
+        }
+    }
+
+    tipoMeta(tipo) {
+        if (tipo === 'Incasso') return { pillClass: 'rv-type rv-type--incasso', label: 'Incasso' };
+        if (tipo === 'Spesa') return { pillClass: 'rv-type rv-type--spesa', label: 'Spesa' };
+        return { pillClass: 'rv-type rv-type--neutral', label: tipo || '—' };
+    }
+
+    get displayRecords() {
+        return (this.records || []).map(r => {
+            const stato = this.statoMeta(r.stato);
+            const tipo = this.tipoMeta(r.tipo);
+            const isSpesa = r.tipo === 'Spesa';
+            const amountClass = isSpesa ? 'rv-amount rv-amount--spesa' : 'rv-amount rv-amount--incasso';
+            return {
+                ...r,
+                tipoLabel: tipo.label,
+                tipoPillClass: tipo.pillClass,
+                statoLabel: stato.label,
+                statoPillClass: stato.pillClass,
+                dataFormatted: this.formatDate(r.data),
+                ammontareFormatted: this.formatEuro(r.ammontare),
+                amountClass,
+                canOpenRecord: !!r.recordId,
+                canOpenProgram: !!r.programId,
+                canOpenTransazione: !!r.transazioneId
+            };
+        });
+    }
+
+    get displayTotals() {
+        return (this.totalsRows || []).map(row => {
+            const isCashflow = row.tipo === 'CASH FLOW TOTALE' || row.tipo === 'CASH FLOW';
+            const isIncasso = row.tipo === 'Incasso';
+            const isSpesa = row.tipo === 'Spesa';
+
+            let pillClass = 'rv-type';
+            let progressFillClass = 'rv-progress-fill';
+            let typeLabel = row.tipo;
+
+            if (isIncasso) {
+                pillClass += ' rv-type--incasso';
+                progressFillClass += ' rv-progress-fill--incasso';
+            } else if (isSpesa) {
+                pillClass += ' rv-type--spesa';
+                progressFillClass += ' rv-progress-fill--spesa';
+            } else if (isCashflow) {
+                pillClass += ' rv-type--cashflow';
+                progressFillClass += ' rv-progress-fill--cashflow';
+                typeLabel = row.tipo === 'CASH FLOW TOTALE' ? 'TOTALE' : 'CASH FLOW';
+            } else {
+                pillClass += ' rv-type--neutral';
+            }
+
+            const avanzamento = Number(row.avanzamento) || 0;
+            const clamped = Math.min(100, Math.max(0, avanzamento * 100));
+
+            return {
+                ...row,
+                isCashflow,
+                typeLabel,
+                pillClass,
+                rowClass: isCashflow ? 'rv-totals-row rv-totals-row--cashflow' : 'rv-totals-row',
+                previstoFmt: this.formatEuro(row.previsto),
+                effettivoFmt: this.formatEuro(row.effettivo),
+                avanzamentoFmt: this.formatPercentValue(avanzamento),
+                progressStyle: `width: ${clamped}%`,
+                progressFillClass
+            };
+        });
     }
 
     get recordsCountLabel() {
@@ -368,28 +401,32 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
         }
     }
 
-    handleRowAction(event) {
-        const actionName = event.detail?.action?.name;
-        const row = event.detail?.row;
-        if (!row) return;
-
-        let recordId = null;
-        let objectApiName = null;
-        if (actionName === 'open_record') {
-            recordId = row.recordId;
-            objectApiName = row.tipo === 'Spesa' ? 'Voce_di_Spesa__c' : 'Voce_di_Incasso__c';
-        } else if (actionName === 'open_program') {
-            recordId = row.programId;
-            objectApiName = 'GiftDesignation';
-        } else if (actionName === 'open_transazione') {
-            recordId = row.transazioneId;
-            objectApiName = 'GiftTransaction';
-        }
-
+    handleOpenRecord(event) {
+        const recordId = event.currentTarget.dataset.recordId;
+        const tipo = event.currentTarget.dataset.tipo;
         if (!recordId) return;
+        const objectApiName = tipo === 'Spesa' ? 'Voce_di_Spesa__c' : 'Voce_di_Incasso__c';
         this.openInConsoleOrNavigate({
             type: 'standard__recordPage',
             attributes: { recordId, objectApiName, actionName: 'view' }
+        });
+    }
+
+    handleOpenProgram(event) {
+        const programId = event.currentTarget.dataset.programId;
+        if (!programId) return;
+        this.openInConsoleOrNavigate({
+            type: 'standard__recordPage',
+            attributes: { recordId: programId, objectApiName: 'GiftDesignation', actionName: 'view' }
+        });
+    }
+
+    handleOpenTransazione(event) {
+        const transazioneId = event.currentTarget.dataset.transazioneId;
+        if (!transazioneId) return;
+        this.openInConsoleOrNavigate({
+            type: 'standard__recordPage',
+            attributes: { recordId: transazioneId, objectApiName: 'GiftTransaction', actionName: 'view' }
         });
     }
 
@@ -424,12 +461,7 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
         })
             .then(data => {
                 if (data && Array.isArray(data.rows)) {
-                    this.records = data.rows.map(r => ({
-                        ...r,
-                        recordDisabled: !r.recordId,
-                        programDisabled: !r.programId,
-                        transazioneDisabled: !r.transazioneId
-                    }));
+                    this.records = data.rows;
                     this.truncated = !!data.truncated;
                     this.recordsLimit = data.limitApplied || 0;
                 } else {
