@@ -108,6 +108,25 @@ export default class ProgramDynamicOverview extends LightningElement {
   @track yearOptions = [];
   @track selectedYear = "";
   @track budgetsAggregatiFiltered = [];
+  @track activeSection = "consolidato"; // "consolidato" | "perAnno"
+
+  get isSectionConsolidato() { return this.activeSection === "consolidato"; }
+  get isSectionPerAnno() { return this.activeSection === "perAnno"; }
+  get tabConsolidatoClass() {
+    return this.isSectionConsolidato ? "pdo-tab is-active" : "pdo-tab";
+  }
+  get tabPerAnnoClass() {
+    return this.isSectionPerAnno ? "pdo-tab is-active" : "pdo-tab";
+  }
+  handleTabClick(evt) {
+    const key = evt.currentTarget.dataset.tab;
+    if (key) this.activeSection = key;
+  }
+
+  get hasActiveYear() { return !!this.selectedYear; }
+  get programHeadline() {
+    return this.programName ? this.programName : "Panoramica Programma";
+  }
   /* campi dinamici */
   fieldConfig = {}; // <objectApi , FieldConf[]>
   dynamicCols = {}; // cache colonne già costruite

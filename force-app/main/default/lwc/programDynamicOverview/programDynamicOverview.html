@@ -1,298 +1,333 @@
-<!--
-  @description       : 
-  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
-  @group             : 
-  @last modified on  : 09-17-2025
-  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
--->
 <template>
-<div class="component-wrapper">
+    <div class="pdo-root">
 
-    <template if:true={isRefreshing}>
-        <div class="spinner-overlay">
-            <lightning-spinner size="medium" alternative-text="Aggiornamento in corso"></lightning-spinner>
-        </div>
-    </template>
-
-<!-- ========================================================= -->
-<!--  VISTA GRAFICA DEI FLUSSI (2 colonne)                     -->
-<!-- ========================================================= -->
-<lightning-card>
-    <h2 slot="title" class="slds-text-heading_medium">
-        Vista grafica dei flussi economici del Programma
-    </h2>
-
-
-    <!-- layout a due colonne -->
-    <lightning-layout class="slds-p-horizontal_small">
-
-        <!-- ▸ COLONNA SINISTRA – grafico barre ------------------------- -->
-        <lightning-layout-item size="9" class="slds-p-right_small">
-            <div class="grafico-flussi slds-box">
-
-                <!-- 1. Donato (100 %) -->
-                <div class="row">
-                    <div class="bar bg-donato {zeroClassDonato} flex-full" data-label={labelDonato}>
-                        Donato&nbsp;({formattedGraphNumbers.donato})
-                    </div>
-                </div>
-
-                <!-- 2. Allocabile + Trattenuta -->
-                <div class="row">
-                    <div class="bar bg-allocabile {zeroClassAllocabile} {labelClassAllocabile}" style={styleAllocabile} data-label={labelAllocabile}>
-                        Allocabile&nbsp;({formattedGraphNumbers.allocabile})
-                    </div>
-                    <div class="bar bg-trattenuta {zeroClassTrattenuta} {labelClassTrattenuta}" style={styleTrattenuta} data-label={labelTrattenuta}>
-                        Trattenuta&nbsp;({formattedGraphNumbers.trattenuta})
-                    </div>
-                </div>
-
-                <!-- 3. Allocato + Non Allocato -->
-                <div class="row">
-                    <div class="bar bg-allocato {zeroClassAllocato} {labelClassAllocato}" style={styleAllocato} data-label={labelAllocato}>
-                        Allocato&nbsp;({formattedGraphNumbers.allocato})
-                    </div>
-                    <div class="mini-bar bg-nonallocato {zeroClassNonAllocato}" style={styleNonAllocato}></div>
-                    <span class="label-right">
-                        Non&nbsp;Allocato&nbsp;({formattedGraphNumbers.nonAllocato})
-                    </span>
-                </div>
-
-                <!-- 4. Pagato + Non Pagato -->
-                <div class="row">
-                    <div class="bar bg-pagato {zeroClassPagato} {labelClassPagato}" style={stylePagato} data-label={labelPagato}>
-                        Pagato&nbsp;({formattedGraphNumbers.pagato})
-                    </div>
-                    <div class="mini-bar bg-nonpagato {zeroClassNonPagato}" style={styleNonPagato}></div>
-                    <span class="label-right">
-                        Non&nbsp;Pagato&nbsp;({formattedGraphNumbers.nonPagato})
-                    </span>
-                </div>
-
-                <!-- 5. Fatturato + Non Fatturato -->
-                <div class="row">
-                    <div class="bar bg-fatturato {zeroClassFatturato} {labelClassFatturato}" style={styleFatturato} data-label={labelFatturato}>
-                        Fatturato&nbsp;({formattedGraphNumbers.fatturato})
-                    </div>
-                    <div class="bar bg-nonfatturato {zeroClassNonFatturato} {labelClassNonFatturato}" style={styleNonFatturato} data-label={labelNonFatturato}>
-                        Non&nbsp;Fatturato&nbsp;({formattedGraphNumbers.nonFatturato})
-                    </div>
-                </div>
-
-                <!-- 6. Capienza (allineata a destra) -->
-                <div class="row">
-                    <div class="bar ghost" style={styleGhostCapienza}></div>
-                    <div class="bar bg-capienza {zeroClassCapienza} {labelClassCapienza}" style={styleCapienza} data-label={labelCapienza}>
-                        Capienza&nbsp;({formattedGraphNumbers.capienza})
-                    </div>
-                </div>
-
+        <template if:true={isRefreshing}>
+            <div class="pdo-spinner-overlay">
+                <lightning-spinner size="medium" alternative-text="Aggiornamento in corso"></lightning-spinner>
             </div>
-        </lightning-layout-item>
+        </template>
 
-        <!-- ▸ COLONNA DESTRA – descrizioni campi ----------------------- -->
-        <lightning-layout-item size="3">
-    <ul class="slds-list_dotted">
-        <li><strong>Donato:</strong> Ammontare originale versato dal donatore</li>
-        <li><strong>Allocabile:</strong> Ammontare al netto della trattenuta</li>
-        <li><strong>Trattenuta:</strong> Ammontare non allocato ai budget ma trattenuto da Lab00</li>
-        <li><strong>Allocato:</strong> Ammontare allocato ai budget (somma di Pagato e&nbsp;NON&nbsp;Pagato)</li>
-        <li><strong>NON&nbsp;Allocato:</strong> Differenza tra Allocabile e Allocato</li>
-        <li><strong>Pagato:</strong> Ammontare allocato già pagato</li>
-        <li><strong>NON&nbsp;Pagato:</strong> Ammontare allocato non ancora pagato</li>
-        <li><strong>Fatturato:</strong> Ammontare totale delle Fatture associate al programma</li>
-        <li><strong>NON&nbsp;Fatturati:</strong> Ammontare donato ma senza Fatture sul donatore (può indicare capienza effettiva o mancata associazione Fatture)</li>
-        <li><strong>Capienza:</strong> Differenza tra Allocato e Fatturato</li>
-    </ul>
-        </lightning-layout-item>
-
-    </lightning-layout>
-</lightning-card>
-
-    <!-- ========================================================= -->
-    <!--  1)  CARD – totali consolidati sul Program                 -->
-    <!-- ========================================================= -->
-    <lightning-card>
-        <!-- titolo custom, centrato e più grande -->
-        <h2 slot="title"
-            class="slds-text-heading_medium  slds-align_absolute-center  slds-p-horizontal_small">
-            Vista dei Totali consolidati sul programma
-        </h2>
-        <div slot="actions">
-            <lightning-button label="Aggiorna" icon-name="utility:refresh" onclick={handleRefreshClick} disabled={isRefreshing}></lightning-button>
+        <!-- =====================================================
+             HERO: titolo, programma, pulsante refresh
+             ===================================================== -->
+        <div class="pdo-hero">
+            <div class="pdo-hero-title">
+                <lightning-icon icon-name="standard:dashboard" size="small" class="pdo-hero-icon"></lightning-icon>
+                <div>
+                    <h1>Panoramica Programma</h1>
+                    <template if:true={programName}>
+                        <p class="pdo-hero-subtitle">{programName}</p>
+                    </template>
+                </div>
+            </div>
+            <div class="pdo-hero-actions">
+                <lightning-button
+                    label="Aggiorna"
+                    icon-name="utility:refresh"
+                    variant="neutral"
+                    onclick={handleRefreshClick}
+                    disabled={isRefreshing}>
+                </lightning-button>
+            </div>
         </div>
 
-        <!-- contenitore con bordo su tutti i lati -->
-        <div class="slds-box slds-m-top_large slds-p-top_medium">
-            <!-- ───────── 1-A  Totali per Budget ───────── -->
-            <lightning-card title="Overview Totale Per Budget" class="slds-m-bottom_medium">
-                <div class="budget_table_tot">
-                    <lightning-datatable
-                        data        = {aggregatedBudgetData}
-                        columns     = {budgetColumnsAgg}
-                        key-field   = "Budget__c"
-                        hide-checkbox-column
-                        column-width-mode = "fixed"
-                        wrap-table-header ="all"
-                        class       ="slds-table_col-bordered full-width"
-                        data-table="budgetAgg"
-                        show-row-number-column>
-                    </lightning-datatable>
+        <!-- =====================================================
+             BLOCCO 1 — Vista grafica flussi economici
+             ===================================================== -->
+        <section class="pdo-card pdo-flow-card">
+            <header class="pdo-card-head">
+                <lightning-icon icon-name="utility:chart" size="x-small" class="pdo-card-icon"></lightning-icon>
+                <h2>Flussi economici</h2>
+            </header>
+
+            <div class="pdo-flow-body">
+                <!-- Grafico -->
+                <div class="pdo-flow-chart">
+                    <!-- 1. Donato -->
+                    <div class="pdo-bar-row">
+                        <div class="bar bg-donato {zeroClassDonato} flex-full" data-label={labelDonato}>
+                            Donato&nbsp;({formattedGraphNumbers.donato})
+                        </div>
+                    </div>
+
+                    <!-- 2. Allocabile + Trattenuta -->
+                    <div class="pdo-bar-row">
+                        <div class="bar bg-allocabile {zeroClassAllocabile} {labelClassAllocabile}" style={styleAllocabile} data-label={labelAllocabile}>
+                            Allocabile&nbsp;({formattedGraphNumbers.allocabile})
+                        </div>
+                        <div class="bar bg-trattenuta {zeroClassTrattenuta} {labelClassTrattenuta}" style={styleTrattenuta} data-label={labelTrattenuta}>
+                            Trattenuta&nbsp;({formattedGraphNumbers.trattenuta})
+                        </div>
+                    </div>
+
+                    <!-- 3. Allocato + Non Allocato -->
+                    <div class="pdo-bar-row">
+                        <div class="bar bg-allocato {zeroClassAllocato} {labelClassAllocato}" style={styleAllocato} data-label={labelAllocato}>
+                            Allocato&nbsp;({formattedGraphNumbers.allocato})
+                        </div>
+                        <div class="mini-bar bg-nonallocato {zeroClassNonAllocato}" style={styleNonAllocato}></div>
+                        <span class="label-right">
+                            Non&nbsp;Allocato&nbsp;({formattedGraphNumbers.nonAllocato})
+                        </span>
+                    </div>
+
+                    <!-- 4. Pagato + Non Pagato -->
+                    <div class="pdo-bar-row">
+                        <div class="bar bg-pagato {zeroClassPagato} {labelClassPagato}" style={stylePagato} data-label={labelPagato}>
+                            Pagato&nbsp;({formattedGraphNumbers.pagato})
+                        </div>
+                        <div class="mini-bar bg-nonpagato {zeroClassNonPagato}" style={styleNonPagato}></div>
+                        <span class="label-right">
+                            Non&nbsp;Pagato&nbsp;({formattedGraphNumbers.nonPagato})
+                        </span>
+                    </div>
+
+                    <!-- 5. Fatturato + Non Fatturato -->
+                    <div class="pdo-bar-row">
+                        <div class="bar bg-fatturato {zeroClassFatturato} {labelClassFatturato}" style={styleFatturato} data-label={labelFatturato}>
+                            Fatturato&nbsp;({formattedGraphNumbers.fatturato})
+                        </div>
+                        <div class="bar bg-nonfatturato {zeroClassNonFatturato} {labelClassNonFatturato}" style={styleNonFatturato} data-label={labelNonFatturato}>
+                            Non&nbsp;Fatturato&nbsp;({formattedGraphNumbers.nonFatturato})
+                        </div>
+                    </div>
+
+                    <!-- 6. Capienza -->
+                    <div class="pdo-bar-row">
+                        <div class="bar ghost" style={styleGhostCapienza}></div>
+                        <div class="bar bg-capienza {zeroClassCapienza} {labelClassCapienza}" style={styleCapienza} data-label={labelCapienza}>
+                            Capienza&nbsp;({formattedGraphNumbers.capienza})
+                        </div>
+                    </div>
                 </div>
-            </lightning-card>
 
-            <!-- ───────── 1-B  Totali per Donatore ───────── -->
-            <lightning-card title="Overview Totale Per Donatore" class="slds-m-bottom_medium">
-                <div class="donor_table_tot">
-                    <lightning-datatable
-                        data        = {aggregatedDonorData}
-                        columns     = {donorColumnsAgg}
-                        key-field   = "Account__c"
-                        hide-checkbox-column
-                        column-width-mode = "fixed"
-                        wrap-table-header ="all"
-                        class       ="slds-table_col-bordered full-width"
-                        data-table="donorAgg"
-                        show-row-number-column>
-                    </lightning-datatable>
+                <!-- Legenda -->
+                <aside class="pdo-flow-legend">
+                    <h3 class="pdo-legend-title">Legenda</h3>
+                    <ul class="pdo-legend-list">
+                        <li><span class="pdo-chip pdo-chip--donato"></span><div><strong>Donato</strong> — ammontare originale versato dal donatore</div></li>
+                        <li><span class="pdo-chip pdo-chip--allocabile"></span><div><strong>Allocabile</strong> — al netto della trattenuta</div></li>
+                        <li><span class="pdo-chip pdo-chip--trattenuta"></span><div><strong>Trattenuta</strong> — non allocato, trattenuto da Lab00</div></li>
+                        <li><span class="pdo-chip pdo-chip--allocato"></span><div><strong>Allocato</strong> — allocato ai budget (Pagato + NON Pagato)</div></li>
+                        <li><span class="pdo-chip pdo-chip--nonallocato"></span><div><strong>NON Allocato</strong> — differenza Allocabile − Allocato</div></li>
+                        <li><span class="pdo-chip pdo-chip--pagato"></span><div><strong>Pagato</strong> — già pagato</div></li>
+                        <li><span class="pdo-chip pdo-chip--nonpagato"></span><div><strong>NON Pagato</strong> — allocato ma non pagato</div></li>
+                        <li><span class="pdo-chip pdo-chip--fatturato"></span><div><strong>Fatturato</strong> — totale Fatture associate</div></li>
+                        <li><span class="pdo-chip pdo-chip--nonfatturato"></span><div><strong>NON Fatturato</strong> — donato senza Fatture sul donatore</div></li>
+                        <li><span class="pdo-chip pdo-chip--capienza"></span><div><strong>Capienza</strong> — differenza Allocato − Fatturato</div></li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+
+        <!-- =====================================================
+             TABS: Consolidato | Per Anno
+             ===================================================== -->
+        <div class="pdo-tabs" role="tablist" aria-label="Sezioni totali">
+            <button type="button" class={tabConsolidatoClass} data-tab="consolidato" onclick={handleTabClick} role="tab">
+                <lightning-icon icon-name="utility:summary" size="xx-small"></lightning-icon>
+                <span>Totali consolidati</span>
+            </button>
+            <button type="button" class={tabPerAnnoClass} data-tab="perAnno" onclick={handleTabClick} role="tab">
+                <lightning-icon icon-name="utility:event" size="xx-small"></lightning-icon>
+                <span>Totali per anno</span>
+            </button>
+        </div>
+
+        <!-- =====================================================
+             SEZIONE: Totali consolidati
+             ===================================================== -->
+        <template if:true={isSectionConsolidato}>
+            <div class="pdo-section">
+
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--blue">
+                            <lightning-icon icon-name="standard:program" size="x-small"></lightning-icon>
+                            <span>Overview totale per Budget</span>
+                        </div>
+                    </header>
+                    <div class="pdo-table-wrapper">
+                        <lightning-datatable
+                            data={aggregatedBudgetData}
+                            columns={budgetColumnsAgg}
+                            key-field="Budget__c"
+                            hide-checkbox-column
+                            column-width-mode="fixed"
+                            wrap-table-header="all"
+                            class="slds-table_col-bordered full-width"
+                            data-table="budgetAgg"
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </div>
+                </section>
+
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--green">
+                            <lightning-icon icon-name="standard:lead" size="x-small"></lightning-icon>
+                            <span>Overview totale per Donatore</span>
+                        </div>
+                    </header>
+                    <div class="pdo-table-wrapper">
+                        <lightning-datatable
+                            data={aggregatedDonorData}
+                            columns={donorColumnsAgg}
+                            key-field="Account__c"
+                            hide-checkbox-column
+                            column-width-mode="fixed"
+                            wrap-table-header="all"
+                            class="slds-table_col-bordered full-width"
+                            data-table="donorAgg"
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </div>
+                </section>
+
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--purple">
+                            <lightning-icon icon-name="standard:account_info" size="x-small"></lightning-icon>
+                            <span>Totali Donatore per Budget</span>
+                        </div>
+                    </header>
+                    <template if:true={budgetsAggregati}>
+                        <div class="pdo-split-list">
+                            <template for:each={budgetsAggregati} for:item="b">
+                                <div key={b.id} class="pdo-split-item">
+                                    <h3 class="pdo-split-item-title">{b.name}</h3>
+                                    <c-assegnazione-fatture-a-donatore
+                                        program-id={recordId}
+                                        budget-id={b.id}
+                                        embedded-mode>
+                                    </c-assegnazione-fatture-a-donatore>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </section>
+            </div>
+        </template>
+
+        <!-- =====================================================
+             SEZIONE: Totali per anno
+             ===================================================== -->
+        <template if:true={isSectionPerAnno}>
+            <div class="pdo-section">
+
+                <!-- Year filter toolbar -->
+                <div class="pdo-year-toolbar">
+                    <div class="pdo-year-filter">
+                        <lightning-icon icon-name="utility:event" size="x-small" class="pdo-year-icon"></lightning-icon>
+                        <label for="year-combobox">Filtra per Anno</label>
+                        <lightning-combobox
+                            name="year-combobox"
+                            variant="label-hidden"
+                            value={selectedYear}
+                            options={yearOptions}
+                            onchange={handleYearChange}>
+                        </lightning-combobox>
+                    </div>
+                    <template if:true={hasActiveYear}>
+                        <span class="pdo-year-chip">Anno {selectedYear}</span>
+                    </template>
                 </div>
-            </lightning-card>
 
-            <!-- ───────── 1-C  Split Donatore × Budget ───────── -->
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--navy">
+                            <lightning-icon icon-name="standard:report" size="x-small"></lightning-icon>
+                            <span>Overview totale per Anno</span>
+                        </div>
+                    </header>
+                    <div class="pdo-table-wrapper">
+                        <lightning-datatable
+                            data={yearData}
+                            columns={yearColumns}
+                            key-field="Id"
+                            hide-checkbox-column
+                            column-width-mode="fixed"
+                            wrap-table-header="all"
+                            class="slds-table_col-bordered full-width"
+                            data-table="year"
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </div>
+                </section>
 
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--blue">
+                            <lightning-icon icon-name="standard:program" size="x-small"></lightning-icon>
+                            <span>Overview Budget per Anno</span>
+                        </div>
+                    </header>
+                    <div class="pdo-table-wrapper">
+                        <lightning-datatable
+                            data={budgetData}
+                            columns={budgetColumns}
+                            key-field="Id"
+                            hide-checkbox-column
+                            column-width-mode="fixed"
+                            wrap-table-header="all"
+                            class="slds-table_col-bordered full-width"
+                            data-table="budget"
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </div>
+                </section>
 
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--green">
+                            <lightning-icon icon-name="standard:lead" size="x-small"></lightning-icon>
+                            <span>Overview Donatore per Anno</span>
+                        </div>
+                    </header>
+                    <div class="pdo-table-wrapper">
+                        <lightning-datatable
+                            data={donorData}
+                            columns={donorColumns}
+                            key-field="Id"
+                            hide-checkbox-column
+                            column-width-mode="fixed"
+                            wrap-table-header="all"
+                            class="slds-table_col-bordered full-width"
+                            data-table="donor"
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </div>
+                </section>
 
-            <lightning-card title="Vista dei Totali Donatore divisa per Budget">
-                <template if:true={budgetsAggregati}>
-                    <div class="slds-box slds-m-top_medium slds-p-top_medium">
-                        <template for:each={budgetsAggregati} for:item="b">
-                            <div key={b.id} class="slds-m-bottom_medium">
-                                <!-- Aggiungi questa linea per il nome del budget -->
-                                <h2 class="slds-text-heading_small slds-m-bottom_small">
-                                    {b.name}
-                                </h2>
-                                <c-assegnazione-fatture-a-donatore
-                                    key             ={b.id}
-                                    program-id      ={recordId}
-                                    budget-id       ={b.id}
-                                    embedded-mode>
-                                </c-assegnazione-fatture-a-donatore>
+                <section class="pdo-card">
+                    <header class="pdo-card-head">
+                        <div class="pdo-card-title pdo-card-title--purple">
+                            <lightning-icon icon-name="standard:account_info" size="x-small"></lightning-icon>
+                            <span>Donatore per Budget</span>
+                        </div>
+                    </header>
+                    <template if:false={hasActiveYear}>
+                        <p class="pdo-empty">Seleziona un anno per vedere la ripartizione Donatore / Budget.</p>
+                    </template>
+                    <template if:true={hasActiveYear}>
+                        <template if:true={budgetsAggregatiFiltered}>
+                            <div class="pdo-split-list">
+                                <template for:each={budgetsAggregatiFiltered} for:item="b">
+                                    <div key={b.id} class="pdo-split-item">
+                                        <h3 class="pdo-split-item-title">{b.name}</h3>
+                                        <c-assegnazione-fatture-a-donatore
+                                            program-id={recordId}
+                                            budget-id={b.id}
+                                            anno={selectedYear}
+                                            embedded-mode>
+                                        </c-assegnazione-fatture-a-donatore>
+                                    </div>
+                                </template>
                             </div>
                         </template>
-                    </div>
-                </template>
-            </lightning-card>
-
-        </div>
-    </lightning-card>
-
-    <!-- ========================================================= -->
-    <!--  2)  CARD – totali filtrabili per Anno                     -->
-    <!-- ========================================================= -->
-    <lightning-card>
-        <h2 slot="title"
-            class="slds-text-heading_medium  slds-align_absolute-center  slds-p-horizontal_small">
-            Vista dei Totali programma con filtro sull'anno
-        </h2>
-        <div slot="actions">
-            <lightning-button label="Aggiorna" icon-name="utility:refresh" onclick={handleRefreshClick} disabled={isRefreshing}></lightning-button>
-        </div>
-
-        <div class="slds-box slds-m-top_large slds-p-top_medium">
-            <!-- filtro anno -->
-            <lightning-card>
-                <div class="combobox-container">
-                    <label for="year-combobox" class="combobox-label">Filtra per Anno</label>
-                    <lightning-combobox
-                        name      ="year-combobox"
-                        value     ={selectedYear}
-                        options   ={yearOptions}
-                        onchange  ={handleYearChange}
-                        style     ="width: 200px;">
-                    </lightning-combobox>
-                </div>
-            </lightning-card>
-
-            <!-- ───────── 2-A  Totale per Anno ───────── -->
-            <lightning-card title="Overview Totale per Anno" class="slds-m-top_medium">
-                <div class="year_table">
-                    <lightning-datatable
-                        data        ={yearData}
-                        columns     ={yearColumns}
-                        key-field   ="Id"
-                        hide-checkbox-column
-                        column-width-mode ="fixed"
-                        wrap-table-header="all"
-                        class       ="slds-table_col-bordered full-width"
-                        data-table="year"
-                        show-row-number-column>
-                    </lightning-datatable>
-                </div>
-            </lightning-card>
-
-            <!-- ───────── 2-B  Budget per Anno ───────── -->
-            <lightning-card title="Overview Budget Per Anno" class="slds-m-top_medium">
-                <div class="budget_table">
-                    <lightning-datatable
-                        data        ={budgetData}
-                        columns     ={budgetColumns}
-                        key-field   ="Id"
-                        hide-checkbox-column
-                        column-width-mode ="fixed"
-                        wrap-table-header ="all"
-                        class       ="slds-table_col-bordered full-width"
-                        data-table="budget"
-                        show-row-number-column>
-                    </lightning-datatable>
-                </div>
-            </lightning-card>
-
-            <!-- ───────── 2-C  Donatore per Anno ───────── -->
-            <lightning-card title="Overview Donatore Per Anno" class="slds-m-top_medium">
-                <div class="donor_table">
-                    <lightning-datatable
-                        data        ={donorData}
-                        columns     ={donorColumns}
-                        key-field   ="Id"
-                        hide-checkbox-column
-                        column-width-mode ="fixed"
-                        wrap-table-header ="all"
-                        class       ="slds-table_col-bordered full-width"
-                        data-table="donor"
-                        show-row-number-column>
-                    </lightning-datatable>
-                </div>
-            </lightning-card>
-
-            <!-- ───────── 2-C  Split Donatore × Budget (filtrato per Anno) ───────── -->
-            <lightning-card title="Vista Donatore divisa per Budget">
-                <template if:true={selectedYear}>
-                    <p>Anno selezionato: {selectedYear}</p>
-                </template>
-                <template if:false={selectedYear}>
-                    <p>Nessun anno selezionato</p>
-                </template>
-                <template if:true={budgetsAggregatiFiltered}>
-                    <div class="slds-box slds-m-top_medium slds-p-top_medium">
-                        <template for:each={budgetsAggregatiFiltered} for:item="b">
-                            <div key={b.id} class="slds-m-bottom_medium">
-                                <h2 class="slds-text-heading_small slds-m-bottom_small">
-                                    {b.name}
-                                </h2>
-                                <c-assegnazione-fatture-a-donatore
-                                    key           ={b.id}
-                                    class         ="slds-m-bottom_medium"
-                                    program-id    ={recordId}
-                                    budget-id     ={b.id}
-                                    anno          ={selectedYear}  
-                                    embedded-mode>
-                                </c-assegnazione-fatture-a-donatore>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-            </lightning-card>
-        </div>
-    </lightning-card>
-</div>
+                    </template>
+                </section>
+            </div>
+        </template>
+    </div>
 </template>
