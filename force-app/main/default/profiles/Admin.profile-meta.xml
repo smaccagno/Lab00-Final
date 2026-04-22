@@ -3600,7 +3600,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Voce_di_Incasso__c.Programma__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Voce_di_Spesa__c.Anno__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Voce_di_Spesa__c.Programma__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

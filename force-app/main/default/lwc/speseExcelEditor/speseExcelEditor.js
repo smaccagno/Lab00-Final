@@ -274,6 +274,9 @@ export default class SpeseExcelEditor extends LightningElement {
         if (['categoria', 'sottocategoria', 'stato', 'anno', 'programmaId'].includes(field)) {
             editorType = 'dropdown';
             editorOptions = this.getEditorOptions(rowIndex, field);
+            if (field === 'sottocategoria' && !row.categoria) {
+                editorHelpText = 'Seleziona prima una Categoria per visualizzare le sottocategorie disponibili.';
+            }
         } else if (field === 'note') {
             editorType = 'textarea';
         } else if (field === 'data') {
@@ -514,6 +517,15 @@ export default class SpeseExcelEditor extends LightningElement {
             row.data = !trimmed ? '' : (this.parseDate(trimmed) || trimmed);
         } else if (field === 'categoria') {
             row.categoria = !trimmed ? '' : (this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed);
+            // Quando la Categoria cambia, la Sottocategoria corrente potrebbe
+            // non essere più valida nel nuovo dominio: la rivalidiamo
+            // silenziosamente (reset se fuori scope).
+            if (row.sottocategoria) {
+                const allowedSub = this.getSubcategoriesForCategory(row.categoria);
+                if (!allowedSub.includes(row.sottocategoria)) {
+                    row.sottocategoria = '';
+                }
+            }
         } else if (field === 'sottocategoria') {
             const options = this.getSubcategoriesForCategory(row.categoria);
             row.sottocategoria = !trimmed ? '' : (this.matchStringValue(options, trimmed) || trimmed);

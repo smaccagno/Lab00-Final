@@ -1,46 +1,58 @@
 .excel-table-container {
     overflow-x: auto;
-    border: 1px solid #d8dde6;
-    border-radius: 4px;
-    /* Niente clipping verticale: gli overlay devono poter uscire dal componente. */
+    border: 1px solid #d7dde8;
+    border-radius: 8px;
     max-height: none !important;
     overflow-y: visible !important;
     overflow: visible !important;
     position: relative;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(22, 50, 92, 0.04);
 }
 
 .excel-table {
     width: 100%;
     border-collapse: collapse;
-    background-color: #ffffff;
-    font-size: 0.875rem;
+    background: #ffffff;
+    font-size: 0.85rem;
     table-layout: auto;
 }
 
-.excel-table thead {
+/* Sticky gradient header — matches .dashboard-sheet thead th */
+.excel-table thead th {
     position: sticky;
     top: 0;
     z-index: 10;
-    background-color: #f3f3f3;
-}
-
-.excel-table th {
-    padding: 6px 10px;
+    background: linear-gradient(180deg, #f4f6fb 0%, #e8eef7 100%);
+    color: #16325c;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
     text-align: left;
-    font-weight: 600;
-    border: 1px solid #d8dde6;
-    background-color: #f3f3f3;
-    color: #080707;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #d3dbe8;
+    border-right: 1px solid #e1e5eb;
+    font-weight: 700;
     white-space: nowrap;
     min-width: 120px;
 }
 
+.excel-table thead th:last-child {
+    border-right: none;
+}
+
 .excel-table td {
-    padding: 4px 8px;
-    border: 1px solid #d8dde6;
-    background-color: #ffffff;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid #eef1f6;
+    border-right: 1px solid #eef1f6;
+    background: #ffffff;
+    color: #2f3a4a;
     min-height: 26px;
     vertical-align: middle;
+}
+
+.excel-table td:last-child {
+    border-right: none;
 }
 
 .row-number-col {
@@ -53,10 +65,12 @@
     min-width: 50px;
     text-align: center;
     cursor: pointer;
-    background-color: #fafaf9;
+    background-color: #f8fafc !important;
     user-select: none;
-    font-weight: 600;
-    color: #706e6b;
+    font-weight: 700;
+    color: #7a8aa0 !important;
+    font-size: 0.75rem;
+    border-right: 1px solid #e1e5eb !important;
 }
 
 .row-number-container {
@@ -66,35 +80,44 @@
 
 .excel-table tbody tr {
     position: relative;
+    transition: background-color 0.1s ease;
 }
 
 .excel-table tbody tr:hover td {
-    background-color: #f7f9fb;
+    background: #fafcff;
 }
 
 .excel-table tbody tr.selected-row td {
-    background-color: #e8f4f8 !important;
+    background: rgba(1, 118, 211, 0.06) !important;
 }
 
 .excel-table tbody tr.selected-row .row-number-cell {
-    background-color: #2e844a !important;
+    background: linear-gradient(180deg, #0176d3 0%, #014f8e 100%) !important;
     color: #ffffff !important;
-    border-color: #2e844a !important;
+    border-right-color: #014f8e !important;
 }
 
 .excel-table tbody tr.selected-row td:first-child,
 .excel-table tbody tr.selected-row td:last-child {
-    box-shadow: inset 0 0 0 2px #2e844a;
+    box-shadow: inset 0 0 0 1px rgba(1, 118, 211, 0.35);
 }
 
 .excel-table tbody tr.row-error td {
-    background-color: #fff5f5 !important;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffeeee 100%) !important;
 }
 
 .excel-table tbody tr.row-error .row-number-cell {
-    background-color: #c23934 !important;
+    background: linear-gradient(180deg, #c9263a 0%, #a00015 100%) !important;
     color: #ffffff !important;
-    border-color: #c23934 !important;
+    border-right-color: #a00015 !important;
+}
+
+/* Numeric-ish columns read as tabular-nums */
+.excel-table td.editable-cell[data-field="ammontare"],
+.excel-table td.editable-cell[data-field="anno"] {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #16325c;
 }
 
 .editable-cell {
