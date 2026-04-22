@@ -1,0 +1,140 @@
+.backfill-root {
+    font-size: 0.9rem;
+    color: #16325c;
+}
+
+.backfill-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
+}
+
+.backfill-icon {
+    --sds-c-icon-color-foreground-default: #0176d3;
+}
+
+.backfill-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #16325c;
+}
+
+.backfill-description {
+    margin: 0 0 0.85rem 0;
+    color: #547190;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}
+
+.backfill-button {
+    margin-bottom: 0.75rem;
+}
+
+.backfill-running {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+    color: #547190;
+    min-height: 24px;
+}
+
+.backfill-result {
+    margin-top: 0.75rem;
+    padding: 0.75rem 0.9rem 0.9rem 0.9rem;
+    background: #f8fafc;
+    border: 1px solid #e1e5eb;
+    border-radius: 6px;
+}
+
+.backfill-result-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #16325c;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.backfill-result-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.backfill-result-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.85rem;
+    border-bottom: 1px dashed #e1e5eb;
+}
+
+.backfill-result-list li:last-child {
+    border-bottom: none;
+}
+
+.backfill-result-list li strong {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: #16325c;
+}
+
+.backfill-result-list li.success strong {
+    color: #1b5a30;
+}
+
+.backfill-result-list li.error strong {
+    color: #a00015;
+}
+
+.backfill-result-list li.muted span,
+.backfill-result-list li.muted strong {
+    color: #7a8aa0;
+}
+
+.backfill-errors {
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    background: #fff7ed;
+    border: 1px solid #f3c27a;
+    border-radius: 4px;
+    color: #7d5400;
+    font-size: 0.8rem;
+}
+
+.backfill-errors h4 {
+    margin: 0 0 0.3rem 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.backfill-errors ul {
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.backfill-truncated {
+    margin: 0.6rem 0 0 0;
+    font-size: 0.8rem;
+    color: #7d5400;
+    background: #fff7ed;
+    border: 1px solid #f3c27a;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+}
+
+.backfill-error {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}

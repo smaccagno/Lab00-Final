@@ -1,0 +1,72 @@
+<template>
+    <div class="backfill-root slds-p-around_medium">
+        <div class="backfill-header">
+            <lightning-icon icon-name="utility:money" size="small" class="backfill-icon"></lightning-icon>
+            <h2 class="backfill-title">Voci di Incasso da Trattenute</h2>
+        </div>
+
+        <p class="backfill-description">
+            Scansiona tutte le donazioni a sistema, calcola la trattenuta sul valore originale e
+            crea le relative Voci di Incasso (Categoria = Donazione). Salta quelle già esistenti.
+        </p>
+
+        <lightning-button
+            variant="brand"
+            label="Genera Voci di Incasso"
+            icon-name="utility:refresh"
+            onclick={handleRun}
+            disabled={isRunning}
+            class="backfill-button">
+        </lightning-button>
+
+        <template if:true={isRunning}>
+            <div class="backfill-running">
+                <lightning-spinner alternative-text="Elaborazione in corso" size="small"></lightning-spinner>
+                <span>Elaborazione in corso…</span>
+            </div>
+        </template>
+
+        <template if:true={result}>
+            <div class="backfill-result">
+                <h3 class="backfill-result-title">Risultato</h3>
+                <ul class="backfill-result-list">
+                    <li><span>Transazioni analizzate</span><strong>{result.scanned}</strong></li>
+                    <li class="success"><span>Voci create</span><strong>{result.created}</strong></li>
+                    <li><span>Già presenti (ignorate)</span><strong>{result.alreadyPresent}</strong></li>
+                    <template if:true={hasSkipped}>
+                        <li class="muted"><span>Saltate — budget di default mancante</span><strong>{result.skippedNoBudget}</strong></li>
+                        <li class="muted"><span>Saltate — dati insufficienti</span><strong>{result.skippedNoData}</strong></li>
+                    </template>
+                    <template if:true={hasFailures}>
+                        <li class="error"><span>Fallimenti</span><strong>{result.failed}</strong></li>
+                    </template>
+                </ul>
+
+                <template if:true={hasFailures}>
+                    <div class="backfill-errors">
+                        <h4>Dettaglio errori (max 20)</h4>
+                        <ul>
+                            <template for:each={result.failureMessages} for:item="msg">
+                                <li key={msg}>{msg}</li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <template if:true={result.truncated}>
+                    <p class="backfill-truncated">
+                        Sono state elaborate solo le prime {result.limitApplied} transazioni.
+                        Rilancia l'operazione per proseguire.
+                    </p>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="backfill-error slds-text-color_error">
+                <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                <span>{error}</span>
+            </div>
+        </template>
+    </div>
+</template>
