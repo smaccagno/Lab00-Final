@@ -6,6 +6,7 @@ public with sharing class IncassiExcelEditorController {
         @AuraEnabled public Date data;
         @AuraEnabled public Decimal ammontare;
         @AuraEnabled public String stato;
+        @AuraEnabled public Id programmaId;
         @AuraEnabled public Integer rowNumber;
     }
 
@@ -34,6 +35,38 @@ public with sharing class IncassiExcelEditorController {
             if (e.isActive()) values.add(e.getValue());
         }
         return values;
+    }
+
+    public class LabelValue {
+        @AuraEnabled public String label;
+        @AuraEnabled public String value;
+        public LabelValue(String l, String v) { this.label = l; this.value = v; }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getAnniValues() {
+        Set<String> seen = new Set<String>();
+        for (Anno_Reportistica__c a : [
+            SELECT Name FROM Anno_Reportistica__c WHERE Name != null
+        ]) {
+            if (String.isNotBlank(a.Name)) seen.add(a.Name.trim());
+        }
+        List<String> anni = new List<String>(seen);
+        anni.sort();
+        List<String> out = new List<String>();
+        for (Integer i = anni.size() - 1; i >= 0; i--) out.add(anni[i]);
+        return out;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<LabelValue> getProgrammiValues() {
+        List<LabelValue> out = new List<LabelValue>();
+        for (Program p : [
+            SELECT Id, Name FROM Program WHERE Status = 'Attivo' ORDER BY Name
+        ]) {
+            out.add(new LabelValue(p.Name, p.Id));
+        }
+        return out;
     }
 
     @AuraEnabled
@@ -78,6 +111,10 @@ public with sharing class IncassiExcelEditorController {
             p.data = toDateSafe(r.get('data'));
             p.ammontare = toDecimalSafe(r.get('ammontare'));
             p.stato = (String) r.get('stato');
+            String progIdRaw = (String) r.get('programmaId');
+            if (String.isNotBlank(progIdRaw)) {
+                try { p.programmaId = (Id) progIdRaw; } catch (Exception e) { p.programmaId = null; }
+            }
             payloadRows.add(p);
         }
 
@@ -123,6 +160,8 @@ public with sharing class IncassiExcelEditorController {
 
             if (p.anno == null) {
                 err = 'Anno mancante o non valido';
+            } else if (p.programmaId == null) {
+                err = 'Programma mancante o non valido';
             } else if (!budgetByYear.containsKey(p.anno)) {
                 err = 'Nessun Budget default trovato per l\'anno ' + p.anno + ' (o più di uno)';
             } else if (String.isBlank(p.categoria) || !categorieAllowed.contains(p.categoria)) {
@@ -148,6 +187,7 @@ public with sharing class IncassiExcelEditorController {
             s.Ammontare__c = p.ammontare;
             s.Stato__c = p.stato;
             s.Overview_Budget_per_Anno__c = budgetByYear.get(p.anno);
+            s.Programma__c = p.programmaId;
 
             Integer insertIndex = toInsert.size();
             toInsert.add(s);

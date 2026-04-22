@@ -4,6 +4,8 @@ import { openTab } from 'lightning/platformWorkspaceApi';
 
 import getCategoriaValues from '@salesforce/apex/IncassiExcelEditorController.getCategoriaValues';
 import getStatoValues from '@salesforce/apex/IncassiExcelEditorController.getStatoValues';
+import getAnniValues from '@salesforce/apex/IncassiExcelEditorController.getAnniValues';
+import getProgrammiValues from '@salesforce/apex/IncassiExcelEditorController.getProgrammiValues';
 import createIncassiFromFlow from '@salesforce/apex/IncassiExcelEditorController.createIncassiFromFlow';
 
 export default class IncassiExcelEditor extends LightningElement {
@@ -17,6 +19,9 @@ export default class IncassiExcelEditor extends LightningElement {
 
     categoriaOptions = [];
     statoOptions = [];
+    annoOptions = [];
+    programmaOptions = [];
+    programmaLabelById = {};
 
     selectedRowIndex = -1;
 
@@ -106,13 +111,19 @@ export default class IncassiExcelEditor extends LightningElement {
 
     async initPicklists() {
         try {
-            const [cats, st] = await Promise.all([
+            const [cats, st, anni, progs] = await Promise.all([
                 getCategoriaValues(),
-                getStatoValues()
+                getStatoValues(),
+                getAnniValues(),
+                getProgrammiValues()
             ]);
 
             this.categoriaOptions = (cats || []).map(v => ({ label: v, value: v }));
             this.statoOptions = (st || []).map(v => ({ label: v, value: v }));
+            this.annoOptions = (anni || []).map(v => ({ label: v, value: v }));
+            this.programmaOptions = (progs || []).map(p => ({ label: p.label, value: p.value }));
+            this.programmaLabelById = {};
+            (progs || []).forEach(p => { this.programmaLabelById[p.value] = p.label; });
             this.picklistsReady = true;
         } catch (e) {
             this.picklistsReady = false;
@@ -144,6 +155,7 @@ export default class IncassiExcelEditor extends LightningElement {
         const row = {
             rowKey: `row_${Date.now()}_${Math.random().toString(16).slice(2)}`,
             anno: values.anno || '',
+            programmaId: values.programmaId || '',
             categoria: values.categoria || '',
             data: values.data || '',
             ammontare: values.ammontare || '',
@@ -199,7 +211,7 @@ export default class IncassiExcelEditor extends LightningElement {
 
         event.stopPropagation();
 
-        if (['categoria', 'stato'].includes(field)) {
+        if (['categoria', 'stato', 'anno', 'programmaId'].includes(field)) {
             this.openEditorForCell(rowIndex, field, cell);
             return;
         }
@@ -248,7 +260,7 @@ export default class IncassiExcelEditor extends LightningElement {
         let editorOptions = [];
         let editorHelpText = '';
 
-        if (['categoria', 'stato'].includes(field)) {
+        if (['categoria', 'stato', 'anno', 'programmaId'].includes(field)) {
             editorType = 'dropdown';
             editorOptions = this.getEditorOptions(rowIndex, field);
         } else if (field === 'data') {
@@ -296,6 +308,8 @@ export default class IncassiExcelEditor extends LightningElement {
     getEditorOptions(rowIndex, field) {
         if (field === 'categoria') return this.categoriaOptions;
         if (field === 'stato') return this.statoOptions;
+        if (field === 'anno') return this.annoOptions;
+        if (field === 'programmaId') return this.programmaOptions;
         return [];
     }
 
@@ -464,7 +478,7 @@ export default class IncassiExcelEditor extends LightningElement {
         const trimmed = value === null || value === undefined ? '' : String(value).trim();
 
         if (field === 'anno') {
-            row.anno = !trimmed ? '' : (this.parseInteger(trimmed) || trimmed);
+            row.anno = !trimmed ? '' : (this.matchOptionValue(this.annoOptions, trimmed) || this.parseInteger(trimmed) || trimmed);
         } else if (field === 'ammontare') {
             row.ammontare = !trimmed ? '' : (this.parseCurrency(trimmed) || trimmed);
         } else if (field === 'data') {
@@ -473,6 +487,8 @@ export default class IncassiExcelEditor extends LightningElement {
             row.categoria = !trimmed ? '' : (this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed);
         } else if (field === 'stato') {
             row.stato = !trimmed ? '' : (this.matchOptionValue(this.statoOptions, trimmed) || trimmed);
+        } else if (field === 'programmaId') {
+            row.programmaId = !trimmed ? '' : (this.matchOptionValue(this.programmaOptions, trimmed) || trimmed);
         }
 
         row.saveErrorMessage = '';
@@ -563,7 +579,8 @@ export default class IncassiExcelEditor extends LightningElement {
                 categoria: row.categoria,
                 data: row.data,
                 ammontare: row.ammontare,
-                stato: row.stato
+                stato: row.stato,
+                programmaId: row.programmaId
             }));
 
             const res = await createIncassiFromFlow({ incassiDataJson: JSON.stringify(payload) });
@@ -624,6 +641,7 @@ export default class IncassiExcelEditor extends LightningElement {
         const hasErrors = Object.values(validationErrors).some(Boolean);
         const errorParts = [];
         if (validationErrors.anno) errorParts.push('Anno non valido');
+        if (validationErrors.programmaId) errorParts.push('Programma non valido');
         if (validationErrors.categoria) errorParts.push('Categoria non valida');
         if (validationErrors.data) errorParts.push('Data non valida');
         if (validationErrors.ammontare) errorParts.push('Ammontare non valido');
@@ -632,6 +650,7 @@ export default class IncassiExcelEditor extends LightningElement {
 
         return {
             ...row,
+            programmaLabel: this.programmaLabelById[row.programmaId] || '',
             rowIndex: index,
             rowNumber: index + 1,
             validationErrors,
@@ -639,6 +658,7 @@ export default class IncassiExcelEditor extends LightningElement {
             errorMessage: errorParts.join(' - '),
             rowClass: this.selectedRowIndex === index ? 'selected-row' : '',
             annoClass: this.getCellClass(validationErrors.anno),
+            programmaClass: this.getCellClass(validationErrors.programmaId),
             categoriaClass: this.getCellClass(validationErrors.categoria),
             dataClass: this.getCellClass(validationErrors.data),
             ammontareClass: this.getCellClass(validationErrors.ammontare),
@@ -654,6 +674,7 @@ export default class IncassiExcelEditor extends LightningElement {
         return {
             rowKey: `row_${Date.now()}_${Math.random().toString(16).slice(2)}`,
             anno: '',
+            programmaId: '',
             categoria: '',
             data: '',
             ammontare: '',
@@ -663,19 +684,21 @@ export default class IncassiExcelEditor extends LightningElement {
     }
 
     isRowEmpty(row) {
-        return !row.anno && !row.categoria && !row.data && !row.ammontare && !row.stato;
+        return !row.anno && !row.programmaId && !row.categoria && !row.data && !row.ammontare && !row.stato;
     }
 
     getValidationErrors(row) {
         if (this.isRowEmpty(row)) {
-            return { anno: false, categoria: false, data: false, ammontare: false, stato: false };
+            return { anno: false, programmaId: false, categoria: false, data: false, ammontare: false, stato: false };
         }
 
         const categoriaOk = this.isValueInOptions(row.categoria, this.categoriaOptions);
         const statoOk = this.isValueInOptions(row.stato, this.statoOptions);
+        const programmaOk = !!row.programmaId && this.isValueInOptions(row.programmaId, this.programmaOptions);
 
         return {
             anno: !row.anno || !/^\d{4}$/.test(String(row.anno).trim()),
+            programmaId: !programmaOk,
             categoria: !categoriaOk,
             data: !row.data || !this.parseDate(row.data),
             ammontare: !row.ammontare || !this.parseCurrency(row.ammontare),
@@ -708,17 +731,18 @@ export default class IncassiExcelEditor extends LightningElement {
         const rows = [];
         for (const line of lines) {
             const values = line.split('\t');
-            if (values.length < 5) continue;
+            if (values.length < 6) continue;
 
             const first = (values[0] || '').trim().toLowerCase();
             if (first === 'anno' || first === 'year') continue;
 
             rows.push({
                 anno: this.normalizePastedField('anno', values[0]),
-                categoria: this.normalizePastedField('categoria', values[1]),
-                data: this.normalizePastedField('data', values[2]),
-                ammontare: this.normalizePastedField('ammontare', values[3]),
-                stato: this.normalizePastedField('stato', values[4]),
+                programmaId: this.normalizePastedField('programmaId', values[1]),
+                categoria: this.normalizePastedField('categoria', values[2]),
+                data: this.normalizePastedField('data', values[3]),
+                ammontare: this.normalizePastedField('ammontare', values[4]),
+                stato: this.normalizePastedField('stato', values[5]),
                 saveErrorMessage: ''
             });
         }
@@ -729,11 +753,12 @@ export default class IncassiExcelEditor extends LightningElement {
     normalizePastedField(field, value) {
         const trimmed = value == null ? '' : String(value).trim();
         if (!trimmed) return '';
-        if (field === 'anno') return this.parseInteger(trimmed) || trimmed;
+        if (field === 'anno') return this.matchOptionValue(this.annoOptions, trimmed) || this.parseInteger(trimmed) || trimmed;
         if (field === 'ammontare') return this.parseCurrency(trimmed) || trimmed;
         if (field === 'data') return this.parseDate(trimmed) || trimmed;
         if (field === 'categoria') return this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed;
         if (field === 'stato') return this.matchOptionValue(this.statoOptions, trimmed) || trimmed;
+        if (field === 'programmaId') return this.matchOptionValue(this.programmaOptions, trimmed) || trimmed;
         return trimmed;
     }
 
