@@ -398,13 +398,13 @@
 }
 
 /* ---------- Tables ---------------------------------------- */
+/* Matches .dashboard-sheet-wrapper used by budgetAppDashboard. */
 .pdo-table-wrapper {
     width: 100%;
+    overflow-x: auto;
     border: 1px solid #d7dde8;
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 6px;
     background: #ffffff;
-    box-shadow: 0 1px 2px rgba(22, 50, 92, 0.04);
 }
 
 .full-width,

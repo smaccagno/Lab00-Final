@@ -1528,52 +1528,48 @@ export default class ProgramDynamicOverview extends LightningElement {
     this.template.querySelectorAll("lightning-datatable").forEach((dt) => {
       if (!dt.dataset.headerFixed && dt.shadowRoot) {
         const style = document.createElement("style");
+        // Matches the dashboard-sheet / rv-sheet visual language used in
+        // budgetAppDashboard and budgetRecordsViewer.
         style.textContent = `
-            /* Wrap */
-            .slds-scrollable_x, .slds-scrollable {
-                border-radius: 6px;
-            }
-
             /* Table base */
             .slds-table {
-                background: #ffffff;
-                font-size: 0.82rem;
+                background: #ffffff !important;
+                font-size: 0.85rem !important;
+                border-collapse: collapse !important;
             }
 
-            /* Header band */
+            /* Header band (matches .dashboard-sheet thead th) */
             .slds-table thead th {
                 background: linear-gradient(180deg, #f4f6fb 0%, #e8eef7 100%) !important;
                 color: #16325c !important;
+                text-transform: uppercase !important;
+                font-size: 0.7rem !important;
+                letter-spacing: 0.05em !important;
+                text-align: left !important;
+                padding: 0.55rem 0.75rem !important;
                 border-bottom: 1px solid #d3dbe8 !important;
                 border-right: 1px solid #e1e5eb !important;
-                padding: 0.45rem 0.7rem !important;
+                font-weight: 700 !important;
             }
             .slds-table thead th:last-child { border-right: none !important; }
 
+            /* Inner label span: inherit header typography and keep totals on a new line */
             .slds-table thead th .slds-truncate,
             .slds-table thead th a,
             .slds-table thead th span {
                 color: #16325c !important;
                 font-weight: 700 !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.04em !important;
-                font-size: 0.68rem !important;
+                letter-spacing: 0.05em !important;
+                font-size: 0.7rem !important;
                 white-space: pre-line !important;
                 max-width: 100% !important;
-                line-height: 1.25 !important;
+                line-height: 1.3 !important;
             }
 
-            /* Totals inside the label are separated by \\n — keep them visible */
-            .slds-table thead th .slds-truncate {
-                padding: 0.1rem 0;
-            }
-
-            /* Row number column: softer */
-            .slds-table thead th.slds-cell_action-mode,
-            .slds-table thead th[aria-label*="Row number"] {
-                background: #eef2f8 !important;
-            }
-            .slds-row-number, .slds-table th[scope="row"] {
+            /* Row number column softened */
+            .slds-row-number,
+            .slds-table th[scope="row"] {
                 background: #f8fafc !important;
                 color: #7a8aa0 !important;
                 font-weight: 600 !important;
@@ -1581,31 +1577,38 @@ export default class ProgramDynamicOverview extends LightningElement {
                 border-right: 1px solid #e1e5eb !important;
             }
 
-            /* Body cells */
-            .slds-table tbody td, .slds-table tbody th {
-                padding: 0.45rem 0.7rem !important;
+            /* Body cells (matches .dashboard-sheet tbody td) */
+            .slds-table tbody td,
+            .slds-table tbody th {
+                padding: 0.45rem 0.75rem !important;
                 border-bottom: 1px solid #eef1f6 !important;
                 border-right: 1px solid #eef1f6 !important;
-                color: #2f3a4a !important;
                 vertical-align: middle !important;
+                color: #2f3a4a !important;
+                background: #fff !important;
             }
             .slds-table tbody td:last-child,
             .slds-table tbody th:last-child { border-right: none !important; }
 
+            /* Hover (matches .dashboard-sheet tbody tr:hover) */
             .slds-table tbody tr:hover td,
             .slds-table tbody tr:hover th {
                 background: #fafcff !important;
             }
 
-            /* Numeric / currency cells → tabular-nums, right-align */
+            /* Numeric / currency cells: tabular-nums, navy, bold
+               (matches .dashboard-sheet tbody td.col-num) */
             .slds-table tbody td.slds-text-align_right,
             .slds-table tbody td lightning-formatted-number,
-            .slds-table tbody td lightning-formatted-text,
-            .slds-table tbody td .slds-truncate {
-                font-variant-numeric: tabular-nums;
+            .slds-table tbody td lightning-formatted-text {
+                font-variant-numeric: tabular-nums !important;
+            }
+            .slds-table tbody td.slds-text-align_right {
+                font-weight: 600 !important;
+                color: #16325c !important;
             }
 
-            /* Row highlight classes (already used by aggregated per-year rows) */
+            /* Row highlight classes used by aggregated donor-per-year rows */
             tr.highlight-gray  td, tr.highlight-gray  th { background: #f6f7fb !important; }
             tr.highlight-green td, tr.highlight-green th { background: #eef7ee !important; }
             tr.highlight-blue  td, tr.highlight-blue  th { background: #eef2fc !important; }
@@ -1613,13 +1616,15 @@ export default class ProgramDynamicOverview extends LightningElement {
             tr.highlight-green:hover td, tr.highlight-green:hover th { background: #e4f1e4 !important; }
             tr.highlight-blue:hover  td, tr.highlight-blue:hover  th { background: #e1e7fa !important; }
 
-            /* Link cells (the url-type columns) */
-            .slds-table a, .slds-table lightning-formatted-url a {
+            /* Link cells (url-type columns) */
+            .slds-table a,
+            .slds-table lightning-formatted-url a {
                 color: #0176d3 !important;
                 font-weight: 600 !important;
                 text-decoration: none !important;
             }
-            .slds-table a:hover, .slds-table lightning-formatted-url a:hover {
+            .slds-table a:hover,
+            .slds-table lightning-formatted-url a:hover {
                 color: #014f8e !important;
                 text-decoration: underline !important;
             }
