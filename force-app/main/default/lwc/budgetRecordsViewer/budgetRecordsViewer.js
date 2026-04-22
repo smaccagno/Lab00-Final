@@ -287,8 +287,7 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
                     Categoria: r.categoria || '',
                     Stato: r.stato || '',
                     Ammontare: r.ammontare != null ? r.ammontare : '',
-                    Transazione: r.transazioneName || '',
-                    'Budget Anno': r.budgetYearName || ''
+                    Transazione: r.transazioneName || ''
                 };
             }
             if (this.tipo === 'Spesa') {
@@ -301,8 +300,7 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
                     Sottocategoria: r.sottocategoria || '',
                     Note: r.note || '',
                     Stato: r.stato || '',
-                    Ammontare: r.ammontare != null ? r.ammontare : '',
-                    'Budget Anno': r.budgetYearName || ''
+                    Ammontare: r.ammontare != null ? r.ammontare : ''
                 };
             }
             return {
@@ -316,8 +314,7 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
                 Note: r.note || '',
                 Stato: r.stato || '',
                 Ammontare: r.ammontare != null ? r.ammontare : '',
-                Transazione: r.transazioneName || '',
-                'Budget Anno': r.budgetYearName || ''
+                Transazione: r.transazioneName || ''
             };
         });
     }

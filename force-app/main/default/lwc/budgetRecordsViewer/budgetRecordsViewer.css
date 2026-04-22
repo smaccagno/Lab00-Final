@@ -330,8 +330,7 @@
 .rv-sheet--records .col-prog,
 .rv-sheet--records .col-cat,
 .rv-sheet--records .col-sub,
-.rv-sheet--records .col-trans,
-.rv-sheet--records .col-bya {
+.rv-sheet--records .col-trans {
     overflow: hidden;
     text-overflow: ellipsis;
 }
