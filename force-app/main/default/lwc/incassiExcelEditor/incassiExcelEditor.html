@@ -1,0 +1,318 @@
+<template>
+    <template if:true={isValidating}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Validazione in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Validazione in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono validate le celle e gli errori evidenziati.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={isSaving}>
+        <div class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" tabindex="-1">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_large slds-text-align_center">
+                    <lightning-spinner alternative-text="Salvataggio in corso..." size="large"></lightning-spinner>
+                    <div class="slds-m-top_medium">
+                        <h2 class="slds-text-heading_medium">Salvataggio in corso...</h2>
+                        <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono creati i record.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={showResults}>
+        <lightning-card title="Risultati Salvataggio Incassi" icon-name="standard:financial_account">
+            <div class="slds-p-around_medium">
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                    <div class="slds-col">
+                        <lightning-button
+                            label="Nuovo Inserimento"
+                            onclick={startNewEntry}
+                            variant="brand"
+                            icon-name="utility:add"
+                        ></lightning-button>
+                    </div>
+                </div>
+
+                <div class="slds-scrollable_x">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col"><div class="slds-truncate" title="#">#</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Voce di Incasso">Voce di Incasso</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Stato">Stato</div></th>
+                                <th scope="col"><div class="slds-truncate" title="Errore">Errore</div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={saveResults} for:item="r">
+                                <tr key={r.id} class="slds-line-height_reset">
+                                    <td data-label="#"> {r.rowNumber} </td>
+                                    <td data-label="Voce di Incasso">
+                                        <template if:true={r.isSuccess}>
+                                            <a
+                                                href="#"
+                                                class="slds-text-link"
+                                                data-incasso-id={r.incassoId}
+                                                onclick={openIncassoRecord}
+                                            >
+                                                {r.incassoName}
+                                            </a>
+                                        </template>
+                                        <template if:false={r.isSuccess}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
+                                    </td>
+                                    <td data-label="Stato">
+                                        <template if:true={r.isSuccess}>
+                                            <span class="slds-badge slds-badge_success">Successo</span>
+                                        </template>
+                                        <template if:false={r.isSuccess}>
+                                            <span class="slds-badge slds-theme_error">Errore</span>
+                                        </template>
+                                    </td>
+                                    <td data-label="Errore">
+                                        <template if:false={r.isSuccess}>
+                                            <div class="slds-truncate">{r.errorMessage}</div>
+                                        </template>
+                                        <template if:true={r.isSuccess}>
+                                            <div class="slds-truncate">-</div>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </lightning-card>
+    </template>
+
+    <lightning-card title="Inserisci Incassi Multipli" icon-name="standard:financial_account">
+        <div class="slds-p-around_medium">
+            <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                <div class="slds-col">
+                    <lightning-button
+                        label="Aggiungi Riga"
+                        onclick={handleAddRow}
+                        variant="neutral"
+                        icon-name="utility:add"
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Inserisci Valori Copiati"
+                        onclick={pasteFromClipboard}
+                        variant="neutral"
+                        icon-name="utility:paste"
+                        class="slds-m-left_small"
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Elimina Riga Selezionata"
+                        onclick={deleteSelectedRow}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isNoRowSelected}
+                    ></lightning-button>
+
+                    <lightning-button
+                        label="Elimina tutte le righe"
+                        onclick={deleteAllRows}
+                        variant="destructive"
+                        icon-name="utility:delete"
+                        class="slds-m-left_small"
+                        disabled={isTableEmpty}
+                    ></lightning-button>
+                </div>
+
+                <div class="slds-col slds-text-align_right">
+                    <lightning-button
+                        label="Salva (Crea record)"
+                        onclick={handleSave}
+                        variant="brand"
+                        disabled={isCreatingDisabled}
+                    ></lightning-button>
+                </div>
+            </div>
+
+            <template if:true={rows.length}>
+                <div class="excel-table-container">
+                    <table class="excel-table" role="grid">
+                        <thead>
+                            <tr>
+                                <th class="row-number-col">#</th>
+                                <th class="editable-cell-header">Anno</th>
+                                <th class="editable-cell-header">Categoria</th>
+                                <th class="editable-cell-header">Data</th>
+                                <th class="editable-cell-header">Ammontare</th>
+                                <th class="editable-cell-header">Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={rows} for:item="row">
+                                <tr key={row.rowKey} class={row.rowClass}>
+                                    <td class="row-number-cell" data-row-index={row.rowIndex} onclick={selectRow}>
+                                        <div class="row-number-container" title={row.errorMessage}>
+                                            {row.rowNumber}
+                                        </div>
+                                    </td>
+
+                                    <td class={row.annoClass}
+                                        data-field="anno"
+                                        data-row-index={row.rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}>
+                                        <div class="cell-content-wrapper" data-field="anno" data-row-index={row.rowIndex}>
+                                            <span class="cell-display">{row.anno}</span>
+                                            <template if:true={row.anno}>
+                                                <button type="button" class="cell-clear-button" data-field="anno" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <td class={row.categoriaClass}
+                                        data-field="categoria"
+                                        data-row-index={row.rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}>
+                                        <div class="cell-content-wrapper" data-field="categoria" data-row-index={row.rowIndex}>
+                                            <span class="cell-display">{row.categoria}</span>
+                                            <template if:true={row.categoria}>
+                                                <button type="button" class="cell-clear-button" data-field="categoria" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <td class={row.dataClass}
+                                        data-field="data"
+                                        data-row-index={row.rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}>
+                                        <div class="cell-content-wrapper" data-field="data" data-row-index={row.rowIndex}>
+                                            <span class="cell-display">{row.data}</span>
+                                            <template if:true={row.data}>
+                                                <button type="button" class="cell-clear-button" data-field="data" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <td class={row.ammontareClass}
+                                        data-field="ammontare"
+                                        data-row-index={row.rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}>
+                                        <div class="cell-content-wrapper" data-field="ammontare" data-row-index={row.rowIndex}>
+                                            <span class="cell-display">{row.ammontare}</span>
+                                            <template if:true={row.ammontare}>
+                                                <button type="button" class="cell-clear-button" data-field="ammontare" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <td class={row.statoClass}
+                                        data-field="stato"
+                                        data-row-index={row.rowIndex}
+                                        onclick={handleCellClick}
+                                        ondblclick={handleCellDblClick}>
+                                        <div class="cell-content-wrapper" data-field="stato" data-row-index={row.rowIndex}>
+                                            <span class="cell-display">{row.stato}</span>
+                                            <template if:true={row.stato}>
+                                                <button type="button" class="cell-clear-button" data-field="stato" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+
+    <template if:true={cellActionMenuOpen}>
+        <div class="cell-action-menu" style={cellActionMenuStyle}>
+            <button type="button" class="cell-action-menu-btn" onclick={handleCellCopyClick}>
+                <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon>
+                <span>Copia</span>
+            </button>
+            <button type="button" class="cell-action-menu-btn" onclick={handleCellPasteClick}>
+                <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon>
+                <span>Incolla</span>
+            </button>
+        </div>
+    </template>
+
+    <template if:true={editorOpen}>
+        <div class="cell-editor-overlay" style={editorStyle}>
+            <template if:true={isEditorInput}>
+                <input
+                    type="text"
+                    class="cell-editor-input"
+                    value={editorValue}
+                    placeholder={editorPlaceholder}
+                    oninput={handleEditorInput}
+                    onkeydown={handleEditorKeyDown}
+                />
+            </template>
+
+            <template if:true={isEditorDropdown}>
+                <input
+                    type="text"
+                    class="cell-editor-filter"
+                    value={editorFilter}
+                    placeholder="Cerca..."
+                    oninput={handleEditorFilterInput}
+                    onkeydown={handleEditorKeyDown}
+                />
+                <div class="cell-editor-dropdown-list">
+                    <template if:true={hasFilteredEditorOptions}>
+                        <template for:each={filteredEditorOptions} for:item="option">
+                            <button
+                                key={option.value}
+                                type="button"
+                                class="cell-editor-dropdown-item"
+                                data-value={option.value}
+                                onclick={handleEditorOptionSelect}
+                            >
+                                {option.label}
+                            </button>
+                        </template>
+                    </template>
+                    <template if:false={hasFilteredEditorOptions}>
+                        <div class="cell-editor-dropdown-empty">Nessun valore trovato</div>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={editorHelpText}>
+                <div class="cell-editor-help">{editorHelpText}</div>
+            </template>
+
+            <div class="cell-editor-actions">
+                <button type="button" class="cell-action-copy" onclick={handleEditorCopyClick} title="Copia">
+                    <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon>
+                </button>
+                <button type="button" class="cell-action-paste" onclick={handleEditorPasteClick} title="Incolla">
+                    <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon>
+                </button>
+                <button type="button" class="numeric-field-confirm-button" onclick={handleEditorConfirm} title="Conferma">
+                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                </button>
+                <button type="button" class="numeric-field-cancel-button" onclick={handleEditorCancel} title="Annulla">
+                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                </button>
+            </div>
+        </div>
+    </template>
+</template>

@@ -4305,6 +4305,10 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>IncassiExcelEditor</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Comune__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
