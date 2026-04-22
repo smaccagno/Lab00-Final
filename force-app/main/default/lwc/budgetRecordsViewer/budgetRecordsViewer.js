@@ -22,7 +22,9 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
     @track error;
     @track truncated = false;
     @track recordsLimit = 0;
+    @track totalsCompact = false;
     isConsoleNavigation = false;
+    _totalsObserver;
 
     @wire(IsConsoleNavigation)
     wiredIsConsoleNavigation(result) {
@@ -381,6 +383,36 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
 
     get hasTotals() {
         return this.totalsRows && this.totalsRows.length > 0;
+    }
+
+    get totalsContainerClass() {
+        const base = 'viewer-totals viewer-totals--sticky';
+        return this.totalsCompact ? `${base} is-compact` : base;
+    }
+
+    renderedCallback() {
+        if (this._totalsObserver) return;
+        const sentinel = this.template.querySelector('.viewer-totals-sentinel');
+        if (!sentinel || typeof IntersectionObserver === 'undefined') return;
+
+        this._totalsObserver = new IntersectionObserver(
+            entries => {
+                const entry = entries[0];
+                // Sentinel is placed just below the totals block.
+                // When it leaves the viewport upward, the user is scrolling into records: compact.
+                // When it becomes visible again, we're at the top: expand.
+                this.totalsCompact = !entry.isIntersecting;
+            },
+            { threshold: 0, rootMargin: '0px' }
+        );
+        this._totalsObserver.observe(sentinel);
+    }
+
+    disconnectedCallback() {
+        if (this._totalsObserver) {
+            this._totalsObserver.disconnect();
+            this._totalsObserver = null;
+        }
     }
 
     @wire(getViewerTotals, {

@@ -130,6 +130,41 @@
     top: 0;
     z-index: 4;
     box-shadow: 0 2px 8px rgba(22, 50, 92, 0.1);
+    transition: padding 0.2s ease;
+}
+
+/* Sentinel placed right below the totals block.
+   IntersectionObserver watches this: when it leaves the viewport,
+   the totals block collapses to header + cashflow row. */
+.viewer-totals-sentinel {
+    height: 1px;
+    width: 100%;
+    pointer-events: none;
+}
+
+/* Compact mode: keep column headers + CASH FLOW TOTALE row visible only */
+.viewer-totals.is-compact {
+    padding-top: 0.5rem;
+    padding-bottom: 0.55rem;
+}
+
+.viewer-totals.is-compact .viewer-totals-header {
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.viewer-totals.is-compact .viewer-totals-title {
+    font-size: 0.8rem;
+}
+
+/* Hide every per-category row while keeping thead + the cashflow row */
+.viewer-totals.is-compact .rv-sheet--totals tbody tr:not(.rv-totals-row--cashflow) {
+    display: none;
+}
+
+/* Keep the cashflow row border clean when it sits alone */
+.viewer-totals.is-compact .rv-sheet--totals tbody tr.rv-totals-row--cashflow td {
+    border-top: none;
 }
 
 .viewer-totals-header {
