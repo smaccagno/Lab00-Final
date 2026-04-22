@@ -154,6 +154,14 @@
     --sds-c-icon-color-foreground-default: #2e844a;
 }
 
+/* Wrapper dei due fogli: occupa l'intera colonna centrale */
+.designer-sheets {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
 /* Sheet (foglio stile excel) */
 .designer-sheet {
     background: #ffffff;
@@ -162,16 +170,6 @@
     padding: 0.9rem 1rem 1rem 1rem;
     box-shadow: 0 1px 2px rgba(22, 50, 92, 0.04);
     min-width: 0;
-}
-
-.designer-sheet + .designer-sheet {
-    margin-top: 1rem;
-}
-
-@media (min-width: 900px) {
-    .designer-layout > .designer-sheet:nth-of-type(2) {
-        /* Stack entrambi i fogli nella colonna centrale */
-    }
 }
 
 .sheet-title {
