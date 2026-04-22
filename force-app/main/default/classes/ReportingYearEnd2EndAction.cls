@@ -1,21 +1,26 @@
 /**
- *  ReportingYearEnd2EndAction  –  v3
+ *  ReportingYearEnd2EndAction  –  v4 (bulk years)
  *
- *  • Crea Anno_Reportistica__c per ogni Program “Attivo” se non esiste già.
+ *  • Crea Anno_Reportistica__c per ogni Program “Attivo” e per ogni anno
+ *    ricevuto in input, se non esiste già.
  *  • Per Account di tipo **Investor** ⇒ assicura Donor_Overview__c
  *      (e chiama AllineaDonatoreAnnoAction **solo** sui record pre-esistenti).
  *  • Per Account di tipo **Partner** **o Lab00** ⇒ assicura GiftDesignation (Budget)
  *      (e chiama AllineaBudgetAnnoAction **solo** sui record pre-esistenti).
  *
- *  Bulk-safe: 3 SOQL propri, 0 DML se i record esistono già;
- *  2 insert bulk se servono (Anni + Overview/Budget),
- *  le altre operazioni sono delegate alle due action ottimizzate.
+ *  Batch-years bulk-safe: accetta sia `yearName` (singolo, legacy) sia
+ *  `yearNames` (List<String>). Le SOQL sono in numero costante rispetto
+ *  al numero di anni: un solo scan di Anno_Reportistica__c per tutti
+ *  i program × anni richiesti.
  */
 public without sharing class ReportingYearEnd2EndAction {
   /*====================  INVOCABLE TYPES  ====================*/
   public class Input {
-    @InvocableVariable(required=true)
+    @InvocableVariable(required=false)
     public String yearName;
+
+    @InvocableVariable(required=false)
+    public List<String> yearNames;
   }
   public class Output {
     @InvocableVariable
@@ -28,14 +33,23 @@ public without sharing class ReportingYearEnd2EndAction {
   /*====================  ENTRY POINT  ========================*/
   @InvocableMethod
   public static List<Output> run(List<Input> inputs) {
-    /* 0. Validazione anno ------------------------------------------------*/
-    if (
-      inputs == null ||
-      inputs.isEmpty() ||
-      String.isBlank(inputs[0].yearName)
-    )
-      return wrap('Nessun anno fornito');
-    String yearName = inputs[0].yearName.trim();
+    /* 0. Raccolta e validazione anni -------------------------------------*/
+    Set<String> yearSet = new Set<String>();
+    if (inputs != null) {
+      for (Input inRec : inputs) {
+        if (inRec == null) continue;
+        if (String.isNotBlank(inRec.yearName)) {
+          yearSet.add(inRec.yearName.trim());
+        }
+        if (inRec.yearNames != null) {
+          for (String y : inRec.yearNames) {
+            if (String.isNotBlank(y)) yearSet.add(y.trim());
+          }
+        }
+      }
+    }
+    if (yearSet.isEmpty()) return wrap('Nessun anno fornito');
+    List<String> yearNames = new List<String>(yearSet);
 
     /* 1. Programmi attivi -----------------------------------------------*/
     List<Program> programs = [
@@ -53,23 +67,27 @@ public without sharing class ReportingYearEnd2EndAction {
       progName.put(p.Id, p.Name);
     }
 
-    /* 2. Anno_Reportistica (verifica / insert) --------------------------*/
+    /* 2. Anno_Reportistica (verifica / insert) --------------------------
+     *    Una sola SOQL per tutti i (program × anno).
+     */
     Map<String, Anno_Reportistica__c> annoByKey = new Map<String, Anno_Reportistica__c>();
     for (Anno_Reportistica__c ar : [
-      SELECT Id, Programma__c
+      SELECT Id, Name, Programma__c
       FROM Anno_Reportistica__c
-      WHERE Programma__c IN :programIds AND Name = :yearName
+      WHERE Programma__c IN :programIds AND Name IN :yearNames
     ]) {
-      annoByKey.put(key(ar.Programma__c, yearName), ar);
+      annoByKey.put(key(ar.Programma__c, ar.Name), ar);
     }
     List<Anno_Reportistica__c> anniIns = new List<Anno_Reportistica__c>();
     for (Id progId : programIds) {
-      String k = key(progId, yearName);
-      if (!annoByKey.containsKey(k)) {
-        anniIns.add(
-          new Anno_Reportistica__c(Name = yearName, Programma__c = progId)
-        );
-        annoByKey.put(k, null); // prenota chiave
+      for (String yr : yearNames) {
+        String k = key(progId, yr);
+        if (!annoByKey.containsKey(k)) {
+          anniIns.add(
+            new Anno_Reportistica__c(Name = yr, Programma__c = progId)
+          );
+          annoByKey.put(k, null); // prenota chiave
+        }
       }
     }
     if (!anniIns.isEmpty())
@@ -213,12 +231,10 @@ public without sharing class ReportingYearEnd2EndAction {
 
     /* 6. Output ---------------------------------------------------------*/
     return wrap(
-      'Anni creati: ' +
-        anniIns.size() +
-        ' | Overview creati: ' +
-        newOvIds.size() +
-        ' | Budget creati: ' +
-        newBudIds.size()
+      'Anni in input: ' + yearNames.size() +
+        ' | Anni creati: ' + anniIns.size() +
+        ' | Overview creati: ' + newOvIds.size() +
+        ' | Budget creati: ' + newBudIds.size()
     );
   }
 
