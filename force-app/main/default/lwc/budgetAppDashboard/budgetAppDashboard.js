@@ -204,13 +204,56 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         return `Vai al budget ${this.selectedProgramName}`;
     }
 
-    columns = [
-        { label: 'Tipo', fieldName: 'tipo', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Categoria', fieldName: 'categoria', type: 'text', cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Previsto', fieldName: 'previsto', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Effettivo', fieldName: 'effettivo', type: 'currency', typeAttributes: { currencyCode: 'EUR' }, cellAttributes: { class: { fieldName: 'cssClass' } } },
-        { label: 'Avanzamento', fieldName: 'avanzamento', type: 'percent', typeAttributes: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, cellAttributes: { class: { fieldName: 'cssClass' } } }
-    ];
+    euroFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    percentFormatter = new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    formatEuro(value) {
+        const n = Number(value);
+        return this.euroFormatter.format(Number.isFinite(n) ? n : 0);
+    }
+
+    formatPercent(value) {
+        const n = Number(value);
+        return this.percentFormatter.format(Number.isFinite(n) ? n : 0);
+    }
+
+    buildSheetRow(raw) {
+        const isCashflow = raw.tipo === 'CASH FLOW' || raw.tipo === 'CASH FLOW TOTALE';
+        const isIncasso = raw.tipo === 'Incasso';
+        const isSpesa = raw.tipo === 'Spesa';
+
+        let pillClass = 'sheet-pill';
+        let progressFillClass = 'sheet-progress-fill';
+        let typeLabel = raw.tipo;
+
+        if (isIncasso) {
+            pillClass += ' sheet-pill--incasso';
+            progressFillClass += ' sheet-progress-fill--incasso';
+        } else if (isSpesa) {
+            pillClass += ' sheet-pill--spesa';
+            progressFillClass += ' sheet-progress-fill--spesa';
+        } else if (isCashflow) {
+            pillClass += ' sheet-pill--cashflow';
+            progressFillClass += ' sheet-progress-fill--cashflow';
+            typeLabel = raw.tipo === 'CASH FLOW TOTALE' ? 'TOTALE' : 'CASH FLOW';
+        }
+
+        const avanzamento = Number(raw.avanzamento) || 0;
+        const clamped = Math.min(100, Math.max(0, avanzamento * 100));
+
+        return {
+            ...raw,
+            isCashflow,
+            typeLabel,
+            pillClass,
+            rowClass: isCashflow ? 'sheet-row sheet-row--cashflow' : 'sheet-row',
+            previstoFmt: this.formatEuro(raw.previsto),
+            effettivoFmt: this.formatEuro(raw.effettivo),
+            avanzamentoFmt: this.formatPercent(avanzamento),
+            progressStyle: `width: ${clamped}%`,
+            progressFillClass
+        };
+    }
 
     @wire(getDashboardData)
     wiredData({ error, data }) {
@@ -672,7 +715,7 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                 avanzamento: this.calculateProgress(totalIncassiEff - totalSpeseEff, totalIncassiPrev - totalSpesePrev),
                 cssClass: 'slds-text-title_bold slds-theme_shade'
             });
-            this.programSummaryData = summaryData;
+            this.programSummaryData = summaryData.map(r => this.buildSheetRow(r));
         } else {
             this.programSummaryData = null;
         }
@@ -714,7 +757,8 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                 if (!r.id) r.id = `${anno}_${idx}`;
             });
 
-            yearlyDataArray.push({ anno, data: yearRecords });
+            const styledYearRecords = yearRecords.map(r => this.buildSheetRow(r));
+            yearlyDataArray.push({ anno, data: styledYearRecords });
             const yearEntry = yearlyDataArray[yearlyDataArray.length - 1];
             const annoNumber = Number(anno);
             const formattedDate = this.formatDateForLabel(this.globalDate);

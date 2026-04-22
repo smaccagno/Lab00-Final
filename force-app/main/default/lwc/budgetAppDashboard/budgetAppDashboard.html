@@ -186,56 +186,118 @@
                             <!-- Table side -->
                             <div class="program-detail-table">
                                 <template if:true={programSummaryData}>
-                                    <div class="slds-m-bottom_large slds-box slds-theme_default">
-                                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
-                                            <h3 class="slds-text-heading_small slds-text-title_bold slds-text-color_default">{programSummaryTitle}</h3>
+                                    <div class="dashboard-sheet-block dashboard-sheet-block--summary">
+                                        <div class="dashboard-sheet-head">
+                                            <div class="dashboard-sheet-title dashboard-sheet-title--summary">
+                                                <lightning-icon icon-name="utility:summary" size="x-small"></lightning-icon>
+                                                <span>{programSummaryTitle}</span>
+                                            </div>
                                             <button
-                                                class="slds-button slds-button_neutral"
+                                                class="slds-button slds-button_neutral dashboard-sheet-action"
                                                 onclick={handleOpenRecordsViewerAllYears}>
+                                                <lightning-icon icon-name="utility:preview" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
                                                 Vedi tutti i record
                                             </button>
                                         </div>
-                                        <lightning-datatable
-                                            key-field="id"
-                                            data={programSummaryData}
-                                            columns={columns}
-                                            hide-checkbox-column>
-                                        </lightning-datatable>
+                                        <div class="dashboard-sheet-wrapper">
+                                            <table class="dashboard-sheet">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="col-type">Tipo</th>
+                                                        <th class="col-cat">Categoria</th>
+                                                        <th class="col-num">Previsto</th>
+                                                        <th class="col-num">Effettivo</th>
+                                                        <th class="col-progress">Avanzamento</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <template for:each={programSummaryData} for:item="row">
+                                                        <tr key={row.id} class={row.rowClass}>
+                                                            <td class="col-type"><span class={row.pillClass}>{row.typeLabel}</span></td>
+                                                            <td class="col-cat">{row.categoria}</td>
+                                                            <td class="col-num">{row.previstoFmt}</td>
+                                                            <td class="col-num">{row.effettivoFmt}</td>
+                                                            <td class="col-progress">
+                                                                <div class="sheet-progress">
+                                                                    <span class="sheet-progress-track">
+                                                                        <span class={row.progressFillClass} style={row.progressStyle}></span>
+                                                                    </span>
+                                                                    <span class="sheet-progress-label">{row.avanzamentoFmt}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </template>
 
                                 <template if:true={yearlyData}>
                                     <template for:each={yearlyData} for:item="yearGroup">
-                                        <div key={yearGroup.anno} class="slds-m-bottom_large">
-                                            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
-                                                <h3 class="slds-text-heading_small slds-text-title_bold slds-text-color_default">{yearGroup.label}</h3>
-                                                <div class="slds-grid slds-gutters_xx-small">
+                                        <div key={yearGroup.anno} class="dashboard-sheet-block">
+                                            <div class="dashboard-sheet-head">
+                                                <div class="dashboard-sheet-title dashboard-sheet-title--year">
+                                                    <lightning-icon icon-name="utility:event" size="x-small"></lightning-icon>
+                                                    <span>{yearGroup.label}</span>
+                                                </div>
+                                                <div class="dashboard-sheet-actions">
                                                     <button
-                                                        class="slds-button slds-button_neutral slds-m-left_small"
+                                                        class="slds-button slds-button_neutral dashboard-sheet-action"
                                                         data-anno={yearGroup.anno}
                                                         onclick={handleOpenRecordsViewerYear}>
-                                                        Vedi tutti i record
+                                                        <lightning-icon icon-name="utility:preview" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        Vedi record
                                                     </button>
                                                     <button
-                                                        class="slds-button slds-button_neutral slds-m-left_small"
+                                                        class="slds-button slds-button_neutral dashboard-sheet-action"
                                                         data-budget-year-id={yearGroup.budgetYearId}
                                                         onclick={handleGoToYearBudget}
                                                         disabled={yearGroup.disableNavigate}>
+                                                        <lightning-icon icon-name="utility:new_window" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
                                                         {yearGroup.navigateLabel}
                                                     </button>
                                                 </div>
                                             </div>
-                                            <lightning-datatable
-                                                key-field="id"
-                                                data={yearGroup.data}
-                                                columns={columns}
-                                                hide-checkbox-column>
-                                            </lightning-datatable>
+                                            <div class="dashboard-sheet-wrapper">
+                                                <table class="dashboard-sheet">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="col-type">Tipo</th>
+                                                            <th class="col-cat">Categoria</th>
+                                                            <th class="col-num">Previsto</th>
+                                                            <th class="col-num">Effettivo</th>
+                                                            <th class="col-progress">Avanzamento</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template for:each={yearGroup.data} for:item="row">
+                                                            <tr key={row.id} class={row.rowClass}>
+                                                                <td class="col-type"><span class={row.pillClass}>{row.typeLabel}</span></td>
+                                                                <td class="col-cat">{row.categoria}</td>
+                                                                <td class="col-num">{row.previstoFmt}</td>
+                                                                <td class="col-num">{row.effettivoFmt}</td>
+                                                                <td class="col-progress">
+                                                                    <div class="sheet-progress">
+                                                                        <span class="sheet-progress-track">
+                                                                            <span class={row.progressFillClass} style={row.progressStyle}></span>
+                                                                        </span>
+                                                                        <span class="sheet-progress-label">{row.avanzamentoFmt}</span>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </template>
                                 </template>
                                 <template if:false={yearlyData}>
-                                    <p class="slds-m-top_medium slds-text-color_weak">Nessun dato disponibile per i filtri selezionati.</p>
+                                    <div class="dashboard-sheet-empty">
+                                        <lightning-icon icon-name="utility:filter" size="small"></lightning-icon>
+                                        <p>Nessun dato disponibile per i filtri selezionati.</p>
+                                    </div>
                                 </template>
                             </div>
                         </div>
