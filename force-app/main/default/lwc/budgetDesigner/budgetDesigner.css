@@ -270,6 +270,79 @@
     background: #fff9df;
 }
 
+/* Group header row: shows the category name and its subtotal */
+.sheet-group-header th,
+.sheet-group-header td {
+    padding: 0.45rem 0.65rem;
+    background: #f4f6fb;
+    border-top: 1px solid #d3dbe8;
+    border-bottom: 1px solid #d3dbe8;
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #16325c;
+}
+
+.sheet-group-header--incassi th {
+    background: linear-gradient(90deg, rgba(46, 132, 74, 0.12) 0%, rgba(46, 132, 74, 0.02) 80%);
+    border-left: 3px solid #2e844a;
+    color: #1b5a30;
+}
+
+.sheet-group-header--spese th {
+    background: linear-gradient(90deg, rgba(234, 0, 30, 0.1) 0%, rgba(234, 0, 30, 0.02) 80%);
+    border-left: 3px solid #ea001e;
+    color: #a00015;
+}
+
+.sheet-group-count {
+    margin-left: 0.55rem;
+    padding: 0.08rem 0.5rem;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.sheet-group-subtotal {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-weight: 700;
+}
+
+.sheet-group-subtotal--incassi { color: #1b5a30; }
+.sheet-group-subtotal--spese   { color: #a00015; }
+
+/* Indent child rows so they read as belonging to the group above */
+.sheet-row--child td:first-child,
+.sheet-row--child th:first-child {
+    padding-left: 1.4rem;
+    position: relative;
+}
+
+.sheet-row--child td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0.55rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #d3dbe8;
+}
+
+.sheet-row--child td:first-child::after {
+    content: '';
+    position: absolute;
+    left: 0.55rem;
+    top: 50%;
+    width: 0.55rem;
+    height: 2px;
+    background: #d3dbe8;
+}
+
 /* Column widths */
 .sheet .col-cat { width: 22%; }
 .sheet .col-subcat { width: 16%; }

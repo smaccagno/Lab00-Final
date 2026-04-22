@@ -102,129 +102,143 @@
                                 <th scope="col" aria-label="Azioni"></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <template for:each={incassiRows} for:item="row">
-                                <tr key={row.id} class="sheet-row">
+                            <template for:each={incassiGroups} for:item="grp">
+                                <tbody key={grp.key} class="sheet-group">
+                                    <template if:true={grp.showGroupHeader}>
+                                        <tr class="sheet-group-header sheet-group-header--incassi">
+                                            <th scope="rowgroup" colspan="3">
+                                                <span class="sheet-group-name">{grp.categoriaLabel}</span>
+                                                <span class="sheet-group-count">{grp.countLabel}</span>
+                                            </th>
+                                            <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
+                                            <td></td>
+                                        </tr>
+                                    </template>
+                                    <template for:each={grp.children} for:item="row">
+                                        <tr key={row.id} class={row.rowClass}>
+                                            <td>
+                                                <lightning-combobox
+                                                    variant="label-hidden"
+                                                    value={row.categoria}
+                                                    options={row.categoriaOptions}
+                                                    data-id={row.id}
+                                                    data-field="categoria"
+                                                    onchange={handleIncassoCellChange}>
+                                                </lightning-combobox>
+                                            </td>
+                                            <td>
+                                                <lightning-input
+                                                    type="text"
+                                                    variant="label-hidden"
+                                                    value={row.name}
+                                                    placeholder="Nome voce"
+                                                    data-id={row.id}
+                                                    data-field="name"
+                                                    onchange={handleIncassoCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td>
+                                                <lightning-input
+                                                    type="date"
+                                                    variant="label-hidden"
+                                                    value={row.data}
+                                                    data-id={row.id}
+                                                    data-field="data"
+                                                    onchange={handleIncassoCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td class="col-amount">
+                                                <lightning-input
+                                                    type="number"
+                                                    variant="label-hidden"
+                                                    value={row.ammontare}
+                                                    step="0.01"
+                                                    min="0"
+                                                    formatter="currency"
+                                                    data-id={row.id}
+                                                    data-field="ammontare"
+                                                    onchange={handleIncassoCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td class="col-actions">
+                                                <button class="sheet-row-remove"
+                                                        title="Rimuovi riga"
+                                                        data-id={row.id}
+                                                        onclick={handleIncassoRemove}>
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </template>
+
+                            <tbody>
+                                <!-- Riga draft (sempre visibile) -->
+                                <tr class="sheet-row sheet-row--draft">
                                     <td>
                                         <lightning-combobox
                                             variant="label-hidden"
-                                            value={row.categoria}
-                                            options={row.categoriaOptions}
-                                            data-id={row.id}
+                                            value={draftIncassoView.categoria}
+                                            options={draftIncassoView.categoriaOptions}
+                                            data-scope="draft-incasso"
                                             data-field="categoria"
-                                            onchange={handleIncassoCellChange}>
+                                            onchange={handleDraftIncassoChange}>
                                         </lightning-combobox>
                                     </td>
                                     <td>
                                         <lightning-input
                                             type="text"
                                             variant="label-hidden"
-                                            value={row.name}
+                                            value={draftIncassoView.name}
                                             placeholder="Nome voce"
-                                            data-id={row.id}
+                                            data-scope="draft-incasso"
                                             data-field="name"
-                                            onchange={handleIncassoCellChange}>
+                                            onchange={handleDraftIncassoChange}>
                                         </lightning-input>
                                     </td>
                                     <td>
                                         <lightning-input
                                             type="date"
                                             variant="label-hidden"
-                                            value={row.data}
-                                            data-id={row.id}
+                                            value={draftIncassoView.data}
+                                            placeholder={dataTarget}
+                                            data-scope="draft-incasso"
                                             data-field="data"
-                                            onchange={handleIncassoCellChange}>
+                                            onchange={handleDraftIncassoChange}>
                                         </lightning-input>
                                     </td>
                                     <td class="col-amount">
                                         <lightning-input
                                             type="number"
                                             variant="label-hidden"
-                                            value={row.ammontare}
+                                            value={draftIncassoView.ammontare}
                                             step="0.01"
                                             min="0"
+                                            placeholder="0"
                                             formatter="currency"
-                                            data-id={row.id}
+                                            data-scope="draft-incasso"
                                             data-field="ammontare"
-                                            onchange={handleIncassoCellChange}>
+                                            onchange={handleDraftIncassoChange}>
                                         </lightning-input>
                                     </td>
                                     <td class="col-actions">
-                                        <button class="sheet-row-remove"
-                                                title="Rimuovi riga"
-                                                data-id={row.id}
-                                                onclick={handleIncassoRemove}>
-                                            <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                        <button class="sheet-row-add"
+                                                title="Aggiungi riga"
+                                                disabled={draftIncassoAddDisabled}
+                                                onclick={handleDraftIncassoSubmit}>
+                                            <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
                                         </button>
                                     </td>
                                 </tr>
-                            </template>
-
-                            <!-- Riga draft (sempre visibile) -->
-                            <tr class="sheet-row sheet-row--draft">
-                                <td>
-                                    <lightning-combobox
-                                        variant="label-hidden"
-                                        value={draftIncassoView.categoria}
-                                        options={draftIncassoView.categoriaOptions}
-                                        data-scope="draft-incasso"
-                                        data-field="categoria"
-                                        onchange={handleDraftIncassoChange}>
-                                    </lightning-combobox>
-                                </td>
-                                <td>
-                                    <lightning-input
-                                        type="text"
-                                        variant="label-hidden"
-                                        value={draftIncassoView.name}
-                                        placeholder="Nome voce"
-                                        data-scope="draft-incasso"
-                                        data-field="name"
-                                        onchange={handleDraftIncassoChange}>
-                                    </lightning-input>
-                                </td>
-                                <td>
-                                    <lightning-input
-                                        type="date"
-                                        variant="label-hidden"
-                                        value={draftIncassoView.data}
-                                        placeholder={dataTarget}
-                                        data-scope="draft-incasso"
-                                        data-field="data"
-                                        onchange={handleDraftIncassoChange}>
-                                    </lightning-input>
-                                </td>
-                                <td class="col-amount">
-                                    <lightning-input
-                                        type="number"
-                                        variant="label-hidden"
-                                        value={draftIncassoView.ammontare}
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0"
-                                        formatter="currency"
-                                        data-scope="draft-incasso"
-                                        data-field="ammontare"
-                                        onchange={handleDraftIncassoChange}>
-                                    </lightning-input>
-                                </td>
-                                <td class="col-actions">
-                                    <button class="sheet-row-add"
-                                            title="Aggiungi riga"
-                                            disabled={draftIncassoAddDisabled}
-                                            onclick={handleDraftIncassoSubmit}>
-                                        <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot>
-                            <tr class="sheet-total-row">
-                                <th scope="row" colspan="3">Totale Incassi</th>
-                                <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
+                            </tbody>
+                            <tfoot>
+                                <tr class="sheet-total-row">
+                                    <th scope="row" colspan="3">Totale Incassi</th>
+                                    <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                     </table>
                 </div>
             </section>
@@ -259,86 +273,100 @@
                                 <th scope="col" aria-label="Azioni"></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <template for:each={speseRows} for:item="row">
-                                <tr key={row.id} class="sheet-row">
-                                    <td>
-                                        <lightning-combobox
-                                            variant="label-hidden"
-                                            value={row.categoria}
-                                            options={row.categoriaOptions}
-                                            data-id={row.id}
-                                            data-field="categoria"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-combobox>
-                                    </td>
-                                    <td>
-                                        <lightning-combobox
-                                            variant="label-hidden"
-                                            value={row.sottocategoria}
-                                            options={row.subOptions}
-                                            disabled={row.subDisabled}
-                                            data-id={row.id}
-                                            data-field="sottocategoria"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-combobox>
-                                    </td>
-                                    <td>
-                                        <lightning-input
-                                            type="text"
-                                            variant="label-hidden"
-                                            value={row.name}
-                                            placeholder="Nome voce"
-                                            data-id={row.id}
-                                            data-field="name"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-input>
-                                    </td>
-                                    <td>
-                                        <lightning-input
-                                            type="date"
-                                            variant="label-hidden"
-                                            value={row.data}
-                                            data-id={row.id}
-                                            data-field="data"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-input>
-                                    </td>
-                                    <td class="col-amount">
-                                        <lightning-input
-                                            type="number"
-                                            variant="label-hidden"
-                                            value={row.ammontare}
-                                            step="0.01"
-                                            min="0"
-                                            formatter="currency"
-                                            data-id={row.id}
-                                            data-field="ammontare"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-input>
-                                    </td>
-                                    <td>
-                                        <lightning-input
-                                            type="text"
-                                            variant="label-hidden"
-                                            value={row.note}
-                                            placeholder="Note"
-                                            data-id={row.id}
-                                            data-field="note"
-                                            onchange={handleSpesaCellChange}>
-                                        </lightning-input>
-                                    </td>
-                                    <td class="col-actions">
-                                        <button class="sheet-row-remove"
-                                                title="Rimuovi riga"
-                                                data-id={row.id}
-                                                onclick={handleSpesaRemove}>
-                                            <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
-                                        </button>
-                                    </td>
-                                </tr>
+                            <template for:each={speseGroups} for:item="grp">
+                                <tbody key={grp.key} class="sheet-group">
+                                    <template if:true={grp.showGroupHeader}>
+                                        <tr class="sheet-group-header sheet-group-header--spese">
+                                            <th scope="rowgroup" colspan="4">
+                                                <span class="sheet-group-name">{grp.categoriaLabel}</span>
+                                                <span class="sheet-group-count">{grp.countLabel}</span>
+                                            </th>
+                                            <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </template>
+                                    <template for:each={grp.children} for:item="row">
+                                        <tr key={row.id} class={row.rowClass}>
+                                            <td>
+                                                <lightning-combobox
+                                                    variant="label-hidden"
+                                                    value={row.categoria}
+                                                    options={row.categoriaOptions}
+                                                    data-id={row.id}
+                                                    data-field="categoria"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-combobox>
+                                            </td>
+                                            <td>
+                                                <lightning-combobox
+                                                    variant="label-hidden"
+                                                    value={row.sottocategoria}
+                                                    options={row.subOptions}
+                                                    disabled={row.subDisabled}
+                                                    data-id={row.id}
+                                                    data-field="sottocategoria"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-combobox>
+                                            </td>
+                                            <td>
+                                                <lightning-input
+                                                    type="text"
+                                                    variant="label-hidden"
+                                                    value={row.name}
+                                                    placeholder="Nome voce"
+                                                    data-id={row.id}
+                                                    data-field="name"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td>
+                                                <lightning-input
+                                                    type="date"
+                                                    variant="label-hidden"
+                                                    value={row.data}
+                                                    data-id={row.id}
+                                                    data-field="data"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td class="col-amount">
+                                                <lightning-input
+                                                    type="number"
+                                                    variant="label-hidden"
+                                                    value={row.ammontare}
+                                                    step="0.01"
+                                                    min="0"
+                                                    formatter="currency"
+                                                    data-id={row.id}
+                                                    data-field="ammontare"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td>
+                                                <lightning-input
+                                                    type="text"
+                                                    variant="label-hidden"
+                                                    value={row.note}
+                                                    placeholder="Note"
+                                                    data-id={row.id}
+                                                    data-field="note"
+                                                    onchange={handleSpesaCellChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td class="col-actions">
+                                                <button class="sheet-row-remove"
+                                                        title="Rimuovi riga"
+                                                        data-id={row.id}
+                                                        onclick={handleSpesaRemove}>
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
                             </template>
 
+                            <tbody>
                             <!-- Riga draft -->
                             <tr class="sheet-row sheet-row--draft">
                                 <td>

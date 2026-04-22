@@ -91,23 +91,78 @@ export default class BudgetDesigner extends LightningElement {
         ];
     }
 
-    // Righe materializzate
+    // Raggruppa le righe per categoria, preservando l'ordine di inserimento
+    // (la prima voce di una categoria determina la posizione del gruppo).
+    groupByCategoria(rows, childDecorator) {
+        const groupsMap = new Map();
+        for (const r of rows) {
+            const key = r.categoria || '';
+            if (!groupsMap.has(key)) {
+                groupsMap.set(key, {
+                    key: 'grp-' + (key || 'nocat'),
+                    categoria: key,
+                    categoriaLabel: key || 'Senza categoria',
+                    children: [],
+                    subtotal: 0
+                });
+            }
+            const g = groupsMap.get(key);
+            const row = childDecorator(r);
+            row.isChild = true;
+            row.rowClass = 'sheet-row sheet-row--child';
+            g.children.push(row);
+            g.subtotal += Number(r.ammontare) || 0;
+        }
+        const groups = Array.from(groupsMap.values());
+        for (const g of groups) {
+            g.hasMultiple = g.children.length > 1;
+            g.showGroupHeader = g.hasMultiple;
+            g.subtotalFormatted = this.formatCurrency(g.subtotal);
+            g.countLabel = `${g.children.length} voci`;
+            // Se il gruppo è singleton, la riga resta visivamente piatta.
+            if (!g.hasMultiple) {
+                for (const c of g.children) {
+                    c.rowClass = 'sheet-row';
+                    c.isChild = false;
+                }
+            }
+        }
+        return groups;
+    }
+
+    // Righe materializzate (flat) — tenute per eventuale uso futuro
     get incassiRows() {
-        return this.incassi.map(r => ({
-            ...r,
-            categoriaOptions: this.incassoCategoriaOptions,
-            formattedAmount: this.formatCurrency(r.ammontare)
-        }));
+        return this.incassi.map(r => this.decorateIncasso(r));
     }
 
     get speseRows() {
-        return this.spese.map(r => ({
+        return this.spese.map(r => this.decorateSpesa(r));
+    }
+
+    decorateIncasso(r) {
+        return {
+            ...r,
+            categoriaOptions: this.incassoCategoriaOptions,
+            formattedAmount: this.formatCurrency(r.ammontare)
+        };
+    }
+
+    decorateSpesa(r) {
+        return {
             ...r,
             categoriaOptions: this.speseCategoriaOptions,
             subOptions: this.subOptionsFor(r.categoria),
             subDisabled: !(this.sottocategorieByCategoria[r.categoria] && this.sottocategorieByCategoria[r.categoria].length),
             formattedAmount: this.formatCurrency(r.ammontare)
-        }));
+        };
+    }
+
+    get incassiGroups() {
+        return this.groupByCategoria(this.incassi, r => this.decorateIncasso(r));
+    }
+
+    get speseGroups() {
+        return this.groupByCategoria(this.spese, r => this.decorateSpesa(r));
     }
 
     get draftIncassoView() {
