@@ -210,8 +210,11 @@
     margin-left: 0.25rem;
 }
 
+/* Note: must stay overflow:visible so the lightning-combobox dropdown and
+   the lightning-input[type=date] calendar can escape the sheet. Horizontal
+   scroll, when the table is too wide, falls back to the document. */
 .sheet-wrapper {
-    overflow-x: auto;
+    overflow: visible;
     border: 1px solid #d7dde8;
     border-radius: 6px;
     background: #fff;
