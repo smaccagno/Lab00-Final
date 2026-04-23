@@ -85,6 +85,19 @@ export default class BudgetDesigner extends LightningElement {
     connectedCallback() {
         // Year options are independent from picklist loading.
         this.annoOptions = this.buildYearOptions([]);
+        // Imperative fetch bypasses Lightning Data Service cache
+        // (prevents a stale empty-list cached from an earlier wire call).
+        getActivePrograms()
+            .then((data) => {
+                this.programmaOptions = [
+                    { label: '— Scegli —', value: '' },
+                    ...data.map((p) => ({ label: p.Name, value: p.Id }))
+                ];
+                this._remapRowsFromCache();
+            })
+            .catch(() => {
+                this.programmaOptions = [{ label: '— Scegli —', value: '' }];
+            });
     }
 
     // ── Object info: used to obtain the master record type id so that
@@ -180,21 +193,7 @@ export default class BudgetDesigner extends LightningElement {
         }
     }
 
-    @wire(getActivePrograms)
-    wiredPrograms({ data, error }) {
-        if (data) {
-            this.programmaOptions = [
-                { label: '— Scegli —', value: '' },
-                ...data.map(p => ({ label: p.Name, value: p.Id }))
-            ];
-            // Re-decorate rows so the Edit combobox picks up options.
-            this._remapRowsFromCache();
-        } else if (error) {
-            this.programmaOptions = [{ label: '— Scegli —', value: '' }];
-        }
-    }
-
-    @wire(getVersionDetail, { versionId: '$selectedVersionId' })
+@wire(getVersionDetail, { versionId: '$selectedVersionId' })
     wiredDetail(result) {
         this._wiredDetail = result;
         if (result.data) {
