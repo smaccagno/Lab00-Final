@@ -559,14 +559,14 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     calculateProgress(effettivo, previsto) {
         const eff = Number(effettivo) || 0;
         const prev = Number(previsto) || 0;
-        if (prev > 0) {
-            return eff / prev;
-        }
         if (prev === 0) {
             // In percent format, 2 => 200%. Keep zero-denominator case readable.
             return eff / 100;
         }
-        return eff / Math.abs(prev);
+        // Use absolute values so that rows where both previsto and effettivo
+        // are negative (e.g. cashflow = Incassi − Spese when there are only
+        // Spese) read as "consumed X% of planned", not as a negative ratio.
+        return Math.abs(eff) / Math.abs(prev);
     }
 
     rebuildTables() {
