@@ -18,6 +18,7 @@ import promoteVersion from '@salesforce/apex/BudgetVersionController.promoteVers
 import upsertItem from '@salesforce/apex/BudgetVersionController.upsertItem';
 import deleteItem from '@salesforce/apex/BudgetVersionController.deleteItem';
 import reorderItems from '@salesforce/apex/BudgetVersionController.reorderItems';
+import getActivePrograms from '@salesforce/apex/BudgetVersionController.getActivePrograms';
 
 function currentYear() {
     return String(new Date().getFullYear());
@@ -176,6 +177,20 @@ export default class BudgetDesigner extends LightningElement {
         } else if (result.error) {
             this.currentVersion = null;
             this.versionOptions = [];
+        }
+    }
+
+    @wire(getActivePrograms)
+    wiredPrograms({ data, error }) {
+        if (data) {
+            this.programmaOptions = [
+                { label: '— Scegli —', value: '' },
+                ...data.map(p => ({ label: p.Name, value: p.Id }))
+            ];
+            // Re-decorate rows so the Edit combobox picks up options.
+            this._remapRowsFromCache();
+        } else if (error) {
+            this.programmaOptions = [{ label: '— Scegli —', value: '' }];
         }
     }
 

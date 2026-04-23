@@ -247,4 +247,16 @@ private class BudgetVersionControllerTest {
         System.assertEquals('Provvisorio', detail.header.stato);
         System.assertEquals(1, detail.items.size());
     }
+
+    @IsTest
+    static void getActivePrograms_ritornaAttivi() {
+        Program p = createProgram('Attivo');
+        List<Program> programs = BudgetVersionController.getActivePrograms();
+        System.assert(programs.size() >= 1, 'Deve tornare almeno il programma Active creato');
+        Boolean found = false;
+        for (Program pg : programs) {
+            if (pg.Id == p.Id) { found = true; break; }
+        }
+        System.assert(found, 'Il programma Active creato deve essere presente');
+    }
 }

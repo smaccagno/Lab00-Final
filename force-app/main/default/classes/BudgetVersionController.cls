@@ -31,6 +31,17 @@ public with sharing class BudgetVersionController {
 
     // --- Reads ---
     @AuraEnabled(cacheable=true)
+    public static List<Program> getActivePrograms() {
+        return [
+            SELECT Id, Name
+              FROM Program
+             WHERE Status = 'Active'
+          ORDER BY Name
+             LIMIT 500
+        ];
+    }
+
+    @AuraEnabled(cacheable=true)
     public static List<BudgetVersionDTO> getVersionsByYear(Integer anno) {
         List<BudgetVersionDTO> out = new List<BudgetVersionDTO>();
         for (Budget_Version__c v : [
