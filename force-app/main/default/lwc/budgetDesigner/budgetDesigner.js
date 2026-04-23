@@ -1031,15 +1031,20 @@ export default class BudgetDesigner extends LightningElement {
 
         const [moved] = list.splice(fromIdx, 1);
         const targetRow = list[toIdx > fromIdx ? toIdx - 1 : toIdx];
+        let categoryChanged = false;
         if (targetRow && targetRow.categoria !== moved.categoria) {
             moved.categoria = targetRow.categoria;
             if (draggedKind === 'spesa') moved.sottocategoria = '';
+            categoryChanged = true;
         }
         list.splice(toIdx > fromIdx ? toIdx - 1 : toIdx, 0, moved);
 
         if (draggedKind === 'incasso') this.incassi = list;
         else this.spese = list;
 
+        if (categoryChanged) {
+            this._persistRowCategoria(moved, draggedKind);
+        }
         this._persistReorder(draggedKind);
     }
 
@@ -1077,9 +1082,11 @@ export default class BudgetDesigner extends LightningElement {
         const fromIdx = list.findIndex(r => r.id === draggedRowId);
         if (fromIdx < 0) return;
         const [moved] = list.splice(fromIdx, 1);
+        let categoryChanged = false;
         if (moved.categoria !== targetCategoria) {
             moved.categoria = targetCategoria;
             if (draggedRowKind === 'spesa') moved.sottocategoria = '';
+            categoryChanged = true;
         }
         let lastIdxOfCat = -1;
         list.forEach((r, i) => { if (r.categoria === targetCategoria) lastIdxOfCat = i; });
@@ -1088,6 +1095,9 @@ export default class BudgetDesigner extends LightningElement {
         if (draggedRowKind === 'incasso') this.incassi = list;
         else this.spese = list;
 
+        if (categoryChanged) {
+            this._persistRowCategoria(moved, draggedRowKind);
+        }
         this._persistReorder(draggedRowKind);
     }
 
@@ -1131,6 +1141,29 @@ export default class BudgetDesigner extends LightningElement {
         if (orders.length === 0) return;
         try {
             await reorderItems({ orders });
+        } catch (e) { this.showError(e); }
+    }
+
+    // Al drag-drop cross-categoria persistiamo la nuova categoria sul server,
+    // così le successive aperture in Edit leggeranno il valore aggiornato.
+    async _persistRowCategoria(row, kind) {
+        if (!row || !row.id) return;
+        const payload = {
+            Id: row.id,
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
+            Programma__c: row.programmaId || null,
+            Categoria__c: row.categoria || null,
+            Sottocategoria__c: kind === 'spesa' ? (row.sottocategoria || null) : null,
+            Nome__c: row.name || null,
+            Data__c: row.data || null,
+            Ammontare__c: row.ammontare || 0,
+            Note__c: row.note || null,
+            Sort_Order__c: row.sortOrder || null
+        };
+        try {
+            await upsertItem({ item: payload });
+            await refreshApex(this._wiredDetail);
         } catch (e) { this.showError(e); }
     }
 }
