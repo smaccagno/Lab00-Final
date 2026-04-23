@@ -162,6 +162,10 @@
 .kpi-dot--incassi-prev { background-color: #91c8a0; }
 .kpi-dot--spese-eff { background-color: #ea001e; }
 .kpi-dot--spese-prev { background-color: #f28b96; }
+.kpi-dot--cashflow-eff-positive { background-color: #014f8e; }
+.kpi-dot--cashflow-prev-positive { background-color: #9ec6f0; }
+.kpi-dot--cashflow-eff-negative { background-color: #7d5400; }
+.kpi-dot--cashflow-prev-negative { background-color: #e0c38a; }
 
 .kpi-progress {
     display: flex;
@@ -251,40 +255,40 @@
     margin-bottom: 0.15rem;
 }
 
-.kpi-split-row {
+/* Riga del split: nome programma + mini-breakdown (stessa grafica della
+   card totale - stessi dot, stesse label "Effettivo" / "Previsto"). */
+.kpi-split-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-    font-size: 0.78rem;
-    color: #2f3a4a;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.3rem 0;
+    border-top: 1px dotted #eef1f6;
 }
 
-.kpi-split-name {
-    flex: 1;
-    min-width: 0;
+.kpi-split-item:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.kpi-split-item-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #16325c;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: 600;
-    color: #16325c;
 }
 
-.kpi-split-pair {
-    display: inline-flex;
-    gap: 0.75rem;
-    font-variant-numeric: tabular-nums;
+/* Restringiamo i breakdown all'interno del split cosi' occupano poco
+   spazio verticale e restano coerenti con la card totale. */
+.kpi-split-item .kpi-breakdown {
+    font-size: 0.74rem;
+    gap: 0.6rem;
+    flex-wrap: wrap;
 }
 
-.kpi-split-leg {
-    color: #547190;
-    font-size: 0.76rem;
-}
-
-.kpi-split-leg strong {
-    color: #16325c;
-    font-weight: 700;
-    margin-left: 0.2rem;
+.kpi-split-item .kpi-breakdown strong {
+    font-size: 0.78rem;
 }
 
 .kpi-sub-amount--positive { color: #014f8e !important; }

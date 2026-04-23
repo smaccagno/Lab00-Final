@@ -47,12 +47,18 @@
                         <div class="kpi-split">
                             <div class="kpi-split-title">Per programma</div>
                             <template for:each={incassiByProgram} for:item="row">
-                                <div key={row.key} class="kpi-split-row">
-                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
-                                    <span class="kpi-split-pair">
-                                        <span class="kpi-split-leg">Eff <strong>{row.effettivoLabel}</strong></span>
-                                        <span class="kpi-split-leg">Prev <strong>{row.previstoLabel}</strong></span>
-                                    </span>
+                                <div key={row.key} class="kpi-split-item">
+                                    <div class="kpi-split-item-name" title={row.programName}>{row.programName}</div>
+                                    <div class="kpi-breakdown">
+                                        <span class="kpi-breakdown-item">
+                                            <span class="kpi-dot kpi-dot--incassi-eff"></span>
+                                            Effettivo <strong>{row.effettivoLabel}</strong>
+                                        </span>
+                                        <span class="kpi-breakdown-item">
+                                            <span class="kpi-dot kpi-dot--incassi-prev"></span>
+                                            Previsto <strong>{row.previstoLabel}</strong>
+                                        </span>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -86,12 +92,18 @@
                         <div class="kpi-split">
                             <div class="kpi-split-title">Per programma</div>
                             <template for:each={speseByProgram} for:item="row">
-                                <div key={row.key} class="kpi-split-row">
-                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
-                                    <span class="kpi-split-pair">
-                                        <span class="kpi-split-leg">Eff <strong>{row.effettivoLabel}</strong></span>
-                                        <span class="kpi-split-leg">Prev <strong>{row.previstoLabel}</strong></span>
-                                    </span>
+                                <div key={row.key} class="kpi-split-item">
+                                    <div class="kpi-split-item-name" title={row.programName}>{row.programName}</div>
+                                    <div class="kpi-breakdown">
+                                        <span class="kpi-breakdown-item">
+                                            <span class="kpi-dot kpi-dot--spese-eff"></span>
+                                            Effettivo <strong>{row.effettivoLabel}</strong>
+                                        </span>
+                                        <span class="kpi-breakdown-item">
+                                            <span class="kpi-dot kpi-dot--spese-prev"></span>
+                                            Previsto <strong>{row.previstoLabel}</strong>
+                                        </span>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -127,12 +139,18 @@
                         <div class="kpi-split">
                             <div class="kpi-split-title">Per programma</div>
                             <template for:each={cashFlowByProgram} for:item="row">
-                                <div key={row.key} class="kpi-split-row">
-                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
-                                    <span class="kpi-split-pair">
-                                        <span class="kpi-split-leg">Eff <strong class={row.valueClass}>{row.effettivoLabel}</strong></span>
-                                        <span class="kpi-split-leg">Prev <strong class={row.valueClass}>{row.previstoLabel}</strong></span>
-                                    </span>
+                                <div key={row.key} class="kpi-split-item">
+                                    <div class="kpi-split-item-name" title={row.programName}>{row.programName}</div>
+                                    <div class="kpi-breakdown">
+                                        <span class="kpi-breakdown-item">
+                                            <span class={row.effDotClass}></span>
+                                            Effettivo <strong class={row.valueClass}>{row.effettivoLabel}</strong>
+                                        </span>
+                                        <span class="kpi-breakdown-item">
+                                            <span class={row.prevDotClass}></span>
+                                            Previsto <strong class={row.valueClass}>{row.previstoLabel}</strong>
+                                        </span>
+                                    </div>
                                 </div>
                             </template>
                         </div>

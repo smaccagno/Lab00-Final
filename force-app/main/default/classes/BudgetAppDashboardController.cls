@@ -224,9 +224,22 @@ public with sharing class BudgetAppDashboardController {
             BudgetAggregator.accumulate(speByProgram.get(pid), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
         }
 
+        // Anche i budget senza movimenti devono comparire: aggiungo tutti i
+        // GiftDesignation del partner (partner = accountId).
+        for (GiftDesignation gd : [
+            SELECT Id, Program__r.Name
+            FROM GiftDesignation
+            WHERE Partner__c = :accountId
+        ]) {
+            if (!programNameByBudget.containsKey(gd.Id)) {
+                programNameByBudget.put(gd.Id, gd.Program__r != null ? gd.Program__r.Name : null);
+            }
+        }
+
         Set<Id> allPrograms = new Set<Id>();
         allPrograms.addAll(incByProgram.keySet());
         allPrograms.addAll(speByProgram.keySet());
+        allPrograms.addAll(programNameByBudget.keySet());
 
         for (Id pid : allPrograms) {
             BudgetAggregator.AmountPair inc = incByProgram.containsKey(pid) ? incByProgram.get(pid) : new BudgetAggregator.AmountPair();

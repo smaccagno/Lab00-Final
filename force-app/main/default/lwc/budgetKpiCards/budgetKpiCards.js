@@ -128,13 +128,15 @@ export default class BudgetKpiCards extends LightningElement {
             const eff = p.cashFlowEffettivo;
             const prev = p.cashFlowPrevisto;
             const positive = (p.cashFlowTotale || 0) >= 0;
+            const accent = positive ? 'positive' : 'negative';
             return {
                 key: p.programId,
                 programName: p.programName || 'Programma',
                 effettivoLabel: this.formatCurrency(eff),
                 previstoLabel: this.formatCurrency(prev),
-                valueClass: positive ? 'kpi-sub-amount kpi-sub-amount--positive'
-                                     : 'kpi-sub-amount kpi-sub-amount--negative'
+                valueClass: `kpi-sub-amount kpi-sub-amount--${accent}`,
+                effDotClass: `kpi-dot kpi-dot--cashflow-eff-${accent}`,
+                prevDotClass: `kpi-dot kpi-dot--cashflow-prev-${accent}`
             };
         });
     }
