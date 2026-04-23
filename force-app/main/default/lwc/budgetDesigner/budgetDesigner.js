@@ -365,30 +365,48 @@ export default class BudgetDesigner extends LightningElement {
         ];
     }
 
-    // Raggruppa le righe per categoria rispettando il categoryOrder.
+    // Raggruppa le righe per Categoria > Programma, rispettando categoryOrder.
     groupByCategoria(rows, childDecorator, kind, categoryOrder) {
         const groupsMap = new Map();
         const appearanceOrder = [];
         for (const r of rows) {
-            const key = r.categoria || '';
-            if (!groupsMap.has(key)) {
-                groupsMap.set(key, {
-                    key: 'grp-' + (key || 'nocat'),
+            const catKey = r.categoria || '';
+            if (!groupsMap.has(catKey)) {
+                groupsMap.set(catKey, {
+                    key: 'grp-' + (catKey || 'nocat'),
                     kind,
-                    categoria: key,
-                    categoriaLabel: key || 'Senza categoria',
+                    categoria: catKey,
+                    categoriaLabel: catKey || 'Senza categoria',
+                    programSubgroups: new Map(),
+                    programAppearanceOrder: [],
                     children: [],
                     subtotal: 0
                 });
-                appearanceOrder.push(key);
+                appearanceOrder.push(catKey);
             }
-            const g = groupsMap.get(key);
+            const g = groupsMap.get(catKey);
             const row = childDecorator(r);
             row.kind = kind;
             row.rowClass = 'sheet-row sheet-row--child';
             row.showPaste = this.copyMode === kind;
             row.showCopy = !row.showPaste;
             row.pasteDisabled = false;
+
+            const progKey = r.programmaId || '';
+            if (!g.programSubgroups.has(progKey)) {
+                g.programSubgroups.set(progKey, {
+                    key: g.key + '-prog-' + (progKey || 'noprog'),
+                    programmaId: r.programmaId || null,
+                    programmaName: r.programmaName || 'Senza programma',
+                    children: [],
+                    subtotal: 0
+                });
+                g.programAppearanceOrder.push(progKey);
+            }
+            const pg = g.programSubgroups.get(progKey);
+            pg.children.push(row);
+            pg.subtotal += Number(r.ammontare) || 0;
+
             g.children.push(row);
             g.subtotal += Number(r.ammontare) || 0;
         }
@@ -396,6 +414,22 @@ export default class BudgetDesigner extends LightningElement {
         for (const g of groups) {
             g.subtotalFormatted = this.formatCurrency(g.subtotal);
             g.countLabel = `${g.children.length} voci`;
+            // Converti Map in array ordinato e formatta subtotali
+            g.programSubgroupsList = g.programAppearanceOrder.map(pk => {
+                const pg = g.programSubgroups.get(pk);
+                return {
+                    key: pg.key,
+                    programmaId: pg.programmaId,
+                    programmaName: pg.programmaName,
+                    children: pg.children,
+                    subtotal: pg.subtotal,
+                    subtotalFormatted: this.formatCurrency(pg.subtotal),
+                    countLabel: `${pg.children.length} voci`
+                };
+            });
+            // Ripulisci Map non serializzabili dal template
+            delete g.programSubgroups;
+            delete g.programAppearanceOrder;
         }
 
         const orderIndex = new Map();

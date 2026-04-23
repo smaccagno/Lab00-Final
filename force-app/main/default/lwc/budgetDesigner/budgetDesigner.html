@@ -144,7 +144,18 @@
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
                                         <td colspan="2"></td>
                                     </tr>
-                                    <template for:each={grp.children} for:item="row">
+                                    <template for:each={grp.programSubgroupsList} for:item="sub">
+                                    <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--incassi">
+                                        <td class="col-handle"></td>
+                                        <td colspan="4" class="sheet-subgroup-name">
+                                            <lightning-icon icon-name="utility:apex" size="xx-small"></lightning-icon>
+                                            <span>{sub.programmaName}</span>
+                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                        </td>
+                                        <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--incassi">{sub.subtotalFormatted}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                    <template for:each={sub.children} for:item="row">
                                         <template if:false={row.isEditing}>
                                             <tr key={row.id} class="sheet-row sheet-row--view sheet-row--child"
                                                 data-id={row.id}
@@ -312,6 +323,7 @@
                                                 </td>
                                             </tr>
                                         </template>
+                                    </template>
                                     </template>
                                 </tbody>
                             </template>
@@ -483,7 +495,18 @@
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
                                         <td colspan="2"></td>
                                     </tr>
-                                    <template for:each={grp.children} for:item="row">
+                                    <template for:each={grp.programSubgroupsList} for:item="sub">
+                                    <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--spese">
+                                        <td class="col-handle"></td>
+                                        <td colspan="5" class="sheet-subgroup-name">
+                                            <lightning-icon icon-name="utility:apex" size="xx-small"></lightning-icon>
+                                            <span>{sub.programmaName}</span>
+                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                        </td>
+                                        <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--spese">{sub.subtotalFormatted}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                    <template for:each={sub.children} for:item="row">
                                         <template if:false={row.isEditing}>
                                             <tr key={row.id} class="sheet-row sheet-row--view sheet-row--child"
                                                 data-id={row.id}
@@ -663,6 +686,7 @@
                                                 </td>
                                             </tr>
                                         </template>
+                                    </template>
                                     </template>
                                 </tbody>
                             </template>

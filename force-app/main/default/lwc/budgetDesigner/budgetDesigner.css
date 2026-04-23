@@ -799,3 +799,48 @@
     color: #1b5a30;
     outline: none;
 }
+
+/* Subgroup per programma dentro una categoria */
+.sheet-subgroup-header td {
+    padding: 0.28rem 0.65rem;
+    background: #fbfcff;
+    border-top: 1px solid #eef1f6;
+    font-weight: 600;
+    font-size: 0.74rem;
+    color: #16325c;
+}
+.sheet-subgroup-header--incassi td {
+    background: linear-gradient(90deg, rgba(46, 132, 74, 0.05) 0%, rgba(46, 132, 74, 0) 75%);
+    border-left: 3px solid #91c8a0;
+}
+.sheet-subgroup-header--spese td {
+    background: linear-gradient(90deg, rgba(234, 0, 30, 0.04) 0%, rgba(234, 0, 30, 0) 75%);
+    border-left: 3px solid #f5a2ac;
+}
+.sheet-subgroup-name {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding-left: 0.4rem;
+}
+.sheet-subgroup-name lightning-icon {
+    --sds-c-icon-color-foreground-default: #7a8aa0;
+}
+.sheet-subgroup-count {
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #d3dbe8;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #547190;
+}
+.sheet-subgroup-subtotal {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.sheet-subgroup-subtotal--incassi { color: #2e844a; }
+.sheet-subgroup-subtotal--spese   { color: #c9263a; }
