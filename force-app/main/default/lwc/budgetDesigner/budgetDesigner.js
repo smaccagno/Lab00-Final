@@ -78,7 +78,7 @@ export default class BudgetDesigner extends LightningElement {
     @track showForkConfirmDialog = false;
     @track dialogNome = '';
     @track dialogDescrizione = '';
-    @track programmaOptions = [];
+    @track programmaOptions = [{ label: '— Scegli —', value: '' }];
     _wiredVersions;
     _wiredDetail;
 
