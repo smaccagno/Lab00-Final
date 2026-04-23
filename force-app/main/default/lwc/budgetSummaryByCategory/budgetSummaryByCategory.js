@@ -507,8 +507,14 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
             const externalCashFlowMaxVal = Number(this.externalMaxCashFlowVal) || 0;
             const totalIncassi = totalIncassiEffettivo + totalIncassiPrevisto;
             const totalSpese = totalSpeseEffettivo + totalSpesePrevisto;
+            // Disponibilità Previsto: se non ho Incassi Previsti, la
+            // disponibilità pianificata è 0 (non stiamo pianificando un
+            // "buco"). Altrimenti Incassi − Spese. Effettivo può essere
+            // negativo (solo spese senza incassi a copertura).
             const dispEffettivo = totalIncassiEffettivo - totalSpeseEffettivo;
-            const dispPrevisto = totalIncassiPrevisto - totalSpesePrevisto;
+            const dispPrevisto = totalIncassiPrevisto === 0
+                ? 0
+                : totalIncassiPrevisto - totalSpesePrevisto;
             const totalDisp = dispEffettivo + dispPrevisto;
             const maxCashFlowVal = Math.max(
                 totalIncassiEffettivo, totalIncassiPrevisto,

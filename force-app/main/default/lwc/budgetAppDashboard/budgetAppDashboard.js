@@ -706,13 +706,15 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         });
 
         if (summaryData.length > 0) {
+            const cfPrevisto = totalIncassiPrev === 0 ? 0 : (totalIncassiPrev - totalSpesePrev);
+            const cfEffettivo = totalIncassiEff - totalSpeseEff;
             summaryData.push({
                 id: 'tot_cashflow',
                 tipo: 'CASH FLOW TOTALE',
                 categoria: '',
-                previsto: totalIncassiPrev - totalSpesePrev,
-                effettivo: totalIncassiEff - totalSpeseEff,
-                avanzamento: this.calculateProgress(totalIncassiEff - totalSpeseEff, totalIncassiPrev - totalSpesePrev),
+                previsto: cfPrevisto,
+                effettivo: cfEffettivo,
+                avanzamento: this.calculateProgress(cfEffettivo, cfPrevisto),
                 cssClass: 'slds-text-title_bold slds-theme_shade'
             });
             this.programSummaryData = summaryData.map(r => this.buildSheetRow(r));
@@ -743,13 +745,15 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                 }
             });
 
+            const cfYearPrevisto = incassiPrev === 0 ? 0 : (incassiPrev - spesePrev);
+            const cfYearEffettivo = incassiEff - speseEff;
             yearRecords.push({
                 id: `summary_${anno}`,
                 tipo: 'CASH FLOW',
                 categoria: '',
-                previsto: incassiPrev - spesePrev,
-                effettivo: incassiEff - speseEff,
-                avanzamento: this.calculateProgress(incassiEff - speseEff, incassiPrev - spesePrev),
+                previsto: cfYearPrevisto,
+                effettivo: cfYearEffettivo,
+                avanzamento: this.calculateProgress(cfYearEffettivo, cfYearPrevisto),
                 cssClass: 'slds-text-title_bold slds-theme_shade'
             });
 

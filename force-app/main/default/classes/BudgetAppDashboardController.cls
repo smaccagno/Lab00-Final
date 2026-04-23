@@ -278,9 +278,15 @@ public with sharing class BudgetAppDashboardController {
         kpis.speseEffettivo = spe.effettivo;
         kpis.spesePrevisto = spe.previsto;
         kpis.speseTotale = spe.totale;
+        // Cash flow = disponibilità reale.
+        // Previsto: se non ci sono Incassi Previsti, la disponibilità pianificata
+        // è 0 (non stiamo pianificando un "buco"). Altrimenti Incassi − Spese.
+        // Effettivo: può essere negativo (spese senza incassi a copertura).
         kpis.cashFlowEffettivo = inc.effettivo - spe.effettivo;
-        kpis.cashFlowPrevisto = inc.previsto - spe.previsto;
-        kpis.cashFlowTotale = inc.totale - spe.totale;
+        kpis.cashFlowPrevisto = (inc.previsto == null || inc.previsto == 0)
+            ? 0
+            : (inc.previsto - spe.previsto);
+        kpis.cashFlowTotale = kpis.cashFlowPrevisto + kpis.cashFlowEffettivo;
 
         // Avanzamento = effettivo / (previsto + effettivo) se il budget totale e' > 0
         if (inc.totale > 0) {
@@ -894,7 +900,9 @@ public with sharing class BudgetAppDashboardController {
 
         if (!rows.isEmpty()) {
             BudgetAggregator.AmountPair cashFlow = new BudgetAggregator.AmountPair();
-            cashFlow.previsto = totIncPrev - totSpePrev;
+            // Previsto: se non ho Incassi Previsti, la disponibilità pianificata
+            // è 0 (non pianifico un buco). Altrimenti Incassi − Spese.
+            cashFlow.previsto = (totIncPrev == 0) ? 0 : (totIncPrev - totSpePrev);
             cashFlow.effettivo = totIncEff - totSpeEff;
             ViewerTotalRow cashRow = new ViewerTotalRow();
             cashRow.id = 'tot_cashflow';

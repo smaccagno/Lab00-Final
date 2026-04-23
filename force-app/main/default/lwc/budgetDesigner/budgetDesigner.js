@@ -302,6 +302,10 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     get cashFlow() {
+        // Disponibilità reale: senza Incassi Previsti la disponibilità
+        // pianificata è 0 (niente "buco" da progettare). Altrimenti
+        // Incassi − Spese.
+        if (this.totalIncassi === 0) return 0;
         return this.totalIncassi - this.totalSpese;
     }
 
