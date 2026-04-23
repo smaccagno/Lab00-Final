@@ -236,7 +236,13 @@ public with sharing class BudgetVersionController {
             versionIds.add(it.Budget_Version__c);
             toUpdate.add(new Budget_Version_Item__c(Id = it.Id, Sort_Order__c = byId.get(it.Id)));
         }
-        for (Id vId : versionIds) assertParentProvvisorio(vId);
+        if (!versionIds.isEmpty()) {
+            for (Budget_Version__c v : [SELECT Id, Stato__c FROM Budget_Version__c WHERE Id IN :versionIds]) {
+                if (v.Stato__c != 'Provvisorio') {
+                    throw new AuraHandledException('La versione non è modificabile (stato: ' + v.Stato__c + ').');
+                }
+            }
+        }
         if (!toUpdate.isEmpty()) update toUpdate;
     }
 
