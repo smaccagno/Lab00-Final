@@ -46,34 +46,16 @@ export default class BudgetDesigner extends LightningElement {
     @track saveToast = '';
     @track confirmReset = false;
 
-    // Menu azioni riga (aperto tramite pulsante ⋮ a destra di ogni riga).
-    @track rowMenuOpen = false;
-    @track rowMenuInfo = null; // { kind: 'incasso'|'spesa', id }
-    @track rowMenuStyle = '';
-    _rowClipboard = null; // { kind, payload }
+    // Clipboard interno per le azioni "Copia riga" / "Incolla riga" esposte
+    // direttamente in riga con le icone. Una sola clipboard condivisa ma
+    // il `kind` garantisce che non si incolli un Incasso su una Spesa.
+    _rowClipboard = null; // { kind: 'incasso'|'spesa', payload }
+    @track _rowClipboardKind = null; // copia di _rowClipboard.kind per reactivity dei getter
 
     connectedCallback() {
         this.restoreDraft();
         // Year options are independent from picklist loading.
         this.annoOptions = this.buildYearOptions([]);
-        this._windowClickHandler = this.handleWindowClick.bind(this);
-        window.addEventListener('click', this._windowClickHandler);
-    }
-
-    disconnectedCallback() {
-        if (this._windowClickHandler) {
-            window.removeEventListener('click', this._windowClickHandler);
-        }
-    }
-
-    handleWindowClick(event) {
-        if (!this.rowMenuOpen) return;
-        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
-        const hit = path.some(n => n && n.classList && (
-            n.classList.contains('sheet-row-menu') ||
-            n.classList.contains('sheet-row-menu-btn')
-        ));
-        if (!hit) this.closeRowMenu();
     }
 
     // ── Object info: used to obtain the master record type id so that
@@ -564,61 +546,37 @@ export default class BudgetDesigner extends LightningElement {
         }).format(n);
     }
 
-    // ── Row action menu ────────────────────────────────────────────────
-    handleRowMenuOpen(event) {
+    // ── Row actions (icons, in-row) ────────────────────────────────────
+    get incassoPasteDisabled() {
+        return this._rowClipboardKind !== 'incasso';
+    }
+
+    get spesaPasteDisabled() {
+        return this._rowClipboardKind !== 'spesa';
+    }
+
+    _findRowByInfo(id, kind) {
+        if (!id || !kind) return null;
+        const list = kind === 'incasso' ? this.incassi : this.spese;
+        return list.find(r => r.id === id) || null;
+    }
+
+    handleRowDuplicateInline(event) {
         event.stopPropagation();
         const { id, kind } = event.currentTarget.dataset;
-        if (!id || !kind) return;
-
-        const rect = event.currentTarget.getBoundingClientRect();
-        const menuWidth = 180;
-        const menuHeight = 150;
-        const vw = window.innerWidth || 0;
-        const vh = window.innerHeight || 0;
-        let left = rect.right - menuWidth;
-        let top = rect.bottom + 4;
-        if (left < 8) left = 8;
-        if (top + menuHeight > vh - 8) top = Math.max(8, rect.top - menuHeight - 4);
-
-        this.rowMenuInfo = { id, kind };
-        this.rowMenuStyle = `top: ${top}px; left: ${left}px;`;
-        this.rowMenuOpen = true;
-    }
-
-    handleRowMenuClick(event) {
-        event.stopPropagation();
-    }
-
-    closeRowMenu() {
-        this.rowMenuOpen = false;
-        this.rowMenuInfo = null;
-        this.rowMenuStyle = '';
-    }
-
-    findRowByInfo(info) {
-        if (!info) return null;
-        const list = info.kind === 'incasso' ? this.incassi : this.spese;
-        return list.find(r => r.id === info.id) || null;
-    }
-
-    handleRowDuplicate(event) {
-        event.stopPropagation();
-        const info = this.rowMenuInfo;
-        const row = this.findRowByInfo(info);
-        this.closeRowMenu();
+        const row = this._findRowByInfo(id, kind);
         if (!row) return;
 
-        if (info.kind === 'incasso') {
-            const copy = { ...row, id: newId() };
-            const idx = this.incassi.findIndex(r => r.id === row.id);
+        const copy = { ...row, id: newId() };
+        if (kind === 'incasso') {
+            const idx = this.incassi.findIndex(r => r.id === id);
             this.incassi = [
                 ...this.incassi.slice(0, idx + 1),
                 copy,
                 ...this.incassi.slice(idx + 1)
             ];
         } else {
-            const copy = { ...row, id: newId() };
-            const idx = this.spese.findIndex(r => r.id === row.id);
+            const idx = this.spese.findIndex(r => r.id === id);
             this.spese = [
                 ...this.spese.slice(0, idx + 1),
                 copy,
@@ -629,33 +587,26 @@ export default class BudgetDesigner extends LightningElement {
         this.flashSaveToast('Riga duplicata');
     }
 
-    handleRowCopy(event) {
+    handleRowCopyInline(event) {
         event.stopPropagation();
-        const info = this.rowMenuInfo;
-        const row = this.findRowByInfo(info);
-        this.closeRowMenu();
+        const { id, kind } = event.currentTarget.dataset;
+        const row = this._findRowByInfo(id, kind);
         if (!row) return;
-
-        const { id, ...payload } = row;
-        this._rowClipboard = { kind: info.kind, payload };
+        const { id: _, ...payload } = row;
+        this._rowClipboard = { kind, payload };
+        this._rowClipboardKind = kind;
         this.flashSaveToast('Riga copiata');
     }
 
-    handleRowPaste(event) {
+    handleRowPasteInline(event) {
         event.stopPropagation();
-        const info = this.rowMenuInfo;
-        const target = this.findRowByInfo(info);
-        this.closeRowMenu();
-        if (!target || !this._rowClipboard) {
-            if (!this._rowClipboard) this.flashSaveToast('Nessuna riga copiata');
-            return;
-        }
-        if (this._rowClipboard.kind !== info.kind) {
-            this.flashSaveToast('La riga copiata è di un tipo diverso');
-            return;
-        }
+        const { id, kind } = event.currentTarget.dataset;
+        if (!this._rowClipboard || this._rowClipboard.kind !== kind) return;
+        const target = this._findRowByInfo(id, kind);
+        if (!target) return;
+
         const patched = { ...target, ...this._rowClipboard.payload };
-        if (info.kind === 'incasso') {
+        if (kind === 'incasso') {
             this.incassi = this.incassi.map(r => r.id === target.id ? patched : r);
         } else {
             this.spese = this.spese.map(r => r.id === target.id ? patched : r);

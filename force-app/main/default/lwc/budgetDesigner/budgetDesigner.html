@@ -162,12 +162,27 @@
                                             </td>
                                             <td class="col-actions">
                                                 <div class="sheet-row-actions">
-                                                    <button class="sheet-row-menu-btn"
-                                                            title="Azioni riga"
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Duplica riga"
                                                             data-id={row.id}
                                                             data-kind="incasso"
-                                                            onclick={handleRowMenuOpen}>
-                                                        <lightning-icon icon-name="utility:threedots_vertical" size="xx-small" alternative-text="Azioni"></lightning-icon>
+                                                            onclick={handleRowDuplicateInline}>
+                                                        <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica riga"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Copia riga"
+                                                            data-id={row.id}
+                                                            data-kind="incasso"
+                                                            onclick={handleRowCopyInline}>
+                                                        <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia riga"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Incolla riga"
+                                                            data-id={row.id}
+                                                            data-kind="incasso"
+                                                            disabled={incassoPasteDisabled}
+                                                            onclick={handleRowPasteInline}>
+                                                        <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla riga"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-remove"
                                                             title="Rimuovi riga"
@@ -364,12 +379,27 @@
                                             </td>
                                             <td class="col-actions">
                                                 <div class="sheet-row-actions">
-                                                    <button class="sheet-row-menu-btn"
-                                                            title="Azioni riga"
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Duplica riga"
                                                             data-id={row.id}
                                                             data-kind="spesa"
-                                                            onclick={handleRowMenuOpen}>
-                                                        <lightning-icon icon-name="utility:threedots_vertical" size="xx-small" alternative-text="Azioni"></lightning-icon>
+                                                            onclick={handleRowDuplicateInline}>
+                                                        <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica riga"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Copia riga"
+                                                            data-id={row.id}
+                                                            data-kind="spesa"
+                                                            onclick={handleRowCopyInline}>
+                                                        <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia riga"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-action-btn"
+                                                            title="Incolla riga"
+                                                            data-id={row.id}
+                                                            data-kind="spesa"
+                                                            disabled={spesaPasteDisabled}
+                                                            onclick={handleRowPasteInline}>
+                                                        <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla riga"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-remove"
                                                             title="Rimuovi riga"
@@ -550,24 +580,6 @@
                 </div>
             </aside>
         </div>
-
-        <!-- Modal conferma reset -->
-        <template if:true={rowMenuOpen}>
-            <div class="sheet-row-menu" style={rowMenuStyle} onclick={handleRowMenuClick}>
-                <button type="button" class="sheet-row-menu-item" onclick={handleRowDuplicate}>
-                    <lightning-icon icon-name="utility:duplicate" size="xx-small"></lightning-icon>
-                    <span>Duplica riga</span>
-                </button>
-                <button type="button" class="sheet-row-menu-item" onclick={handleRowCopy}>
-                    <lightning-icon icon-name="utility:copy" size="xx-small"></lightning-icon>
-                    <span>Copia riga</span>
-                </button>
-                <button type="button" class="sheet-row-menu-item" onclick={handleRowPaste}>
-                    <lightning-icon icon-name="utility:paste" size="xx-small"></lightning-icon>
-                    <span>Incolla riga</span>
-                </button>
-            </div>
-        </template>
 
         <template if:true={confirmReset}>
             <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="designer-reset-title" class="slds-modal slds-fade-in-open">
