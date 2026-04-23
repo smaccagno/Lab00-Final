@@ -617,3 +617,70 @@
     color: #7a8aa0;
     font-size: 0.78rem;
 }
+
+/* Row action cluster (⋮ + ✕) */
+.sheet-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.sheet-row-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #7a8aa0;
+}
+
+.sheet-row-menu-btn:hover,
+.sheet-row-menu-btn:focus {
+    background: rgba(1, 118, 211, 0.12);
+    color: #014f8e;
+    outline: none;
+}
+
+/* Row action popover */
+.sheet-row-menu {
+    position: fixed;
+    z-index: 10002;
+    background: #ffffff;
+    border: 1px solid #d7dde8;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(22, 50, 92, 0.14);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 170px;
+}
+
+.sheet-row-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #16325c;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.sheet-row-menu-item:hover {
+    background: #f4f6fb;
+}
+
+.sheet-row-menu-item lightning-icon {
+    --sds-c-icon-color-foreground-default: #0176d3;
+}

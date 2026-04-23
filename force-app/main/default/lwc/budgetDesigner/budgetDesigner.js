@@ -46,10 +46,34 @@ export default class BudgetDesigner extends LightningElement {
     @track saveToast = '';
     @track confirmReset = false;
 
+    // Menu azioni riga (aperto tramite pulsante ⋮ a destra di ogni riga).
+    @track rowMenuOpen = false;
+    @track rowMenuInfo = null; // { kind: 'incasso'|'spesa', id }
+    @track rowMenuStyle = '';
+    _rowClipboard = null; // { kind, payload }
+
     connectedCallback() {
         this.restoreDraft();
         // Year options are independent from picklist loading.
         this.annoOptions = this.buildYearOptions([]);
+        this._windowClickHandler = this.handleWindowClick.bind(this);
+        window.addEventListener('click', this._windowClickHandler);
+    }
+
+    disconnectedCallback() {
+        if (this._windowClickHandler) {
+            window.removeEventListener('click', this._windowClickHandler);
+        }
+    }
+
+    handleWindowClick(event) {
+        if (!this.rowMenuOpen) return;
+        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const hit = path.some(n => n && n.classList && (
+            n.classList.contains('sheet-row-menu') ||
+            n.classList.contains('sheet-row-menu-btn')
+        ));
+        if (!hit) this.closeRowMenu();
     }
 
     // ── Object info: used to obtain the master record type id so that
@@ -534,5 +558,105 @@ export default class BudgetDesigner extends LightningElement {
             currency: 'EUR',
             maximumFractionDigits: 0
         }).format(n);
+    }
+
+    // ── Row action menu ────────────────────────────────────────────────
+    handleRowMenuOpen(event) {
+        event.stopPropagation();
+        const { id, kind } = event.currentTarget.dataset;
+        if (!id || !kind) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const menuWidth = 180;
+        const menuHeight = 150;
+        const vw = window.innerWidth || 0;
+        const vh = window.innerHeight || 0;
+        let left = rect.right - menuWidth;
+        let top = rect.bottom + 4;
+        if (left < 8) left = 8;
+        if (top + menuHeight > vh - 8) top = Math.max(8, rect.top - menuHeight - 4);
+
+        this.rowMenuInfo = { id, kind };
+        this.rowMenuStyle = `top: ${top}px; left: ${left}px;`;
+        this.rowMenuOpen = true;
+    }
+
+    handleRowMenuClick(event) {
+        event.stopPropagation();
+    }
+
+    closeRowMenu() {
+        this.rowMenuOpen = false;
+        this.rowMenuInfo = null;
+        this.rowMenuStyle = '';
+    }
+
+    findRowByInfo(info) {
+        if (!info) return null;
+        const list = info.kind === 'incasso' ? this.incassi : this.spese;
+        return list.find(r => r.id === info.id) || null;
+    }
+
+    handleRowDuplicate(event) {
+        event.stopPropagation();
+        const info = this.rowMenuInfo;
+        const row = this.findRowByInfo(info);
+        this.closeRowMenu();
+        if (!row) return;
+
+        if (info.kind === 'incasso') {
+            const copy = { ...row, id: newId() };
+            const idx = this.incassi.findIndex(r => r.id === row.id);
+            this.incassi = [
+                ...this.incassi.slice(0, idx + 1),
+                copy,
+                ...this.incassi.slice(idx + 1)
+            ];
+        } else {
+            const copy = { ...row, id: newId() };
+            const idx = this.spese.findIndex(r => r.id === row.id);
+            this.spese = [
+                ...this.spese.slice(0, idx + 1),
+                copy,
+                ...this.spese.slice(idx + 1)
+            ];
+        }
+        this.persistDraft();
+        this.flashSaveToast('Riga duplicata');
+    }
+
+    handleRowCopy(event) {
+        event.stopPropagation();
+        const info = this.rowMenuInfo;
+        const row = this.findRowByInfo(info);
+        this.closeRowMenu();
+        if (!row) return;
+
+        const { id, ...payload } = row;
+        this._rowClipboard = { kind: info.kind, payload };
+        this.flashSaveToast('Riga copiata');
+    }
+
+    handleRowPaste(event) {
+        event.stopPropagation();
+        const info = this.rowMenuInfo;
+        const target = this.findRowByInfo(info);
+        this.closeRowMenu();
+        if (!target || !this._rowClipboard) {
+            if (!this._rowClipboard) this.flashSaveToast('Nessuna riga copiata');
+            return;
+        }
+        if (this._rowClipboard.kind !== info.kind) {
+            this.flashSaveToast('La riga copiata è di un tipo diverso');
+            return;
+        }
+        const patched = { ...target, ...this._rowClipboard.payload };
+        if (info.kind === 'incasso') {
+            this.incassi = this.incassi.map(r => r.id === target.id ? patched : r);
+        } else {
+            this.spese = this.spese.map(r => r.id === target.id ? patched : r);
+        }
+        this.persistDraft();
+        this.flashSaveToast('Riga incollata');
     }
 }

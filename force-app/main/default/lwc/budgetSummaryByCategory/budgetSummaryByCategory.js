@@ -1,24 +1,44 @@
 import { LightningElement, api, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+import ANNO_FIELD from '@salesforce/schema/Overview_Budget_per_Anno__c.Anno__c';
 import getSummary from '@salesforce/apex/BudgetSummaryController.getSummary';
 
 export default class BudgetSummaryByCategory extends NavigationMixin(LightningElement) {
     @api recordId;
     @api hideDateFilter = false;
     @api showQuickSummary = false;
+    /**
+     * Se true: legge l'anno dal record (Overview_Budget_per_Anno__c.Anno__c),
+     * nasconde i filtri "Oggi", combobox Anno, combobox Mese, input Data e
+     * blocca l'anno della vista. Restano i soli shortcut trimestrali.
+     */
+    @api yearLockedFromRecord = false;
     @api externalMaxVal;
     @api externalMaxIncassiVal;
     @api externalMaxSpeseVal;
     @api externalMaxCashFlowVal;
     @api externalMaxCategoriesVal;
-    quickDateActions = [
+    rawQuickDateActions = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
         { key: 'q2', label: 'Secondo Trimestre' },
         { key: 'q3', label: 'Terzo Trimestre' },
         { key: 'q4', label: 'Quarto Trimestre' }
     ];
+    get quickDateActions() {
+        if (this.yearLockedFromRecord) {
+            return this.rawQuickDateActions.filter(a => a.key !== 'today');
+        }
+        return this.rawQuickDateActions;
+    }
+    get showExtraDateFilters() {
+        return !this.hideDateFilter && !this.yearLockedFromRecord;
+    }
+    get showYearToolbar() {
+        return !this.hideDateFilter;
+    }
     monthOptions = [
         { label: 'Gennaio', value: '1' },
         { label: 'Febbraio', value: '2' },
@@ -35,6 +55,21 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     ];
 
     _selectedDate = new Date().toISOString().split('T')[0];
+    _lockedYear; // valorizzato dal wire getRecord quando yearLockedFromRecord=true
+
+    get lockedFieldsList() {
+        return this.yearLockedFromRecord ? [ANNO_FIELD] : [];
+    }
+
+    @wire(getRecord, { recordId: '$recordId', fields: '$lockedFieldsList' })
+    wiredLockedRecord({ data }) {
+        if (!this.yearLockedFromRecord || !data) return;
+        const annoValue = getFieldValue(data, ANNO_FIELD);
+        if (annoValue && /^\d{4}$/.test(String(annoValue))) {
+            this._lockedYear = String(annoValue);
+            this._selectedDate = `${this._lockedYear}-12-31`;
+        }
+    }
 
     @api
     get filterDate() {
@@ -309,6 +344,9 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     }
 
     getSelectedYear() {
+        if (this.yearLockedFromRecord && this._lockedYear) {
+            return this._lockedYear;
+        }
         if (this._selectedDate) {
             const year = String(this._selectedDate).split('-')[0];
             if (/^\d{4}$/.test(year)) {
@@ -355,10 +393,11 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
 
     handleQuickDateClick(event) {
         const actionKey = event.currentTarget.dataset.action;
-        if (actionKey === 'today') {
+        if (actionKey === 'today' && !this.yearLockedFromRecord) {
             this._selectedDate = this.getTodayDate();
             return;
         }
+        // Quick-date trimestre: forza uso di lockedYear se attivo.
         this._selectedDate = this.buildQuarterDate(actionKey);
     }
 

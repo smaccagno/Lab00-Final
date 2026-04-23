@@ -219,34 +219,60 @@
     position: fixed;
     z-index: 10002;
     background-color: #ffffff;
-    border: 1px solid #d8dde6;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid #d7dde8;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(22, 50, 92, 0.14);
     padding: 4px;
     display: flex;
-    gap: 4px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 190px;
 }
 
 .cell-action-menu-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 6px 10px;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     background-color: transparent;
     cursor: pointer;
-    font-size: 0.8125rem;
-    color: #080707;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #16325c;
+    text-align: left;
+    width: 100%;
     transition: background-color 0.1s;
 }
 
 .cell-action-menu-btn:hover {
-    background-color: #f3f3f3;
+    background-color: #f4f6fb;
 }
 
 .cell-action-menu-btn lightning-icon {
-    --sds-c-icon-color-foreground: #706e6b;
+    --sds-c-icon-color-foreground-default: #0176d3;
+    --sds-c-icon-color-foreground: #0176d3;
+}
+
+.cell-action-menu-btn-cancel {
+    color: #7a8aa0;
+}
+
+.cell-action-menu-btn-cancel:hover {
+    background-color: #ffeef0;
+    color: #a00015;
+}
+
+.cell-action-menu-btn-cancel lightning-icon {
+    --sds-c-icon-color-foreground-default: #7a8aa0;
+    --sds-c-icon-color-foreground: #7a8aa0;
+}
+
+.cell-action-menu-sep {
+    height: 1px;
+    background: #eef1f6;
+    margin: 4px 2px;
 }
 
 .cell-editor-overlay {

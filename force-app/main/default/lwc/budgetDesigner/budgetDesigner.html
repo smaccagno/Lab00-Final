@@ -161,12 +161,21 @@
                                                 </lightning-input>
                                             </td>
                                             <td class="col-actions">
-                                                <button class="sheet-row-remove"
-                                                        title="Rimuovi riga"
-                                                        data-id={row.id}
-                                                        onclick={handleIncassoRemove}>
-                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
-                                                </button>
+                                                <div class="sheet-row-actions">
+                                                    <button class="sheet-row-menu-btn"
+                                                            title="Azioni riga"
+                                                            data-id={row.id}
+                                                            data-kind="incasso"
+                                                            onclick={handleRowMenuOpen}>
+                                                        <lightning-icon icon-name="utility:threedots_vertical" size="xx-small" alternative-text="Azioni"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-remove"
+                                                            title="Rimuovi riga"
+                                                            data-id={row.id}
+                                                            onclick={handleIncassoRemove}>
+                                                        <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </template>
@@ -354,12 +363,21 @@
                                                 </lightning-input>
                                             </td>
                                             <td class="col-actions">
-                                                <button class="sheet-row-remove"
-                                                        title="Rimuovi riga"
-                                                        data-id={row.id}
-                                                        onclick={handleSpesaRemove}>
-                                                    <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
-                                                </button>
+                                                <div class="sheet-row-actions">
+                                                    <button class="sheet-row-menu-btn"
+                                                            title="Azioni riga"
+                                                            data-id={row.id}
+                                                            data-kind="spesa"
+                                                            onclick={handleRowMenuOpen}>
+                                                        <lightning-icon icon-name="utility:threedots_vertical" size="xx-small" alternative-text="Azioni"></lightning-icon>
+                                                    </button>
+                                                    <button class="sheet-row-remove"
+                                                            title="Rimuovi riga"
+                                                            data-id={row.id}
+                                                            onclick={handleSpesaRemove}>
+                                                        <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Rimuovi"></lightning-icon>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </template>
@@ -534,6 +552,23 @@
         </div>
 
         <!-- Modal conferma reset -->
+        <template if:true={rowMenuOpen}>
+            <div class="sheet-row-menu" style={rowMenuStyle} onclick={handleRowMenuClick}>
+                <button type="button" class="sheet-row-menu-item" onclick={handleRowDuplicate}>
+                    <lightning-icon icon-name="utility:duplicate" size="xx-small"></lightning-icon>
+                    <span>Duplica riga</span>
+                </button>
+                <button type="button" class="sheet-row-menu-item" onclick={handleRowCopy}>
+                    <lightning-icon icon-name="utility:copy" size="xx-small"></lightning-icon>
+                    <span>Copia riga</span>
+                </button>
+                <button type="button" class="sheet-row-menu-item" onclick={handleRowPaste}>
+                    <lightning-icon icon-name="utility:paste" size="xx-small"></lightning-icon>
+                    <span>Incolla riga</span>
+                </button>
+            </div>
+        </template>
+
         <template if:true={confirmReset}>
             <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="designer-reset-title" class="slds-modal slds-fade-in-open">
                 <div class="slds-modal__container">

@@ -8,6 +8,16 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
+            <property name="yearLockedFromRecord"
+                      type="Boolean"
+                      default="false"
+                      label="Blocca anno sul record (Overview_Budget_per_Anno)"
+                      description="Quando true, legge Anno__c dal record e nasconde i filtri Anno/Data/Oggi/Mese."/>
+            <property name="showQuickSummary"
+                      type="Boolean"
+                      default="false"
+                      label="Mostra riepilogo totali"
+                      description="Mostra la sezione dei totali incassi/spese."/>
             <objects>
                 <object>Overview_Budget_per_Anno__c</object>
                 <object>GiftDesignation</object>

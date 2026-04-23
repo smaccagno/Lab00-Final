@@ -255,14 +255,32 @@
     </lightning-card>
 
     <template if:true={cellActionMenuOpen}>
-        <div class="cell-action-menu" style={cellActionMenuStyle}>
+        <div class="cell-action-menu" style={cellActionMenuStyle} onclick={handleActionMenuClick}>
+            <button type="button" class="cell-action-menu-btn" onclick={handleActionMenuEditClick}>
+                <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica"></lightning-icon>
+                <span>Modifica</span>
+            </button>
             <button type="button" class="cell-action-menu-btn" onclick={handleCellCopyClick}>
                 <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon>
-                <span>Copia</span>
+                <span>Copia cella</span>
             </button>
             <button type="button" class="cell-action-menu-btn" onclick={handleCellPasteClick}>
                 <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon>
-                <span>Incolla</span>
+                <span>Incolla cella</span>
+            </button>
+            <div class="cell-action-menu-sep"></div>
+            <button type="button" class="cell-action-menu-btn" onclick={handleActionMenuRowCopy}>
+                <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Copia riga"></lightning-icon>
+                <span>Copia riga</span>
+            </button>
+            <button type="button" class="cell-action-menu-btn" onclick={handleActionMenuRowPaste}>
+                <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla riga"></lightning-icon>
+                <span>Incolla riga</span>
+            </button>
+            <div class="cell-action-menu-sep"></div>
+            <button type="button" class="cell-action-menu-btn cell-action-menu-btn-cancel" onclick={handleActionMenuCancel}>
+                <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Annulla"></lightning-icon>
+                <span>Annulla</span>
             </button>
         </div>
     </template>

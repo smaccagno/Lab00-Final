@@ -28,6 +28,7 @@ export default class IncassiExcelEditor extends LightningElement {
     @track cellActionMenuOpen = false;
     @track cellActionMenuStyle = '';
     cellActionMenuInfo = null;
+    _rowClipboard = null;
 
     @track editorOpen = false;
     @track editorStyle = '';
@@ -93,8 +94,22 @@ export default class IncassiExcelEditor extends LightningElement {
     }
 
     get editorDateValue() {
-        const parsed = this.parseDate(this.editorValue);
-        return parsed || '';
+        if (this.editorValue) {
+            const parsed = this.parseDate(this.editorValue);
+            if (parsed) return parsed;
+        }
+        const row = this.rows[this.editorRowIndex];
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const year = row && /^\d{4}$/.test(String(row.anno || '').trim())
+            ? String(row.anno).trim()
+            : String(today.getFullYear());
+        if (mm === '02' && dd === '29') {
+            const isLeap = ((Number(year) % 4 === 0) && (Number(year) % 100 !== 0)) || (Number(year) % 400 === 0);
+            if (!isLeap) return `${year}-02-28`;
+        }
+        return `${year}-${mm}-${dd}`;
     }
 
     get editorPlaceholder() {
@@ -220,11 +235,8 @@ export default class IncassiExcelEditor extends LightningElement {
 
         event.stopPropagation();
 
-        if (['categoria', 'stato', 'anno', 'programmaId'].includes(field)) {
-            this.openEditorForCell(rowIndex, field, cell);
-            return;
-        }
-
+        // Single click: apri SEMPRE il menu contestuale. L'editor/dropdown
+        // si raggiunge tramite "Modifica" o col doppio click.
         this.openCellActionMenu(rowIndex, field, cell);
     }
 
@@ -247,9 +259,21 @@ export default class IncassiExcelEditor extends LightningElement {
 
     openCellActionMenu(rowIndex, field, cell) {
         this.closeEditor();
-        this.cellActionMenuInfo = { rowIndex, field };
         const rect = cell.getBoundingClientRect();
-        this.cellActionMenuStyle = `top: ${rect.bottom + 4}px; left: ${rect.left}px;`;
+        const menuWidth = 190;
+        const menuHeight = 240;
+        const viewportWidth = window.innerWidth || 0;
+        const viewportHeight = window.innerHeight || 0;
+        let left = rect.left;
+        let top = rect.bottom + 4;
+        if (left + menuWidth > viewportWidth - 8) {
+            left = Math.max(8, viewportWidth - menuWidth - 8);
+        }
+        if (top + menuHeight > viewportHeight - 8) {
+            top = Math.max(8, rect.top - menuHeight - 4);
+        }
+        this.cellActionMenuInfo = { rowIndex, field };
+        this.cellActionMenuStyle = `top: ${top}px; left: ${left}px;`;
         this.cellActionMenuOpen = true;
     }
 
@@ -257,6 +281,69 @@ export default class IncassiExcelEditor extends LightningElement {
         this.cellActionMenuOpen = false;
         this.cellActionMenuInfo = null;
         this.cellActionMenuStyle = '';
+    }
+
+    handleActionMenuClick(event) {
+        event.stopPropagation();
+    }
+
+    handleActionMenuEditClick(event) {
+        event.stopPropagation();
+        const info = this.cellActionMenuInfo;
+        this.closeCellActionMenu();
+        if (!info) return;
+        const cell = this.template.querySelector(
+            `td[data-field="${info.field}"][data-row-index="${info.rowIndex}"]`
+        );
+        if (cell) this.openEditorForCell(info.rowIndex, info.field, cell);
+    }
+
+    handleActionMenuRowCopy(event) {
+        event.stopPropagation();
+        const info = this.cellActionMenuInfo;
+        if (!info) return;
+        const row = this.rows[info.rowIndex];
+        if (!row) return;
+        this._rowClipboard = {
+            anno: row.anno || '',
+            programmaId: row.programmaId || '',
+            categoria: row.categoria || '',
+            data: row.data || '',
+            ammontare: row.ammontare || '',
+            stato: row.stato || ''
+        };
+        this.closeCellActionMenu();
+        this.showToast('Riga copiata', 'Puoi incollarla su una qualsiasi altra riga', 'success');
+    }
+
+    handleActionMenuRowPaste(event) {
+        event.stopPropagation();
+        const info = this.cellActionMenuInfo;
+        if (!info) return;
+        if (!this._rowClipboard) {
+            this.showToast('Nessuna riga copiata', 'Usa prima "Copia riga"', 'info');
+            return;
+        }
+        const rows = [...this.rows];
+        const target = rows[info.rowIndex];
+        if (!target) return;
+        rows[info.rowIndex] = {
+            ...target,
+            ...this._rowClipboard,
+            rowKey: target.rowKey,
+            saveErrorMessage: ''
+        };
+        this.rows = rows;
+        this.showResults = false;
+        this.saveResults = [];
+        this.recomputeRows();
+        this.closeCellActionMenu();
+        this.showToast('Riga incollata', '', 'success');
+    }
+
+    handleActionMenuCancel(event) {
+        event.stopPropagation();
+        this.closeCellActionMenu();
     }
 
     openEditorForCell(rowIndex, field, cell) {
@@ -666,7 +753,15 @@ export default class IncassiExcelEditor extends LightningElement {
         if (validationErrors.anno) errorParts.push('Anno non valido');
         if (validationErrors.programmaId) errorParts.push('Programma non valido');
         if (validationErrors.categoria) errorParts.push('Categoria non valida');
-        if (validationErrors.data) errorParts.push('Data non valida');
+        if (validationErrors.data) {
+            const parsed = row.data ? this.parseDate(row.data) : '';
+            const yearOk = /^\d{4}$/.test(String(row.anno || '').trim());
+            if (parsed && yearOk && parsed.split('-')[0] !== String(row.anno).trim()) {
+                errorParts.push(`Data (${parsed.split('-')[0]}) non coerente con Anno (${row.anno})`);
+            } else {
+                errorParts.push('Data non valida');
+            }
+        }
         if (validationErrors.ammontare) errorParts.push('Ammontare non valido');
         if (validationErrors.stato) errorParts.push('Stato non valido');
         if (row.saveErrorMessage) errorParts.push(row.saveErrorMessage);
@@ -719,11 +814,19 @@ export default class IncassiExcelEditor extends LightningElement {
         const statoOk = this.isValueInOptions(row.stato, this.statoOptions);
         const programmaOk = !!row.programmaId && this.isValueInOptions(row.programmaId, this.programmaOptions);
 
+        const parsedDate = row.data ? this.parseDate(row.data) : '';
+        const dataMissingOrInvalid = !row.data || !parsedDate;
+        let dataYearMismatch = false;
+        if (!dataMissingOrInvalid && /^\d{4}$/.test(String(row.anno).trim())) {
+            const dateYear = parsedDate.split('-')[0];
+            dataYearMismatch = dateYear !== String(row.anno).trim();
+        }
+
         return {
             anno: !row.anno || !/^\d{4}$/.test(String(row.anno).trim()),
             programmaId: !programmaOk,
             categoria: !categoriaOk,
-            data: !row.data || !this.parseDate(row.data),
+            data: dataMissingOrInvalid || dataYearMismatch,
             ammontare: !row.ammontare || !this.parseCurrency(row.ammontare),
             stato: !statoOk
         };

@@ -118,6 +118,14 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentInstanceProperties>
+                    <name>yearLockedFromRecord</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>showQuickSummary</name>
+                    <value>true</value>
+                </componentInstanceProperties>
                 <componentName>budgetSummaryByCategory</componentName>
                 <identifier>c_budgetSummaryByCategory</identifier>
             </componentInstance>

@@ -2,22 +2,30 @@
     <lightning-card title="Riepilogo Budget per Categoria" icon-name="custom:custom41">
         <div class="slds-p-around_medium">
             
-            <template if:false={hideDateFilter}>
+            <template if:true={showYearToolbar}>
                 <div class="date-filter-toolbar slds-m-bottom_medium">
-                    <div class="date-filter-year">
-                        <lightning-combobox
-                            name="yearFilter"
-                            variant="label-hidden"
-                            value={selectedYear}
-                            placeholder="Anno"
-                            options={yearOptions}
-                            onchange={handleYearChange}>
-                        </lightning-combobox>
-                    </div>
-                    <div class="date-filter-input">
-                        <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
-                        <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>
-                    </div>
+                    <template if:true={showExtraDateFilters}>
+                        <div class="date-filter-year">
+                            <lightning-combobox
+                                name="yearFilter"
+                                variant="label-hidden"
+                                value={selectedYear}
+                                placeholder="Anno"
+                                options={yearOptions}
+                                onchange={handleYearChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="date-filter-input">
+                            <label class="slds-form-element__label slds-text-title_bold" for="date-filter">Filtra per Data</label>
+                            <lightning-input id="date-filter" type="date" variant="label-hidden" value={selectedDate} onchange={handleDateChange}></lightning-input>
+                        </div>
+                    </template>
+                    <template if:true={yearLockedFromRecord}>
+                        <div class="date-filter-year-locked" aria-label="Anno bloccato">
+                            <lightning-icon icon-name="utility:lock" size="xx-small" alternative-text="Bloccato"></lightning-icon>
+                            <span>Anno {selectedYear}</span>
+                        </div>
+                    </template>
                     <div class="date-filter-actions">
                         <template for:each={quickDateActions} for:item="action">
                             <button
@@ -28,15 +36,17 @@
                                 {action.label}
                             </button>
                         </template>
-                        <div class="date-filter-month">
-                            <lightning-combobox
-                                name="monthShortcut"
-                                variant="label-hidden"
-                                placeholder="Mese"
-                                options={monthOptions}
-                                onchange={handleMonthShortcutChange}>
-                            </lightning-combobox>
-                        </div>
+                        <template if:true={showExtraDateFilters}>
+                            <div class="date-filter-month">
+                                <lightning-combobox
+                                    name="monthShortcut"
+                                    variant="label-hidden"
+                                    placeholder="Mese"
+                                    options={monthOptions}
+                                    onchange={handleMonthShortcutChange}>
+                                </lightning-combobox>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </template>

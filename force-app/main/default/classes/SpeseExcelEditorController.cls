@@ -196,31 +196,33 @@ public with sharing class SpeseExcelEditorController {
             payloadRows.add(p);
         }
 
-        Map<Integer, Id> budgetByYear = new Map<Integer, Id>();
-        if (!years.isEmpty()) {
+        // Risoluzione Overview_Budget_per_Anno per (Programma, Anno):
+        // prendiamo solo i budget legati al programma scelto dall'utente,
+        // con IsDefault = true sul GiftDesignation padre e Anno coincidente.
+        Set<Id> programmiNecessari = new Set<Id>();
+        for (SpesaPayloadRow p : payloadRows) {
+            if (p.programmaId != null) programmiNecessari.add(p.programmaId);
+        }
+
+        Map<String, Id> budgetByProgYear = new Map<String, Id>();
+        if (!years.isEmpty() && !programmiNecessari.isEmpty()) {
             List<String> yearStrs = new List<String>();
             for (Integer y : years) yearStrs.add(String.valueOf(y));
 
-            // Anno__c è un Text (lunghezza 4) su Overview_Budget_per_Anno__c
-            List<Overview_Budget_per_Anno__c> budgets = [
-                SELECT Id, Anno__c, isDefault__c, Budget__c
+            for (Overview_Budget_per_Anno__c b : [
+                SELECT Id, Anno__c, Budget__c, Budget__r.Program__c, Budget__r.IsDefault
                 FROM Overview_Budget_per_Anno__c
-                WHERE isDefault__c = true AND Anno__c IN :yearStrs
-            ];
-
-            Map<Integer, List<Overview_Budget_per_Anno__c>> tmp = new Map<Integer, List<Overview_Budget_per_Anno__c>>();
-            for (Overview_Budget_per_Anno__c b : budgets) {
-                Integer y = toIntegerSafe(b.Anno__c);
-                if (y == null) continue;
-                if (!tmp.containsKey(y)) tmp.put(y, new List<Overview_Budget_per_Anno__c>());
-                tmp.get(y).add(b);
-            }
-
-            for (Integer y : years) {
-                if (!tmp.containsKey(y) || tmp.get(y).isEmpty()) continue;
-                // Correttezza: se esistono più default per anno, blocchiamo.
-                if (tmp.get(y).size() != 1) continue;
-                budgetByYear.put(y, tmp.get(y)[0].Id);
+                WHERE Anno__c IN :yearStrs
+                  AND Budget__r.IsDefault = true
+                  AND Budget__r.Program__c IN :programmiNecessari
+            ]) {
+                if (b.Budget__r == null || b.Budget__r.Program__c == null) continue;
+                String key = b.Budget__r.Program__c + '|' + b.Anno__c;
+                // Se dovessero esistere più default per la stessa coppia
+                // manteniamo il primo (scenario edge: configurazione errata).
+                if (!budgetByProgYear.containsKey(key)) {
+                    budgetByProgYear.put(key, b.Id);
+                }
             }
         }
 
@@ -238,12 +240,16 @@ public with sharing class SpeseExcelEditorController {
 
             String err;
 
+            String progYearKey = (p.programmaId != null && p.anno != null)
+                ? (String.valueOf(p.programmaId) + '|' + String.valueOf(p.anno))
+                : null;
+
             if (p.anno == null) {
                 err = 'Anno mancante o non valido';
             } else if (p.programmaId == null) {
                 err = 'Programma mancante o non valido';
-            } else if (!budgetByYear.containsKey(p.anno)) {
-                err = 'Nessun Budget default trovato per l\'anno ' + p.anno + ' (o più di uno)';
+            } else if (!budgetByProgYear.containsKey(progYearKey)) {
+                err = 'Nessun Budget default trovato per programma+anno ' + p.anno;
             } else if (String.isBlank(p.categoria) || !categorieAllowed.contains(p.categoria)) {
                 err = 'Categoria non valida';
             } else if (String.isBlank(p.sottocategoria)) {
@@ -273,7 +279,7 @@ public with sharing class SpeseExcelEditorController {
             s.Data__c = p.data;
             s.Ammontare__c = p.ammontare;
             s.Stato__c = p.stato;
-            s.Overview_Budget_per_Anno__c = budgetByYear.get(p.anno);
+            s.Overview_Budget_per_Anno__c = budgetByProgYear.get(progYearKey);
             s.Programma__c = p.programmaId;
 
             Integer insertIndex = toInsert.size();
