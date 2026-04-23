@@ -2,7 +2,7 @@
 private class BudgetVersionControllerTest {
 
     private static Program createProgram(String name) {
-        Program p = new Program(Name = name, Status = 'Active', StartDate = Date.today());
+        Program p = new Program(Name = name, Status = 'Attivo', StartDate = Date.today());
         insert p;
         return p;
     }

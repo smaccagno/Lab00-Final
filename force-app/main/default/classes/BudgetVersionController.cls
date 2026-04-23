@@ -35,7 +35,7 @@ public with sharing class BudgetVersionController {
         return [
             SELECT Id, Name
               FROM Program
-             WHERE Status = 'Active'
+             WHERE Status = 'Attivo'
           ORDER BY Name
              LIMIT 500
         ];
