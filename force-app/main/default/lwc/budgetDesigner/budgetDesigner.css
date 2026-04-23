@@ -823,14 +823,14 @@
     color: #16325c;
 }
 .sheet tbody tr.sheet-subgroup-header--incassi > td {
-    background: rgba(46, 132, 74, 0.08) !important;
+    background: rgba(46, 132, 74, 0.18) !important;
     color: #1b5a30;
 }
 .sheet-subgroup-header--incassi > td:nth-child(3) {
     border-left: 3px solid #91c8a0;
 }
 .sheet tbody tr.sheet-subgroup-header--spese > td {
-    background: rgba(234, 0, 30, 0.07) !important;
+    background: rgba(234, 0, 30, 0.15) !important;
     color: #a00015;
 }
 .sheet-subgroup-header--spese > td:nth-child(3) {
