@@ -706,6 +706,23 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         });
 
         if (summaryData.length > 0) {
+            // Se mancano del tutto le Incasso, inseriamo comunque una riga
+            // placeholder (categoria "Donazione", previsto 0, effettivo 0)
+            // così l'utente capisce subito che non ci sono incassi — meglio
+            // di una vista solo-spese silenziosa.
+            const hasIncassoRow = summaryData.some(r => r.tipo === 'Incasso');
+            if (!hasIncassoRow) {
+                summaryData.unshift({
+                    id: 'tot_Incasso_Donazione_empty',
+                    tipo: 'Incasso',
+                    categoria: 'Donazione',
+                    previsto: 0,
+                    effettivo: 0,
+                    avanzamento: 0,
+                    cssClass: 'slds-text-color_success'
+                });
+            }
+
             const cfPrevisto = totalIncassiPrev === 0 ? 0 : (totalIncassiPrev - totalSpesePrev);
             const cfEffettivo = totalIncassiEff - totalSpeseEff;
             summaryData.push({
@@ -744,6 +761,20 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
                     speseEff += r.effettivo;
                 }
             });
+
+            // Placeholder riga Incasso a 0 se l'anno non ha incassi.
+            const yearHasIncasso = yearRecords.some(r => r.tipo === 'Incasso');
+            if (!yearHasIncasso) {
+                yearRecords.unshift({
+                    id: `${anno}_Incasso_Donazione_empty`,
+                    tipo: 'Incasso',
+                    categoria: 'Donazione',
+                    previsto: 0,
+                    effettivo: 0,
+                    avanzamento: 0,
+                    cssClass: 'slds-text-color_success'
+                });
+            }
 
             const cfYearPrevisto = incassiPrev === 0 ? 0 : (incassiPrev - spesePrev);
             const cfYearEffettivo = incassiEff - speseEff;
