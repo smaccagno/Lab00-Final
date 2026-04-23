@@ -12,6 +12,14 @@
                     <div class="dashboard-hero-date">
                         <lightning-icon icon-name="utility:event" size="xx-small" alternative-text="Data"></lightning-icon>
                         <span>Situazione al <strong>{formattedGlobalDate}</strong></span>
+                        <button
+                            class="dashboard-refresh-btn"
+                            title="Aggiorna tutti i dati"
+                            onclick={handleRefreshAll}
+                            disabled={isRefreshing}>
+                            <lightning-icon icon-name="utility:refresh" size="xx-small" alternative-text="Aggiorna"></lightning-icon>
+                            <span>Aggiorna</span>
+                        </button>
                     </div>
                 </div>
 
@@ -80,7 +88,7 @@
                 <lightning-tab label="Panoramica" value="panoramica">
                     <template if:true={accountId}>
                         <div class="slds-p-around_small">
-                            <c-budget-kpi-cards account-id={accountId} filter-date={globalDate}></c-budget-kpi-cards>
+                            <c-budget-kpi-cards account-id={accountId} filter-date={globalDate} refresh-token={refreshToken}></c-budget-kpi-cards>
                         </div>
                     </template>
                 </lightning-tab>
@@ -92,7 +100,8 @@
                                 record-id={accountId}
                                 filter-date={globalDate}
                                 hide-date-filter="true"
-                                show-quick-summary="true">
+                                show-quick-summary="true"
+                                refresh-token={refreshToken}>
                             </c-budget-summary-by-category>
                         </div>
                     </template>
@@ -181,7 +190,8 @@
                                         hide-date-filter="true"
                                         show-quick-summary="true"
                                         external-max-categories-val={globalProgramCategoriesMaxVal}
-                                        external-max-cash-flow-val={globalProgramCashFlowMaxVal}>
+                                        external-max-cash-flow-val={globalProgramCashFlowMaxVal}
+                                        refresh-token={refreshToken}>
                                     </c-budget-summary-by-category>
                                 </template>
                             </div>

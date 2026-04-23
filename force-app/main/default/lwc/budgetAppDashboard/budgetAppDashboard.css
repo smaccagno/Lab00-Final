@@ -569,3 +569,31 @@
     font-weight: 600;
     color: #16325c;
 }
+
+/* Refresh button inside hero-date pill */
+.dashboard-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid rgba(22, 50, 92, 0.15);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #16325c;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.dashboard-refresh-btn:hover:not([disabled]) {
+    background: #f0f7ff;
+    box-shadow: 0 1px 3px rgba(22, 50, 92, 0.1);
+}
+.dashboard-refresh-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.dashboard-refresh-btn lightning-icon {
+    --sds-c-icon-color-foreground-default: #0176d3;
+}

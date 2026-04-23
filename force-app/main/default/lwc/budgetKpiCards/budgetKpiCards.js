@@ -1,4 +1,5 @@
 import { LightningElement, api, wire } from 'lwc';
+import { refreshApex } from '@salesforce/apex';
 import getDashboardKpis from '@salesforce/apex/BudgetAppDashboardController.getDashboardKpis';
 import getProgramsKpis from '@salesforce/apex/BudgetAppDashboardController.getProgramsKpis';
 
@@ -6,13 +7,29 @@ export default class BudgetKpiCards extends LightningElement {
     @api accountId;
     @api filterDate;
 
+    _refreshToken = 0;
+    @api
+    get refreshToken() { return this._refreshToken; }
+    set refreshToken(value) {
+        const v = value || 0;
+        if (v !== this._refreshToken) {
+            this._refreshToken = v;
+            if (this._wiredKpis) refreshApex(this._wiredKpis);
+            if (this._wiredProgramsKpis) refreshApex(this._wiredProgramsKpis);
+        }
+    }
+
     kpis;
     programsKpis = [];
     loading = true;
     error;
+    _wiredKpis;
+    _wiredProgramsKpis;
 
     @wire(getDashboardKpis, { accountId: '$accountId', selectedDateStr: '$filterDate' })
-    wiredKpis({ data, error }) {
+    wiredKpis(result) {
+        this._wiredKpis = result;
+        const { data, error } = result;
         this.loading = false;
         if (data) {
             this.kpis = data;
@@ -24,7 +41,9 @@ export default class BudgetKpiCards extends LightningElement {
     }
 
     @wire(getProgramsKpis, { accountId: '$accountId', selectedDateStr: '$filterDate' })
-    wiredProgramsKpis({ data }) {
+    wiredProgramsKpis(result) {
+        this._wiredProgramsKpis = result;
+        const { data } = result;
         if (data) {
             // Mostriamo solo programmi con almeno un movimento reale, ordinati
             // per nome per una lettura stabile.

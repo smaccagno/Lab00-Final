@@ -3,6 +3,7 @@ import { NavigationMixin } from 'lightning/navigation';
 import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import ANNO_FIELD from '@salesforce/schema/Overview_Budget_per_Anno__c.Anno__c';
+import { refreshApex } from '@salesforce/apex';
 import getSummary from '@salesforce/apex/BudgetSummaryController.getSummary';
 
 export default class BudgetSummaryByCategory extends NavigationMixin(LightningElement) {
@@ -20,6 +21,18 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     @api externalMaxSpeseVal;
     @api externalMaxCashFlowVal;
     @api externalMaxCategoriesVal;
+
+    _refreshToken = 0;
+    _wiredSummary;
+    @api
+    get refreshToken() { return this._refreshToken; }
+    set refreshToken(value) {
+        const v = value || 0;
+        if (v !== this._refreshToken) {
+            this._refreshToken = v;
+            if (this._wiredSummary) refreshApex(this._wiredSummary);
+        }
+    }
     rawQuickDateActions = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
@@ -457,7 +470,9 @@ export default class BudgetSummaryByCategory extends NavigationMixin(LightningEl
     }
 
     @wire(getSummary, { recordId: '$recordId', filterDate: '$_selectedDate' })
-    wiredSummary({ error, data }) {
+    wiredSummary(result) {
+        this._wiredSummary = result;
+        const { error, data } = result;
         this.loading = false;
         if (data) {
             let maxIncassiVal = 0;

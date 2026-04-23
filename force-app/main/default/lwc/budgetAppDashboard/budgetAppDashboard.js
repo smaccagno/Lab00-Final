@@ -1,6 +1,7 @@
-import { LightningElement, wire, track } from 'lwc';
+import { LightningElement, wire, track, api } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { IsConsoleNavigation, getFocusedTabInfo, openSubtab, openTab } from 'lightning/platformWorkspaceApi';
+import { refreshApex } from '@salesforce/apex';
 import getDashboardData from '@salesforce/apex/BudgetAppDashboardController.getDashboardData';
 import getProgramItems from '@salesforce/apex/BudgetAppDashboardController.getProgramItems';
 import getProgramsScaleValues from '@salesforce/apex/BudgetAppDashboardController.getProgramsScaleValues';
@@ -24,6 +25,12 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     isConsoleNavigation = false;
     globalDate = new Date().toISOString().split('T')[0];
     @track activeTab = 'panoramica';
+    @track isRefreshing = false;
+    @track refreshToken = 0;
+    _wiredData;
+    _wiredProgramScales;
+    _wiredProgramsKpis;
+    _wiredProgramItems;
     quickDateActionsRaw = [
         { key: 'today', label: 'Oggi' },
         { key: 'q1', label: 'Primo Trimestre' },
@@ -256,7 +263,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     @wire(getDashboardData)
-    wiredData({ error, data }) {
+    wiredData(result) {
+        this._wiredData = result;
+        const { error, data } = result;
         if (data) {
             this.accountId = data.accountId;
             if (data.programs) {
@@ -286,7 +295,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     @wire(getProgramsScaleValues, { accountId: '$accountId', selectedDateStr: '$globalDate' })
-    wiredProgramScales({ error, data }) {
+    wiredProgramScales(result) {
+        this._wiredProgramScales = result;
+        const { error, data } = result;
         if (data) {
             this.globalProgramMaxVal = data.maxGlobalVal || null;
             const maxIncassi = Number(data.maxIncassiVal) || 0;
@@ -304,7 +315,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     @wire(getProgramsKpis, { accountId: '$accountId', selectedDateStr: '$globalDate' })
-    wiredProgramsKpis({ error, data }) {
+    wiredProgramsKpis(result) {
+        this._wiredProgramsKpis = result;
+        const { error, data } = result;
         if (data) {
             const map = {};
             data.forEach(k => { map[k.programId] = k; });
@@ -316,7 +329,9 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
     }
 
     @wire(getProgramItems, { programId: '$requestProgramId', accountId: '$requestAccountId' })
-    wiredProgramItems({ error, data }) {
+    wiredProgramItems(result) {
+        this._wiredProgramItems = result;
+        const { error, data } = result;
         if (data) {
             this.rawProgramItems = data;
             this.rebuildTables();
@@ -332,6 +347,26 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         this.globalDate = event.target.value;
         this.programScaleReady = false;
         this.rebuildTables();
+    }
+
+    async handleRefreshAll() {
+        if (this.isRefreshing) return;
+        this.isRefreshing = true;
+        try {
+            const promises = [];
+            if (this._wiredData) promises.push(refreshApex(this._wiredData));
+            if (this._wiredProgramScales) promises.push(refreshApex(this._wiredProgramScales));
+            if (this._wiredProgramsKpis) promises.push(refreshApex(this._wiredProgramsKpis));
+            if (this._wiredProgramItems) promises.push(refreshApex(this._wiredProgramItems));
+            await Promise.all(promises);
+            // Segnala ai child LWC di ricaricare (ciascuno gestirà il proprio @api refreshToken).
+            this.refreshToken = this.refreshToken + 1;
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('[budgetAppDashboard] refresh failed', e);
+        } finally {
+            this.isRefreshing = false;
+        }
     }
 
     getTodayDate() {
