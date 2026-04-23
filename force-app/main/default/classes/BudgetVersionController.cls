@@ -224,6 +224,7 @@ public with sharing class BudgetVersionController {
                         Nome__c = it.Nome__c,
                         Data__c = it.Data__c,
                         Ammontare__c = it.Ammontare__c,
+                        Note__c = it.Note__c,
                         Stato__c = 'Prevista'
                     ));
                 } else {

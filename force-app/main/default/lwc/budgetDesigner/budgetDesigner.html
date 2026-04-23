@@ -106,6 +106,7 @@
                             <col class="col-name"/>
                             <col class="col-date"/>
                             <col class="col-amount"/>
+                            <col class="col-note"/>
                             <col class="col-actions"/>
                         </colgroup>
                         <thead>
@@ -116,6 +117,7 @@
                                 <th scope="col">Titolo</th>
                                 <th scope="col">Data prevista</th>
                                 <th scope="col" class="col-amount">Ammontare</th>
+                                <th scope="col">Note</th>
                                 <th scope="col" aria-label="Azioni"></th>
                             </tr>
                         </thead>
@@ -140,7 +142,7 @@
                                             <span class="sheet-group-count">{grp.countLabel}</span>
                                         </th>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
-                                        <td></td>
+                                        <td colspan="2"></td>
                                     </tr>
                                     <template for:each={grp.children} for:item="row">
                                         <template if:false={row.isEditing}>
@@ -160,9 +162,10 @@
                                                 </td>
                                                 <td class="col-prog">{row.programmaName}</td>
                                                 <td>{row.categoria}</td>
-                                                <td>{row.name}</td>
+                                                <td class="col-text-wrap">{row.name}</td>
                                                 <td>{row.data}</td>
                                                 <td class="col-amount">{row.ammontareFmt}</td>
+                                                <td class="col-text-wrap">{row.note}</td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
                                                         <template if:true={isVersionEditable}>
@@ -245,15 +248,15 @@
                                                     </lightning-combobox>
                                                 </td>
                                                 <td>
-                                                    <lightning-input
-                                                        type="text"
+                                                    <lightning-textarea
                                                         variant="label-hidden"
                                                         value={row.name}
                                                         placeholder="Titolo"
+                                                        class="cell-textarea"
                                                         data-id={row.id}
                                                         data-field="name"
                                                         onchange={handleRowCellChange}>
-                                                    </lightning-input>
+                                                    </lightning-textarea>
                                                 </td>
                                                 <td>
                                                     <lightning-input
@@ -277,6 +280,17 @@
                                                         data-field="ammontare"
                                                         onchange={handleRowCellChange}>
                                                     </lightning-input>
+                                                </td>
+                                                <td>
+                                                    <lightning-textarea
+                                                        variant="label-hidden"
+                                                        value={row.note}
+                                                        placeholder="Note"
+                                                        class="cell-textarea"
+                                                        data-id={row.id}
+                                                        data-field="note"
+                                                        onchange={handleRowCellChange}>
+                                                    </lightning-textarea>
                                                 </td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
@@ -328,15 +342,15 @@
                                             </lightning-combobox>
                                         </td>
                                         <td>
-                                            <lightning-input
-                                                type="text"
+                                            <lightning-textarea
                                                 variant="label-hidden"
                                                 value={draftIncassoView.name}
                                                 placeholder="Titolo"
+                                                class="cell-textarea"
                                                 data-scope="draft-incasso"
                                                 data-field="name"
                                                 onchange={handleDraftIncassoChange}>
-                                            </lightning-input>
+                                            </lightning-textarea>
                                         </td>
                                         <td>
                                             <lightning-input
@@ -363,6 +377,17 @@
                                                 onchange={handleDraftIncassoChange}>
                                             </lightning-input>
                                         </td>
+                                        <td>
+                                            <lightning-textarea
+                                                variant="label-hidden"
+                                                value={draftIncassoView.note}
+                                                placeholder="Note"
+                                                class="cell-textarea"
+                                                data-scope="draft-incasso"
+                                                data-field="note"
+                                                onchange={handleDraftIncassoChange}>
+                                            </lightning-textarea>
+                                        </td>
                                         <td class="col-actions">
                                             <div class="sheet-row-actions">
                                                 <button class="sheet-row-action-btn sheet-row-action-btn--confirm"
@@ -386,7 +411,7 @@
                                 <tr class="sheet-total-row">
                                     <th scope="row" colspan="5">Totale Incassi</th>
                                     <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
-                                    <td></td>
+                                    <td colspan="2"></td>
                                 </tr>
                             </tfoot>
                     </table>
@@ -477,10 +502,10 @@
                                                 <td class="col-prog">{row.programmaName}</td>
                                                 <td>{row.categoria}</td>
                                                 <td>{row.sottocategoria}</td>
-                                                <td>{row.name}</td>
+                                                <td class="col-text-wrap">{row.name}</td>
                                                 <td>{row.data}</td>
                                                 <td class="col-amount">{row.ammontareFmt}</td>
-                                                <td>{row.note}</td>
+                                                <td class="col-text-wrap">{row.note}</td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
                                                         <template if:true={isVersionEditable}>
@@ -574,15 +599,15 @@
                                                     </lightning-combobox>
                                                 </td>
                                                 <td>
-                                                    <lightning-input
-                                                        type="text"
+                                                    <lightning-textarea
                                                         variant="label-hidden"
                                                         value={row.name}
                                                         placeholder="Titolo"
+                                                        class="cell-textarea"
                                                         data-id={row.id}
                                                         data-field="name"
                                                         onchange={handleRowCellChange}>
-                                                    </lightning-input>
+                                                    </lightning-textarea>
                                                 </td>
                                                 <td>
                                                     <lightning-input
@@ -608,15 +633,15 @@
                                                     </lightning-input>
                                                 </td>
                                                 <td>
-                                                    <lightning-input
-                                                        type="text"
+                                                    <lightning-textarea
                                                         variant="label-hidden"
                                                         value={row.note}
                                                         placeholder="Note"
+                                                        class="cell-textarea"
                                                         data-id={row.id}
                                                         data-field="note"
                                                         onchange={handleRowCellChange}>
-                                                    </lightning-input>
+                                                    </lightning-textarea>
                                                 </td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
@@ -679,15 +704,15 @@
                                         </lightning-combobox>
                                     </td>
                                     <td>
-                                        <lightning-input
-                                            type="text"
+                                        <lightning-textarea
                                             variant="label-hidden"
                                             value={draftSpesaView.name}
                                             placeholder="Titolo"
+                                            class="cell-textarea"
                                             data-scope="draft-spesa"
                                             data-field="name"
                                             onchange={handleDraftSpesaChange}>
-                                        </lightning-input>
+                                        </lightning-textarea>
                                     </td>
                                     <td>
                                         <lightning-input
@@ -715,15 +740,15 @@
                                         </lightning-input>
                                     </td>
                                     <td>
-                                        <lightning-input
-                                            type="text"
+                                        <lightning-textarea
                                             variant="label-hidden"
                                             value={draftSpesaView.note}
                                             placeholder="Note"
+                                            class="cell-textarea"
                                             data-scope="draft-spesa"
                                             data-field="note"
                                             onchange={handleDraftSpesaChange}>
-                                        </lightning-input>
+                                        </lightning-textarea>
                                     </td>
                                     <td class="col-actions">
                                         <div class="sheet-row-actions">

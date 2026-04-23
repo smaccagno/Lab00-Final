@@ -249,6 +249,7 @@ export default class BudgetDesigner extends LightningElement {
             data: it.Data__c || null,
             ammontare: it.Ammontare__c,
             ammontareFmt: this.formatCurrency(it.Ammontare__c),
+            note: it.Note__c || '',
             sortOrder: it.Sort_Order__c,
             isEditing: this.editingRowIds.has(it.Id),
             categoriaOptions: this.incassoCategoriaOptions
@@ -331,7 +332,7 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     blankIncassoRow() {
-        return { programmaId: '', categoria: '', name: '', data: '', ammontare: '' };
+        return { programmaId: '', categoria: '', name: '', data: '', ammontare: '', note: '' };
     }
 
     blankSpesaRow() {
@@ -746,7 +747,7 @@ export default class BudgetDesigner extends LightningElement {
             Nome__c: cur.name || null,
             Data__c: cur.data || null,
             Ammontare__c: cur.ammontare || 0,
-            Note__c: kind === 'spesa' ? (cur.note || null) : null,
+            Note__c: cur.note || null,
             Sort_Order__c: cur.sortOrder || null
         };
         try {
@@ -806,6 +807,7 @@ export default class BudgetDesigner extends LightningElement {
             Nome__c: d.name || null,
             Data__c: d.data || this.dataTarget || null,
             Ammontare__c: d.ammontare || 0,
+            Note__c: d.note || null,
             Sort_Order__c: (this.incassi.length + 1)
         };
         try {

@@ -339,29 +339,53 @@
    Spese ha 9 col (+ subcat + note). */
 .sheet { table-layout: fixed; width: 100%; }
 
-/* Incassi (7 colonne) — col-actions deve ospitare fino a 4 icone (modifica, duplica, copia/incolla, rimuovi) */
-.sheet--incassi .col-handle  { width: 3%; }
-.sheet--incassi .col-prog    { width: 20%; }
-.sheet--incassi .col-cat     { width: 20%; }
-.sheet--incassi .col-name    { width: 19%; }
-.sheet--incassi .col-date    { width: 13%; }
-.sheet--incassi .col-amount  { width: 11%; text-align: right; }
-.sheet--incassi .col-actions { width: 14%; text-align: center; }
+/* Column widths: handle fisso in pixel, le altre espandono proporzionalmente
+   riempiendo lo spazio residuo. table-layout: fixed rispetta queste regole.
+   Le due tabelle (Incassi 8 col, Spese 9 col) dividono la larghezza restante
+   in base alle percentuali che sommano a ~100%. */
+.sheet { table-layout: fixed; width: 100%; }
+.sheet .col-handle  { width: 28px; }
+.sheet .col-actions { width: 120px; text-align: center; }
 
-/* Spese (9 colonne) — idem su col-actions */
-.sheet--spese .col-handle  { width: 3%; }
-.sheet--spese .col-prog    { width: 13%; }
-.sheet--spese .col-cat     { width: 13%; }
-.sheet--spese .col-subcat  { width: 13%; }
-.sheet--spese .col-name    { width: 12%; }
-.sheet--spese .col-date    { width: 11%; }
-.sheet--spese .col-amount  { width: 9%; text-align: right; }
-.sheet--spese .col-note    { width: 11%; }
-.sheet--spese .col-actions { width: 15%; text-align: center; }
+/* Incassi: 8 colonne (handle fisso + actions fisso = 148px; il resto è 6 col variabili) */
+.sheet--incassi .col-prog   { width: 18%; }
+.sheet--incassi .col-cat    { width: 18%; }
+.sheet--incassi .col-name   { width: 22%; }
+.sheet--incassi .col-date   { width: 13%; }
+.sheet--incassi .col-amount { width: 13%; text-align: right; }
+.sheet--incassi .col-note   { width: 16%; }
+
+/* Spese: 9 colonne */
+.sheet--spese .col-prog   { width: 13%; }
+.sheet--spese .col-cat    { width: 13%; }
+.sheet--spese .col-subcat { width: 14%; }
+.sheet--spese .col-name   { width: 17%; }
+.sheet--spese .col-date   { width: 12%; }
+.sheet--spese .col-amount { width: 11%; text-align: right; }
+.sheet--spese .col-note   { width: 20%; }
 
 /* Icons inside the actions cell: no wrapping, avoid overflow */
 .sheet td.col-actions { white-space: nowrap; overflow: hidden; }
 .sheet .sheet-row-actions { justify-content: flex-end; flex-wrap: nowrap; }
+
+/* Wrap testo per celle Titolo e Note in view mode */
+.sheet td.col-text-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    padding: 4px 6px;
+}
+
+/* Textarea auto-sized: 1 riga di default, cresce in altezza se il testo è lungo */
+.sheet lightning-textarea.cell-textarea .slds-textarea {
+    min-height: 28px;
+    height: 28px;
+    resize: vertical;
+    font-size: 0.85rem;
+    line-height: 1.25;
+    padding: 4px 6px;
+}
 
 .sheet td.col-prog { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

@@ -3683,6 +3683,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Voce_di_Incasso__c.Note__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Voce_di_Incasso__c.Transazione__c</field>
         <readable>true</readable>
     </fieldPermissions>
