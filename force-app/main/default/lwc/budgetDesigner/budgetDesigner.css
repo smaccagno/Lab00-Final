@@ -628,8 +628,18 @@
     cursor: not-allowed;
 }
 
-/* Drag handle column */
-.sheet .col-handle { width: 28px; }
+/* Drag handle column — kept as narrow as possible so content aligns left */
+.sheet .col-handle { width: 18px; }
+
+.sheet thead th:first-child,
+.sheet tbody td.col-handle,
+.sheet .sheet-group-header > td.col-handle {
+    padding-left: 0;
+    padding-right: 0;
+    width: 18px;
+    min-width: 18px;
+    max-width: 18px;
+}
 
 .sheet-row-handle,
 .sheet-group-handle {

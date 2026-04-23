@@ -34,7 +34,7 @@ Vincolo di business chiave: **un solo Budget Ufficiale per Anno**. La Ufficiale 
 |---|---|---|
 | `Budget_Version__c` | MD Lookup(Budget_Version__c) | Cascade delete |
 | `Tipo__c` | Picklist | `Incasso`, `Spesa` |
-| `Programma__c` | Lookup(GiftDesignation) | Richiesto — ogni riga è riconciliata per programma |
+| `Programma__c` | Lookup(Program) | Richiesto — allineato con `Voce_di_Spesa__c.Programma__c` che referenzia `Program` |
 | `Categoria__c` | Text(40) | |
 | `Sottocategoria__c` | Text(40) | Solo `Tipo__c = Spesa` |
 | `Nome__c` | Text(80) | |
