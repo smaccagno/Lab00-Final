@@ -228,11 +228,22 @@ export default class BudgetDesigner extends LightningElement {
         this.spese = items.filter(i => i.Tipo__c === 'Spesa').map(this.itemToSpesaRow.bind(this));
     }
 
+    // Builds an options list annotated with 'selected' flags so native
+    // <select> / <option selected> knows which option to highlight.
+    _progOptsFor(selectedId) {
+        return (this.programmaOptions || []).map(o => ({
+            ...o,
+            selected: (o.value || '') === (selectedId || '')
+        }));
+    }
+
     itemToIncassoRow(it) {
+        const progId = it.Programma__c || null;
         return {
             id: it.Id,
-            programmaId: it.Programma__c || null,
+            programmaId: progId,
             programmaName: (it.Programma__r && it.Programma__r.Name) || '',
+            programmaOptions: this._progOptsFor(progId),
             categoria: it.Categoria__c || '',
             name: it.Nome__c || '',
             data: it.Data__c || null,
@@ -245,10 +256,12 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     itemToSpesaRow(it) {
+        const progId = it.Programma__c || null;
         return {
             id: it.Id,
-            programmaId: it.Programma__c || null,
+            programmaId: progId,
             programmaName: (it.Programma__r && it.Programma__r.Name) || '',
+            programmaOptions: this._progOptsFor(progId),
             categoria: it.Categoria__c || '',
             sottocategoria: it.Sottocategoria__c || '',
             name: it.Nome__c || '',
@@ -447,6 +460,7 @@ export default class BudgetDesigner extends LightningElement {
         return {
             ...this.draftIncasso,
             categoriaOptions: this.incassoCategoriaOptions,
+            programmaOptions: this._progOptsFor(this.draftIncasso.programmaId),
             canAdd: this.isIncassoDraftValid(this.draftIncasso)
         };
     }
@@ -455,6 +469,7 @@ export default class BudgetDesigner extends LightningElement {
         return {
             ...this.draftSpesa,
             categoriaOptions: this.speseCategoriaOptions,
+            programmaOptions: this._progOptsFor(this.draftSpesa.programmaId),
             subOptions: this.subOptionsFor(this.draftSpesa.categoria),
             subDisabled: !(this.sottocategorieByCategoria[this.draftSpesa.categoria] && this.sottocategorieByCategoria[this.draftSpesa.categoria].length),
             canAdd: this.isSpesaDraftValid(this.draftSpesa)
@@ -706,7 +721,7 @@ export default class BudgetDesigner extends LightningElement {
     handleRowCellChange(e) {
         const id = e.currentTarget.dataset.id;
         const field = e.currentTarget.dataset.field;
-        const value = e.detail.value;
+        const value = this.readEventValue(e);
         const m = new Map(this.pendingRowEdits);
         const entry = m.get(id);
         if (!entry) return;

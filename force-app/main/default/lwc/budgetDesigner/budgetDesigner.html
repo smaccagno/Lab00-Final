@@ -225,14 +225,14 @@
                                                 data-kind="incasso">
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
-                                                    <lightning-combobox
-                                                        variant="label-hidden"
-                                                        value={row.programmaId}
-                                                        options={programmaOptions}
+                                                    <select class="prog-select"
                                                         data-id={row.id}
                                                         data-field="programmaId"
                                                         onchange={handleRowCellChange}>
-                                                    </lightning-combobox>
+                                                        <template for:each={row.programmaOptions} for:item="opt">
+                                                            <option key={opt.value} value={opt.value} selected={opt.selected}>{opt.label}</option>
+                                                        </template>
+                                                    </select>
                                                 </td>
                                                 <td>
                                                     <lightning-combobox
@@ -308,14 +308,14 @@
                                     <tr class="sheet-row sheet-row--draft">
                                         <td class="col-handle"></td>
                                         <td class="col-prog">
-                                            <lightning-combobox
-                                                variant="label-hidden"
-                                                value={draftIncassoView.programmaId}
-                                                options={programmaOptions}
+                                            <select class="prog-select"
                                                 data-scope="draft-incasso"
                                                 data-field="programmaId"
                                                 onchange={handleDraftIncassoChange}>
-                                            </lightning-combobox>
+                                                <template for:each={draftIncassoView.programmaOptions} for:item="opt">
+                                                    <option key={opt.value} value={opt.value} selected={opt.selected}>{opt.label}</option>
+                                                </template>
+                                            </select>
                                         </td>
                                         <td>
                                             <lightning-combobox
@@ -535,14 +535,14 @@
                                                 data-kind="spesa">
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
-                                                    <lightning-combobox
-                                                        variant="label-hidden"
-                                                        value={row.programmaId}
-                                                        options={programmaOptions}
+                                                    <select class="prog-select"
                                                         data-id={row.id}
                                                         data-field="programmaId"
                                                         onchange={handleRowCellChange}>
-                                                    </lightning-combobox>
+                                                        <template for:each={row.programmaOptions} for:item="opt">
+                                                            <option key={opt.value} value={opt.value} selected={opt.selected}>{opt.label}</option>
+                                                        </template>
+                                                    </select>
                                                 </td>
                                                 <td>
                                                     <lightning-combobox
@@ -640,14 +640,14 @@
                                 <tr class="sheet-row sheet-row--draft">
                                     <td class="col-handle"></td>
                                     <td class="col-prog">
-                                        <lightning-combobox
-                                            variant="label-hidden"
-                                            value={draftSpesaView.programmaId}
-                                            options={programmaOptions}
+                                        <select class="prog-select"
                                             data-scope="draft-spesa"
                                             data-field="programmaId"
                                             onchange={handleDraftSpesaChange}>
-                                        </lightning-combobox>
+                                            <template for:each={draftSpesaView.programmaOptions} for:item="opt">
+                                                <option key={opt.value} value={opt.value} selected={opt.selected}>{opt.label}</option>
+                                            </template>
+                                        </select>
                                     </td>
                                     <td>
                                         <lightning-combobox
