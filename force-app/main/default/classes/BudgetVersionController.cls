@@ -178,13 +178,47 @@ public with sharing class BudgetVersionController {
                        Nome__c, Data__c, Ammontare__c, Note__c, Sort_Order__c
                   FROM Budget_Version_Item__c WHERE Budget_Version__c = :versionId
             ];
+
+            // Resolve Overview_Budget_per_Anno__c per ogni (Programma, Anno)
+            // usando il budget "default" (DEFAULT_PRG__c = true sul parent GiftDesignation).
+            // Gli endpoint della dashboard filtrano le Voci via questo lookup, quindi
+            // dobbiamo popolarlo al promote per far comparire le voci nei report.
+            String annoStr = (nuova.Anno__c == null) ? null : String.valueOf(nuova.Anno__c.intValue());
+            Set<Id> programmiNecessari = new Set<Id>();
+            for (Budget_Version_Item__c it : items) {
+                if (it.Programma__c != null) programmiNecessari.add(it.Programma__c);
+            }
+            Map<Id, Id> overviewByProgram = new Map<Id, Id>();
+            if (annoStr != null && !programmiNecessari.isEmpty()) {
+                for (Overview_Budget_per_Anno__c b : [
+                    SELECT Id, Budget__r.Program__c
+                      FROM Overview_Budget_per_Anno__c
+                     WHERE Anno__c = :annoStr
+                       AND Budget__r.DEFAULT_PRG__c = true
+                       AND Budget__r.Program__c IN :programmiNecessari
+                ]) {
+                    if (b.Budget__r == null || b.Budget__r.Program__c == null) continue;
+                    if (!overviewByProgram.containsKey(b.Budget__r.Program__c)) {
+                        overviewByProgram.put(b.Budget__r.Program__c, b.Id);
+                    }
+                }
+            }
+
             List<Voce_di_Incasso__c> incassi = new List<Voce_di_Incasso__c>();
             List<Voce_di_Spesa__c> spese = new List<Voce_di_Spesa__c>();
+            List<String> unresolved = new List<String>();
             for (Budget_Version_Item__c it : items) {
+                Id overviewId = it.Programma__c == null ? null : overviewByProgram.get(it.Programma__c);
+                if (overviewId == null) {
+                    unresolved.add((it.Nome__c == null ? it.Id : it.Nome__c)
+                        + ' (Programma mancante o senza Budget default per ' + annoStr + ')');
+                    continue;
+                }
                 if (it.Tipo__c == 'Incasso') {
                     incassi.add(new Voce_di_Incasso__c(
                         Budget_Version__c = versionId,
                         Programma__c = it.Programma__c,
+                        Overview_Budget_per_Anno__c = overviewId,
                         Categoria__c = it.Categoria__c,
                         Nome__c = it.Nome__c,
                         Data__c = it.Data__c,
@@ -195,6 +229,8 @@ public with sharing class BudgetVersionController {
                     spese.add(new Voce_di_Spesa__c(
                         Budget_Version__c = versionId,
                         Programma__c = it.Programma__c,
+                        Overview_Budget_per_Anno__c = overviewId,
+                        Anno__c = nuova.Anno__c,
                         Categoria__c = it.Categoria__c,
                         Sottocategoria__c = it.Sottocategoria__c,
                         Nome__c = it.Nome__c,
@@ -204,6 +240,12 @@ public with sharing class BudgetVersionController {
                         Stato__c = 'Prevista'
                     ));
                 }
+            }
+            if (!unresolved.isEmpty()) {
+                throw new AuraHandledException(
+                    'Impossibile promuovere: ' + unresolved.size() + ' voce/i non hanno un Budget default per l\'anno '
+                    + annoStr + '. Dettagli: ' + String.join(unresolved, '; ')
+                );
             }
             if (!incassi.isEmpty()) insert incassi;
             if (!spese.isEmpty()) insert spese;

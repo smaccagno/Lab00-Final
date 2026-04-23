@@ -417,8 +417,11 @@ export default class BudgetRecordsViewer extends NavigationMixin(LightningElemen
         }
     }
 
+    // Apex 'Id' parameter rejects empty string; normalize to null via a reactive getter.
+    get _programIdParam() { return this.programId ? this.programId : null; }
+
     @wire(getViewerTotals, {
-        programId: '$programId',
+        programId: '$_programIdParam',
         anno: '$anno',
         tipo: '$tipo',
         categoria: '$categoria',
