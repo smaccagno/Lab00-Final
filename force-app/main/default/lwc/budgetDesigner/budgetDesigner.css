@@ -331,7 +331,9 @@
 .sheet-group-subtotal {
     font-variant-numeric: tabular-nums;
     text-align: right;
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
 }
 
 .sheet-group-subtotal--incassi { color: #1b5a30; }
@@ -853,11 +855,12 @@
 .sheet-subgroup-subtotal {
     font-variant-numeric: tabular-nums;
     text-align: right;
-    font-weight: 700;
-    font-size: 0.82rem;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
 }
-.sheet-subgroup-subtotal--incassi { color: #2e844a; }
-.sheet-subgroup-subtotal--spese   { color: #c9263a; }
+.sheet-subgroup-subtotal--incassi { color: #1b5a30; }
+.sheet-subgroup-subtotal--spese   { color: #a00015; }
 
 /* Child rows: indent progressivo della maniglia per visualizzare la nesting
    Categoria > Programma > Riga dati. */
