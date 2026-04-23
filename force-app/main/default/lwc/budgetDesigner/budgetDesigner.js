@@ -1178,6 +1178,82 @@ export default class BudgetDesigner extends LightningElement {
         } catch (e) { this.showError(e); }
     }
 
+    // ── Bulk actions: Edit/Conferma di più righe ──────────────────────
+    _rowsInScope(kind, scope, categoria, programmaId) {
+        const list = kind === 'incasso' ? this.incassi : this.spese;
+        return list.filter(r => {
+            if (scope === 'all') return true;
+            if (r.categoria !== categoria) return false;
+            if (scope === 'subgroup') {
+                const rp = r.programmaId || '';
+                const tp = programmaId || '';
+                return rp === tp;
+            }
+            return true; // category
+        });
+    }
+
+    handleBulkEdit(event) {
+        if (!this.isVersionEditable) return;
+        const { kind, scope, categoria, programma } = event.currentTarget.dataset;
+        const rows = this._rowsInScope(kind, scope, categoria, programma || null);
+        const s = new Set(this.editingRowIds);
+        const m = new Map(this.pendingRowEdits);
+        for (const r of rows) {
+            if (!r.id) continue;
+            s.add(r.id);
+            if (!m.has(r.id)) {
+                m.set(r.id, { original: { ...r }, current: { ...r } });
+            }
+        }
+        this.editingRowIds = s;
+        this.pendingRowEdits = m;
+        this._remapRowsFromCache();
+    }
+
+    async handleBulkConfirm(event) {
+        if (!this.isVersionEditable) return;
+        const { kind, scope, categoria, programma } = event.currentTarget.dataset;
+        const rows = this._rowsInScope(kind, scope, categoria, programma || null);
+        const payloads = [];
+        for (const r of rows) {
+            if (!r.id) continue;
+            if (!this.editingRowIds.has(r.id)) continue;
+            const entry = this.pendingRowEdits.get(r.id);
+            if (!entry) continue;
+            const cur = entry.current;
+            payloads.push({
+                id: r.id,
+                payload: {
+                    Id: r.id,
+                    Budget_Version__c: this.selectedVersionId,
+                    Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
+                    Programma__c: cur.programmaId || null,
+                    Categoria__c: cur.categoria || null,
+                    Sottocategoria__c: kind === 'spesa' ? (cur.sottocategoria || null) : null,
+                    Nome__c: cur.name || null,
+                    Data__c: cur.data || null,
+                    Ammontare__c: cur.ammontare || 0,
+                    Note__c: cur.note || null,
+                    Sort_Order__c: cur.sortOrder || null
+                }
+            });
+        }
+        if (payloads.length === 0) return;
+        try {
+            for (const p of payloads) {
+                // eslint-disable-next-line no-await-in-loop
+                await upsertItem({ item: p.payload });
+            }
+            const s = new Set(this.editingRowIds);
+            const m = new Map(this.pendingRowEdits);
+            for (const p of payloads) { s.delete(p.id); m.delete(p.id); }
+            this.editingRowIds = s;
+            this.pendingRowEdits = m;
+            await refreshApex(this._wiredDetail);
+        } catch (e) { this.showError(e); }
+    }
+
     // Al drag-drop cross-categoria persistiamo la nuova categoria sul server,
     // così le successive aperture in Edit leggeranno il valore aggiornato.
     async _persistRowCategoria(row, kind) {
