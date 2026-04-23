@@ -2,7 +2,7 @@
 private class BudgetVersionControllerTest {
 
     private static Program createProgram(String name) {
-        Program p = new Program(Name = name, Status__c = 'Active');
+        Program p = new Program(Name = name, Status = 'Active', StartDate = Date.today());
         insert p;
         return p;
     }
@@ -29,10 +29,10 @@ private class BudgetVersionControllerTest {
         Id idB = BudgetVersionController.createVersion(2027, 'B', null);
         BudgetVersionController.trashVersion(idB);
 
-        List<BudgetVersionController.BudgetVersionDTO> list = BudgetVersionController.getVersionsByYear(2027);
+        List<BudgetVersionController.BudgetVersionDTO> versions = BudgetVersionController.getVersionsByYear(2027);
 
-        System.assertEquals(1, list.size());
-        System.assertEquals(idA, list[0].id);
+        System.assertEquals(1, versions.size());
+        System.assertEquals(idA, versions[0].id);
     }
 
     @IsTest
@@ -41,7 +41,7 @@ private class BudgetVersionControllerTest {
         Program prog = createProgram('Prog A');
         Id itemId = BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = versionId, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Nome__c = 'Donazione test', Ammontare__c = 100
         ));
         BudgetVersionController.promoteVersion(versionId);
@@ -51,7 +51,7 @@ private class BudgetVersionControllerTest {
         try {
             BudgetVersionController.upsertItem(new Budget_Version_Item__c(
                 Budget_Version__c = versionId, Tipo__c = 'Incasso',
-                Programma__c = prog.Id, Categoria__c = 'Donazioni',
+                Programma__c = prog.Id, Categoria__c = 'Donazione',
                 Nome__c = 'Altra', Ammontare__c = 200
             ));
         } catch (AuraHandledException e) { thrown = true; }
@@ -64,14 +64,14 @@ private class BudgetVersionControllerTest {
         Program prog = createProgram('Prog');
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = versionId, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Nome__c = 'Donazione', Data__c = Date.newInstance(2027, 6, 1),
             Ammontare__c = 1000
         ));
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = versionId, Tipo__c = 'Spesa',
-            Programma__c = prog.Id, Categoria__c = 'Affitti',
-            Sottocategoria__c = 'Sede', Nome__c = 'Affitto',
+            Programma__c = prog.Id, Categoria__c = 'Sede e Servizi Generali',
+            Sottocategoria__c = 'Sede e domiciliazione legale', Nome__c = 'Affitto',
             Data__c = Date.newInstance(2027, 1, 1), Ammontare__c = 500
         ));
 
@@ -95,7 +95,7 @@ private class BudgetVersionControllerTest {
                                        FROM Voce_di_Spesa__c WHERE Budget_Version__c=:versionId];
         System.assertEquals(1, spe.size());
         System.assertEquals('Prevista', spe[0].Stato__c);
-        System.assertEquals('Sede', spe[0].Sottocategoria__c);
+        System.assertEquals('Sede e domiciliazione legale', spe[0].Sottocategoria__c);
     }
 
     @IsTest
@@ -105,7 +105,7 @@ private class BudgetVersionControllerTest {
         Program prog = createProgram('P1');
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = v1, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Nome__c = 'D1', Ammontare__c = 100));
         BudgetVersionController.promoteVersion(v1);
 
@@ -113,7 +113,7 @@ private class BudgetVersionControllerTest {
         Id v2 = BudgetVersionController.createVersion(2027, 'v2', null);
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = v2, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Nome__c = 'D2', Ammontare__c = 200));
 
         Test.startTest();
@@ -139,7 +139,7 @@ private class BudgetVersionControllerTest {
         // Voce "orfana" (senza Budget_Version) creata a mano: deve sopravvivere al promote
         Program prog = createProgram('P1');
         Voce_di_Incasso__c orfana = new Voce_di_Incasso__c(
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Stato__c = 'Prevista', Ammontare__c = 999
         );
         insert orfana;
@@ -147,7 +147,7 @@ private class BudgetVersionControllerTest {
         Id v1 = BudgetVersionController.createVersion(2027, 'v1', null);
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = v1, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'Donazioni',
+            Programma__c = prog.Id, Categoria__c = 'Donazione',
             Nome__c = 'D1', Ammontare__c = 100));
         Test.startTest();
         BudgetVersionController.promoteVersion(v1);
@@ -163,10 +163,12 @@ private class BudgetVersionControllerTest {
         Program prog = createProgram('P');
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = src, Tipo__c = 'Incasso',
-            Programma__c = prog.Id, Categoria__c = 'X', Nome__c = 'Uno', Ammontare__c = 1));
+            Programma__c = prog.Id, Categoria__c = 'Donazione', Nome__c = 'Uno', Ammontare__c = 1,
+            Data__c = Date.today()));
         BudgetVersionController.upsertItem(new Budget_Version_Item__c(
             Budget_Version__c = src, Tipo__c = 'Spesa',
-            Programma__c = prog.Id, Categoria__c = 'Y', Nome__c = 'Due', Ammontare__c = 2));
+            Programma__c = prog.Id, Categoria__c = 'Sede e Servizi Generali', Nome__c = 'Due', Ammontare__c = 2,
+            Data__c = Date.today()));
         BudgetVersionController.promoteVersion(src);
 
         Test.startTest();
