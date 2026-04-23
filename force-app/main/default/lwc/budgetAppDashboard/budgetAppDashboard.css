@@ -91,12 +91,12 @@
     }
 }
 
-.dashboard-accordion {
+.dashboard-tabs {
     background-color: #ffffff;
     border: 1px solid #d8dde6;
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.05);
-    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(22, 50, 92, 0.05);
+    padding: 0.25rem 0.5rem 0.5rem 0.5rem;
 }
 
 .program-switcher {

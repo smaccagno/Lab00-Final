@@ -74,28 +74,31 @@
             </div>
         </div>
 
-        <!-- KPI cards -->
-        <template if:true={accountId}>
-            <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-                <c-budget-kpi-cards account-id={accountId} filter-date={globalDate}></c-budget-kpi-cards>
-            </div>
-        </template>
-
-        <!-- Accordion wrapping overall and per-program sections -->
-        <div class="slds-col slds-size_1-of-1 dashboard-accordion">
-            <lightning-accordion allow-multiple-sections-open active-section-name={activeAccordionSections} onsectiontoggle={handleAccordionToggle}>
-                <lightning-accordion-section name="overview" label="Vista Omnicomprensiva">
+        <!-- Tabs principali: Panoramica / Totale per Categorie / Budget per Programma -->
+        <div class="slds-col slds-size_1-of-1 dashboard-tabs">
+            <lightning-tabset active-tab-value={activeTab} variant="scoped" onactive={handleTabChange}>
+                <lightning-tab label="Panoramica" value="panoramica">
                     <template if:true={accountId}>
-                        <c-budget-summary-by-category
-                            record-id={accountId}
-                            filter-date={globalDate}
-                            hide-date-filter="true"
-                            show-quick-summary="true">
-                        </c-budget-summary-by-category>
+                        <div class="slds-p-around_small">
+                            <c-budget-kpi-cards account-id={accountId} filter-date={globalDate}></c-budget-kpi-cards>
+                        </div>
                     </template>
-                </lightning-accordion-section>
+                </lightning-tab>
 
-                <lightning-accordion-section name="programs" label="Dettaglio per Programma">
+                <lightning-tab label="Totale per Categorie" value="categorie">
+                    <template if:true={accountId}>
+                        <div class="slds-p-around_small">
+                            <c-budget-summary-by-category
+                                record-id={accountId}
+                                filter-date={globalDate}
+                                hide-date-filter="true"
+                                show-quick-summary="true">
+                            </c-budget-summary-by-category>
+                        </div>
+                    </template>
+                </lightning-tab>
+
+                <lightning-tab label="Budget per Programma" value="programmi">
                     <div class="slds-p-around_small">
                     <!-- Date filter (sync with top) -->
                     <div class="dashboard-date-toolbar slds-m-bottom_medium">
@@ -306,8 +309,8 @@
                         <p class="slds-text-color_weak">Seleziona un programma per visualizzare grafico e dettaglio tabellare.</p>
                     </template>
                     </div>
-                </lightning-accordion-section>
-            </lightning-accordion>
+                </lightning-tab>
+            </lightning-tabset>
         </div>
     </div>
 </template>
