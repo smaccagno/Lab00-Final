@@ -333,16 +333,33 @@
 /* Child rows: no indent (handle column already provides visual space,
    and the category header is always visible so the hierarchy is clear). */
 
-/* Column widths */
-.sheet .col-prog { width: 18%; }
+/* Column widths — percentuali calcolate sul totale di ciascuna tabella in
+   modo che le colonne comuni (handle, prog, cat, date, amount, actions)
+   occupino la stessa frazione. Incassi ha 7 col (handle+prog+cat+name+date+amount+actions).
+   Spese ha 9 col (+ subcat + note). */
+.sheet { table-layout: fixed; width: 100%; }
+
+/* Incassi (7 colonne) */
+.sheet--incassi .col-handle  { width: 3%; }
+.sheet--incassi .col-prog    { width: 22%; }
+.sheet--incassi .col-cat     { width: 22%; }
+.sheet--incassi .col-name    { width: 22%; }
+.sheet--incassi .col-date    { width: 14%; }
+.sheet--incassi .col-amount  { width: 12%; text-align: right; }
+.sheet--incassi .col-actions { width: 5%;  text-align: center; }
+
+/* Spese (9 colonne) */
+.sheet--spese .col-handle  { width: 3%; }
+.sheet--spese .col-prog    { width: 15%; }
+.sheet--spese .col-cat     { width: 15%; }
+.sheet--spese .col-subcat  { width: 15%; }
+.sheet--spese .col-name    { width: 13%; }
+.sheet--spese .col-date    { width: 12%; }
+.sheet--spese .col-amount  { width: 10%; text-align: right; }
+.sheet--spese .col-note    { width: 12%; }
+.sheet--spese .col-actions { width: 5%;  text-align: center; }
+
 .sheet td.col-prog { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sheet .col-cat { width: 18%; }
-.sheet .col-subcat { width: 16%; }
-.sheet .col-name { width: 16%; }
-.sheet .col-date { width: 12%; }
-.sheet .col-amount { width: 12%; text-align: right; }
-.sheet .col-note { width: 16%; }
-.sheet .col-actions { width: 40px; text-align: center; }
 
 .sheet td.col-amount {
     text-align: right;
