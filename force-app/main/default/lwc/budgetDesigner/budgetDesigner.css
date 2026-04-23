@@ -339,25 +339,29 @@
    Spese ha 9 col (+ subcat + note). */
 .sheet { table-layout: fixed; width: 100%; }
 
-/* Incassi (7 colonne) */
+/* Incassi (7 colonne) — col-actions deve ospitare fino a 4 icone (modifica, duplica, copia/incolla, rimuovi) */
 .sheet--incassi .col-handle  { width: 3%; }
-.sheet--incassi .col-prog    { width: 22%; }
-.sheet--incassi .col-cat     { width: 22%; }
-.sheet--incassi .col-name    { width: 22%; }
-.sheet--incassi .col-date    { width: 14%; }
-.sheet--incassi .col-amount  { width: 12%; text-align: right; }
-.sheet--incassi .col-actions { width: 5%;  text-align: center; }
+.sheet--incassi .col-prog    { width: 20%; }
+.sheet--incassi .col-cat     { width: 20%; }
+.sheet--incassi .col-name    { width: 19%; }
+.sheet--incassi .col-date    { width: 13%; }
+.sheet--incassi .col-amount  { width: 11%; text-align: right; }
+.sheet--incassi .col-actions { width: 14%; text-align: center; }
 
-/* Spese (9 colonne) */
+/* Spese (9 colonne) — idem su col-actions */
 .sheet--spese .col-handle  { width: 3%; }
-.sheet--spese .col-prog    { width: 15%; }
-.sheet--spese .col-cat     { width: 15%; }
-.sheet--spese .col-subcat  { width: 15%; }
-.sheet--spese .col-name    { width: 13%; }
-.sheet--spese .col-date    { width: 12%; }
-.sheet--spese .col-amount  { width: 10%; text-align: right; }
-.sheet--spese .col-note    { width: 12%; }
-.sheet--spese .col-actions { width: 5%;  text-align: center; }
+.sheet--spese .col-prog    { width: 13%; }
+.sheet--spese .col-cat     { width: 13%; }
+.sheet--spese .col-subcat  { width: 13%; }
+.sheet--spese .col-name    { width: 12%; }
+.sheet--spese .col-date    { width: 11%; }
+.sheet--spese .col-amount  { width: 9%; text-align: right; }
+.sheet--spese .col-note    { width: 11%; }
+.sheet--spese .col-actions { width: 15%; text-align: center; }
+
+/* Icons inside the actions cell: no wrapping, avoid overflow */
+.sheet td.col-actions { white-space: nowrap; overflow: hidden; }
+.sheet .sheet-row-actions { justify-content: flex-end; flex-wrap: nowrap; }
 
 .sheet td.col-prog { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
