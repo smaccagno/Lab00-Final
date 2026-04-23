@@ -305,7 +305,7 @@
     background: rgba(46, 132, 74, 0.14) !important;
     color: #1b5a30;
 }
-.sheet-group-header--incassi > th:first-of-type {
+.sheet-group-header--incassi > td:first-child {
     border-left: 3px solid #2e844a;
 }
 
@@ -314,7 +314,7 @@
     background: rgba(234, 0, 30, 0.12) !important;
     color: #a00015;
 }
-.sheet-group-header--spese > th:first-of-type {
+.sheet-group-header--spese > td:first-child {
     border-left: 3px solid #ea001e;
 }
 
@@ -354,10 +354,13 @@
    Le due tabelle (Incassi 8 col, Spese 9 col) dividono la larghezza restante
    in base alle percentuali che sommano a ~100%. */
 .sheet { table-layout: fixed; width: 100%; }
+.sheet .col-indent  { width: 28px; }
 .sheet .col-handle  { width: 28px; }
 .sheet .col-actions { width: 120px; text-align: center; }
+.sheet td.col-indent { padding: 0; }
+.sheet td.col-handle { padding: 0; text-align: center; }
 
-/* Incassi: 8 colonne (handle fisso + actions fisso = 148px; il resto è 6 col variabili) */
+/* Incassi: 9 colonne (indent + handle + 6 dinamiche + actions); somma % = 100 */
 .sheet--incassi .col-prog   { width: 18%; }
 .sheet--incassi .col-cat    { width: 18%; }
 .sheet--incassi .col-name   { width: 22%; }
@@ -365,7 +368,7 @@
 .sheet--incassi .col-amount { width: 13%; text-align: right; }
 .sheet--incassi .col-note   { width: 16%; }
 
-/* Spese: 9 colonne */
+/* Spese: 10 colonne (indent + handle + 7 dinamiche + actions) */
 .sheet--spese .col-prog   { width: 13%; }
 .sheet--spese .col-cat    { width: 13%; }
 .sheet--spese .col-subcat { width: 14%; }
@@ -823,21 +826,20 @@
     background: rgba(46, 132, 74, 0.08) !important;
     color: #1b5a30;
 }
-.sheet-subgroup-header--incassi > td:nth-child(2) {
+.sheet-subgroup-header--incassi > td:nth-child(3) {
     border-left: 3px solid #91c8a0;
 }
 .sheet tbody tr.sheet-subgroup-header--spese > td {
     background: rgba(234, 0, 30, 0.07) !important;
     color: #a00015;
 }
-.sheet-subgroup-header--spese > td:nth-child(2) {
+.sheet-subgroup-header--spese > td:nth-child(3) {
     border-left: 3px solid #f5a2ac;
 }
 .sheet-subgroup-name {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding-left: 1.25rem; /* indent per distinguere da Categoria */
     text-transform: uppercase;
     letter-spacing: 0.02em;
 }
@@ -863,11 +865,8 @@
 .sheet-subgroup-subtotal--incassi { color: #1b5a30; }
 .sheet-subgroup-subtotal--spese   { color: #a00015; }
 
-/* Child rows: indent progressivo della maniglia per visualizzare la nesting
-   Categoria > Programma > Riga dati. */
-.sheet-row--child td.col-handle {
-    padding-left: 1.5rem;
-}
+/* Child rows: la maniglia vive nella col-handle (seconda colonna di indent);
+   la col-indent resta vuota davanti a lei, creando il livello Programma. */
 
 /* Bulk buttons nell'header principale e nelle righe group/subgroup */
 .sheet-bulk-btn {

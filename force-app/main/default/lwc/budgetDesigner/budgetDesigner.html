@@ -100,6 +100,7 @@
                 <div class="sheet-wrapper">
                     <table class="sheet sheet--incassi" role="grid" aria-label="Foglio Incassi Previsti">
                         <colgroup>
+                            <col class="col-indent"/>
                             <col class="col-handle"/>
                             <col class="col-prog"/>
                             <col class="col-cat"/>
@@ -111,6 +112,7 @@
                         </colgroup>
                         <thead>
                             <tr>
+                                <th scope="col" aria-label=""></th>
                                 <th scope="col" aria-label="Trascina"></th>
                                 <th scope="col">Programma</th>
                                 <th scope="col">Categoria</th>
@@ -147,7 +149,7 @@
                                         data-kind="incasso"
                                         ondragover={handleRowDragOver}
                                         ondrop={handleGroupHeaderDrop}>
-                                        <td class="col-handle sheet-group-handle"
+                                        <td class="col-indent sheet-group-handle"
                                             draggable="true"
                                             data-key={grp.key}
                                             data-kind="incasso"
@@ -156,7 +158,7 @@
                                             title="Trascina per riordinare le categorie">
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
                                         </td>
-                                        <th scope="rowgroup" colspan="4">
+                                        <th scope="rowgroup" colspan="5">
                                             <span class="sheet-group-name">{grp.categoriaLabel}</span>
                                             <span class="sheet-group-count">{grp.countLabel}</span>
                                         </th>
@@ -187,9 +189,9 @@
                                     </tr>
                                     <template for:each={grp.programSubgroupsList} for:item="sub">
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--incassi">
+                                        <td class="col-indent"></td>
                                         <td class="col-handle"></td>
                                         <td colspan="4" class="sheet-subgroup-name">
-                                            <lightning-icon icon-name="utility:apex" size="xx-small"></lightning-icon>
                                             <span>{sub.programmaName}</span>
                                             <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
@@ -227,6 +229,7 @@
                                                 data-kind="incasso"
                                                 ondragover={handleRowDragOver}
                                                 ondrop={handleRowDrop}>
+                                                <td class="col-indent"></td>
                                                 <td class="col-handle sheet-row-handle"
                                                     draggable="true"
                                                     data-id={row.id}
@@ -302,6 +305,7 @@
                                             <tr key={row.id} class="sheet-row sheet-row--edit sheet-row--child"
                                                 data-id={row.id}
                                                 data-kind="incasso">
+                                                <td class="col-indent"></td>
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
                                                     <select class="prog-select"
@@ -397,6 +401,7 @@
                                 <tbody>
                                     <!-- Riga draft (solo se versione editabile) -->
                                     <tr class="sheet-row sheet-row--draft">
+                                        <td class="col-indent"></td>
                                         <td class="col-handle"></td>
                                         <td class="col-prog">
                                             <select class="prog-select"
@@ -486,7 +491,7 @@
                             </template>
                             <tfoot>
                                 <tr class="sheet-total-row">
-                                    <th scope="row" colspan="5">Totale Incassi</th>
+                                    <th scope="row" colspan="6">Totale Incassi</th>
                                     <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -514,6 +519,7 @@
                 <div class="sheet-wrapper">
                     <table class="sheet sheet--spese" role="grid" aria-label="Foglio Spese Previste">
                         <colgroup>
+                            <col class="col-indent"/>
                             <col class="col-handle"/>
                             <col class="col-prog"/>
                             <col class="col-cat"/>
@@ -526,6 +532,7 @@
                         </colgroup>
                         <thead>
                             <tr>
+                                <th scope="col" aria-label=""></th>
                                 <th scope="col" aria-label="Trascina"></th>
                                 <th scope="col">Programma</th>
                                 <th scope="col">Categoria</th>
@@ -563,7 +570,7 @@
                                         data-kind="spesa"
                                         ondragover={handleRowDragOver}
                                         ondrop={handleGroupHeaderDrop}>
-                                        <td class="col-handle sheet-group-handle"
+                                        <td class="col-indent sheet-group-handle"
                                             draggable="true"
                                             data-key={grp.key}
                                             data-kind="spesa"
@@ -572,7 +579,7 @@
                                             title="Trascina per riordinare le categorie">
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
                                         </td>
-                                        <th scope="rowgroup" colspan="5">
+                                        <th scope="rowgroup" colspan="6">
                                             <span class="sheet-group-name">{grp.categoriaLabel}</span>
                                             <span class="sheet-group-count">{grp.countLabel}</span>
                                         </th>
@@ -603,9 +610,9 @@
                                     </tr>
                                     <template for:each={grp.programSubgroupsList} for:item="sub">
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--spese">
+                                        <td class="col-indent"></td>
                                         <td class="col-handle"></td>
                                         <td colspan="5" class="sheet-subgroup-name">
-                                            <lightning-icon icon-name="utility:apex" size="xx-small"></lightning-icon>
                                             <span>{sub.programmaName}</span>
                                             <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
@@ -643,6 +650,7 @@
                                                 data-kind="spesa"
                                                 ondragover={handleRowDragOver}
                                                 ondrop={handleRowDrop}>
+                                                <td class="col-indent"></td>
                                                 <td class="col-handle sheet-row-handle"
                                                     draggable="true"
                                                     data-id={row.id}
@@ -719,6 +727,7 @@
                                             <tr key={row.id} class="sheet-row sheet-row--edit sheet-row--child"
                                                 data-id={row.id}
                                                 data-kind="spesa">
+                                                <td class="col-indent"></td>
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
                                                     <select class="prog-select"
@@ -825,6 +834,7 @@
                                 <tbody>
                                 <!-- Riga draft -->
                                 <tr class="sheet-row sheet-row--draft">
+                                    <td class="col-indent"></td>
                                     <td class="col-handle"></td>
                                     <td class="col-prog">
                                         <select class="prog-select"
@@ -925,7 +935,7 @@
                             </template>
                         <tfoot>
                             <tr class="sheet-total-row">
-                                <th scope="row" colspan="6">Totale Spese</th>
+                                <th scope="row" colspan="7">Totale Spese</th>
                                 <td class="col-amount sheet-total-value sheet-total-value--spese">{totalSpeseLabel}</td>
                                 <td colspan="2"></td>
                             </tr>
