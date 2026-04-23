@@ -6,17 +6,52 @@
 
 /* Hero */
 .designer-hero {
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid #d3dbe8;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    box-shadow: 0 2px 6px rgba(22, 50, 92, 0.06);
+}
+
+.designer-hero--empty {
+    background: linear-gradient(135deg, #f4f6fb 0%, #e8eef7 100%);
+}
+
+.designer-hero--provvisorio {
+    background: linear-gradient(135deg, #fff7ec 0%, #ffe7c2 100%);
+    border-color: #f3c27a;
+}
+
+.designer-hero--ufficiale {
+    background: linear-gradient(135deg, #eaf4fd 0%, #d2e7fa 100%);
+    border-color: #9ec6f0;
+}
+
+.designer-hero--storicizzata {
+    background: linear-gradient(135deg, #f4f6fb 0%, #e8eef7 100%);
+    border-color: #c6d1e3;
+    opacity: 0.92;
+}
+
+.designer-hero-main {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #f4f6fb 0%, #e8eef7 100%);
-    border: 1px solid #d3dbe8;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 6px rgba(22, 50, 92, 0.06);
-    margin-bottom: 1rem;
+}
+
+.designer-hero-selectors {
+    display: flex;
+    gap: 0.75rem;
+    min-width: 320px;
+}
+
+.designer-hero-selectors lightning-combobox {
+    min-width: 150px;
 }
 
 .designer-hero-title {
@@ -27,7 +62,7 @@
 
 .designer-hero-title h1 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #16325c;
     letter-spacing: -0.01em;
@@ -38,32 +73,61 @@
 }
 
 .designer-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     font-size: 0.85rem;
     color: #547190;
-    max-width: 520px;
+    flex-wrap: wrap;
+}
+
+.designer-version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid currentColor;
+}
+
+.designer-hero--provvisorio .designer-version-badge { color: #a05a00; }
+.designer-hero--ufficiale .designer-version-badge { color: #014f8e; }
+.designer-hero--storicizzata .designer-version-badge { color: #547190; }
+
+.designer-version-nome {
+    font-weight: 600;
+    color: #16325c;
+}
+
+.designer-hero-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.designer-hero-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: #547190;
 }
 
 /* Layout */
 .designer-layout {
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     gap: 1rem;
     align-items: start;
 }
 
-@media (max-width: 1280px) {
-    .designer-layout {
-        grid-template-columns: 220px minmax(0, 1fr);
-    }
-    .designer-overview {
-        grid-column: 1 / -1;
-    }
-}
-
-@media (max-width: 900px) {
-    .designer-layout {
-        grid-template-columns: 1fr;
-    }
+@media (max-width: 1100px) {
+    .designer-layout { grid-template-columns: 1fr; }
+    .designer-overview { position: static; }
 }
 
 /* Card generica (sidebar + overview) */
@@ -99,59 +163,6 @@
 
 .designer-card-head lightning-icon {
     --sds-c-icon-color-foreground-default: #0176d3;
-}
-
-/* Sidebar */
-.designer-sidebar {
-    position: sticky;
-    top: 1rem;
-    display: flex;
-    flex-direction: column;
-}
-
-@media (max-width: 900px) {
-    .designer-sidebar {
-        position: static;
-    }
-}
-
-.designer-actions-card {
-    gap: 0.5rem;
-}
-
-.designer-action {
-    width: 100%;
-}
-
-.designer-action--primary {
-    margin-top: 0.25rem;
-}
-
-.designer-hint {
-    font-size: 0.72rem;
-    color: #7a8aa0;
-    margin: 0;
-    line-height: 1.3;
-    font-style: italic;
-}
-
-.designer-toast {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.35rem 0.65rem;
-    background: #e8f5ec;
-    color: #1b5a30;
-    border: 1px solid #7eb892;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    margin-top: 0.5rem;
-    align-self: flex-start;
-}
-
-.designer-toast lightning-icon {
-    --sds-c-icon-color-foreground-default: #2e844a;
 }
 
 /* Wrapper dei due fogli: occupa l'intera colonna centrale */
@@ -323,9 +334,11 @@
    and the category header is always visible so the hierarchy is clear). */
 
 /* Column widths */
-.sheet .col-cat { width: 22%; }
+.sheet .col-prog { width: 18%; }
+.sheet td.col-prog { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet .col-cat { width: 18%; }
 .sheet .col-subcat { width: 16%; }
-.sheet .col-name { width: 18%; }
+.sheet .col-name { width: 16%; }
 .sheet .col-date { width: 12%; }
 .sheet .col-amount { width: 12%; text-align: right; }
 .sheet .col-note { width: 16%; }
@@ -427,12 +440,6 @@
 .designer-overview {
     position: sticky;
     top: 1rem;
-}
-
-@media (max-width: 1280px) {
-    .designer-overview {
-        position: static;
-    }
 }
 
 .designer-overview-inner {
