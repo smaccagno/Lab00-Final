@@ -31,14 +31,7 @@ public with sharing class SpeseExcelEditorController {
         return values;
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<String> getStatoValues() {
-        List<String> values = new List<String>();
-        for (Schema.PicklistEntry e : Voce_di_Spesa__c.Stato__c.getDescribe().getPicklistValues()) {
-            values.add(e.getValue());
-        }
-        return values;
-    }
+    // REMOVED: getStatoValues() - Excel Editor now forces Stato__c = 'Effettiva' server-side
 
     /** DTO usato dalla UI per i combo Anno / Programma. */
     public class LabelValue {
@@ -168,7 +161,6 @@ public with sharing class SpeseExcelEditorController {
         // Pre-carico picklist info per validazioni client-friendly
         Map<String, List<String>> sottocategorieByCategoria = getSottocategorieByCategoria();
         Set<String> categorieAllowed = new Set<String>(getCategoriaValues());
-        Set<String> statiAllowed = new Set<String>(getStatoValues());
 
         // Budget lookup per anno (default)
         Set<Integer> years = new Set<Integer>();
@@ -261,8 +253,6 @@ public with sharing class SpeseExcelEditorController {
                 err = 'Data mancante o non valida';
             } else if (p.ammontare == null) {
                 err = 'Ammontare mancante o non valido';
-            } else if (String.isBlank(p.stato) || !statiAllowed.contains(p.stato)) {
-                err = 'Stato non valido';
             }
 
             if (err != null) {
@@ -279,7 +269,7 @@ public with sharing class SpeseExcelEditorController {
             s.Note__c = p.note;
             s.Data__c = p.data;
             s.Ammontare__c = p.ammontare;
-            s.Stato__c = p.stato;
+            s.Stato__c = 'Effettiva'; // Task 7: Excel Editor now forces all records to Effettiva
             s.Overview_Budget_per_Anno__c = budgetByProgYear.get(progYearKey);
             s.Programma__c = p.programmaId;
 

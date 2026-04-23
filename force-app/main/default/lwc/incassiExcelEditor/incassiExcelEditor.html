@@ -156,7 +156,6 @@
                                 <th class="editable-cell-header">Categoria</th>
                                 <th class="editable-cell-header">Data</th>
                                 <th class="editable-cell-header">Ammontare</th>
-                                <th class="editable-cell-header">Stato</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -229,19 +228,6 @@
                                             <span class="cell-display">{row.ammontare}</span>
                                             <template if:true={row.ammontare}>
                                                 <button type="button" class="cell-clear-button" data-field="ammontare" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
-                                            </template>
-                                        </div>
-                                    </td>
-
-                                    <td class={row.statoClass}
-                                        data-field="stato"
-                                        data-row-index={row.rowIndex}
-                                        onclick={handleCellClick}
-                                        ondblclick={handleCellDblClick}>
-                                        <div class="cell-content-wrapper" data-field="stato" data-row-index={row.rowIndex}>
-                                            <span class="cell-display">{row.stato}</span>
-                                            <template if:true={row.stato}>
-                                                <button type="button" class="cell-clear-button" data-field="stato" data-row-index={row.rowIndex} onclick={clearCellContent} title="Cancella contenuto"></button>
                                             </template>
                                         </div>
                                     </td>

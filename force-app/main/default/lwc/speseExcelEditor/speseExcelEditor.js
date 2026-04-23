@@ -4,7 +4,6 @@ import { openTab } from 'lightning/platformWorkspaceApi';
 
 import getCategoriaValues from '@salesforce/apex/SpeseExcelEditorController.getCategoriaValues';
 import getSottocategorieByCategoria from '@salesforce/apex/SpeseExcelEditorController.getSottocategorieByCategoria';
-import getStatoValues from '@salesforce/apex/SpeseExcelEditorController.getStatoValues';
 import getAnniValues from '@salesforce/apex/SpeseExcelEditorController.getAnniValues';
 import getProgrammiValues from '@salesforce/apex/SpeseExcelEditorController.getProgrammiValues';
 import createSpeseFromFlow from '@salesforce/apex/SpeseExcelEditorController.createSpeseFromFlow';
@@ -19,7 +18,6 @@ export default class SpeseExcelEditor extends LightningElement {
     picklistsReady = false;
 
     categoriaOptions = [];
-    statoOptions = [];
     sottocategorieByCategoria = {};
     annoOptions = [];
     programmaOptions = [];
@@ -147,16 +145,14 @@ export default class SpeseExcelEditor extends LightningElement {
 
     async initPicklists() {
         try {
-            const [cats, sottosMap, st, anni, progs] = await Promise.all([
+            const [cats, sottosMap, anni, progs] = await Promise.all([
                 getCategoriaValues(),
                 getSottocategorieByCategoria(),
-                getStatoValues(),
                 getAnniValues(),
                 getProgrammiValues()
             ]);
 
             this.categoriaOptions = (cats || []).map(v => ({ label: v, value: v }));
-            this.statoOptions = (st || []).map(v => ({ label: v, value: v }));
             this.sottocategorieByCategoria = sottosMap || {};
             this.annoOptions = (anni || []).map(v => ({ label: v, value: v }));
             this.programmaOptions = (progs || []).map(p => ({ label: p.label, value: p.value }));
@@ -199,8 +195,7 @@ export default class SpeseExcelEditor extends LightningElement {
             sottocategoria: values.sottocategoria || '',
             note: values.note || '',
             data: values.data || '',
-            ammontare: values.ammontare || '',
-            stato: values.stato || ''
+            ammontare: values.ammontare || ''
         };
 
         this.rows = [...this.rows, row];
@@ -332,8 +327,7 @@ export default class SpeseExcelEditor extends LightningElement {
             sottocategoria: row.sottocategoria || '',
             note: row.note || '',
             data: row.data || '',
-            ammontare: row.ammontare || '',
-            stato: row.stato || ''
+            ammontare: row.ammontare || ''
         };
         this.closeCellActionMenu();
         this.showToast('Riga copiata', 'Puoi incollarla su una qualsiasi altra riga', 'success');
@@ -379,7 +373,7 @@ export default class SpeseExcelEditor extends LightningElement {
         let editorOptions = [];
         let editorHelpText = '';
 
-        if (['categoria', 'sottocategoria', 'stato', 'anno', 'programmaId'].includes(field)) {
+        if (['categoria', 'sottocategoria', 'anno', 'programmaId'].includes(field)) {
             editorType = 'dropdown';
             editorOptions = this.getEditorOptions(rowIndex, field);
             if (field === 'sottocategoria' && !row.categoria) {
@@ -443,7 +437,6 @@ export default class SpeseExcelEditor extends LightningElement {
 
     getEditorOptions(rowIndex, field) {
         if (field === 'categoria') return this.categoriaOptions;
-        if (field === 'stato') return this.statoOptions;
         if (field === 'anno') return this.annoOptions;
         if (field === 'programmaId') return this.programmaOptions;
         if (field === 'sottocategoria') {
@@ -654,8 +647,6 @@ export default class SpeseExcelEditor extends LightningElement {
         } else if (field === 'sottocategoria') {
             const options = this.getSubcategoriesForCategory(row.categoria);
             row.sottocategoria = !trimmed ? '' : (this.matchStringValue(options, trimmed) || trimmed);
-        } else if (field === 'stato') {
-            row.stato = !trimmed ? '' : (this.matchOptionValue(this.statoOptions, trimmed) || trimmed);
         } else if (field === 'note') {
             row.note = value == null ? '' : String(value);
         }
@@ -750,7 +741,6 @@ export default class SpeseExcelEditor extends LightningElement {
                 note: row.note,
                 data: row.data,
                 ammontare: row.ammontare,
-                stato: row.stato,
                 programmaId: row.programmaId
             }));
 
@@ -828,7 +818,6 @@ export default class SpeseExcelEditor extends LightningElement {
             }
         }
         if (validationErrors.ammontare) errorParts.push('Ammontare non valido');
-        if (validationErrors.stato) errorParts.push('Stato non valido');
         if (row.saveErrorMessage) errorParts.push(row.saveErrorMessage);
 
         return {
@@ -846,8 +835,7 @@ export default class SpeseExcelEditor extends LightningElement {
             sottocategoriaClass: this.getCellClass(validationErrors.sottocategoria),
             noteClass: this.getCellClass(false, 'editable-cell note-cell'),
             dataClass: this.getCellClass(validationErrors.data),
-            ammontareClass: this.getCellClass(validationErrors.ammontare),
-            statoClass: this.getCellClass(validationErrors.stato)
+            ammontareClass: this.getCellClass(validationErrors.ammontare)
         };
     }
 
@@ -865,13 +853,12 @@ export default class SpeseExcelEditor extends LightningElement {
             note: '',
             data: '',
             ammontare: '',
-            stato: '',
             saveErrorMessage: ''
         };
     }
 
     isRowEmpty(row) {
-        return !row.anno && !row.programmaId && !row.categoria && !row.sottocategoria && !row.note && !row.data && !row.ammontare && !row.stato;
+        return !row.anno && !row.programmaId && !row.categoria && !row.sottocategoria && !row.note && !row.data && !row.ammontare;
     }
 
     getValidationErrors(row) {
@@ -882,15 +869,13 @@ export default class SpeseExcelEditor extends LightningElement {
                 categoria: false,
                 sottocategoria: false,
                 data: false,
-                ammontare: false,
-                stato: false
+                ammontare: false
             };
         }
 
         const categoriaOk = this.isValueInOptions(row.categoria, this.categoriaOptions);
         const subcategories = this.getSubcategoriesForCategory(row.categoria);
         const sottocategoriaOk = !!row.sottocategoria && subcategories.includes(row.sottocategoria);
-        const statoOk = this.isValueInOptions(row.stato, this.statoOptions);
         const programmaOk = !!row.programmaId && this.isValueInOptions(row.programmaId, this.programmaOptions);
 
         const parsedDate = row.data ? this.parseDate(row.data) : '';
@@ -909,8 +894,7 @@ export default class SpeseExcelEditor extends LightningElement {
             categoria: !categoriaOk,
             sottocategoria: !sottocategoriaOk,
             data: dataMissingOrInvalid || dataYearMismatch,
-            ammontare: !row.ammontare || !this.parseCurrency(row.ammontare),
-            stato: !statoOk
+            ammontare: !row.ammontare || !this.parseCurrency(row.ammontare)
         };
     }
 
@@ -951,7 +935,7 @@ export default class SpeseExcelEditor extends LightningElement {
         const rows = [];
         for (const line of lines) {
             const values = line.split('\t');
-            if (values.length < 8) continue;
+            if (values.length < 7) continue;
 
             const first = (values[0] || '').trim().toLowerCase();
             if (first === 'anno' || first === 'year') continue;
@@ -964,7 +948,6 @@ export default class SpeseExcelEditor extends LightningElement {
                 note: this.normalizePastedField('note', values[4]),
                 data: this.normalizePastedField('data', values[5]),
                 ammontare: this.normalizePastedField('ammontare', values[6]),
-                stato: this.normalizePastedField('stato', values[7]),
                 saveErrorMessage: ''
             });
         }
@@ -981,7 +964,6 @@ export default class SpeseExcelEditor extends LightningElement {
         if (field === 'ammontare') return this.parseCurrency(trimmed) || trimmed;
         if (field === 'data') return this.parseDate(trimmed) || trimmed;
         if (field === 'categoria') return this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed;
-        if (field === 'stato') return this.matchOptionValue(this.statoOptions, trimmed) || trimmed;
         if (field === 'sottocategoria') {
             const category = this.matchOptionValue(this.categoriaOptions, categoryHint || '') || (categoryHint ? String(categoryHint).trim() : '');
             const subcategories = this.getSubcategoriesForCategory(category);

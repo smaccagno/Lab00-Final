@@ -4,6 +4,7 @@ private class SpeseExcelEditorControllerTest {
     @IsTest
     static void createSpeseFromFlow_returnsErrorOnInvalidPayload() {
         // Payload volutamente incompleto: deve fallire prima del lookup Budget
+        // Note: stato field removed, server now forces Stato__c = 'Effettiva'
         List<Object> payload = new List<Object>{
             new Map<String, Object>{
                 'rowNumber' => 1,
@@ -12,8 +13,7 @@ private class SpeseExcelEditorControllerTest {
                 'sottocategoria' => null,
                 'note' => 'x',
                 'data' => '2026-04-01',
-                'ammontare' => 10,
-                'stato' => 'Prevista'
+                'ammontare' => 10
             }
         };
 
@@ -28,15 +28,14 @@ private class SpeseExcelEditorControllerTest {
 
     @IsTest
     static void picklistHelpers_areCallable() {
+        // Note: getStatoValues() removed - Excel Editor now forces Stato__c = 'Effettiva' server-side
         Test.startTest();
         List<String> cats = SpeseExcelEditorController.getCategoriaValues();
-        List<String> st = SpeseExcelEditorController.getStatoValues();
         String sottosMapJson = JSON.serialize(SpeseExcelEditorController.getSottocategorieByCategoria());
         Test.stopTest();
 
         // Non facciamo assunzioni su quantita' esatte, ma assicuriamo che le chiamate non esplodano.
         System.assertNotEquals(null, cats);
-        System.assertNotEquals(null, st);
         System.assertNotEquals(null, sottosMapJson);
     }
 

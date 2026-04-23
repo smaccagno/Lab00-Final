@@ -28,14 +28,7 @@ public with sharing class IncassiExcelEditorController {
         return values;
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<String> getStatoValues() {
-        List<String> values = new List<String>();
-        for (Schema.PicklistEntry e : Voce_di_Incasso__c.Stato__c.getDescribe().getPicklistValues()) {
-            if (e.isActive()) values.add(e.getValue());
-        }
-        return values;
-    }
+    // REMOVED: getStatoValues() - Excel Editor now forces Stato__c = 'Effettiva' server-side
 
     public class LabelValue {
         @AuraEnabled public String label;
@@ -93,7 +86,6 @@ public with sharing class IncassiExcelEditorController {
         List<Object> rows = (List<Object>) parsedObj;
 
         Set<String> categorieAllowed = new Set<String>(getCategoriaValues());
-        Set<String> statiAllowed = new Set<String>(getStatoValues());
 
         Set<Integer> years = new Set<Integer>();
         List<IncassoPayloadRow> payloadRows = new List<IncassoPayloadRow>();
@@ -173,8 +165,6 @@ public with sharing class IncassiExcelEditorController {
                 err = 'Data mancante o non valida';
             } else if (p.ammontare == null) {
                 err = 'Ammontare mancante o non valido';
-            } else if (String.isBlank(p.stato) || !statiAllowed.contains(p.stato)) {
-                err = 'Stato non valido';
             }
 
             if (err != null) {
@@ -188,7 +178,7 @@ public with sharing class IncassiExcelEditorController {
             s.Categoria__c = p.categoria;
             s.Data__c = p.data;
             s.Ammontare__c = p.ammontare;
-            s.Stato__c = p.stato;
+            s.Stato__c = 'Effettiva'; // Task 7: Excel Editor now forces all records to Effettiva
             s.Overview_Budget_per_Anno__c = budgetByProgYear.get(progYearKey);
             s.Programma__c = p.programmaId;
 

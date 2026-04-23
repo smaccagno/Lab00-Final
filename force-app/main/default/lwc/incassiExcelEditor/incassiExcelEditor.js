@@ -3,7 +3,6 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { openTab } from 'lightning/platformWorkspaceApi';
 
 import getCategoriaValues from '@salesforce/apex/IncassiExcelEditorController.getCategoriaValues';
-import getStatoValues from '@salesforce/apex/IncassiExcelEditorController.getStatoValues';
 import getAnniValues from '@salesforce/apex/IncassiExcelEditorController.getAnniValues';
 import getProgrammiValues from '@salesforce/apex/IncassiExcelEditorController.getProgrammiValues';
 import createIncassiFromFlow from '@salesforce/apex/IncassiExcelEditorController.createIncassiFromFlow';
@@ -18,7 +17,6 @@ export default class IncassiExcelEditor extends LightningElement {
     picklistsReady = false;
 
     categoriaOptions = [];
-    statoOptions = [];
     annoOptions = [];
     programmaOptions = [];
     programmaLabelById = {};
@@ -135,15 +133,13 @@ export default class IncassiExcelEditor extends LightningElement {
 
     async initPicklists() {
         try {
-            const [cats, st, anni, progs] = await Promise.all([
+            const [cats, anni, progs] = await Promise.all([
                 getCategoriaValues(),
-                getStatoValues(),
                 getAnniValues(),
                 getProgrammiValues()
             ]);
 
             this.categoriaOptions = (cats || []).map(v => ({ label: v, value: v }));
-            this.statoOptions = (st || []).map(v => ({ label: v, value: v }));
             this.annoOptions = (anni || []).map(v => ({ label: v, value: v }));
             this.programmaOptions = (progs || []).map(p => ({ label: p.label, value: p.value }));
             this.programmaLabelById = {};
@@ -182,8 +178,7 @@ export default class IncassiExcelEditor extends LightningElement {
             programmaId: values.programmaId || '',
             categoria: values.categoria || '',
             data: values.data || '',
-            ammontare: values.ammontare || '',
-            stato: values.stato || ''
+            ammontare: values.ammontare || ''
         };
 
         this.rows = [...this.rows, row];
@@ -309,8 +304,7 @@ export default class IncassiExcelEditor extends LightningElement {
             programmaId: row.programmaId || '',
             categoria: row.categoria || '',
             data: row.data || '',
-            ammontare: row.ammontare || '',
-            stato: row.stato || ''
+            ammontare: row.ammontare || ''
         };
         this.closeCellActionMenu();
         this.showToast('Riga copiata', 'Puoi incollarla su una qualsiasi altra riga', 'success');
@@ -356,7 +350,7 @@ export default class IncassiExcelEditor extends LightningElement {
         let editorOptions = [];
         let editorHelpText = '';
 
-        if (['categoria', 'stato', 'anno', 'programmaId'].includes(field)) {
+        if (['categoria', 'anno', 'programmaId'].includes(field)) {
             editorType = 'dropdown';
             editorOptions = this.getEditorOptions(rowIndex, field);
         } else if (field === 'data') {
@@ -411,7 +405,6 @@ export default class IncassiExcelEditor extends LightningElement {
 
     getEditorOptions(rowIndex, field) {
         if (field === 'categoria') return this.categoriaOptions;
-        if (field === 'stato') return this.statoOptions;
         if (field === 'anno') return this.annoOptions;
         if (field === 'programmaId') return this.programmaOptions;
         return [];
@@ -595,8 +588,6 @@ export default class IncassiExcelEditor extends LightningElement {
             row.data = !trimmed ? '' : (this.parseDate(trimmed) || trimmed);
         } else if (field === 'categoria') {
             row.categoria = !trimmed ? '' : (this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed);
-        } else if (field === 'stato') {
-            row.stato = !trimmed ? '' : (this.matchOptionValue(this.statoOptions, trimmed) || trimmed);
         } else if (field === 'programmaId') {
             row.programmaId = !trimmed ? '' : (this.matchOptionValue(this.programmaOptions, trimmed) || trimmed);
         }
@@ -689,7 +680,6 @@ export default class IncassiExcelEditor extends LightningElement {
                 categoria: row.categoria,
                 data: row.data,
                 ammontare: row.ammontare,
-                stato: row.stato,
                 programmaId: row.programmaId
             }));
 
@@ -763,7 +753,6 @@ export default class IncassiExcelEditor extends LightningElement {
             }
         }
         if (validationErrors.ammontare) errorParts.push('Ammontare non valido');
-        if (validationErrors.stato) errorParts.push('Stato non valido');
         if (row.saveErrorMessage) errorParts.push(row.saveErrorMessage);
 
         return {
@@ -779,8 +768,7 @@ export default class IncassiExcelEditor extends LightningElement {
             programmaClass: this.getCellClass(validationErrors.programmaId),
             categoriaClass: this.getCellClass(validationErrors.categoria),
             dataClass: this.getCellClass(validationErrors.data),
-            ammontareClass: this.getCellClass(validationErrors.ammontare),
-            statoClass: this.getCellClass(validationErrors.stato)
+            ammontareClass: this.getCellClass(validationErrors.ammontare)
         };
     }
 
@@ -796,22 +784,20 @@ export default class IncassiExcelEditor extends LightningElement {
             categoria: '',
             data: '',
             ammontare: '',
-            stato: '',
             saveErrorMessage: ''
         };
     }
 
     isRowEmpty(row) {
-        return !row.anno && !row.programmaId && !row.categoria && !row.data && !row.ammontare && !row.stato;
+        return !row.anno && !row.programmaId && !row.categoria && !row.data && !row.ammontare;
     }
 
     getValidationErrors(row) {
         if (this.isRowEmpty(row)) {
-            return { anno: false, programmaId: false, categoria: false, data: false, ammontare: false, stato: false };
+            return { anno: false, programmaId: false, categoria: false, data: false, ammontare: false };
         }
 
         const categoriaOk = this.isValueInOptions(row.categoria, this.categoriaOptions);
-        const statoOk = this.isValueInOptions(row.stato, this.statoOptions);
         const programmaOk = !!row.programmaId && this.isValueInOptions(row.programmaId, this.programmaOptions);
 
         const parsedDate = row.data ? this.parseDate(row.data) : '';
@@ -827,8 +813,7 @@ export default class IncassiExcelEditor extends LightningElement {
             programmaId: !programmaOk,
             categoria: !categoriaOk,
             data: dataMissingOrInvalid || dataYearMismatch,
-            ammontare: !row.ammontare || !this.parseCurrency(row.ammontare),
-            stato: !statoOk
+            ammontare: !row.ammontare || !this.parseCurrency(row.ammontare)
         };
     }
 
@@ -857,7 +842,7 @@ export default class IncassiExcelEditor extends LightningElement {
         const rows = [];
         for (const line of lines) {
             const values = line.split('\t');
-            if (values.length < 6) continue;
+            if (values.length < 5) continue;
 
             const first = (values[0] || '').trim().toLowerCase();
             if (first === 'anno' || first === 'year') continue;
@@ -868,7 +853,6 @@ export default class IncassiExcelEditor extends LightningElement {
                 categoria: this.normalizePastedField('categoria', values[2]),
                 data: this.normalizePastedField('data', values[3]),
                 ammontare: this.normalizePastedField('ammontare', values[4]),
-                stato: this.normalizePastedField('stato', values[5]),
                 saveErrorMessage: ''
             });
         }
@@ -883,7 +867,6 @@ export default class IncassiExcelEditor extends LightningElement {
         if (field === 'ammontare') return this.parseCurrency(trimmed) || trimmed;
         if (field === 'data') return this.parseDate(trimmed) || trimmed;
         if (field === 'categoria') return this.matchOptionValue(this.categoriaOptions, trimmed) || trimmed;
-        if (field === 'stato') return this.matchOptionValue(this.statoOptions, trimmed) || trimmed;
         if (field === 'programmaId') return this.matchOptionValue(this.programmaOptions, trimmed) || trimmed;
         return trimmed;
     }
