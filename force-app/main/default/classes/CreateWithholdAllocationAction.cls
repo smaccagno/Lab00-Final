@@ -20,7 +20,7 @@ public class CreateWithholdAllocationAction {
         for (GiftDesignation gd : [
             SELECT Id, Program__c 
             FROM GiftDesignation 
-            WHERE Program__c IN :programIds AND IsDefault = true
+            WHERE Program__c IN :programIds AND DEFAULT_PRG__c = true
         ]) {
             defaultDesignationByProgram.put(gd.Program__c, gd.Id);
         }

@@ -198,7 +198,8 @@ public with sharing class SpeseExcelEditorController {
 
         // Risoluzione Overview_Budget_per_Anno per (Programma, Anno):
         // prendiamo solo i budget legati al programma scelto dall'utente,
-        // con IsDefault = true sul GiftDesignation padre e Anno coincidente.
+        // con DEFAULT_PRG__c = true sul GiftDesignation padre (i.e. budget
+        // del partner Default_per_Budgets) e Anno coincidente.
         Set<Id> programmiNecessari = new Set<Id>();
         for (SpesaPayloadRow p : payloadRows) {
             if (p.programmaId != null) programmiNecessari.add(p.programmaId);
@@ -210,10 +211,10 @@ public with sharing class SpeseExcelEditorController {
             for (Integer y : years) yearStrs.add(String.valueOf(y));
 
             for (Overview_Budget_per_Anno__c b : [
-                SELECT Id, Anno__c, Budget__c, Budget__r.Program__c, Budget__r.IsDefault
+                SELECT Id, Anno__c, Budget__c, Budget__r.Program__c, Budget__r.DEFAULT_PRG__c
                 FROM Overview_Budget_per_Anno__c
                 WHERE Anno__c IN :yearStrs
-                  AND Budget__r.IsDefault = true
+                  AND Budget__r.DEFAULT_PRG__c = true
                   AND Budget__r.Program__c IN :programmiNecessari
             ]) {
                 if (b.Budget__r == null || b.Budget__r.Program__c == null) continue;

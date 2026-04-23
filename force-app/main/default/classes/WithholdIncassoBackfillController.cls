@@ -111,7 +111,7 @@ public with sharing class WithholdIncassoBackfillController {
                 FROM Overview_Budget_per_Anno__c
                 WHERE Programma__c IN :programIds
                   AND Anno__c IN :years
-                  AND Budget__r.IsDefault = true
+                  AND Budget__r.DEFAULT_PRG__c = true
             ]) {
                 defaultOverviewBudget.put(ob.Programma__c + '|' + ob.Anno__c, ob.Id);
             }

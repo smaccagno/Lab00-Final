@@ -129,10 +129,10 @@ public with sharing class IncassiExcelEditorController {
             for (Integer y : years) yearStrs.add(String.valueOf(y));
 
             for (Overview_Budget_per_Anno__c b : [
-                SELECT Id, Anno__c, Budget__c, Budget__r.Program__c, Budget__r.IsDefault
+                SELECT Id, Anno__c, Budget__c, Budget__r.Program__c, Budget__r.DEFAULT_PRG__c
                 FROM Overview_Budget_per_Anno__c
                 WHERE Anno__c IN :yearStrs
-                  AND Budget__r.IsDefault = true
+                  AND Budget__r.DEFAULT_PRG__c = true
                   AND Budget__r.Program__c IN :programmiNecessari
             ]) {
                 if (b.Budget__r == null || b.Budget__r.Program__c == null) continue;

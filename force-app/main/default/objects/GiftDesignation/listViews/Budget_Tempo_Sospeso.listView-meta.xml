@@ -10,7 +10,7 @@
     <columns>Totale_Visite_Fatte__c</columns>
     <filterScope>Everything</filterScope>
     <filters>
-        <field>IsDefault</field>
+        <field>DEFAULT_PRG__c</field>
         <operation>equals</operation>
         <value>0</value>
     </filters>

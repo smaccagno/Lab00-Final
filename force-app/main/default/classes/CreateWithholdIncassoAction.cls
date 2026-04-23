@@ -25,9 +25,9 @@ public class CreateWithholdIncassoAction {
             for (Overview_Budget_per_Anno__c ob : [
                 SELECT Id, Programma__c, Anno__c 
                 FROM Overview_Budget_per_Anno__c 
-                WHERE Programma__c IN :programIds 
-                  AND Anno__c IN :years 
-                  AND Budget__r.IsDefault = true
+                WHERE Programma__c IN :programIds
+                  AND Anno__c IN :years
+                  AND Budget__r.DEFAULT_PRG__c = true
             ]) {
                 defaultOverviewBudgetByProgAndYear.put(ob.Programma__c + '_' + ob.Anno__c, ob.Id);
             }

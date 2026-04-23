@@ -124,7 +124,7 @@
             </value>
         </filters>
         <filters>
-            <field>IsDefault</field>
+            <field>DEFAULT_PRG__c</field>
             <operator>EqualTo</operator>
             <value>
                 <booleanValue>false</booleanValue>
