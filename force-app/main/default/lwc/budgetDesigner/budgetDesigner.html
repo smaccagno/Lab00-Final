@@ -84,9 +84,18 @@
                     <span class="sheet-count-badge sheet-count-badge--incassi">{incassi.length}</span>
                 </div>
 
+                <template if:true={incassiCopyBanner}>
+                    <div class="sheet-copy-banner">
+                        <lightning-icon icon-name="utility:copy_to_clipboard" size="xx-small"></lightning-icon>
+                        <span>Riga Incasso copiata — clicca <strong>Incolla</strong> sulla riga di destinazione.</span>
+                        <button class="sheet-copy-banner-cancel" onclick={handleCancelCopyMode}>Annulla</button>
+                    </div>
+                </template>
+
                 <div class="sheet-wrapper">
                     <table class="sheet" role="grid" aria-label="Foglio Incassi Previsti">
                         <colgroup>
+                            <col class="col-handle"/>
                             <col class="col-cat"/>
                             <col class="col-name"/>
                             <col class="col-date"/>
@@ -95,6 +104,7 @@
                         </colgroup>
                         <thead>
                             <tr>
+                                <th scope="col" aria-label="Trascina"></th>
                                 <th scope="col">Categoria</th>
                                 <th scope="col">Nome</th>
                                 <th scope="col">Data prevista</th>
@@ -104,18 +114,42 @@
                         </thead>
                             <template for:each={incassiGroups} for:item="grp">
                                 <tbody key={grp.key} class="sheet-group">
-                                    <template if:true={grp.showGroupHeader}>
-                                        <tr class="sheet-group-header sheet-group-header--incassi">
-                                            <th scope="rowgroup" colspan="3">
-                                                <span class="sheet-group-name">{grp.categoriaLabel}</span>
-                                                <span class="sheet-group-count">{grp.countLabel}</span>
-                                            </th>
-                                            <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
-                                            <td></td>
-                                        </tr>
-                                    </template>
+                                    <tr class="sheet-group-header sheet-group-header--incassi"
+                                        data-categoria={grp.categoria}
+                                        data-kind="incasso"
+                                        ondragover={handleRowDragOver}
+                                        ondrop={handleGroupHeaderDrop}>
+                                        <td class="col-handle sheet-group-handle"
+                                            draggable="true"
+                                            data-key={grp.key}
+                                            data-kind="incasso"
+                                            ondragstart={handleGroupDragStart}
+                                            ondragend={handleRowDragEnd}
+                                            title="Trascina per riordinare le categorie">
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
+                                        </td>
+                                        <th scope="rowgroup" colspan="3">
+                                            <span class="sheet-group-name">{grp.categoriaLabel}</span>
+                                            <span class="sheet-group-count">{grp.countLabel}</span>
+                                        </th>
+                                        <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
+                                        <td></td>
+                                    </tr>
                                     <template for:each={grp.children} for:item="row">
-                                        <tr key={row.id} class={row.rowClass}>
+                                        <tr key={row.id} class={row.rowClass}
+                                            data-id={row.id}
+                                            data-kind="incasso"
+                                            ondragover={handleRowDragOver}
+                                            ondrop={handleRowDrop}>
+                                            <td class="col-handle sheet-row-handle"
+                                                draggable="true"
+                                                data-id={row.id}
+                                                data-kind="incasso"
+                                                ondragstart={handleRowDragStart}
+                                                ondragend={handleRowDragEnd}
+                                                title="Trascina per riordinare">
+                                                <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
+                                            </td>
                                             <td>
                                                 <lightning-combobox
                                                     variant="label-hidden"
@@ -162,28 +196,31 @@
                                             </td>
                                             <td class="col-actions">
                                                 <div class="sheet-row-actions">
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Duplica riga"
-                                                            data-id={row.id}
-                                                            data-kind="incasso"
-                                                            onclick={handleRowDuplicateInline}>
-                                                        <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica riga"></lightning-icon>
-                                                    </button>
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Copia riga"
-                                                            data-id={row.id}
-                                                            data-kind="incasso"
-                                                            onclick={handleRowCopyInline}>
-                                                        <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia riga"></lightning-icon>
-                                                    </button>
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Incolla riga"
-                                                            data-id={row.id}
-                                                            data-kind="incasso"
-                                                            disabled={incassoPasteDisabled}
-                                                            onclick={handleRowPasteInline}>
-                                                        <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla riga"></lightning-icon>
-                                                    </button>
+                                                    <template if:true={row.showCopy}>
+                                                        <button class="sheet-row-action-btn"
+                                                                title="Duplica riga (aggiunge in fondo)"
+                                                                data-id={row.id}
+                                                                data-kind="incasso"
+                                                                onclick={handleRowDuplicateInline}>
+                                                            <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica"></lightning-icon>
+                                                        </button>
+                                                        <button class="sheet-row-action-btn"
+                                                                title="Copia riga"
+                                                                data-id={row.id}
+                                                                data-kind="incasso"
+                                                                onclick={handleRowCopyInline}>
+                                                            <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon>
+                                                        </button>
+                                                    </template>
+                                                    <template if:true={row.showPaste}>
+                                                        <button class="sheet-row-action-btn sheet-row-action-btn--paste"
+                                                                title="Incolla qui la riga copiata"
+                                                                data-id={row.id}
+                                                                data-kind="incasso"
+                                                                onclick={handleRowPasteInline}>
+                                                            <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon>
+                                                        </button>
+                                                    </template>
                                                     <button class="sheet-row-remove"
                                                             title="Rimuovi riga"
                                                             data-id={row.id}
@@ -200,6 +237,7 @@
                             <tbody>
                                 <!-- Riga draft (sempre visibile) -->
                                 <tr class="sheet-row sheet-row--draft">
+                                    <td class="col-handle"></td>
                                     <td>
                                         <lightning-combobox
                                             variant="label-hidden"
@@ -258,7 +296,7 @@
                             </tbody>
                             <tfoot>
                                 <tr class="sheet-total-row">
-                                    <th scope="row" colspan="3">Totale Incassi</th>
+                                    <th scope="row" colspan="4">Totale Incassi</th>
                                     <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
                                     <td></td>
                                 </tr>
@@ -275,9 +313,18 @@
                     <span class="sheet-count-badge sheet-count-badge--spese">{spese.length}</span>
                 </div>
 
+                <template if:true={speseCopyBanner}>
+                    <div class="sheet-copy-banner sheet-copy-banner--spese">
+                        <lightning-icon icon-name="utility:copy_to_clipboard" size="xx-small"></lightning-icon>
+                        <span>Riga Spesa copiata — clicca <strong>Incolla</strong> sulla riga di destinazione.</span>
+                        <button class="sheet-copy-banner-cancel" onclick={handleCancelCopyMode}>Annulla</button>
+                    </div>
+                </template>
+
                 <div class="sheet-wrapper">
                     <table class="sheet" role="grid" aria-label="Foglio Spese Previste">
                         <colgroup>
+                            <col class="col-handle"/>
                             <col class="col-cat"/>
                             <col class="col-subcat"/>
                             <col class="col-name"/>
@@ -288,6 +335,7 @@
                         </colgroup>
                         <thead>
                             <tr>
+                                <th scope="col" aria-label="Trascina"></th>
                                 <th scope="col">Categoria</th>
                                 <th scope="col">Sottocategoria</th>
                                 <th scope="col">Nome</th>
@@ -299,18 +347,42 @@
                         </thead>
                             <template for:each={speseGroups} for:item="grp">
                                 <tbody key={grp.key} class="sheet-group">
-                                    <template if:true={grp.showGroupHeader}>
-                                        <tr class="sheet-group-header sheet-group-header--spese">
-                                            <th scope="rowgroup" colspan="4">
-                                                <span class="sheet-group-name">{grp.categoriaLabel}</span>
-                                                <span class="sheet-group-count">{grp.countLabel}</span>
-                                            </th>
-                                            <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
-                                            <td colspan="2"></td>
-                                        </tr>
-                                    </template>
+                                    <tr class="sheet-group-header sheet-group-header--spese"
+                                        data-categoria={grp.categoria}
+                                        data-kind="spesa"
+                                        ondragover={handleRowDragOver}
+                                        ondrop={handleGroupHeaderDrop}>
+                                        <td class="col-handle sheet-group-handle"
+                                            draggable="true"
+                                            data-key={grp.key}
+                                            data-kind="spesa"
+                                            ondragstart={handleGroupDragStart}
+                                            ondragend={handleRowDragEnd}
+                                            title="Trascina per riordinare le categorie">
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
+                                        </td>
+                                        <th scope="rowgroup" colspan="4">
+                                            <span class="sheet-group-name">{grp.categoriaLabel}</span>
+                                            <span class="sheet-group-count">{grp.countLabel}</span>
+                                        </th>
+                                        <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
                                     <template for:each={grp.children} for:item="row">
-                                        <tr key={row.id} class={row.rowClass}>
+                                        <tr key={row.id} class={row.rowClass}
+                                            data-id={row.id}
+                                            data-kind="spesa"
+                                            ondragover={handleRowDragOver}
+                                            ondrop={handleRowDrop}>
+                                            <td class="col-handle sheet-row-handle"
+                                                draggable="true"
+                                                data-id={row.id}
+                                                data-kind="spesa"
+                                                ondragstart={handleRowDragStart}
+                                                ondragend={handleRowDragEnd}
+                                                title="Trascina per riordinare">
+                                                <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
+                                            </td>
                                             <td>
                                                 <lightning-combobox
                                                     variant="label-hidden"
@@ -379,28 +451,31 @@
                                             </td>
                                             <td class="col-actions">
                                                 <div class="sheet-row-actions">
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Duplica riga"
-                                                            data-id={row.id}
-                                                            data-kind="spesa"
-                                                            onclick={handleRowDuplicateInline}>
-                                                        <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica riga"></lightning-icon>
-                                                    </button>
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Copia riga"
-                                                            data-id={row.id}
-                                                            data-kind="spesa"
-                                                            onclick={handleRowCopyInline}>
-                                                        <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia riga"></lightning-icon>
-                                                    </button>
-                                                    <button class="sheet-row-action-btn"
-                                                            title="Incolla riga"
-                                                            data-id={row.id}
-                                                            data-kind="spesa"
-                                                            disabled={spesaPasteDisabled}
-                                                            onclick={handleRowPasteInline}>
-                                                        <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla riga"></lightning-icon>
-                                                    </button>
+                                                    <template if:true={row.showCopy}>
+                                                        <button class="sheet-row-action-btn"
+                                                                title="Duplica riga (aggiunge in fondo)"
+                                                                data-id={row.id}
+                                                                data-kind="spesa"
+                                                                onclick={handleRowDuplicateInline}>
+                                                            <lightning-icon icon-name="utility:duplicate" size="xx-small" alternative-text="Duplica"></lightning-icon>
+                                                        </button>
+                                                        <button class="sheet-row-action-btn"
+                                                                title="Copia riga"
+                                                                data-id={row.id}
+                                                                data-kind="spesa"
+                                                                onclick={handleRowCopyInline}>
+                                                            <lightning-icon icon-name="utility:copy" size="xx-small" alternative-text="Copia"></lightning-icon>
+                                                        </button>
+                                                    </template>
+                                                    <template if:true={row.showPaste}>
+                                                        <button class="sheet-row-action-btn sheet-row-action-btn--paste"
+                                                                title="Incolla qui la riga copiata"
+                                                                data-id={row.id}
+                                                                data-kind="spesa"
+                                                                onclick={handleRowPasteInline}>
+                                                            <lightning-icon icon-name="utility:paste" size="xx-small" alternative-text="Incolla"></lightning-icon>
+                                                        </button>
+                                                    </template>
                                                     <button class="sheet-row-remove"
                                                             title="Rimuovi riga"
                                                             data-id={row.id}
@@ -417,6 +492,7 @@
                             <tbody>
                             <!-- Riga draft -->
                             <tr class="sheet-row sheet-row--draft">
+                                <td class="col-handle"></td>
                                 <td>
                                     <lightning-combobox
                                         variant="label-hidden"
@@ -497,7 +573,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="sheet-total-row">
-                                <th scope="row" colspan="4">Totale Spese</th>
+                                <th scope="row" colspan="5">Totale Spese</th>
                                 <td class="col-amount sheet-total-value sheet-total-value--spese">{totalSpeseLabel}</td>
                                 <td colspan="2"></td>
                             </tr>

@@ -319,32 +319,8 @@
 .sheet-group-subtotal--incassi { color: #1b5a30; }
 .sheet-group-subtotal--spese   { color: #a00015; }
 
-/* Indent child rows so they read as belonging to the group above */
-.sheet-row--child td:first-child,
-.sheet-row--child th:first-child {
-    padding-left: 1.4rem;
-    position: relative;
-}
-
-.sheet-row--child td:first-child::before {
-    content: '';
-    position: absolute;
-    left: 0.55rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #d3dbe8;
-}
-
-.sheet-row--child td:first-child::after {
-    content: '';
-    position: absolute;
-    left: 0.55rem;
-    top: 50%;
-    width: 0.55rem;
-    height: 2px;
-    background: #d3dbe8;
-}
+/* Child rows: no indent (handle column already provides visual space,
+   and the category header is always visible so the hierarchy is clear). */
 
 /* Column widths */
 .sheet .col-cat { width: 22%; }
@@ -650,4 +626,86 @@
 .sheet-row-action-btn[disabled] {
     opacity: 0.35;
     cursor: not-allowed;
+}
+
+/* Drag handle column */
+.sheet .col-handle { width: 28px; }
+
+.sheet-row-handle,
+.sheet-group-handle {
+    cursor: grab;
+    text-align: center;
+    vertical-align: middle;
+    color: #7a8aa0;
+    user-select: none;
+}
+
+.sheet-row-handle:active,
+.sheet-group-handle:active {
+    cursor: grabbing;
+}
+
+.sheet-row-handle:hover,
+.sheet-group-handle:hover {
+    color: #0176d3;
+}
+
+.sheet-row-handle lightning-icon,
+.sheet-group-handle lightning-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
+}
+
+/* Copy-mode banner */
+.sheet-copy-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(90deg, #fff7ed 0%, #fef3e6 100%);
+    border: 1px solid #f3c27a;
+    border-radius: 6px;
+    color: #7d5400;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.sheet-copy-banner--spese {
+    background: linear-gradient(90deg, #ffeef0 0%, #ffe1e4 100%);
+    border-color: #f3a5ac;
+    color: #a00015;
+}
+
+.sheet-copy-banner strong { color: #16325c; }
+
+.sheet-copy-banner lightning-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
+}
+
+.sheet-copy-banner-cancel {
+    margin-left: auto;
+    padding: 0.25rem 0.6rem;
+    background: #ffffff;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: inherit;
+    cursor: pointer;
+}
+
+.sheet-copy-banner-cancel:hover {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* Paste button highlighted */
+.sheet-row-action-btn--paste {
+    background: rgba(1, 118, 211, 0.12) !important;
+    color: #014f8e !important;
+    animation: sheet-paste-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sheet-paste-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(1, 118, 211, 0); }
+    50%      { box-shadow: 0 0 0 3px rgba(1, 118, 211, 0.25); }
 }

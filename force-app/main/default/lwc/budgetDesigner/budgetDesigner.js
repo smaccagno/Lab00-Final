@@ -46,11 +46,21 @@ export default class BudgetDesigner extends LightningElement {
     @track saveToast = '';
     @track confirmReset = false;
 
-    // Clipboard interno per le azioni "Copia riga" / "Incolla riga" esposte
-    // direttamente in riga con le icone. Una sola clipboard condivisa ma
-    // il `kind` garantisce che non si incolli un Incasso su una Spesa.
+    // Clipboard per "Copia riga". Quando si entra in copy mode, l'icona
+    // Copia si trasforma in Incolla su tutte le righe della stessa
+    // sezione (Incassi o Spese).
     _rowClipboard = null; // { kind: 'incasso'|'spesa', payload }
-    @track _rowClipboardKind = null; // copia di _rowClipboard.kind per reactivity dei getter
+    @track copyMode = null; // null | 'incasso' | 'spesa'
+
+    // Ordinamento custom delle categorie per ciascuna sezione (persistito).
+    @track incassiCategoryOrder = [];
+    @track speseCategoryOrder = [];
+
+    // Drag state (per riordinare righe + header di categoria).
+    _dragRowId = null;
+    _dragRowKind = null;
+    _dragGroupKey = null;
+    _dragGroupKind = null;
 
     connectedCallback() {
         this.restoreDraft();
@@ -168,42 +178,53 @@ export default class BudgetDesigner extends LightningElement {
         ];
     }
 
-    // Raggruppa le righe per categoria, preservando l'ordine di inserimento
-    // (la prima voce di una categoria determina la posizione del gruppo).
-    groupByCategoria(rows, childDecorator) {
+    // Raggruppa le righe per categoria rispettando il categoryOrder
+    // passato (se la categoria non è in order, va in fondo in ordine di
+    // comparsa). L'header + subtotale sono sempre visibili anche con
+    // una sola riga.
+    groupByCategoria(rows, childDecorator, kind, categoryOrder) {
         const groupsMap = new Map();
+        const appearanceOrder = [];
         for (const r of rows) {
             const key = r.categoria || '';
             if (!groupsMap.has(key)) {
                 groupsMap.set(key, {
                     key: 'grp-' + (key || 'nocat'),
+                    kind,
                     categoria: key,
                     categoriaLabel: key || 'Senza categoria',
                     children: [],
                     subtotal: 0
                 });
+                appearanceOrder.push(key);
             }
             const g = groupsMap.get(key);
             const row = childDecorator(r);
-            row.isChild = true;
+            row.kind = kind;
             row.rowClass = 'sheet-row sheet-row--child';
+            // Ogni riga espone se deve mostrare Paste o Copy (copy mode).
+            row.showPaste = this.copyMode === kind;
+            row.showCopy = !row.showPaste;
+            row.pasteDisabled = false;
             g.children.push(row);
             g.subtotal += Number(r.ammontare) || 0;
         }
         const groups = Array.from(groupsMap.values());
         for (const g of groups) {
-            g.hasMultiple = g.children.length > 1;
-            g.showGroupHeader = g.hasMultiple;
             g.subtotalFormatted = this.formatCurrency(g.subtotal);
             g.countLabel = `${g.children.length} voci`;
-            // Se il gruppo è singleton, la riga resta visivamente piatta.
-            if (!g.hasMultiple) {
-                for (const c of g.children) {
-                    c.rowClass = 'sheet-row';
-                    c.isChild = false;
-                }
-            }
         }
+
+        // Ordina secondo categoryOrder, poi le categorie non listate in
+        // ordine di comparsa.
+        const orderIndex = new Map();
+        (categoryOrder || []).forEach((c, i) => orderIndex.set(c, i));
+        groups.sort((a, b) => {
+            const ia = orderIndex.has(a.categoria) ? orderIndex.get(a.categoria) : Number.POSITIVE_INFINITY;
+            const ib = orderIndex.has(b.categoria) ? orderIndex.get(b.categoria) : Number.POSITIVE_INFINITY;
+            if (ia !== ib) return ia - ib;
+            return appearanceOrder.indexOf(a.categoria) - appearanceOrder.indexOf(b.categoria);
+        });
         return groups;
     }
 
@@ -235,12 +256,25 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     get incassiGroups() {
-        return this.groupByCategoria(this.incassi, r => this.decorateIncasso(r));
+        return this.groupByCategoria(
+            this.incassi,
+            r => this.decorateIncasso(r),
+            'incasso',
+            this.incassiCategoryOrder
+        );
     }
 
     get speseGroups() {
-        return this.groupByCategoria(this.spese, r => this.decorateSpesa(r));
+        return this.groupByCategoria(
+            this.spese,
+            r => this.decorateSpesa(r),
+            'spesa',
+            this.speseCategoryOrder
+        );
     }
+
+    get incassiCopyBanner() { return this.copyMode === 'incasso'; }
+    get speseCopyBanner() { return this.copyMode === 'spesa'; }
 
     get draftIncassoView() {
         return {
@@ -505,6 +539,8 @@ export default class BudgetDesigner extends LightningElement {
             dataTarget: this.dataTarget,
             incassi: this.incassi,
             spese: this.spese,
+            incassiCategoryOrder: this.incassiCategoryOrder,
+            speseCategoryOrder: this.speseCategoryOrder,
             savedAt: new Date().toISOString()
         };
     }
@@ -525,6 +561,8 @@ export default class BudgetDesigner extends LightningElement {
             if (draft.dataTarget) this.dataTarget = draft.dataTarget;
             if (Array.isArray(draft.incassi)) this.incassi = draft.incassi;
             if (Array.isArray(draft.spese)) this.spese = draft.spese;
+            if (Array.isArray(draft.incassiCategoryOrder)) this.incassiCategoryOrder = draft.incassiCategoryOrder;
+            if (Array.isArray(draft.speseCategoryOrder)) this.speseCategoryOrder = draft.speseCategoryOrder;
         } catch (e) { /* payload corrotto: ignora */ }
     }
 
@@ -547,71 +585,196 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     // ── Row actions (icons, in-row) ────────────────────────────────────
-    get incassoPasteDisabled() {
-        return this._rowClipboardKind !== 'incasso';
-    }
-
-    get spesaPasteDisabled() {
-        return this._rowClipboardKind !== 'spesa';
-    }
-
     _findRowByInfo(id, kind) {
         if (!id || !kind) return null;
         const list = kind === 'incasso' ? this.incassi : this.spese;
         return list.find(r => r.id === id) || null;
     }
 
+    // Duplica: appende una copia in fondo alla sezione (mantiene categoria
+    // originale). In copy mode esce dal mode per coerenza UX.
     handleRowDuplicateInline(event) {
         event.stopPropagation();
         const { id, kind } = event.currentTarget.dataset;
         const row = this._findRowByInfo(id, kind);
         if (!row) return;
-
         const copy = { ...row, id: newId() };
-        if (kind === 'incasso') {
-            const idx = this.incassi.findIndex(r => r.id === id);
-            this.incassi = [
-                ...this.incassi.slice(0, idx + 1),
-                copy,
-                ...this.incassi.slice(idx + 1)
-            ];
-        } else {
-            const idx = this.spese.findIndex(r => r.id === id);
-            this.spese = [
-                ...this.spese.slice(0, idx + 1),
-                copy,
-                ...this.spese.slice(idx + 1)
-            ];
-        }
+        if (kind === 'incasso') this.incassi = [...this.incassi, copy];
+        else this.spese = [...this.spese, copy];
         this.persistDraft();
         this.flashSaveToast('Riga duplicata');
     }
 
+    // Copia: memorizza payload e attiva copy mode per la sezione.
     handleRowCopyInline(event) {
         event.stopPropagation();
         const { id, kind } = event.currentTarget.dataset;
         const row = this._findRowByInfo(id, kind);
         if (!row) return;
-        const { id: _, ...payload } = row;
+        const { id: _omit, ...payload } = row;
         this._rowClipboard = { kind, payload };
-        this._rowClipboardKind = kind;
-        this.flashSaveToast('Riga copiata');
+        this.copyMode = kind;
+        this.flashSaveToast('Riga copiata: scegli dove incollare');
     }
 
+    // Incolla: sovrascrive la riga target (esclude id), e chiude copy mode.
     handleRowPasteInline(event) {
         event.stopPropagation();
         const { id, kind } = event.currentTarget.dataset;
         if (!this._rowClipboard || this._rowClipboard.kind !== kind) return;
         const target = this._findRowByInfo(id, kind);
         if (!target) return;
-
         const patched = { ...target, ...this._rowClipboard.payload };
         if (kind === 'incasso') {
             this.incassi = this.incassi.map(r => r.id === target.id ? patched : r);
         } else {
             this.spese = this.spese.map(r => r.id === target.id ? patched : r);
         }
+        this.copyMode = null;
+        this._rowClipboard = null;
         this.persistDraft();
         this.flashSaveToast('Riga incollata');
+    }
+
+    handleCancelCopyMode(event) {
+        if (event) event.stopPropagation();
+        this.copyMode = null;
+        this._rowClipboard = null;
+    }
+
+    // ── Drag & drop ───────────────────────────────────────────────────
+    handleRowDragStart(event) {
+        const { id, kind } = event.currentTarget.dataset;
+        this._dragRowId = id;
+        this._dragRowKind = kind;
+        this._dragGroupKey = null;
+        this._dragGroupKind = null;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox richiede un setData per far partire il drag.
+            try { event.dataTransfer.setData('text/plain', id); } catch (_) {}
+        }
+    }
+
+    handleRowDragOver(event) {
+        if (!this._dragRowId && !this._dragGroupKey) return;
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    }
+
+    // Drop su una riga: la riga trascinata viene spostata subito prima
+    // della riga target. Se le categorie differiscono, la categoria cambia
+    // e (per Spese) la sottocategoria viene svuotata.
+    handleRowDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const targetId = event.currentTarget.dataset.id;
+        const targetKind = event.currentTarget.dataset.kind;
+        const draggedId = this._dragRowId;
+        const draggedKind = this._dragRowKind;
+        this._resetDragState();
+        if (!draggedId || draggedKind !== targetKind || draggedId === targetId) return;
+
+        const list = draggedKind === 'incasso' ? [...this.incassi] : [...this.spese];
+        const fromIdx = list.findIndex(r => r.id === draggedId);
+        const toIdx = list.findIndex(r => r.id === targetId);
+        if (fromIdx < 0 || toIdx < 0) return;
+
+        const [moved] = list.splice(fromIdx, 1);
+        const targetRow = list[toIdx > fromIdx ? toIdx - 1 : toIdx];
+        if (targetRow && targetRow.categoria !== moved.categoria) {
+            moved.categoria = targetRow.categoria;
+            if (draggedKind === 'spesa') moved.sottocategoria = '';
+        }
+        list.splice(toIdx > fromIdx ? toIdx - 1 : toIdx, 0, moved);
+
+        if (draggedKind === 'incasso') this.incassi = list;
+        else this.spese = list;
+        this.persistDraft();
+    }
+
+    // Drop su header di categoria: la riga si sposta in fondo al gruppo
+    // della categoria target (e cambia categoria se diversa).
+    handleGroupHeaderDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const targetCategoria = event.currentTarget.dataset.categoria;
+        const targetKind = event.currentTarget.dataset.kind;
+        const draggedRowId = this._dragRowId;
+        const draggedRowKind = this._dragRowKind;
+        const draggedGroupKey = this._dragGroupKey;
+        const draggedGroupKind = this._dragGroupKind;
+        this._resetDragState();
+
+        // Se sto trascinando un'intera CATEGORIA: riordino l'order array.
+        if (draggedGroupKey && draggedGroupKind === targetKind) {
+            const orderList = targetKind === 'incasso'
+                ? [...(this.incassiCategoryOrder.length ? this.incassiCategoryOrder : this._currentCategoryOrder('incasso'))]
+                : [...(this.speseCategoryOrder.length ? this.speseCategoryOrder : this._currentCategoryOrder('spesa'))];
+            const draggedCat = draggedGroupKey.replace(/^grp-/, '');
+            const draggedActualCat = draggedCat === 'nocat' ? '' : draggedCat;
+            const fromI = orderList.indexOf(draggedActualCat);
+            const toI = orderList.indexOf(targetCategoria);
+            // Se una delle due non è in order, ricostruisco con gli appearance.
+            if (fromI < 0 || toI < 0) return;
+            const [moved] = orderList.splice(fromI, 1);
+            orderList.splice(toI, 0, moved);
+            if (targetKind === 'incasso') this.incassiCategoryOrder = orderList;
+            else this.speseCategoryOrder = orderList;
+            this.persistDraft();
+            return;
+        }
+
+        // Altrimenti è una riga droppata su un header: sposto in fondo al
+        // gruppo della categoria target e cambio categoria se diversa.
+        if (!draggedRowId || draggedRowKind !== targetKind) return;
+        const list = draggedRowKind === 'incasso' ? [...this.incassi] : [...this.spese];
+        const fromIdx = list.findIndex(r => r.id === draggedRowId);
+        if (fromIdx < 0) return;
+        const [moved] = list.splice(fromIdx, 1);
+        if (moved.categoria !== targetCategoria) {
+            moved.categoria = targetCategoria;
+            if (draggedRowKind === 'spesa') moved.sottocategoria = '';
+        }
+        // Trova l'ultima riga della categoria target; se non esiste, aggiunge in fondo.
+        let lastIdxOfCat = -1;
+        list.forEach((r, i) => { if (r.categoria === targetCategoria) lastIdxOfCat = i; });
+        const insertAt = lastIdxOfCat >= 0 ? lastIdxOfCat + 1 : list.length;
+        list.splice(insertAt, 0, moved);
+        if (draggedRowKind === 'incasso') this.incassi = list;
+        else this.spese = list;
+        this.persistDraft();
+    }
+
+    handleGroupDragStart(event) {
+        event.stopPropagation();
+        const { key, kind } = event.currentTarget.dataset;
+        this._dragGroupKey = key;
+        this._dragGroupKind = kind;
+        this._dragRowId = null;
+        this._dragRowKind = null;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            try { event.dataTransfer.setData('text/plain', key); } catch (_) {}
+        }
+    }
+
+    handleRowDragEnd() { this._resetDragState(); }
+
+    _resetDragState() {
+        this._dragRowId = null;
+        this._dragRowKind = null;
+        this._dragGroupKey = null;
+        this._dragGroupKind = null;
+    }
+
+    _currentCategoryOrder(kind) {
+        const list = kind === 'incasso' ? this.incassi : this.spese;
+        const seen = [];
+        for (const r of list) {
+            const c = r.categoria || '';
+            if (!seen.includes(c)) seen.push(c);
+        }
+        return seen;
     }
 }
