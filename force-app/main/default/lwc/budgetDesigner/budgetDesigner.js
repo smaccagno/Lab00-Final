@@ -58,6 +58,12 @@ export default class BudgetDesigner extends LightningElement {
     // Ordinamento custom delle categorie per ciascuna sezione.
     @track incassiCategoryOrder = [];
     @track speseCategoryOrder = [];
+    // Ordinamento custom dei programmi (usato quando groupingMode = 'programma').
+    @track incassiProgramOrder = [];
+    @track speseProgramOrder = [];
+
+    // Mode di raggruppamento outer: 'categoria' (Cat > Prog, default) | 'programma' (Prog > Cat).
+    @track groupingMode = 'categoria';
 
     // Drag state (per riordinare righe + header di categoria).
     _dragRowId = null;
@@ -365,26 +371,42 @@ export default class BudgetDesigner extends LightningElement {
         ];
     }
 
-    // Raggruppa le righe per Categoria > Programma, rispettando categoryOrder.
-    groupByCategoria(rows, childDecorator, kind, categoryOrder) {
+    // Generica: raggruppa per outer > inner in base a `mode` ('categoria' | 'programma').
+    // Restituisce gruppi con shape uniforme:
+    //   { key, kind, categoria, programmaId, categoriaLabel, programmaName,
+    //     children, subtotal, subtotalFormatted, countLabel,
+    //     programSubgroupsList: [{ key, programmaId, programmaName, categoria, categoriaLabel,
+    //                              children, subtotal, subtotalFormatted, countLabel }] }
+    // `categoria/programmaId` sul gruppo outer sono valorizzati entrambi (uno è '' se non pertinente),
+    // così l'HTML può riusare i data-attribute esistenti per bulk actions e drag.
+    _groupTwoLevels(rows, childDecorator, kind, mode, outerOrder) {
+        const useProgrammaOuter = mode === 'programma';
         const groupsMap = new Map();
         const appearanceOrder = [];
         for (const r of rows) {
             const catKey = r.categoria || '';
-            if (!groupsMap.has(catKey)) {
-                groupsMap.set(catKey, {
-                    key: 'grp-' + (catKey || 'nocat'),
+            const progKey = r.programmaId || '';
+            const outerKey = useProgrammaOuter ? progKey : catKey;
+            if (!groupsMap.has(outerKey)) {
+                groupsMap.set(outerKey, {
+                    key: 'grp-' + (useProgrammaOuter ? 'prog-' : 'cat-') + (outerKey || 'none'),
                     kind,
-                    categoria: catKey,
-                    categoriaLabel: catKey || 'Senza categoria',
-                    programSubgroups: new Map(),
-                    programAppearanceOrder: [],
+                    categoria: useProgrammaOuter ? '' : catKey,
+                    categoriaLabel: useProgrammaOuter ? '' : (catKey || 'Senza categoria'),
+                    programmaId: useProgrammaOuter ? (r.programmaId || null) : null,
+                    programmaName: useProgrammaOuter ? (r.programmaName || 'Senza programma') : '',
+                    outerValue: outerKey,
+                    outerLabel: useProgrammaOuter
+                        ? (r.programmaName || 'Senza programma')
+                        : (catKey || 'Senza categoria'),
+                    _inner: new Map(),
+                    _innerOrder: [],
                     children: [],
                     subtotal: 0
                 });
-                appearanceOrder.push(catKey);
+                appearanceOrder.push(outerKey);
             }
-            const g = groupsMap.get(catKey);
+            const g = groupsMap.get(outerKey);
             const row = childDecorator(r);
             row.kind = kind;
             row.rowClass = 'sheet-row sheet-row--child';
@@ -392,18 +414,23 @@ export default class BudgetDesigner extends LightningElement {
             row.showCopy = !row.showPaste;
             row.pasteDisabled = false;
 
-            const progKey = r.programmaId || '';
-            if (!g.programSubgroups.has(progKey)) {
-                g.programSubgroups.set(progKey, {
-                    key: g.key + '-prog-' + (progKey || 'noprog'),
-                    programmaId: r.programmaId || null,
-                    programmaName: r.programmaName || 'Senza programma',
+            const innerKey = useProgrammaOuter ? catKey : progKey;
+            if (!g._inner.has(innerKey)) {
+                g._inner.set(innerKey, {
+                    key: g.key + (useProgrammaOuter ? '-cat-' : '-prog-') + (innerKey || 'none'),
+                    categoria: useProgrammaOuter ? (catKey || '') : catKey,
+                    categoriaLabel: useProgrammaOuter ? (catKey || 'Senza categoria') : '',
+                    programmaId: useProgrammaOuter ? null : (r.programmaId || null),
+                    programmaName: useProgrammaOuter ? '' : (r.programmaName || 'Senza programma'),
+                    innerLabel: useProgrammaOuter
+                        ? (catKey || 'Senza categoria')
+                        : (r.programmaName || 'Senza programma'),
                     children: [],
                     subtotal: 0
                 });
-                g.programAppearanceOrder.push(progKey);
+                g._innerOrder.push(innerKey);
             }
-            const pg = g.programSubgroups.get(progKey);
+            const pg = g._inner.get(innerKey);
             pg.children.push(row);
             pg.subtotal += Number(r.ammontare) || 0;
 
@@ -414,31 +441,32 @@ export default class BudgetDesigner extends LightningElement {
         for (const g of groups) {
             g.subtotalFormatted = this.formatCurrency(g.subtotal);
             g.countLabel = `${g.children.length} voci`;
-            // Converti Map in array ordinato e formatta subtotali
-            g.programSubgroupsList = g.programAppearanceOrder.map(pk => {
-                const pg = g.programSubgroups.get(pk);
+            g.programSubgroupsList = g._innerOrder.map(k => {
+                const pg = g._inner.get(k);
                 return {
                     key: pg.key,
+                    categoria: pg.categoria,
+                    categoriaLabel: pg.categoriaLabel,
                     programmaId: pg.programmaId,
                     programmaName: pg.programmaName,
+                    innerLabel: pg.innerLabel,
                     children: pg.children,
                     subtotal: pg.subtotal,
                     subtotalFormatted: this.formatCurrency(pg.subtotal),
                     countLabel: `${pg.children.length} voci`
                 };
             });
-            // Ripulisci Map non serializzabili dal template
-            delete g.programSubgroups;
-            delete g.programAppearanceOrder;
+            delete g._inner;
+            delete g._innerOrder;
         }
 
         const orderIndex = new Map();
-        (categoryOrder || []).forEach((c, i) => orderIndex.set(c, i));
+        (outerOrder || []).forEach((c, i) => orderIndex.set(c, i));
         groups.sort((a, b) => {
-            const ia = orderIndex.has(a.categoria) ? orderIndex.get(a.categoria) : Number.POSITIVE_INFINITY;
-            const ib = orderIndex.has(b.categoria) ? orderIndex.get(b.categoria) : Number.POSITIVE_INFINITY;
+            const ia = orderIndex.has(a.outerValue) ? orderIndex.get(a.outerValue) : Number.POSITIVE_INFINITY;
+            const ib = orderIndex.has(b.outerValue) ? orderIndex.get(b.outerValue) : Number.POSITIVE_INFINITY;
             if (ia !== ib) return ia - ib;
-            return appearanceOrder.indexOf(a.categoria) - appearanceOrder.indexOf(b.categoria);
+            return appearanceOrder.indexOf(a.outerValue) - appearanceOrder.indexOf(b.outerValue);
         });
         return groups;
     }
@@ -471,22 +499,54 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     get incassiGroups() {
-        return this.groupByCategoria(
+        const order = this.groupingMode === 'programma'
+            ? this.incassiProgramOrder
+            : this.incassiCategoryOrder;
+        return this._groupTwoLevels(
             this.incassi,
             r => this.decorateIncasso(r),
             'incasso',
-            this.incassiCategoryOrder
+            this.groupingMode,
+            order
         );
     }
 
     get speseGroups() {
-        return this.groupByCategoria(
+        const order = this.groupingMode === 'programma'
+            ? this.speseProgramOrder
+            : this.speseCategoryOrder;
+        return this._groupTwoLevels(
             this.spese,
             r => this.decorateSpesa(r),
             'spesa',
-            this.speseCategoryOrder
+            this.groupingMode,
+            order
         );
     }
+
+    get isGroupByCategoria() { return this.groupingMode === 'categoria'; }
+    get isGroupByProgramma() { return this.groupingMode === 'programma'; }
+
+    get groupModeToggleClass() {
+        return this.groupingMode === 'programma'
+            ? 'group-toggle group-toggle--right'
+            : 'group-toggle group-toggle--left';
+    }
+
+    get groupByCategoriaBtnClass() {
+        return this.groupingMode === 'categoria'
+            ? 'group-toggle-btn group-toggle-btn--active'
+            : 'group-toggle-btn';
+    }
+
+    get groupByProgrammaBtnClass() {
+        return this.groupingMode === 'programma'
+            ? 'group-toggle-btn group-toggle-btn--active'
+            : 'group-toggle-btn';
+    }
+
+    handleGroupByCategoria() { this.groupingMode = 'categoria'; }
+    handleGroupByProgramma() { this.groupingMode = 'programma'; }
 
     get incassiCopyBanner() { return this.copyMode === 'incasso'; }
     get speseCopyBanner() { return this.copyMode === 'spesa'; }
@@ -1179,17 +1239,23 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     // ── Bulk actions: Edit/Conferma di più righe ──────────────────────
+    // Filtro generico: matcha solo sui parametri non vuoti. Per l'header
+    // di un gruppo 'category' scope, uno tra categoria/programmaId è
+    // vuoto (a seconda di groupingMode) e quindi non filtra su di esso.
+    // Per 'subgroup' scope, entrambi sono valorizzati (nel mode attivo
+    // uno viene dal gruppo outer, l'altro dall'inner).
     _rowsInScope(kind, scope, categoria, programmaId) {
         const list = kind === 'incasso' ? this.incassi : this.spese;
+        if (scope === 'all') return list.slice();
         return list.filter(r => {
-            if (scope === 'all') return true;
-            if (r.categoria !== categoria) return false;
-            if (scope === 'subgroup') {
-                const rp = r.programmaId || '';
-                const tp = programmaId || '';
-                return rp === tp;
+            if (categoria) {
+                if (r.categoria !== categoria) return false;
             }
-            return true; // category
+            if (programmaId) {
+                const rp = r.programmaId || '';
+                if (rp !== programmaId) return false;
+            }
+            return true;
         });
     }
 

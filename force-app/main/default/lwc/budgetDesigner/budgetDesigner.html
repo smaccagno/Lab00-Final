@@ -77,6 +77,28 @@
             </div>
         </template>
 
+        <!-- Selettore raggruppamento -->
+        <div class="group-toggle-bar">
+            <span class="group-toggle-label">Raggruppa per:</span>
+            <div class={groupModeToggleClass} role="tablist" aria-label="Modalità raggruppamento">
+                <button type="button"
+                        class={groupByCategoriaBtnClass}
+                        role="tab"
+                        aria-selected={isGroupByCategoria}
+                        onclick={handleGroupByCategoria}>
+                    Categoria
+                </button>
+                <button type="button"
+                        class={groupByProgrammaBtnClass}
+                        role="tab"
+                        aria-selected={isGroupByProgramma}
+                        onclick={handleGroupByProgramma}>
+                    Programma
+                </button>
+                <span class="group-toggle-thumb" aria-hidden="true"></span>
+            </div>
+        </div>
+
         <div class="designer-layout">
             <!-- Stack dei due fogli nella colonna centrale -->
             <div class="designer-sheets">
@@ -146,6 +168,7 @@
                                 <tbody key={grp.key} class="sheet-group">
                                     <tr class="sheet-group-header sheet-group-header--incassi"
                                         data-categoria={grp.categoria}
+                                        data-programma={grp.programmaId}
                                         data-kind="incasso"
                                         ondragover={handleRowDragOver}
                                         ondrop={handleGroupHeaderDrop}>
@@ -155,33 +178,41 @@
                                             data-kind="incasso"
                                             ondragstart={handleGroupDragStart}
                                             ondragend={handleRowDragEnd}
-                                            title="Trascina per riordinare le categorie">
-                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
+                                            title="Trascina per riordinare">
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
-                                        <th scope="rowgroup" colspan="5">
-                                            <span class="sheet-group-name">{grp.categoriaLabel}</span>
-                                            <span class="sheet-group-count">{grp.countLabel}</span>
-                                        </th>
+                                        <td class="col-handle"></td>
+                                        <td class="col-prog sheet-group-name-cell">
+                                            <span class="sheet-group-name-float">
+                                                <span class="sheet-group-name">{grp.outerLabel}</span>
+                                                <span class="sheet-group-count">{grp.countLabel}</span>
+                                            </span>
+                                        </td>
+                                        <td class="col-cat"></td>
+                                        <td class="col-name"></td>
+                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
-                                        <td></td>
+                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
                                                     <button class="sheet-row-action-btn sheet-bulk-btn"
-                                                            title="Modifica tutte le righe di questa categoria"
+                                                            title="Modifica tutte le righe di questo gruppo"
                                                             data-kind="incasso"
                                                             data-scope="category"
                                                             data-categoria={grp.categoria}
+                                                            data-programma={grp.programmaId}
                                                             onclick={handleBulkEdit}>
-                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica categoria"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica gruppo"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-action-btn sheet-bulk-btn sheet-row-action-btn--confirm"
-                                                            title="Conferma tutte le righe di questa categoria"
+                                                            title="Conferma tutte le righe di questo gruppo"
                                                             data-kind="incasso"
                                                             data-scope="category"
                                                             data-categoria={grp.categoria}
+                                                            data-programma={grp.programmaId}
                                                             onclick={handleBulkConfirm}>
-                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma categoria"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma gruppo"></lightning-icon>
                                                     </button>
                                                 </div>
                                             </template>
@@ -191,32 +222,37 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--incassi">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td colspan="4" class="sheet-subgroup-name">
-                                            <span>{sub.programmaName}</span>
-                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                        <td class="col-prog sheet-group-name-cell">
+                                            <span class="sheet-group-name-float">
+                                                <span class="sheet-group-name">{sub.innerLabel}</span>
+                                                <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                            </span>
                                         </td>
+                                        <td class="col-cat"></td>
+                                        <td class="col-name"></td>
+                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--incassi">{sub.subtotalFormatted}</td>
-                                        <td></td>
+                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
                                                     <button class="sheet-row-action-btn sheet-bulk-btn"
-                                                            title="Modifica tutte le righe di questo programma"
+                                                            title="Modifica tutte le righe di questo sottogruppo"
                                                             data-kind="incasso"
                                                             data-scope="subgroup"
-                                                            data-categoria={grp.categoria}
+                                                            data-categoria={sub.categoria}
                                                             data-programma={sub.programmaId}
                                                             onclick={handleBulkEdit}>
-                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica programma"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica sottogruppo"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-action-btn sheet-bulk-btn sheet-row-action-btn--confirm"
-                                                            title="Conferma tutte le righe di questo programma"
+                                                            title="Conferma tutte le righe di questo sottogruppo"
                                                             data-kind="incasso"
                                                             data-scope="subgroup"
-                                                            data-categoria={grp.categoria}
+                                                            data-categoria={sub.categoria}
                                                             data-programma={sub.programmaId}
                                                             onclick={handleBulkConfirm}>
-                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma programma"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma sottogruppo"></lightning-icon>
                                                     </button>
                                                 </div>
                                             </template>
@@ -567,6 +603,7 @@
                                 <tbody key={grp.key} class="sheet-group">
                                     <tr class="sheet-group-header sheet-group-header--spese"
                                         data-categoria={grp.categoria}
+                                        data-programma={grp.programmaId}
                                         data-kind="spesa"
                                         ondragover={handleRowDragOver}
                                         ondrop={handleGroupHeaderDrop}>
@@ -576,33 +613,42 @@
                                             data-kind="spesa"
                                             ondragstart={handleGroupDragStart}
                                             ondragend={handleRowDragEnd}
-                                            title="Trascina per riordinare le categorie">
-                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina categoria"></lightning-icon>
+                                            title="Trascina per riordinare">
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
-                                        <th scope="rowgroup" colspan="6">
-                                            <span class="sheet-group-name">{grp.categoriaLabel}</span>
-                                            <span class="sheet-group-count">{grp.countLabel}</span>
-                                        </th>
+                                        <td class="col-handle"></td>
+                                        <td class="col-prog sheet-group-name-cell">
+                                            <span class="sheet-group-name-float">
+                                                <span class="sheet-group-name">{grp.outerLabel}</span>
+                                                <span class="sheet-group-count">{grp.countLabel}</span>
+                                            </span>
+                                        </td>
+                                        <td class="col-cat"></td>
+                                        <td class="col-subcat"></td>
+                                        <td class="col-name"></td>
+                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
-                                        <td></td>
+                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
                                                     <button class="sheet-row-action-btn sheet-bulk-btn"
-                                                            title="Modifica tutte le righe di questa categoria"
+                                                            title="Modifica tutte le righe di questo gruppo"
                                                             data-kind="spesa"
                                                             data-scope="category"
                                                             data-categoria={grp.categoria}
+                                                            data-programma={grp.programmaId}
                                                             onclick={handleBulkEdit}>
-                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica categoria"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica gruppo"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-action-btn sheet-bulk-btn sheet-row-action-btn--confirm"
-                                                            title="Conferma tutte le righe di questa categoria"
+                                                            title="Conferma tutte le righe di questo gruppo"
                                                             data-kind="spesa"
                                                             data-scope="category"
                                                             data-categoria={grp.categoria}
+                                                            data-programma={grp.programmaId}
                                                             onclick={handleBulkConfirm}>
-                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma categoria"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma gruppo"></lightning-icon>
                                                     </button>
                                                 </div>
                                             </template>
@@ -612,32 +658,38 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--spese">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td colspan="5" class="sheet-subgroup-name">
-                                            <span>{sub.programmaName}</span>
-                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                        <td class="col-prog sheet-group-name-cell">
+                                            <span class="sheet-group-name-float">
+                                                <span class="sheet-group-name">{sub.innerLabel}</span>
+                                                <span class="sheet-subgroup-count">{sub.countLabel}</span>
+                                            </span>
                                         </td>
+                                        <td class="col-cat"></td>
+                                        <td class="col-subcat"></td>
+                                        <td class="col-name"></td>
+                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--spese">{sub.subtotalFormatted}</td>
-                                        <td></td>
+                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
                                                     <button class="sheet-row-action-btn sheet-bulk-btn"
-                                                            title="Modifica tutte le righe di questo programma"
+                                                            title="Modifica tutte le righe di questo sottogruppo"
                                                             data-kind="spesa"
                                                             data-scope="subgroup"
-                                                            data-categoria={grp.categoria}
+                                                            data-categoria={sub.categoria}
                                                             data-programma={sub.programmaId}
                                                             onclick={handleBulkEdit}>
-                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica programma"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:edit" size="xx-small" alternative-text="Modifica sottogruppo"></lightning-icon>
                                                     </button>
                                                     <button class="sheet-row-action-btn sheet-bulk-btn sheet-row-action-btn--confirm"
-                                                            title="Conferma tutte le righe di questo programma"
+                                                            title="Conferma tutte le righe di questo sottogruppo"
                                                             data-kind="spesa"
                                                             data-scope="subgroup"
-                                                            data-categoria={grp.categoria}
+                                                            data-categoria={sub.categoria}
                                                             data-programma={sub.programmaId}
                                                             onclick={handleBulkConfirm}>
-                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma programma"></lightning-icon>
+                                                        <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma sottogruppo"></lightning-icon>
                                                     </button>
                                                 </div>
                                             </template>
