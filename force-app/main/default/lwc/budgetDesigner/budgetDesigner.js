@@ -1,18 +1,23 @@
 import { LightningElement, track, wire } from 'lwc';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import { getPicklistValues } from 'lightning/uiObjectInfoApi';
+import { refreshApex } from '@salesforce/apex';
 import INCASSO_OBJECT from '@salesforce/schema/Voce_di_Incasso__c';
 import SPESA_OBJECT from '@salesforce/schema/Voce_di_Spesa__c';
 import INCASSO_CATEGORIA from '@salesforce/schema/Voce_di_Incasso__c.Categoria__c';
 import SPESA_CATEGORIA from '@salesforce/schema/Voce_di_Spesa__c.Categoria__c';
 import SPESA_SOTTOCATEGORIA from '@salesforce/schema/Voce_di_Spesa__c.Sottocategoria__c';
 
-const STORAGE_KEY = 'budgetDesigner.draft.v2';
-const LEGACY_STORAGE_KEY = 'budgetDesigner.draft.v1';
-
-function newId() {
-    return 'item-' + Math.random().toString(36).slice(2, 10);
-}
+import getVersionsByYear from '@salesforce/apex/BudgetVersionController.getVersionsByYear';
+import getVersionDetail from '@salesforce/apex/BudgetVersionController.getVersionDetail';
+import createVersion from '@salesforce/apex/BudgetVersionController.createVersion';
+import forkVersion from '@salesforce/apex/BudgetVersionController.forkVersion';
+import updateVersionHeader from '@salesforce/apex/BudgetVersionController.updateVersionHeader';
+import trashVersion from '@salesforce/apex/BudgetVersionController.trashVersion';
+import promoteVersion from '@salesforce/apex/BudgetVersionController.promoteVersion';
+import upsertItem from '@salesforce/apex/BudgetVersionController.upsertItem';
+import deleteItem from '@salesforce/apex/BudgetVersionController.deleteItem';
+import reorderItems from '@salesforce/apex/BudgetVersionController.reorderItems';
 
 function currentYear() {
     return String(new Date().getFullYear());
@@ -26,8 +31,8 @@ export default class BudgetDesigner extends LightningElement {
     @track anno = currentYear();
     @track dataTarget = todayISO();
 
-    @track incassi = [];   // [{ id, categoria, name, data, ammontare, note }]
-    @track spese = [];     // [{ id, categoria, sottocategoria, name, data, ammontare, note }]
+    @track incassi = [];   // [{ id, programmaId, programmaName, categoria, name, data, ammontare, sortOrder, ... }]
+    @track spese = [];     // [{ id, programmaId, programmaName, categoria, sottocategoria, name, data, ammontare, note, sortOrder, ... }]
 
     @track optionsReady = false;
     @track categorieIncasso = [];
@@ -43,16 +48,13 @@ export default class BudgetDesigner extends LightningElement {
     @track draftIncasso = this.blankIncassoRow();
     @track draftSpesa = this.blankSpesaRow();
 
-    @track saveToast = '';
-    @track confirmReset = false;
-
     // Clipboard per "Copia riga". Quando si entra in copy mode, l'icona
     // Copia si trasforma in Incolla su tutte le righe della stessa
     // sezione (Incassi o Spese).
     _rowClipboard = null; // { kind: 'incasso'|'spesa', payload }
     @track copyMode = null; // null | 'incasso' | 'spesa'
 
-    // Ordinamento custom delle categorie per ciascuna sezione (persistito).
+    // Ordinamento custom delle categorie per ciascuna sezione.
     @track incassiCategoryOrder = [];
     @track speseCategoryOrder = [];
 
@@ -62,8 +64,24 @@ export default class BudgetDesigner extends LightningElement {
     _dragGroupKey = null;
     _dragGroupKind = null;
 
+    // ── Budget Version state ──────────────────────────────────────────
+    @track selectedVersionId = null;
+    @track versionOptions = [];         // [{label, value}]
+    @track currentVersion = null;       // DTO header
+    @track editingRowIds = new Set();   // ids Budget_Version_Item__c attualmente in Edit
+    @track pendingRowEdits = new Map(); // Map<Id, {original, current}>
+    @track showCreateVersionDialog = false;
+    @track showRenameVersionDialog = false;
+    @track showTrashVersionDialog = false;
+    @track showConfirmBudgetDialog = false;
+    @track showForkConfirmDialog = false;
+    @track dialogNome = '';
+    @track dialogDescrizione = '';
+    @track programmaOptions = [];
+    _wiredVersions;
+    _wiredDetail;
+
     connectedCallback() {
-        this.restoreDraft();
         // Year options are independent from picklist loading.
         this.annoOptions = this.buildYearOptions([]);
     }
@@ -113,8 +131,6 @@ export default class BudgetDesigner extends LightningElement {
     })
     wiredSpesaSottocategoria({ data }) {
         if (data && data.values && data.controllerValues) {
-            // data.controllerValues: { "<Categoria name>": <index> }
-            // data.values[i].validFor: [<index>, ...]
             const indexToCategoria = {};
             for (const [catName, idx] of Object.entries(data.controllerValues)) {
                 indexToCategoria[idx] = catName;
@@ -140,6 +156,131 @@ export default class BudgetDesigner extends LightningElement {
         }
     }
 
+    // ── Budget Version wires ──────────────────────────────────────────
+    @wire(getVersionsByYear, { anno: '$annoInt' })
+    wiredVersions(result) {
+        this._wiredVersions = result;
+        if (result.data) {
+            this.versionOptions = result.data.map(v => ({
+                label: this.formatVersionLabel(v),
+                value: v.id
+            }));
+            // Autoselezione: Ufficiale > prima della lista (già ordinata desc)
+            if (!this.selectedVersionId && result.data.length > 0) {
+                const ufficiale = result.data.find(v => v.stato === 'Ufficiale');
+                const defaultV = ufficiale || result.data[0];
+                this.selectedVersionId = defaultV.id;
+            } else if (this.selectedVersionId && !result.data.find(v => v.id === this.selectedVersionId)) {
+                this.selectedVersionId = result.data[0] ? result.data[0].id : null;
+            }
+        } else if (result.error) {
+            this.currentVersion = null;
+            this.versionOptions = [];
+        }
+    }
+
+    @wire(getVersionDetail, { versionId: '$selectedVersionId' })
+    wiredDetail(result) {
+        this._wiredDetail = result;
+        if (result.data) {
+            this.currentVersion = result.data.header;
+            this._remapRowsFromCache();
+        } else if (result.error) {
+            this.currentVersion = null;
+            this.incassi = [];
+            this.spese = [];
+        }
+    }
+
+    _remapRowsFromCache() {
+        if (!this._wiredDetail || !this._wiredDetail.data) return;
+        const items = this._wiredDetail.data.items || [];
+        this.incassi = items.filter(i => i.Tipo__c === 'Incasso').map(this.itemToIncassoRow.bind(this));
+        this.spese = items.filter(i => i.Tipo__c === 'Spesa').map(this.itemToSpesaRow.bind(this));
+    }
+
+    itemToIncassoRow(it) {
+        return {
+            id: it.Id,
+            programmaId: it.Programma__c || null,
+            programmaName: (it.Programma__r && it.Programma__r.Name) || '',
+            categoria: it.Categoria__c || '',
+            name: it.Nome__c || '',
+            data: it.Data__c || null,
+            ammontare: it.Ammontare__c,
+            ammontareFmt: this.formatCurrency(it.Ammontare__c),
+            sortOrder: it.Sort_Order__c,
+            isEditing: this.editingRowIds.has(it.Id),
+            categoriaOptions: this.incassoCategoriaOptions
+        };
+    }
+
+    itemToSpesaRow(it) {
+        return {
+            id: it.Id,
+            programmaId: it.Programma__c || null,
+            programmaName: (it.Programma__r && it.Programma__r.Name) || '',
+            categoria: it.Categoria__c || '',
+            sottocategoria: it.Sottocategoria__c || '',
+            name: it.Nome__c || '',
+            data: it.Data__c || null,
+            ammontare: it.Ammontare__c,
+            ammontareFmt: this.formatCurrency(it.Ammontare__c),
+            note: it.Note__c || '',
+            sortOrder: it.Sort_Order__c,
+            isEditing: this.editingRowIds.has(it.Id),
+            categoriaOptions: this.speseCategoriaOptions,
+            subOptions: this.subOptionsFor(it.Categoria__c || '')
+        };
+    }
+
+    get annoInt() {
+        const n = parseInt(this.anno, 10);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    formatVersionLabel(v) {
+        const prefix = `v${v.numeroVersione} — ${v.stato}`;
+        if (v.nome) return `${prefix} — ${v.nome}`;
+        return prefix;
+    }
+
+    get versionOptionsWithNew() {
+        return [
+            ...this.versionOptions,
+            { label: '+ Nuova versione per questo anno', value: '__new__' }
+        ];
+    }
+
+    get versionBannerClass() {
+        if (!this.currentVersion) return 'designer-hero designer-hero--empty';
+        const map = {
+            'Provvisorio': 'designer-hero designer-hero--provvisorio',
+            'Ufficiale': 'designer-hero designer-hero--ufficiale',
+            'Storicizzata': 'designer-hero designer-hero--storicizzata'
+        };
+        return map[this.currentVersion.stato] || 'designer-hero';
+    }
+
+    get isVersionEditable() {
+        return this.currentVersion && this.currentVersion.stato === 'Provvisorio';
+    }
+
+    get isVersionUfficiale() {
+        return this.currentVersion && this.currentVersion.stato === 'Ufficiale';
+    }
+
+    get versionHeadline() {
+        if (!this.annoInt) return 'Budget Designer';
+        const base = `Definizione Budget per l'Anno ${this.annoInt}`;
+        if (this.currentVersion) return `${base} — Versione ${this.currentVersion.numeroVersione}`;
+        return base;
+    }
+
+    get confirmBudgetDisabled() {
+        return !this.isVersionEditable || this.editingRowIds.size > 0;
+    }
+
     buildYearOptions(fromServer) {
         const set = new Set(fromServer.map(String));
         const base = Number(this.anno) || Number(currentYear());
@@ -148,12 +289,15 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     blankIncassoRow() {
-        return { categoria: '', name: '', data: '', ammontare: '' };
+        return { programmaId: '', categoria: '', name: '', data: '', ammontare: '' };
     }
 
     blankSpesaRow() {
-        return { categoria: '', sottocategoria: '', name: '', data: '', ammontare: '', note: '' };
+        return { programmaId: '', categoria: '', sottocategoria: '', name: '', data: '', ammontare: '', note: '' };
     }
+
+    emptyDraftIncasso() { return this.blankIncassoRow(); }
+    emptyDraftSpesa() { return this.blankSpesaRow(); }
 
     // Options per combobox
     get incassoCategoriaOptions() {
@@ -178,10 +322,7 @@ export default class BudgetDesigner extends LightningElement {
         ];
     }
 
-    // Raggruppa le righe per categoria rispettando il categoryOrder
-    // passato (se la categoria non è in order, va in fondo in ordine di
-    // comparsa). L'header + subtotale sono sempre visibili anche con
-    // una sola riga.
+    // Raggruppa le righe per categoria rispettando il categoryOrder.
     groupByCategoria(rows, childDecorator, kind, categoryOrder) {
         const groupsMap = new Map();
         const appearanceOrder = [];
@@ -202,7 +343,6 @@ export default class BudgetDesigner extends LightningElement {
             const row = childDecorator(r);
             row.kind = kind;
             row.rowClass = 'sheet-row sheet-row--child';
-            // Ogni riga espone se deve mostrare Paste o Copy (copy mode).
             row.showPaste = this.copyMode === kind;
             row.showCopy = !row.showPaste;
             row.pasteDisabled = false;
@@ -215,8 +355,6 @@ export default class BudgetDesigner extends LightningElement {
             g.countLabel = `${g.children.length} voci`;
         }
 
-        // Ordina secondo categoryOrder, poi le categorie non listate in
-        // ordine di comparsa.
         const orderIndex = new Map();
         (categoryOrder || []).forEach((c, i) => orderIndex.set(c, i));
         groups.sort((a, b) => {
@@ -228,7 +366,7 @@ export default class BudgetDesigner extends LightningElement {
         return groups;
     }
 
-    // Righe materializzate (flat) — tenute per eventuale uso futuro
+    // Righe materializzate (flat)
     get incassiRows() {
         return this.incassi.map(r => this.decorateIncasso(r));
     }
@@ -318,9 +456,6 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     get cashFlow() {
-        // Disponibilità reale: senza Incassi Previsti la disponibilità
-        // pianificata è 0 (niente "buco" da progettare). Altrimenti
-        // Incassi − Spese.
         if (this.totalIncassi === 0) return 0;
         return this.totalIncassi - this.totalSpese;
     }
@@ -391,26 +526,221 @@ export default class BudgetDesigner extends LightningElement {
 
     handleAnnoChange(event) {
         this.anno = event.detail.value;
-        this.persistDraft();
+        // Reset version selection so the new year's wire picks the default.
+        this.selectedVersionId = null;
+        this.currentVersion = null;
     }
 
     handleDataTargetChange(event) {
         this.dataTarget = event.target.value || todayISO();
-        this.persistDraft();
     }
 
-    // Handlers celle incassi esistenti
+    // ── Budget Version handlers ───────────────────────────────────────
+    handleVersionChange(e) {
+        const val = e.detail.value;
+        if (val === '__new__') {
+            this.dialogNome = '';
+            this.dialogDescrizione = '';
+            this.showCreateVersionDialog = true;
+            return;
+        }
+        if (this.editingRowIds.size > 0) {
+            // eslint-disable-next-line no-alert
+            if (!confirm('Hai modifiche non salvate. Cambiando versione le perderai. Continuare?')) {
+                return;
+            }
+            this.editingRowIds = new Set();
+            this.pendingRowEdits = new Map();
+        }
+        this.selectedVersionId = val;
+    }
+
+    handleOpenCreateVersion() {
+        this.dialogNome = '';
+        this.dialogDescrizione = '';
+        this.showCreateVersionDialog = true;
+    }
+
+    async handleConfirmCreateVersion() {
+        try {
+            const id = await createVersion({
+                anno: this.annoInt,
+                nome: this.dialogNome || null,
+                descrizione: this.dialogDescrizione || null
+            });
+            this.showCreateVersionDialog = false;
+            this.selectedVersionId = id;
+            await refreshApex(this._wiredVersions);
+        } catch (e) { this.showError(e); }
+    }
+
+    handleCancelCreateVersion() { this.showCreateVersionDialog = false; }
+
+    handleOpenRename() {
+        this.dialogNome = this.currentVersion ? (this.currentVersion.nome || '') : '';
+        this.dialogDescrizione = this.currentVersion ? (this.currentVersion.descrizione || '') : '';
+        this.showRenameVersionDialog = true;
+    }
+
+    async handleConfirmRename() {
+        try {
+            await updateVersionHeader({
+                versionId: this.selectedVersionId,
+                nome: this.dialogNome,
+                descrizione: this.dialogDescrizione
+            });
+            this.showRenameVersionDialog = false;
+            await refreshApex(this._wiredDetail);
+            await refreshApex(this._wiredVersions);
+        } catch (e) { this.showError(e); }
+    }
+
+    handleCancelRename() { this.showRenameVersionDialog = false; }
+
+    handleOpenTrash() { this.showTrashVersionDialog = true; }
+
+    async handleConfirmTrash() {
+        try {
+            await trashVersion({ versionId: this.selectedVersionId });
+            this.showTrashVersionDialog = false;
+            this.selectedVersionId = null;
+            await refreshApex(this._wiredVersions);
+        } catch (e) { this.showError(e); }
+    }
+
+    handleCancelTrash() { this.showTrashVersionDialog = false; }
+
+    handleOpenConfirmBudget() { this.showConfirmBudgetDialog = true; }
+
+    async handleConfirmPromote() {
+        try {
+            await promoteVersion({ versionId: this.selectedVersionId });
+            this.showConfirmBudgetDialog = false;
+            await refreshApex(this._wiredVersions);
+            await refreshApex(this._wiredDetail);
+        } catch (e) { this.showError(e); }
+    }
+
+    handleCancelPromote() { this.showConfirmBudgetDialog = false; }
+
+    handleOpenForkConfirm() { this.showForkConfirmDialog = true; }
+
+    async handleConfirmFork() {
+        try {
+            const newId = await forkVersion({ sourceVersionId: this.selectedVersionId });
+            this.showForkConfirmDialog = false;
+            this.selectedVersionId = newId;
+            await refreshApex(this._wiredVersions);
+        } catch (e) { this.showError(e); }
+    }
+
+    handleCancelFork() { this.showForkConfirmDialog = false; }
+
+    handleDialogNomeChange(e) { this.dialogNome = e.detail.value; }
+    handleDialogDescChange(e) { this.dialogDescrizione = e.detail.value; }
+
+    showError(e) {
+        const msg = (e && e.body && e.body.message) || (e && e.message) || 'Errore sconosciuto';
+        // eslint-disable-next-line no-alert
+        alert(msg);
+    }
+
+    // ── Row View/Edit cycle ───────────────────────────────────────────
+    handleRowBeginEdit(e) {
+        if (!this.isVersionEditable) {
+            this.handleOpenForkConfirm();
+            return;
+        }
+        const id = e.currentTarget.dataset.id;
+        const kind = e.currentTarget.dataset.kind;
+        this._snapshotRow(id, kind);
+        const set = new Set(this.editingRowIds);
+        set.add(id);
+        this.editingRowIds = set;
+        this._remapRowsFromCache();
+    }
+
+    _snapshotRow(id, kind) {
+        const row = this._findRow(id, kind);
+        if (!row) return;
+        const snap = { ...row };
+        const m = new Map(this.pendingRowEdits);
+        m.set(id, { original: snap, current: { ...row } });
+        this.pendingRowEdits = m;
+    }
+
+    _findRow(id, kind) {
+        const list = kind === 'incasso' ? this.incassi : this.spese;
+        return list.find(r => r.id === id);
+    }
+
+    handleRowCellChange(e) {
+        const id = e.currentTarget.dataset.id;
+        const field = e.currentTarget.dataset.field;
+        const value = e.detail.value;
+        const m = new Map(this.pendingRowEdits);
+        const entry = m.get(id);
+        if (!entry) return;
+        entry.current = { ...entry.current, [field]: value };
+        m.set(id, entry);
+        this.pendingRowEdits = m;
+    }
+
+    async handleRowConfirm(e) {
+        const id = e.currentTarget.dataset.id;
+        const kind = e.currentTarget.dataset.kind;
+        const entry = this.pendingRowEdits.get(id);
+        if (!entry) return;
+        const cur = entry.current;
+        const payload = {
+            Id: id,
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
+            Programma__c: cur.programmaId || null,
+            Categoria__c: cur.categoria || null,
+            Sottocategoria__c: kind === 'spesa' ? (cur.sottocategoria || null) : null,
+            Nome__c: cur.name || null,
+            Data__c: cur.data || null,
+            Ammontare__c: cur.ammontare || 0,
+            Note__c: kind === 'spesa' ? (cur.note || null) : null,
+            Sort_Order__c: cur.sortOrder || null
+        };
+        try {
+            await upsertItem({ item: payload });
+            const s = new Set(this.editingRowIds); s.delete(id); this.editingRowIds = s;
+            const m = new Map(this.pendingRowEdits); m.delete(id); this.pendingRowEdits = m;
+            await refreshApex(this._wiredDetail);
+            this._remapRowsFromCache();
+        } catch (err) { this.showError(err); }
+    }
+
+    handleRowCancelEdit(e) {
+        const id = e.currentTarget.dataset.id;
+        const s = new Set(this.editingRowIds); s.delete(id); this.editingRowIds = s;
+        const m = new Map(this.pendingRowEdits); m.delete(id); this.pendingRowEdits = m;
+        this._remapRowsFromCache();
+    }
+
+    async handleRowDelete(e) {
+        const id = e.currentTarget.dataset.id;
+        // eslint-disable-next-line no-alert
+        if (!confirm('Rimuovere la riga?')) return;
+        try {
+            await deleteItem({ itemId: id });
+            await refreshApex(this._wiredDetail);
+        } catch (err) { this.showError(err); }
+    }
+
+    // Handlers celle incassi esistenti (legacy in-row edit — resta per compatibilità HTML corrente)
     handleIncassoCellChange(event) {
         const { id, field } = event.currentTarget.dataset;
         const value = this.readEventValue(event);
         this.incassi = this.incassi.map(r => r.id === id ? { ...r, [field]: value } : r);
-        this.persistDraft();
     }
 
     handleIncassoRemove(event) {
         const id = event.currentTarget.dataset.id;
         this.incassi = this.incassi.filter(r => r.id !== id);
-        this.persistDraft();
     }
 
     // Handlers celle draft incasso
@@ -420,21 +750,26 @@ export default class BudgetDesigner extends LightningElement {
         this.draftIncasso = { ...this.draftIncasso, [field]: value };
     }
 
-    handleDraftIncassoSubmit() {
+    async handleDraftIncassoSubmit() {
+        if (!this.isVersionEditable) return;
         if (!this.isIncassoDraftValid(this.draftIncasso)) return;
-        const r = this.draftIncasso;
-        this.incassi = [...this.incassi, {
-            id: newId(),
-            categoria: r.categoria,
-            name: (r.name || r.categoria).trim(),
-            data: r.data || this.dataTarget,
-            ammontare: Number(r.ammontare),
-            note: ''
-        }];
-        this.draftIncasso = this.blankIncassoRow();
-        this.persistDraft();
-        this.flashSaveToast('Voce aggiunta');
-        this.focusAfterAdd('incasso');
+        const d = this.draftIncasso;
+        const payload = {
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: 'Incasso',
+            Programma__c: d.programmaId || null,
+            Categoria__c: d.categoria || null,
+            Nome__c: d.name || null,
+            Data__c: d.data || this.dataTarget || null,
+            Ammontare__c: d.ammontare || 0,
+            Sort_Order__c: (this.incassi.length + 1)
+        };
+        try {
+            await upsertItem({ item: payload });
+            this.draftIncasso = this.emptyDraftIncasso();
+            await refreshApex(this._wiredDetail);
+            this.focusAfterAdd('incasso');
+        } catch (e) { this.showError(e); }
     }
 
     // Handlers celle spese esistenti
@@ -447,13 +782,11 @@ export default class BudgetDesigner extends LightningElement {
             if (field === 'categoria' && r.categoria !== value) updated.sottocategoria = '';
             return updated;
         });
-        this.persistDraft();
     }
 
     handleSpesaRemove(event) {
         const id = event.currentTarget.dataset.id;
         this.spese = this.spese.filter(r => r.id !== id);
-        this.persistDraft();
     }
 
     handleDraftSpesaChange(event) {
@@ -466,22 +799,28 @@ export default class BudgetDesigner extends LightningElement {
         this.draftSpesa = updated;
     }
 
-    handleDraftSpesaSubmit() {
+    async handleDraftSpesaSubmit() {
+        if (!this.isVersionEditable) return;
         if (!this.isSpesaDraftValid(this.draftSpesa)) return;
-        const r = this.draftSpesa;
-        this.spese = [...this.spese, {
-            id: newId(),
-            categoria: r.categoria,
-            sottocategoria: r.sottocategoria || null,
-            name: (r.name || r.categoria).trim(),
-            data: r.data || this.dataTarget,
-            ammontare: Number(r.ammontare),
-            note: (r.note || '').trim()
-        }];
-        this.draftSpesa = this.blankSpesaRow();
-        this.persistDraft();
-        this.flashSaveToast('Voce aggiunta');
-        this.focusAfterAdd('spesa');
+        const d = this.draftSpesa;
+        const payload = {
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: 'Spesa',
+            Programma__c: d.programmaId || null,
+            Categoria__c: d.categoria || null,
+            Sottocategoria__c: d.sottocategoria || null,
+            Nome__c: d.name || null,
+            Data__c: d.data || this.dataTarget || null,
+            Ammontare__c: d.ammontare || 0,
+            Note__c: d.note || null,
+            Sort_Order__c: (this.spese.length + 1)
+        };
+        try {
+            await upsertItem({ item: payload });
+            this.draftSpesa = this.emptyDraftSpesa();
+            await refreshApex(this._wiredDetail);
+            this.focusAfterAdd('spesa');
+        } catch (e) { this.showError(e); }
     }
 
     readEventValue(event) {
@@ -491,7 +830,6 @@ export default class BudgetDesigner extends LightningElement {
     }
 
     focusAfterAdd(which) {
-        // Riporta il cursore sulla prima cella del draft (UX da spreadsheet).
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         setTimeout(() => {
             const selector = which === 'incasso'
@@ -500,76 +838,6 @@ export default class BudgetDesigner extends LightningElement {
             const el = this.template.querySelector(selector);
             if (el && typeof el.focus === 'function') el.focus();
         }, 40);
-    }
-
-    handleResetClick() {
-        this.confirmReset = true;
-    }
-
-    handleResetConfirm() {
-        this.incassi = [];
-        this.spese = [];
-        this.draftIncasso = this.blankIncassoRow();
-        this.draftSpesa = this.blankSpesaRow();
-        this.persistDraft();
-        this.confirmReset = false;
-        this.flashSaveToast('Progetto svuotato');
-    }
-
-    handleResetCancel() {
-        this.confirmReset = false;
-    }
-
-    handleExportJson() {
-        const payload = this.buildDraftPayload();
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `budget-progetto-${this.anno}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // Persistence
-
-    buildDraftPayload() {
-        return {
-            anno: this.anno,
-            dataTarget: this.dataTarget,
-            incassi: this.incassi,
-            spese: this.spese,
-            incassiCategoryOrder: this.incassiCategoryOrder,
-            speseCategoryOrder: this.speseCategoryOrder,
-            savedAt: new Date().toISOString()
-        };
-    }
-
-    persistDraft() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.buildDraftPayload()));
-        } catch (e) { /* quota/private-mode, ignora */ }
-    }
-
-    restoreDraft() {
-        try {
-            let raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
-            if (!raw) return;
-            const draft = JSON.parse(raw);
-            if (draft.anno) this.anno = draft.anno;
-            if (draft.dataTarget) this.dataTarget = draft.dataTarget;
-            if (Array.isArray(draft.incassi)) this.incassi = draft.incassi;
-            if (Array.isArray(draft.spese)) this.spese = draft.spese;
-            if (Array.isArray(draft.incassiCategoryOrder)) this.incassiCategoryOrder = draft.incassiCategoryOrder;
-            if (Array.isArray(draft.speseCategoryOrder)) this.speseCategoryOrder = draft.speseCategoryOrder;
-        } catch (e) { /* payload corrotto: ignora */ }
-    }
-
-    flashSaveToast(msg) {
-        this.saveToast = msg;
-        clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => { this.saveToast = ''; }, 1800);
     }
 
     // Formatters
@@ -591,18 +859,29 @@ export default class BudgetDesigner extends LightningElement {
         return list.find(r => r.id === id) || null;
     }
 
-    // Duplica: appende una copia in fondo alla sezione (mantiene categoria
-    // originale). In copy mode esce dal mode per coerenza UX.
-    handleRowDuplicateInline(event) {
+    // Duplica: clona la riga via upsertItem server-side.
+    async handleRowDuplicateInline(event) {
         event.stopPropagation();
+        if (!this.isVersionEditable) { this.handleOpenForkConfirm(); return; }
         const { id, kind } = event.currentTarget.dataset;
         const row = this._findRowByInfo(id, kind);
         if (!row) return;
-        const copy = { ...row, id: newId() };
-        if (kind === 'incasso') this.incassi = [...this.incassi, copy];
-        else this.spese = [...this.spese, copy];
-        this.persistDraft();
-        this.flashSaveToast('Riga duplicata');
+        const payload = {
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
+            Programma__c: row.programmaId || null,
+            Categoria__c: row.categoria || null,
+            Sottocategoria__c: kind === 'spesa' ? (row.sottocategoria || null) : null,
+            Nome__c: row.name || null,
+            Data__c: row.data || null,
+            Ammontare__c: row.ammontare || 0,
+            Note__c: kind === 'spesa' ? (row.note || null) : null,
+            Sort_Order__c: (kind === 'incasso' ? this.incassi.length : this.spese.length) + 1
+        };
+        try {
+            await upsertItem({ item: payload });
+            await refreshApex(this._wiredDetail);
+        } catch (e) { this.showError(e); }
     }
 
     // Copia: memorizza payload e attiva copy mode per la sezione.
@@ -614,26 +893,36 @@ export default class BudgetDesigner extends LightningElement {
         const { id: _omit, ...payload } = row;
         this._rowClipboard = { kind, payload };
         this.copyMode = kind;
-        this.flashSaveToast('Riga copiata: scegli dove incollare');
     }
 
-    // Incolla: sovrascrive la riga target (esclude id), e chiude copy mode.
-    handleRowPasteInline(event) {
+    // Incolla: sovrascrive la riga target via upsertItem (tenendo l'Id target).
+    async handleRowPasteInline(event) {
         event.stopPropagation();
+        if (!this.isVersionEditable) { this.handleOpenForkConfirm(); return; }
         const { id, kind } = event.currentTarget.dataset;
         if (!this._rowClipboard || this._rowClipboard.kind !== kind) return;
         const target = this._findRowByInfo(id, kind);
         if (!target) return;
-        const patched = { ...target, ...this._rowClipboard.payload };
-        if (kind === 'incasso') {
-            this.incassi = this.incassi.map(r => r.id === target.id ? patched : r);
-        } else {
-            this.spese = this.spese.map(r => r.id === target.id ? patched : r);
-        }
-        this.copyMode = null;
-        this._rowClipboard = null;
-        this.persistDraft();
-        this.flashSaveToast('Riga incollata');
+        const merged = { ...target, ...this._rowClipboard.payload };
+        const payload = {
+            Id: target.id,
+            Budget_Version__c: this.selectedVersionId,
+            Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
+            Programma__c: merged.programmaId || null,
+            Categoria__c: merged.categoria || null,
+            Sottocategoria__c: kind === 'spesa' ? (merged.sottocategoria || null) : null,
+            Nome__c: merged.name || null,
+            Data__c: merged.data || null,
+            Ammontare__c: merged.ammontare || 0,
+            Note__c: kind === 'spesa' ? (merged.note || null) : null,
+            Sort_Order__c: merged.sortOrder || null
+        };
+        try {
+            await upsertItem({ item: payload });
+            this.copyMode = null;
+            this._rowClipboard = null;
+            await refreshApex(this._wiredDetail);
+        } catch (e) { this.showError(e); }
     }
 
     handleCancelCopyMode(event) {
@@ -651,7 +940,6 @@ export default class BudgetDesigner extends LightningElement {
         this._dragGroupKind = null;
         if (event.dataTransfer) {
             event.dataTransfer.effectAllowed = 'move';
-            // Firefox richiede un setData per far partire il drag.
             try { event.dataTransfer.setData('text/plain', id); } catch (_) {}
         }
     }
@@ -662,9 +950,6 @@ export default class BudgetDesigner extends LightningElement {
         if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     }
 
-    // Drop su una riga: la riga trascinata viene spostata subito prima
-    // della riga target. Se le categorie differiscono, la categoria cambia
-    // e (per Spese) la sottocategoria viene svuotata.
     handleRowDrop(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -690,11 +975,10 @@ export default class BudgetDesigner extends LightningElement {
 
         if (draggedKind === 'incasso') this.incassi = list;
         else this.spese = list;
-        this.persistDraft();
+
+        this._persistReorder(draggedKind);
     }
 
-    // Drop su header di categoria: la riga si sposta in fondo al gruppo
-    // della categoria target (e cambia categoria se diversa).
     handleGroupHeaderDrop(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -706,7 +990,7 @@ export default class BudgetDesigner extends LightningElement {
         const draggedGroupKind = this._dragGroupKind;
         this._resetDragState();
 
-        // Se sto trascinando un'intera CATEGORIA: riordino l'order array.
+        // Trascinamento di una CATEGORIA intera
         if (draggedGroupKey && draggedGroupKind === targetKind) {
             const orderList = targetKind === 'incasso'
                 ? [...(this.incassiCategoryOrder.length ? this.incassiCategoryOrder : this._currentCategoryOrder('incasso'))]
@@ -715,18 +999,15 @@ export default class BudgetDesigner extends LightningElement {
             const draggedActualCat = draggedCat === 'nocat' ? '' : draggedCat;
             const fromI = orderList.indexOf(draggedActualCat);
             const toI = orderList.indexOf(targetCategoria);
-            // Se una delle due non è in order, ricostruisco con gli appearance.
             if (fromI < 0 || toI < 0) return;
             const [moved] = orderList.splice(fromI, 1);
             orderList.splice(toI, 0, moved);
             if (targetKind === 'incasso') this.incassiCategoryOrder = orderList;
             else this.speseCategoryOrder = orderList;
-            this.persistDraft();
             return;
         }
 
-        // Altrimenti è una riga droppata su un header: sposto in fondo al
-        // gruppo della categoria target e cambio categoria se diversa.
+        // Riga droppata su header
         if (!draggedRowId || draggedRowKind !== targetKind) return;
         const list = draggedRowKind === 'incasso' ? [...this.incassi] : [...this.spese];
         const fromIdx = list.findIndex(r => r.id === draggedRowId);
@@ -736,14 +1017,14 @@ export default class BudgetDesigner extends LightningElement {
             moved.categoria = targetCategoria;
             if (draggedRowKind === 'spesa') moved.sottocategoria = '';
         }
-        // Trova l'ultima riga della categoria target; se non esiste, aggiunge in fondo.
         let lastIdxOfCat = -1;
         list.forEach((r, i) => { if (r.categoria === targetCategoria) lastIdxOfCat = i; });
         const insertAt = lastIdxOfCat >= 0 ? lastIdxOfCat + 1 : list.length;
         list.splice(insertAt, 0, moved);
         if (draggedRowKind === 'incasso') this.incassi = list;
         else this.spese = list;
-        this.persistDraft();
+
+        this._persistReorder(draggedRowKind);
     }
 
     handleGroupDragStart(event) {
@@ -776,5 +1057,16 @@ export default class BudgetDesigner extends LightningElement {
             if (!seen.includes(c)) seen.push(c);
         }
         return seen;
+    }
+
+    async _persistReorder(kind) {
+        const list = kind === 'incasso' ? this.incassi : this.spese;
+        const orders = list
+            .filter(r => r && r.id)
+            .map((r, i) => ({ itemId: r.id, sortOrder: i + 1 }));
+        if (orders.length === 0) return;
+        try {
+            await reorderItems({ orders });
+        } catch (e) { this.showError(e); }
     }
 }
