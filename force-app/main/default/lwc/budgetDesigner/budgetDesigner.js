@@ -1215,27 +1215,27 @@ export default class BudgetDesigner extends LightningElement {
         if (!this.isVersionEditable) return;
         const { kind, scope, categoria, programma } = event.currentTarget.dataset;
         const rows = this._rowsInScope(kind, scope, categoria, programma || null);
+        // Per ciascuna riga nello scope: se c'è un pending edit usiamo quello,
+        // altrimenti salviamo la riga così com'è (idempotente).
         const payloads = [];
         for (const r of rows) {
             if (!r.id) continue;
-            if (!this.editingRowIds.has(r.id)) continue;
             const entry = this.pendingRowEdits.get(r.id);
-            if (!entry) continue;
-            const cur = entry.current;
+            const src = entry ? entry.current : r;
             payloads.push({
                 id: r.id,
                 payload: {
                     Id: r.id,
                     Budget_Version__c: this.selectedVersionId,
                     Tipo__c: kind === 'incasso' ? 'Incasso' : 'Spesa',
-                    Programma__c: cur.programmaId || null,
-                    Categoria__c: cur.categoria || null,
-                    Sottocategoria__c: kind === 'spesa' ? (cur.sottocategoria || null) : null,
-                    Nome__c: cur.name || null,
-                    Data__c: cur.data || null,
-                    Ammontare__c: cur.ammontare || 0,
-                    Note__c: cur.note || null,
-                    Sort_Order__c: cur.sortOrder || null
+                    Programma__c: src.programmaId || null,
+                    Categoria__c: src.categoria || null,
+                    Sottocategoria__c: kind === 'spesa' ? (src.sottocategoria || null) : null,
+                    Nome__c: src.name || null,
+                    Data__c: src.data || null,
+                    Ammontare__c: src.ammontare || 0,
+                    Note__c: src.note || null,
+                    Sort_Order__c: src.sortOrder || null
                 }
             });
         }
@@ -1245,12 +1245,16 @@ export default class BudgetDesigner extends LightningElement {
                 // eslint-disable-next-line no-await-in-loop
                 await upsertItem({ item: p.payload });
             }
+            // Chiudi l'edit mode per tutte le righe nello scope, anche quelle
+            // non modificate: il senso del bulk Confirm è "esci tutte dalla
+            // modalità edit di questo gruppo".
             const s = new Set(this.editingRowIds);
             const m = new Map(this.pendingRowEdits);
             for (const p of payloads) { s.delete(p.id); m.delete(p.id); }
             this.editingRowIds = s;
             this.pendingRowEdits = m;
             await refreshApex(this._wiredDetail);
+            this._remapRowsFromCache();
         } catch (e) { this.showError(e); }
     }
 
