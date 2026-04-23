@@ -82,23 +82,38 @@ export default class BudgetDesigner extends LightningElement {
     _wiredVersions;
     _wiredDetail;
 
+    @track _programmaLoadError = null;
+
     connectedCallback() {
         // Year options are independent from picklist loading.
         this.annoOptions = this.buildYearOptions([]);
         // Imperative fetch bypasses Lightning Data Service cache
         // (prevents a stale empty-list cached from an earlier wire call).
+        // eslint-disable-next-line no-console
+        console.log('[budgetDesigner] requesting getActivePrograms…');
         getActivePrograms()
             .then((data) => {
+                // eslint-disable-next-line no-console
+                console.log('[budgetDesigner] getActivePrograms OK:', data && data.length, data);
+                const list = Array.isArray(data) ? data : [];
                 this.programmaOptions = [
                     { label: '— Scegli —', value: '' },
-                    ...data.map((p) => ({ label: p.Name, value: p.Id }))
+                    ...list.map((p) => ({ label: p.Name, value: p.Id }))
                 ];
+                this._programmaLoadError = list.length === 0 ? 'Nessun Programma attivo trovato.' : null;
                 this._remapRowsFromCache();
             })
-            .catch(() => {
+            .catch((err) => {
+                const msg = (err && err.body && err.body.message) || (err && err.message) || JSON.stringify(err);
+                // eslint-disable-next-line no-console
+                console.error('[budgetDesigner] getActivePrograms FAILED:', msg, err);
+                this._programmaLoadError = 'Errore caricamento Programmi: ' + msg;
                 this.programmaOptions = [{ label: '— Scegli —', value: '' }];
             });
     }
+
+    get programmaBanner() { return this._programmaLoadError; }
+    get programmaOptionsReady() { return this.programmaOptions && this.programmaOptions.length > 1; }
 
     // ── Object info: used to obtain the master record type id so that
     //    getPicklistValues returns every value defined on the picklist.

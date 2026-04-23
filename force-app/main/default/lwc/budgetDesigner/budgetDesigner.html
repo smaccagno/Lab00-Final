@@ -71,6 +71,12 @@
             </template>
         </header>
 
+        <template if:true={programmaBanner}>
+            <div class="slds-notify slds-notify_toast slds-theme_warning" role="alert" style="margin-bottom: 0.75rem;">
+                <span class="slds-m-left_x-small">{programmaBanner}</span>
+            </div>
+        </template>
+
         <div class="designer-layout">
             <!-- Stack dei due fogli nella colonna centrale -->
             <div class="designer-sheets">
@@ -219,14 +225,16 @@
                                                 data-kind="incasso">
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
-                                                    <lightning-combobox
-                                                        variant="label-hidden"
-                                                        value={row.programmaId}
-                                                        options={programmaOptions}
-                                                        data-id={row.id}
-                                                        data-field="programmaId"
-                                                        onchange={handleRowCellChange}>
-                                                    </lightning-combobox>
+                                                    <template if:true={programmaOptionsReady}>
+                                                        <lightning-combobox
+                                                            variant="label-hidden"
+                                                            value={row.programmaId}
+                                                            options={programmaOptions}
+                                                            data-id={row.id}
+                                                            data-field="programmaId"
+                                                            onchange={handleRowCellChange}>
+                                                        </lightning-combobox>
+                                                    </template>
                                                 </td>
                                                 <td>
                                                     <lightning-combobox
@@ -302,14 +310,16 @@
                                     <tr class="sheet-row sheet-row--draft">
                                         <td class="col-handle"></td>
                                         <td class="col-prog">
-                                            <lightning-combobox
-                                                variant="label-hidden"
-                                                value={draftIncassoView.programmaId}
-                                                options={programmaOptions}
-                                                data-scope="draft-incasso"
-                                                data-field="programmaId"
-                                                onchange={handleDraftIncassoChange}>
-                                            </lightning-combobox>
+                                            <template if:true={programmaOptionsReady}>
+                                                <lightning-combobox
+                                                    variant="label-hidden"
+                                                    value={draftIncassoView.programmaId}
+                                                    options={programmaOptions}
+                                                    data-scope="draft-incasso"
+                                                    data-field="programmaId"
+                                                    onchange={handleDraftIncassoChange}>
+                                                </lightning-combobox>
+                                            </template>
                                         </td>
                                         <td>
                                             <lightning-combobox
@@ -529,14 +539,16 @@
                                                 data-kind="spesa">
                                                 <td class="col-handle"></td>
                                                 <td class="col-prog">
-                                                    <lightning-combobox
-                                                        variant="label-hidden"
-                                                        value={row.programmaId}
-                                                        options={programmaOptions}
-                                                        data-id={row.id}
-                                                        data-field="programmaId"
-                                                        onchange={handleRowCellChange}>
-                                                    </lightning-combobox>
+                                                    <template if:true={programmaOptionsReady}>
+                                                        <lightning-combobox
+                                                            variant="label-hidden"
+                                                            value={row.programmaId}
+                                                            options={programmaOptions}
+                                                            data-id={row.id}
+                                                            data-field="programmaId"
+                                                            onchange={handleRowCellChange}>
+                                                        </lightning-combobox>
+                                                    </template>
                                                 </td>
                                                 <td>
                                                     <lightning-combobox
@@ -634,14 +646,16 @@
                                 <tr class="sheet-row sheet-row--draft">
                                     <td class="col-handle"></td>
                                     <td class="col-prog">
-                                        <lightning-combobox
-                                            variant="label-hidden"
-                                            value={draftSpesaView.programmaId}
-                                            options={programmaOptions}
-                                            data-scope="draft-spesa"
-                                            data-field="programmaId"
-                                            onchange={handleDraftSpesaChange}>
-                                        </lightning-combobox>
+                                        <template if:true={programmaOptionsReady}>
+                                            <lightning-combobox
+                                                variant="label-hidden"
+                                                value={draftSpesaView.programmaId}
+                                                options={programmaOptions}
+                                                data-scope="draft-spesa"
+                                                data-field="programmaId"
+                                                onchange={handleDraftSpesaChange}>
+                                            </lightning-combobox>
+                                        </template>
                                     </td>
                                     <td>
                                         <lightning-combobox
