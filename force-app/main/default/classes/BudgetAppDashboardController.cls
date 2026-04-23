@@ -161,8 +161,16 @@ public with sharing class BudgetAppDashboardController {
 
     public class ProgramKpi {
         @AuraEnabled public Id programId;
+        @AuraEnabled public String programName;
+        @AuraEnabled public Decimal incassiEffettivo;
+        @AuraEnabled public Decimal incassiPrevisto;
         @AuraEnabled public Decimal incassiTotale;
+        @AuraEnabled public Decimal speseEffettivo;
+        @AuraEnabled public Decimal spesePrevisto;
         @AuraEnabled public Decimal speseTotale;
+        @AuraEnabled public Decimal cashFlowEffettivo;
+        @AuraEnabled public Decimal cashFlowPrevisto;
+        @AuraEnabled public Decimal cashFlowTotale;
         @AuraEnabled public Decimal avanzamentoIncassi;
         @AuraEnabled public Decimal avanzamentoSpese;
     }
@@ -176,26 +184,42 @@ public with sharing class BudgetAppDashboardController {
         Map<Id, BudgetAggregator.AmountPair> incByProgram = new Map<Id, BudgetAggregator.AmountPair>();
         Map<Id, BudgetAggregator.AmountPair> speByProgram = new Map<Id, BudgetAggregator.AmountPair>();
 
+        // pid qui è intenzionalmente il GiftDesignation.Id: la dashboard
+        // associa le card programma all'Id del Budget (unica chiave
+        // univoca partner+programma).
+        Map<Id, Id> programByBudget = new Map<Id, Id>();
+        Map<Id, String> programNameByBudget = new Map<Id, String>();
+
         for (Voce_di_Incasso__c vi : [
-            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c,
+                   Overview_Budget_per_Anno__r.Budget__c,
+                   Overview_Budget_per_Anno__r.Budget__r.Program__c,
+                   Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
             FROM Voce_di_Incasso__c
             WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
         ]) {
             Id pid = vi.Overview_Budget_per_Anno__r.Budget__c;
             if (pid == null) continue;
             if (!BudgetAggregator.isInDateScope(vi.Data__c, filterDate)) continue;
+            programByBudget.put(pid, vi.Overview_Budget_per_Anno__r.Budget__r.Program__c);
+            programNameByBudget.put(pid, vi.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name);
             if (!incByProgram.containsKey(pid)) incByProgram.put(pid, new BudgetAggregator.AmountPair());
             BudgetAggregator.accumulate(incByProgram.get(pid), vi.Stato__c, vi.Stato_Precedente__c, vi.Ammontare__c);
         }
 
         for (Voce_di_Spesa__c vs : [
-            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c, Overview_Budget_per_Anno__r.Budget__c
+            SELECT Stato__c, Stato_Precedente__c, Ammontare__c, Data__c,
+                   Overview_Budget_per_Anno__r.Budget__c,
+                   Overview_Budget_per_Anno__r.Budget__r.Program__c,
+                   Overview_Budget_per_Anno__r.Budget__r.Program__r.Name
             FROM Voce_di_Spesa__c
             WHERE Overview_Budget_per_Anno__r.Budget__r.Partner__c = :accountId
         ]) {
             Id pid = vs.Overview_Budget_per_Anno__r.Budget__c;
             if (pid == null) continue;
             if (!BudgetAggregator.isInDateScope(vs.Data__c, filterDate)) continue;
+            programByBudget.put(pid, vs.Overview_Budget_per_Anno__r.Budget__r.Program__c);
+            programNameByBudget.put(pid, vs.Overview_Budget_per_Anno__r.Budget__r.Program__r.Name);
             if (!speByProgram.containsKey(pid)) speByProgram.put(pid, new BudgetAggregator.AmountPair());
             BudgetAggregator.accumulate(speByProgram.get(pid), vs.Stato__c, vs.Stato_Precedente__c, vs.Ammontare__c);
         }
@@ -212,8 +236,18 @@ public with sharing class BudgetAppDashboardController {
 
             ProgramKpi k = new ProgramKpi();
             k.programId = pid;
+            k.programName = programNameByBudget.get(pid);
+            k.incassiEffettivo = inc.effettivo;
+            k.incassiPrevisto = inc.previsto;
             k.incassiTotale = inc.totale;
+            k.speseEffettivo = spe.effettivo;
+            k.spesePrevisto = spe.previsto;
             k.speseTotale = spe.totale;
+            // Stessa regola del cashflow applicata ovunque: Previsto = 0 se
+            // non ci sono Incassi Previsti; Effettivo può essere negativo.
+            k.cashFlowEffettivo = inc.effettivo - spe.effettivo;
+            k.cashFlowPrevisto = (inc.previsto == 0) ? 0 : (inc.previsto - spe.previsto);
+            k.cashFlowTotale = k.cashFlowPrevisto + k.cashFlowEffettivo;
             k.avanzamentoIncassi = inc.totale > 0 ? (inc.effettivo / inc.totale) * 100 : 0;
             k.avanzamentoSpese = spe.totale > 0 ? (spe.effettivo / spe.totale) * 100 : 0;
             result.add(k);

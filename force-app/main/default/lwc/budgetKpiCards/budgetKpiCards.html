@@ -43,6 +43,20 @@
                         </div>
                         <span class="kpi-progress-label">{incassiAvanzamento}</span>
                     </div>
+                    <template if:true={hasPrograms}>
+                        <div class="kpi-split">
+                            <div class="kpi-split-title">Per programma</div>
+                            <template for:each={incassiByProgram} for:item="row">
+                                <div key={row.key} class="kpi-split-row">
+                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
+                                    <span class="kpi-split-pair">
+                                        <span class="kpi-split-leg">Eff <strong>{row.effettivoLabel}</strong></span>
+                                        <span class="kpi-split-leg">Prev <strong>{row.previstoLabel}</strong></span>
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Spese -->
@@ -68,6 +82,20 @@
                         </div>
                         <span class="kpi-progress-label">{speseAvanzamento}</span>
                     </div>
+                    <template if:true={hasPrograms}>
+                        <div class="kpi-split">
+                            <div class="kpi-split-title">Per programma</div>
+                            <template for:each={speseByProgram} for:item="row">
+                                <div key={row.key} class="kpi-split-row">
+                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
+                                    <span class="kpi-split-pair">
+                                        <span class="kpi-split-leg">Eff <strong>{row.effettivoLabel}</strong></span>
+                                        <span class="kpi-split-leg">Prev <strong>{row.previstoLabel}</strong></span>
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Cash Flow -->
@@ -95,6 +123,20 @@
                             Flusso negativo
                         </template>
                     </div>
+                    <template if:true={hasPrograms}>
+                        <div class="kpi-split">
+                            <div class="kpi-split-title">Per programma</div>
+                            <template for:each={cashFlowByProgram} for:item="row">
+                                <div key={row.key} class="kpi-split-row">
+                                    <span class="kpi-split-name" title={row.programName}>{row.programName}</span>
+                                    <span class="kpi-split-pair">
+                                        <span class="kpi-split-leg">Eff <strong class={row.valueClass}>{row.effettivoLabel}</strong></span>
+                                        <span class="kpi-split-leg">Prev <strong class={row.valueClass}>{row.previstoLabel}</strong></span>
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </div>
         </template>
