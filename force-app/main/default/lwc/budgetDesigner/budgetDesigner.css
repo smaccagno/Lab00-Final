@@ -693,18 +693,8 @@
     cursor: not-allowed;
 }
 
-/* Drag handle column — kept as narrow as possible so content aligns left */
-.sheet .col-handle { width: 18px; }
-
-.sheet thead th:first-child,
-.sheet tbody td.col-handle,
-.sheet .sheet-group-header > td.col-handle {
-    padding-left: 0;
-    padding-right: 0;
-    width: 18px;
-    min-width: 18px;
-    max-width: 18px;
-}
+/* Drag handle column: width è definito sopra (col-indent/col-handle=28px).
+   Qui solo zerare il padding per compattare l'icona maniglia. */
 
 .sheet-row-handle,
 .sheet-group-handle {
