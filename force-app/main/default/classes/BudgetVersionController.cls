@@ -216,6 +216,7 @@ public with sharing class BudgetVersionController {
                 }
                 if (it.Tipo__c == 'Incasso') {
                     incassi.add(new Voce_di_Incasso__c(
+                        Name = String.isBlank(it.Nome__c) ? 'Voce senza titolo' : it.Nome__c,
                         Budget_Version__c = versionId,
                         Programma__c = it.Programma__c,
                         Overview_Budget_per_Anno__c = overviewId,
@@ -227,6 +228,7 @@ public with sharing class BudgetVersionController {
                     ));
                 } else {
                     spese.add(new Voce_di_Spesa__c(
+                        Name = String.isBlank(it.Nome__c) ? 'Voce senza titolo' : it.Nome__c,
                         Budget_Version__c = versionId,
                         Programma__c = it.Programma__c,
                         Overview_Budget_per_Anno__c = overviewId,

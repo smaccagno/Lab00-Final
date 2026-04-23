@@ -794,9 +794,9 @@ export default class BudgetDesigner extends LightningElement {
         this.draftIncasso = { ...this.draftIncasso, [field]: value };
     }
 
-    async handleDraftIncassoSubmit() {
-        if (!this.isVersionEditable) return;
-        if (!this.isIncassoDraftValid(this.draftIncasso)) return;
+    async _persistDraftIncasso() {
+        if (!this.isVersionEditable) return false;
+        if (!this.isIncassoDraftValid(this.draftIncasso)) return false;
         const d = this.draftIncasso;
         const payload = {
             Budget_Version__c: this.selectedVersionId,
@@ -812,8 +812,17 @@ export default class BudgetDesigner extends LightningElement {
             await upsertItem({ item: payload });
             this.draftIncasso = this.emptyDraftIncasso();
             await refreshApex(this._wiredDetail);
-            this.focusAfterAdd('incasso');
-        } catch (e) { this.showError(e); }
+            return true;
+        } catch (e) { this.showError(e); return false; }
+    }
+
+    async handleDraftIncassoSubmit() {
+        const ok = await this._persistDraftIncasso();
+        if (ok) this.focusAfterAdd('incasso');
+    }
+
+    async handleDraftIncassoConfirm() {
+        await this._persistDraftIncasso();
     }
 
     // Handlers celle spese esistenti
@@ -843,9 +852,9 @@ export default class BudgetDesigner extends LightningElement {
         this.draftSpesa = updated;
     }
 
-    async handleDraftSpesaSubmit() {
-        if (!this.isVersionEditable) return;
-        if (!this.isSpesaDraftValid(this.draftSpesa)) return;
+    async _persistDraftSpesa() {
+        if (!this.isVersionEditable) return false;
+        if (!this.isSpesaDraftValid(this.draftSpesa)) return false;
         const d = this.draftSpesa;
         const payload = {
             Budget_Version__c: this.selectedVersionId,
@@ -863,8 +872,17 @@ export default class BudgetDesigner extends LightningElement {
             await upsertItem({ item: payload });
             this.draftSpesa = this.emptyDraftSpesa();
             await refreshApex(this._wiredDetail);
-            this.focusAfterAdd('spesa');
-        } catch (e) { this.showError(e); }
+            return true;
+        } catch (e) { this.showError(e); return false; }
+    }
+
+    async handleDraftSpesaSubmit() {
+        const ok = await this._persistDraftSpesa();
+        if (ok) this.focusAfterAdd('spesa');
+    }
+
+    async handleDraftSpesaConfirm() {
+        await this._persistDraftSpesa();
     }
 
     readEventValue(event) {

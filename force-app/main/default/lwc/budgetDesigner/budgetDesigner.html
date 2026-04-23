@@ -113,7 +113,7 @@
                                 <th scope="col" aria-label="Trascina"></th>
                                 <th scope="col">Programma</th>
                                 <th scope="col">Categoria</th>
-                                <th scope="col">Nome</th>
+                                <th scope="col">Titolo</th>
                                 <th scope="col">Data prevista</th>
                                 <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col" aria-label="Azioni"></th>
@@ -249,7 +249,7 @@
                                                         type="text"
                                                         variant="label-hidden"
                                                         value={row.name}
-                                                        placeholder="Nome voce"
+                                                        placeholder="Titolo"
                                                         data-id={row.id}
                                                         data-field="name"
                                                         onchange={handleRowCellChange}>
@@ -332,7 +332,7 @@
                                                 type="text"
                                                 variant="label-hidden"
                                                 value={draftIncassoView.name}
-                                                placeholder="Nome voce"
+                                                placeholder="Titolo"
                                                 data-scope="draft-incasso"
                                                 data-field="name"
                                                 onchange={handleDraftIncassoChange}>
@@ -364,12 +364,20 @@
                                             </lightning-input>
                                         </td>
                                         <td class="col-actions">
-                                            <button class="sheet-row-add"
-                                                    title="Aggiungi riga"
-                                                    disabled={draftIncassoAddDisabled}
-                                                    onclick={handleDraftIncassoSubmit}>
-                                                <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
-                                            </button>
+                                            <div class="sheet-row-actions">
+                                                <button class="sheet-row-action-btn sheet-row-action-btn--confirm"
+                                                        title="Conferma riga (non svuotare il form)"
+                                                        disabled={draftIncassoAddDisabled}
+                                                        onclick={handleDraftIncassoConfirm}>
+                                                    <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                                </button>
+                                                <button class="sheet-row-add"
+                                                        title="Aggiungi riga e preparane un'altra"
+                                                        disabled={draftIncassoAddDisabled}
+                                                        onclick={handleDraftIncassoSubmit}>
+                                                    <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -420,7 +428,7 @@
                                 <th scope="col">Programma</th>
                                 <th scope="col">Categoria</th>
                                 <th scope="col">Sottocategoria</th>
-                                <th scope="col">Nome</th>
+                                <th scope="col">Titolo</th>
                                 <th scope="col">Data prevista</th>
                                 <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col">Note</th>
@@ -570,7 +578,7 @@
                                                         type="text"
                                                         variant="label-hidden"
                                                         value={row.name}
-                                                        placeholder="Nome voce"
+                                                        placeholder="Titolo"
                                                         data-id={row.id}
                                                         data-field="name"
                                                         onchange={handleRowCellChange}>
@@ -675,7 +683,7 @@
                                             type="text"
                                             variant="label-hidden"
                                             value={draftSpesaView.name}
-                                            placeholder="Nome voce"
+                                            placeholder="Titolo"
                                             data-scope="draft-spesa"
                                             data-field="name"
                                             onchange={handleDraftSpesaChange}>
@@ -718,12 +726,20 @@
                                         </lightning-input>
                                     </td>
                                     <td class="col-actions">
-                                        <button class="sheet-row-add"
-                                                title="Aggiungi riga"
-                                                disabled={draftSpesaAddDisabled}
-                                                onclick={handleDraftSpesaSubmit}>
-                                            <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
-                                        </button>
+                                        <div class="sheet-row-actions">
+                                            <button class="sheet-row-action-btn sheet-row-action-btn--confirm"
+                                                    title="Conferma riga (non svuotare il form)"
+                                                    disabled={draftSpesaAddDisabled}
+                                                    onclick={handleDraftSpesaConfirm}>
+                                                <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Conferma"></lightning-icon>
+                                            </button>
+                                            <button class="sheet-row-add"
+                                                    title="Aggiungi riga e preparane un'altra"
+                                                    disabled={draftSpesaAddDisabled}
+                                                    onclick={handleDraftSpesaSubmit}>
+                                                <lightning-icon icon-name="utility:add" size="xx-small" alternative-text="Aggiungi"></lightning-icon>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

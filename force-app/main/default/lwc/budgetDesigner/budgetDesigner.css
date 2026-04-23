@@ -760,3 +760,14 @@
     border-color: #0176d3;
     box-shadow: 0 0 0 1px #0176d3;
 }
+
+/* Confirm button in draft row (next to the +) */
+.sheet-row-action-btn--confirm {
+    color: #2e844a;
+}
+.sheet-row-action-btn--confirm:hover:not([disabled]),
+.sheet-row-action-btn--confirm:focus:not([disabled]) {
+    background: rgba(46, 132, 74, 0.15);
+    color: #1b5a30;
+    outline: none;
+}
