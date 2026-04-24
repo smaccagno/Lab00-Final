@@ -125,7 +125,7 @@
 
 .program-card {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.65rem;
     padding: 0.6rem 0.7rem;
     background: #ffffff;
@@ -135,7 +135,7 @@
     text-align: left;
     transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
     font-family: inherit;
-    min-height: 68px;
+    min-height: 88px;
 }
 
 .program-card:hover {
@@ -192,35 +192,78 @@
     line-height: 1.2;
 }
 
-.program-card-progress {
+/* Tre righe metriche compatte sotto il nome: Incassi / Spese / Disponibile.
+   Layout a griglia per allineare barra e importo lungo tutte le righe. */
+.program-card-metrics {
     display: flex;
-    align-items: center;
-    gap: 0.45rem;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.program-card-track {
-    flex: 1;
-    height: 5px;
+.program-card-metric {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+}
+
+.program-card-metric-label {
+    font-weight: 700;
+    color: #547190;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.program-card-metric-track {
+    height: 4px;
     background: #ededed;
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
     min-width: 0;
 }
 
-.program-card-fill {
+.program-card-metric-bar {
     display: block;
     height: 100%;
-    background: linear-gradient(90deg, #91c8a0 0%, #2e844a 100%);
-    border-radius: 3px;
-    transition: width 0.5s ease-out;
+    border-radius: 2px;
+    transition: width 0.4s ease-out;
 }
 
-.program-card-progress-label {
-    font-size: 0.7rem;
+.program-card-metric-bar--incasso {
+    background: linear-gradient(90deg, #91c8a0 0%, #2e844a 100%);
+}
+
+.program-card-metric-bar--spesa {
+    background: linear-gradient(90deg, #f5a2ac 0%, #c9263a 100%);
+}
+
+.program-card-metric-bar--disp-pos {
+    background: linear-gradient(90deg, #a3c7ef 0%, #0176d3 100%);
+}
+
+.program-card-metric-bar--disp-neg {
+    background: linear-gradient(90deg, #e8c07a 0%, #b67d11 100%);
+}
+
+.program-card-metric-value {
+    font-variant-numeric: tabular-nums;
     font-weight: 700;
-    color: #547190;
-    min-width: 32px;
+    color: #16325c;
     text-align: right;
+    white-space: nowrap;
+}
+
+.program-card-metric--incasso .program-card-metric-value { color: #1b5a30; }
+.program-card-metric--spesa    .program-card-metric-value { color: #a00015; }
+.program-card-metric--disp-pos .program-card-metric-value { color: #014f8e; }
+.program-card-metric--disp-neg .program-card-metric-value { color: #7d5400; }
+
+.program-card-metrics-empty {
+    font-size: 0.7rem;
+    font-style: italic;
+    color: #a0adc2;
 }
 
 .program-detail-grid {

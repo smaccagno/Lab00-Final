@@ -179,21 +179,84 @@ export default class BudgetAppDashboard extends NavigationMixin(LightningElement
         return (this.programs || []).map(p => {
             const isSelected = p.Id === this.selectedProgramId;
             const kpi = this.programsKpisByProgramId[p.Id];
-            const avanzamento = kpi ? Number(kpi.avanzamentoIncassi) || 0 : 0;
-            const clamped = Math.min(100, Math.max(0, avanzamento));
             const hasData = !!kpi;
+
+            const incEff = kpi ? (Number(kpi.incassiEffettivo) || 0) : 0;
+            const incTot = kpi ? (Number(kpi.incassiTotale) || 0) : 0;
+            const speEff = kpi ? (Number(kpi.speseEffettivo) || 0) : 0;
+            const speTot = kpi ? (Number(kpi.speseTotale) || 0) : 0;
+            const dispEff = kpi ? (Number(kpi.cashFlowEffettivo) || 0) : 0;
+            const dispTot = kpi ? (Number(kpi.cashFlowTotale) || 0) : 0;
+
+            const incPct = incTot > 0 ? Math.min(100, (incEff / incTot) * 100) : 0;
+            const spePct = speTot > 0 ? Math.min(100, (speEff / speTot) * 100) : 0;
+            // La barra del Disponibile rappresenta quanto dell'atteso è già
+            // stato raggiunto (effettivo/totale), con segno dedotto dal colore.
+            const dispMagnitude = Math.abs(dispTot);
+            const dispPct = dispMagnitude > 0
+                ? Math.min(100, (Math.abs(dispEff) / dispMagnitude) * 100)
+                : 0;
+            const dispPositive = dispEff >= 0;
+
             return {
                 Id: p.Id,
                 DisplayName: p.DisplayName,
                 initial: this.buildInitial(p.DisplayName),
-                progressLabel: hasData ? `${clamped.toFixed(0)}%` : '—',
-                progressStyle: `width: ${clamped}%`,
-                progressEmpty: !hasData,
+                hasData,
+                metrics: hasData ? [
+                    {
+                        key: 'inc',
+                        label: 'Inc',
+                        title: `Incassi effettivi ${this.formatEuro(incEff)} su ${this.formatEuro(incTot)} attesi`,
+                        valueFmt: this.formatEuroCompact(incEff),
+                        barStyle: `width: ${incPct}%`,
+                        barClass: 'program-card-metric-bar program-card-metric-bar--incasso',
+                        pct: `${incPct.toFixed(0)}%`,
+                        rowClass: 'program-card-metric program-card-metric--incasso'
+                    },
+                    {
+                        key: 'spe',
+                        label: 'Sp',
+                        title: `Spese effettive ${this.formatEuro(speEff)} su ${this.formatEuro(speTot)} attese`,
+                        valueFmt: this.formatEuroCompact(speEff),
+                        barStyle: `width: ${spePct}%`,
+                        barClass: 'program-card-metric-bar program-card-metric-bar--spesa',
+                        pct: `${spePct.toFixed(0)}%`,
+                        rowClass: 'program-card-metric program-card-metric--spesa'
+                    },
+                    {
+                        key: 'disp',
+                        label: 'Disp',
+                        title: `Disponibile effettivo ${this.formatEuro(dispEff)} (atteso ${this.formatEuro(dispTot)})`,
+                        valueFmt: this.formatEuroCompact(dispEff),
+                        barStyle: `width: ${dispPct}%`,
+                        barClass: dispPositive
+                            ? 'program-card-metric-bar program-card-metric-bar--disp-pos'
+                            : 'program-card-metric-bar program-card-metric-bar--disp-neg',
+                        pct: `${dispPct.toFixed(0)}%`,
+                        rowClass: dispPositive
+                            ? 'program-card-metric program-card-metric--disp-pos'
+                            : 'program-card-metric program-card-metric--disp-neg'
+                    }
+                ] : [],
                 cardClass: isSelected
                     ? 'program-card is-selected'
                     : 'program-card'
             };
         });
+    }
+
+    // Formato compatto per i valori nelle card: 1.200€ senza decimali,
+    // k/M se oltre le soglie, per non rompere layout a 180px.
+    formatEuroCompact(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '—';
+        const sign = n < 0 ? '-' : '';
+        const abs = Math.abs(n);
+        if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(1)}M€`;
+        if (abs >= 10000)   return `${sign}${Math.round(abs / 1000)}k€`;
+        if (abs >= 1000)    return `${sign}${(abs / 1000).toFixed(1)}k€`;
+        return `${sign}${Math.round(abs)}€`;
     }
 
     buildInitial(name) {

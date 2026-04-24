@@ -159,12 +159,22 @@
                                 <span class="program-card-avatar">{prog.initial}</span>
                                 <span class="program-card-body">
                                     <span class="program-card-name">{prog.DisplayName}</span>
-                                    <span class="program-card-progress">
-                                        <span class="program-card-track">
-                                            <span class="program-card-fill" style={prog.progressStyle}></span>
+                                    <template if:true={prog.hasData}>
+                                        <span class="program-card-metrics">
+                                            <template for:each={prog.metrics} for:item="m">
+                                                <span key={m.key} class={m.rowClass} title={m.title}>
+                                                    <span class="program-card-metric-label">{m.label}</span>
+                                                    <span class="program-card-metric-track">
+                                                        <span class={m.barClass} style={m.barStyle}></span>
+                                                    </span>
+                                                    <span class="program-card-metric-value">{m.valueFmt}</span>
+                                                </span>
+                                            </template>
                                         </span>
-                                        <span class="program-card-progress-label">{prog.progressLabel}</span>
-                                    </span>
+                                    </template>
+                                    <template if:false={prog.hasData}>
+                                        <span class="program-card-metrics-empty">nessun dato</span>
+                                    </template>
                                 </span>
                             </button>
                         </template>
