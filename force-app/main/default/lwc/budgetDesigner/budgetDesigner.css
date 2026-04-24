@@ -431,7 +431,16 @@
 
 .sheet td.col-prog { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Ammontare: allineamento a destra su header, celle lette e celle in edit
+   (l'input number di default allinea a sinistra). */
+.sheet .col-amount,
+.sheet th.col-amount,
 .sheet td.col-amount {
+    text-align: right;
+}
+
+.sheet td.col-amount lightning-input,
+.sheet td.col-amount .slds-input {
     text-align: right;
 }
 
