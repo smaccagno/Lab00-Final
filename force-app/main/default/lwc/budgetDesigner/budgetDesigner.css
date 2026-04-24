@@ -304,18 +304,27 @@
 /* Colore di fondo applicato a tutte le celle del group header così la
    banda si estende fino alla fine della riga. !important per battere la
    regola generica .sheet tbody td { background:#fff }. */
+/* Gradiente sull'intera riga (non per colonna): il background è sulla
+   <tr> e le <td> sono rese trasparenti così il gradient attraversa tutta
+   la riga come un'unica fascia. */
+.sheet tbody tr.sheet-group-header--incassi {
+    background: linear-gradient(90deg, rgba(46, 132, 74, 0.28) 0%, rgba(46, 132, 74, 0.04) 100%);
+}
 .sheet tbody tr.sheet-group-header--incassi > th,
 .sheet tbody tr.sheet-group-header--incassi > td {
-    background: linear-gradient(90deg, rgba(46, 132, 74, 0.28) 0%, rgba(46, 132, 74, 0.04) 100%) !important;
+    background: transparent !important;
     color: #1b5a30;
 }
 .sheet tbody tr.sheet-group-header--incassi > td.col-indent {
     border-left: 3px solid #2e844a;
 }
 
+.sheet tbody tr.sheet-group-header--spese {
+    background: linear-gradient(90deg, rgba(234, 0, 30, 0.22) 0%, rgba(234, 0, 30, 0.03) 100%);
+}
 .sheet tbody tr.sheet-group-header--spese > th,
 .sheet tbody tr.sheet-group-header--spese > td {
-    background: linear-gradient(90deg, rgba(234, 0, 30, 0.22) 0%, rgba(234, 0, 30, 0.03) 100%) !important;
+    background: transparent !important;
     color: #a00015;
 }
 .sheet tbody tr.sheet-group-header--spese > td.col-indent {
@@ -836,15 +845,21 @@
     font-size: 0.76rem;
     color: #16325c;
 }
+.sheet tbody tr.sheet-subgroup-header--incassi {
+    background: linear-gradient(90deg, rgba(46, 132, 74, 0.14) 0%, rgba(46, 132, 74, 0.02) 100%);
+}
 .sheet tbody tr.sheet-subgroup-header--incassi > td {
-    background: linear-gradient(90deg, rgba(46, 132, 74, 0.14) 0%, rgba(46, 132, 74, 0.02) 100%) !important;
+    background: transparent !important;
     color: #1b5a30;
 }
 .sheet tbody tr.sheet-subgroup-header--incassi > td.col-prog {
     border-left: 3px solid #91c8a0;
 }
+.sheet tbody tr.sheet-subgroup-header--spese {
+    background: linear-gradient(90deg, rgba(234, 0, 30, 0.10) 0%, rgba(234, 0, 30, 0.015) 100%);
+}
 .sheet tbody tr.sheet-subgroup-header--spese > td {
-    background: linear-gradient(90deg, rgba(234, 0, 30, 0.10) 0%, rgba(234, 0, 30, 0.015) 100%) !important;
+    background: transparent !important;
     color: #a00015;
 }
 .sheet tbody tr.sheet-subgroup-header--spese > td.col-prog {
