@@ -28,9 +28,41 @@ function todayISO() {
     return new Date().toISOString().split('T')[0];
 }
 
+function endOfYearISO(yearStr) {
+    const y = parseInt(yearStr, 10);
+    if (!Number.isFinite(y)) return null;
+    return `${y}-12-31`;
+}
+
 export default class BudgetDesigner extends LightningElement {
     @track anno = currentYear();
     @track dataTarget = todayISO();
+
+    // Data filtro: influenza Totali, Disponibilità, sidebar KPI.
+    // Default 31/12 dell'anno del budget, si aggiorna quando cambia l'anno.
+    @track filterDate = endOfYearISO(currentYear());
+
+    monthOptions = [
+        { label: 'Gennaio', value: '1' },
+        { label: 'Febbraio', value: '2' },
+        { label: 'Marzo', value: '3' },
+        { label: 'Aprile', value: '4' },
+        { label: 'Maggio', value: '5' },
+        { label: 'Giugno', value: '6' },
+        { label: 'Luglio', value: '7' },
+        { label: 'Agosto', value: '8' },
+        { label: 'Settembre', value: '9' },
+        { label: 'Ottobre', value: '10' },
+        { label: 'Novembre', value: '11' },
+        { label: 'Dicembre', value: '12' }
+    ];
+
+    quickDateActionsRaw = [
+        { key: 'q1', label: 'T1', dateSuffix: '-03-31' },
+        { key: 'q2', label: 'T2', dateSuffix: '-06-30' },
+        { key: 'q3', label: 'T3', dateSuffix: '-09-30' },
+        { key: 'q4', label: 'T4', dateSuffix: '-12-31' }
+    ];
 
     @track incassi = [];   // [{ id, programmaId, programmaName, categoria, name, data, ammontare, sortOrder, ... }]
     @track spese = [];     // [{ id, programmaId, programmaName, categoria, sottocategoria, name, data, ammontare, note, sortOrder, ... }]
@@ -584,14 +616,59 @@ export default class BudgetDesigner extends LightningElement {
         return !!r.categoria && Number.isFinite(a) && a > 0;
     }
 
-    // Totals
+    // Totals — filtrati sulla filterDate (inclusa). Voci senza Data__c
+    // sono incluse (nessuna data implicita = valida per tutto l'anno).
+    _isInFilterScope(row) {
+        const f = this.filterDate;
+        if (!f) return true;
+        if (!row || !row.data) return true;
+        return String(row.data) <= String(f);
+    }
+
+    get incassiFilteredForTotals() {
+        return this.incassi.filter(r => this._isInFilterScope(r));
+    }
+
+    get speseFilteredForTotals() {
+        return this.spese.filter(r => this._isInFilterScope(r));
+    }
 
     get totalIncassi() {
-        return this.incassi.reduce((s, i) => s + (Number(i.ammontare) || 0), 0);
+        return this.incassiFilteredForTotals.reduce((s, i) => s + (Number(i.ammontare) || 0), 0);
     }
 
     get totalSpese() {
-        return this.spese.reduce((s, i) => s + (Number(i.ammontare) || 0), 0);
+        return this.speseFilteredForTotals.reduce((s, i) => s + (Number(i.ammontare) || 0), 0);
+    }
+
+    get totalDisponibilita() {
+        return this.totalIncassi - this.totalSpese;
+    }
+
+    get totalDisponibilitaLabel() {
+        return this.formatCurrency(this.totalDisponibilita);
+    }
+
+    get totalDisponibilitaClass() {
+        return this.totalDisponibilita >= 0
+            ? 'sheet-total-value sheet-total-value--disp sheet-total-value--positive'
+            : 'sheet-total-value sheet-total-value--disp sheet-total-value--negative';
+    }
+
+    get totalDisponibilitaLabelText() {
+        const d = this.filterDateFormatted || '—';
+        return `Totale Disponibilità alla data ${d}`;
+    }
+
+    get filterDateFormatted() {
+        if (!this.filterDate) return '';
+        const [y, m, dd] = String(this.filterDate).split('-');
+        return `${dd}/${m}/${y}`;
+    }
+
+    get overviewTitle() {
+        const d = this.filterDateFormatted;
+        return d ? `Vista Omnicomprensiva alla data ${d}` : 'Vista Omnicomprensiva';
     }
 
     get cashFlow() {
@@ -622,12 +699,12 @@ export default class BudgetDesigner extends LightningElement {
         return this.totalItems > 0;
     }
 
-    // Aggregates per overview-bars (per categoria)
+    // Aggregates per overview-bars (per categoria), filtrati su filterDate.
     get incassiByCategoryBars() {
         const total = this.totalIncassi;
         if (total === 0) return [];
         const map = new Map();
-        for (const r of this.incassi) {
+        for (const r of this.incassiFilteredForTotals) {
             const k = r.categoria || 'Non categorizzato';
             map.set(k, (map.get(k) || 0) + (Number(r.ammontare) || 0));
         }
@@ -646,7 +723,7 @@ export default class BudgetDesigner extends LightningElement {
         const total = this.totalSpese;
         if (total === 0) return [];
         const map = new Map();
-        for (const r of this.spese) {
+        for (const r of this.speseFilteredForTotals) {
             const k = r.categoria || 'Non categorizzato';
             map.set(k, (map.get(k) || 0) + (Number(r.ammontare) || 0));
         }
@@ -668,10 +745,46 @@ export default class BudgetDesigner extends LightningElement {
         // Reset version selection so the new year's wire picks the default.
         this.selectedVersionId = null;
         this.currentVersion = null;
+        // Aggancia filterDate al nuovo anno: default 31/12 di quell'anno.
+        this.filterDate = endOfYearISO(this.anno) || this.filterDate;
     }
 
     handleDataTargetChange(event) {
         this.dataTarget = event.target.value || todayISO();
+    }
+
+    // ── Filtro data (influenza totali, disponibilità, sidebar) ────────
+    handleFilterDateChange(event) {
+        const v = event.detail ? event.detail.value : event.target && event.target.value;
+        this.filterDate = v || endOfYearISO(this.anno);
+    }
+
+    handleFilterMonthChange(event) {
+        const monthStr = event.detail ? event.detail.value : event.target && event.target.value;
+        const m = parseInt(monthStr, 10);
+        if (!Number.isFinite(m) || m < 1 || m > 12) return;
+        const y = parseInt(this.anno, 10);
+        if (!Number.isFinite(y)) return;
+        // Ultimo giorno del mese scelto nell'anno del budget.
+        const lastDay = new Date(y, m, 0).getDate();
+        this.filterDate = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+
+    handleFilterQuickClick(event) {
+        const key = event.currentTarget.dataset.key;
+        const action = this.quickDateActionsRaw.find(a => a.key === key);
+        if (!action) return;
+        this.filterDate = `${this.anno}${action.dateSuffix}`;
+    }
+
+    get filterQuickActions() {
+        const active = this.filterDate || '';
+        return this.quickDateActionsRaw.map(a => ({
+            ...a,
+            buttonClass: active === `${this.anno}${a.dateSuffix}`
+                ? 'filter-date-btn filter-date-btn--active'
+                : 'filter-date-btn'
+        }));
     }
 
     // ── Budget Version handlers ───────────────────────────────────────

@@ -77,6 +77,43 @@
             </div>
         </template>
 
+        <!-- Selettore data (replica toolbar dashboard, ma anno bloccato) -->
+        <div class="filter-date-toolbar">
+            <div class="filter-date-year">
+                <span class="filter-date-year-label">Anno Budget</span>
+                <span class="filter-date-year-value">{annoInt}</span>
+            </div>
+            <div class="filter-date-input">
+                <label class="slds-form-element__label slds-text-title_bold" for="budget-designer-date">Filtra per Data</label>
+                <lightning-input
+                    id="budget-designer-date"
+                    type="date"
+                    variant="label-hidden"
+                    value={filterDate}
+                    onchange={handleFilterDateChange}>
+                </lightning-input>
+            </div>
+            <div class="filter-date-actions">
+                <template for:each={filterQuickActions} for:item="action">
+                    <button
+                        key={action.key}
+                        class={action.buttonClass}
+                        data-key={action.key}
+                        onclick={handleFilterQuickClick}>
+                        {action.label}
+                    </button>
+                </template>
+                <div class="filter-date-month">
+                    <lightning-combobox
+                        variant="label-hidden"
+                        placeholder="Mese"
+                        options={monthOptions}
+                        onchange={handleFilterMonthChange}>
+                    </lightning-combobox>
+                </div>
+            </div>
+        </div>
+
         <!-- Selettore raggruppamento -->
         <div class="group-toggle-bar">
             <span class="group-toggle-label">Raggruppa per:</span>
@@ -128,8 +165,8 @@
                             <col class="col-cat"/>
                             <col class="col-name"/>
                             <col class="col-date"/>
-                            <col class="col-amount"/>
                             <col class="col-note"/>
+                            <col class="col-amount"/>
                             <col class="col-actions"/>
                         </colgroup>
                         <thead>
@@ -140,8 +177,8 @@
                                 <th scope="col">Categoria</th>
                                 <th scope="col">Titolo</th>
                                 <th scope="col">Data prevista</th>
-                                <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col">Note</th>
+                                <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col" class="col-actions">
                                     <template if:true={isVersionEditable}>
                                         <div class="sheet-row-actions">
@@ -182,12 +219,11 @@
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
                                         <td class="col-handle"></td>
-                                        <td colspan="4" class="sheet-group-name-cell">
+                                        <td colspan="5" class="sheet-group-name-cell">
                                             <span class="sheet-group-name">{grp.outerLabel}</span>
                                             <span class="sheet-group-count">{grp.countLabel}</span>
                                         </td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
-                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
@@ -217,12 +253,11 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--incassi">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td colspan="4" class="sheet-group-name-cell sheet-subgroup-name-cell">
+                                        <td colspan="5" class="sheet-group-name-cell sheet-subgroup-name-cell">
                                             <span class="sheet-group-name">{sub.innerLabel}</span>
                                             <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--incassi">{sub.subtotalFormatted}</td>
-                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
@@ -269,8 +304,8 @@
                                                 <td>{row.categoria}</td>
                                                 <td class="col-text-wrap">{row.name}</td>
                                                 <td>{row.data}</td>
-                                                <td class="col-amount">{row.ammontareFmt}</td>
                                                 <td class="col-text-wrap">{row.note}</td>
+                                                <td class="col-amount">{row.ammontareFmt}</td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
                                                         <template if:true={isVersionEditable}>
@@ -374,6 +409,17 @@
                                                         onchange={handleRowCellChange}>
                                                     </lightning-input>
                                                 </td>
+                                                <td>
+                                                    <lightning-textarea
+                                                        variant="label-hidden"
+                                                        value={row.note}
+                                                        placeholder="Note"
+                                                        class="cell-textarea"
+                                                        data-id={row.id}
+                                                        data-field="note"
+                                                        onchange={handleRowCellChange}>
+                                                    </lightning-textarea>
+                                                </td>
                                                 <td class="col-amount">
                                                     <lightning-input
                                                         type="number"
@@ -386,17 +432,6 @@
                                                         data-field="ammontare"
                                                         onchange={handleRowCellChange}>
                                                     </lightning-input>
-                                                </td>
-                                                <td>
-                                                    <lightning-textarea
-                                                        variant="label-hidden"
-                                                        value={row.note}
-                                                        placeholder="Note"
-                                                        class="cell-textarea"
-                                                        data-id={row.id}
-                                                        data-field="note"
-                                                        onchange={handleRowCellChange}>
-                                                    </lightning-textarea>
                                                 </td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
@@ -471,6 +506,17 @@
                                                 onchange={handleDraftIncassoChange}>
                                             </lightning-input>
                                         </td>
+                                        <td>
+                                            <lightning-textarea
+                                                variant="label-hidden"
+                                                value={draftIncassoView.note}
+                                                placeholder="Note"
+                                                class="cell-textarea"
+                                                data-scope="draft-incasso"
+                                                data-field="note"
+                                                onchange={handleDraftIncassoChange}>
+                                            </lightning-textarea>
+                                        </td>
                                         <td class="col-amount">
                                             <lightning-input
                                                 type="number"
@@ -484,17 +530,6 @@
                                                 data-field="ammontare"
                                                 onchange={handleDraftIncassoChange}>
                                             </lightning-input>
-                                        </td>
-                                        <td>
-                                            <lightning-textarea
-                                                variant="label-hidden"
-                                                value={draftIncassoView.note}
-                                                placeholder="Note"
-                                                class="cell-textarea"
-                                                data-scope="draft-incasso"
-                                                data-field="note"
-                                                onchange={handleDraftIncassoChange}>
-                                            </lightning-textarea>
                                         </td>
                                         <td class="col-actions">
                                             <div class="sheet-row-actions">
@@ -517,9 +552,9 @@
                             </template>
                             <tfoot>
                                 <tr class="sheet-total-row">
-                                    <th scope="row" colspan="6">Totale Incassi</th>
+                                    <th scope="row" colspan="7">Totale Incassi</th>
                                     <td class="col-amount sheet-total-value sheet-total-value--incassi">{totalIncassiLabel}</td>
-                                    <td colspan="2"></td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                     </table>
@@ -552,8 +587,8 @@
                             <col class="col-subcat"/>
                             <col class="col-name"/>
                             <col class="col-date"/>
-                            <col class="col-amount"/>
                             <col class="col-note"/>
+                            <col class="col-amount"/>
                             <col class="col-actions"/>
                         </colgroup>
                         <thead>
@@ -565,8 +600,8 @@
                                 <th scope="col">Sottocategoria</th>
                                 <th scope="col">Titolo</th>
                                 <th scope="col">Data prevista</th>
-                                <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col">Note</th>
+                                <th scope="col" class="col-amount">Ammontare</th>
                                 <th scope="col" class="col-actions">
                                     <template if:true={isVersionEditable}>
                                         <div class="sheet-row-actions">
@@ -607,12 +642,11 @@
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
                                         <td class="col-handle"></td>
-                                        <td colspan="5" class="sheet-group-name-cell">
+                                        <td colspan="6" class="sheet-group-name-cell">
                                             <span class="sheet-group-name">{grp.outerLabel}</span>
                                             <span class="sheet-group-count">{grp.countLabel}</span>
                                         </td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
-                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
@@ -642,12 +676,11 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--spese">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td colspan="5" class="sheet-group-name-cell sheet-subgroup-name-cell">
+                                        <td colspan="6" class="sheet-group-name-cell sheet-subgroup-name-cell">
                                             <span class="sheet-group-name">{sub.innerLabel}</span>
                                             <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--spese">{sub.subtotalFormatted}</td>
-                                        <td class="col-note"></td>
                                         <td class="col-actions">
                                             <template if:true={isVersionEditable}>
                                                 <div class="sheet-row-actions">
@@ -695,8 +728,8 @@
                                                 <td>{row.sottocategoria}</td>
                                                 <td class="col-text-wrap">{row.name}</td>
                                                 <td>{row.data}</td>
-                                                <td class="col-amount">{row.ammontareFmt}</td>
                                                 <td class="col-text-wrap">{row.note}</td>
+                                                <td class="col-amount">{row.ammontareFmt}</td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
                                                         <template if:true={isVersionEditable}>
@@ -811,6 +844,17 @@
                                                         onchange={handleRowCellChange}>
                                                     </lightning-input>
                                                 </td>
+                                                <td>
+                                                    <lightning-textarea
+                                                        variant="label-hidden"
+                                                        value={row.note}
+                                                        placeholder="Note"
+                                                        class="cell-textarea"
+                                                        data-id={row.id}
+                                                        data-field="note"
+                                                        onchange={handleRowCellChange}>
+                                                    </lightning-textarea>
+                                                </td>
                                                 <td class="col-amount">
                                                     <lightning-input
                                                         type="number"
@@ -823,17 +867,6 @@
                                                         data-field="ammontare"
                                                         onchange={handleRowCellChange}>
                                                     </lightning-input>
-                                                </td>
-                                                <td>
-                                                    <lightning-textarea
-                                                        variant="label-hidden"
-                                                        value={row.note}
-                                                        placeholder="Note"
-                                                        class="cell-textarea"
-                                                        data-id={row.id}
-                                                        data-field="note"
-                                                        onchange={handleRowCellChange}>
-                                                    </lightning-textarea>
                                                 </td>
                                                 <td class="col-actions">
                                                     <div class="sheet-row-actions">
@@ -919,6 +952,17 @@
                                             onchange={handleDraftSpesaChange}>
                                         </lightning-input>
                                     </td>
+                                    <td>
+                                        <lightning-textarea
+                                            variant="label-hidden"
+                                            value={draftSpesaView.note}
+                                            placeholder="Note"
+                                            class="cell-textarea"
+                                            data-scope="draft-spesa"
+                                            data-field="note"
+                                            onchange={handleDraftSpesaChange}>
+                                        </lightning-textarea>
+                                    </td>
                                     <td class="col-amount">
                                         <lightning-input
                                             type="number"
@@ -932,17 +976,6 @@
                                             data-field="ammontare"
                                             onchange={handleDraftSpesaChange}>
                                         </lightning-input>
-                                    </td>
-                                    <td>
-                                        <lightning-textarea
-                                            variant="label-hidden"
-                                            value={draftSpesaView.note}
-                                            placeholder="Note"
-                                            class="cell-textarea"
-                                            data-scope="draft-spesa"
-                                            data-field="note"
-                                            onchange={handleDraftSpesaChange}>
-                                        </lightning-textarea>
                                     </td>
                                     <td class="col-actions">
                                         <div class="sheet-row-actions">
@@ -965,9 +998,14 @@
                             </template>
                         <tfoot>
                             <tr class="sheet-total-row">
-                                <th scope="row" colspan="7">Totale Spese</th>
+                                <th scope="row" colspan="8">Totale Spese</th>
                                 <td class="col-amount sheet-total-value sheet-total-value--spese">{totalSpeseLabel}</td>
-                                <td colspan="2"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="sheet-total-row sheet-total-row--disp">
+                                <th scope="row" colspan="8">{totalDisponibilitaLabelText}</th>
+                                <td class={totalDisponibilitaClass}>{totalDisponibilitaLabel}</td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -982,7 +1020,7 @@
                 <div class="designer-overview-inner">
                     <div class="designer-card-head">
                         <lightning-icon icon-name="utility:chart" size="x-small"></lightning-icon>
-                        <h2>Vista Omnicomprensiva</h2>
+                        <h2>{overviewTitle}</h2>
                     </div>
 
                     <div class="kpi-stack">

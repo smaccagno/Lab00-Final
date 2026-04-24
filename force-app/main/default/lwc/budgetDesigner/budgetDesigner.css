@@ -387,22 +387,24 @@
 .sheet td.col-indent { padding: 0; }
 .sheet td.col-handle { padding: 0; text-align: center; }
 
-/* Incassi: 9 colonne (indent + handle + 6 dinamiche + actions); somma % = 100 */
-.sheet--incassi .col-prog   { width: 18%; }
-.sheet--incassi .col-cat    { width: 18%; }
-.sheet--incassi .col-name   { width: 22%; }
-.sheet--incassi .col-date   { width: 13%; }
-.sheet--incassi .col-amount { width: 13%; text-align: right; }
-.sheet--incassi .col-note   { width: 16%; }
+/* Ammontare: stessa larghezza fissa in entrambe le tabelle, così l'importo
+   resta sempre sulla stessa colonna visuale tra Incassi e Spese. */
+.sheet .col-amount { width: 110px; text-align: right; }
 
-/* Spese: 10 colonne (indent + handle + 7 dinamiche + actions) */
-.sheet--spese .col-prog   { width: 13%; }
+/* Incassi: 9 colonne (indent + handle + 6 dinamiche + actions). */
+.sheet--incassi .col-prog { width: 20%; }
+.sheet--incassi .col-cat  { width: 18%; }
+.sheet--incassi .col-name { width: 24%; }
+.sheet--incassi .col-date { width: 14%; }
+.sheet--incassi .col-note { width: 24%; }
+
+/* Spese: 10 colonne (indent + handle + 7 dinamiche + actions). */
+.sheet--spese .col-prog   { width: 14%; }
 .sheet--spese .col-cat    { width: 13%; }
 .sheet--spese .col-subcat { width: 14%; }
-.sheet--spese .col-name   { width: 17%; }
-.sheet--spese .col-date   { width: 12%; }
-.sheet--spese .col-amount { width: 11%; text-align: right; }
-.sheet--spese .col-note   { width: 20%; }
+.sheet--spese .col-name   { width: 19%; }
+.sheet--spese .col-date   { width: 13%; }
+.sheet--spese .col-note   { width: 27%; }
 
 /* Icons inside the actions cell: no wrapping, avoid overflow */
 .sheet td.col-actions { white-space: nowrap; overflow: hidden; }
@@ -971,3 +973,97 @@
 .group-toggle--right .group-toggle-thumb {
     left: 50%;
 }
+
+/* ── Filtro data toolbar ──────────────────────────────────────────── */
+.filter-date-toolbar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(180deg, #f4f6fb 0%, #eaf0f9 100%);
+    border: 1px solid #d3dbe8;
+    border-radius: 8px;
+}
+
+.filter-date-year {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0 0.5rem;
+    border-right: 1px solid #d3dbe8;
+    margin-right: 0.25rem;
+}
+
+.filter-date-year-label {
+    font-size: 0.7rem;
+    color: #547190;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+}
+
+.filter-date-year-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #16325c;
+}
+
+.filter-date-input {
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+}
+
+.filter-date-input label {
+    margin-bottom: 0.15rem;
+}
+
+.filter-date-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.filter-date-btn {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #c6d1e3;
+    background: #ffffff;
+    color: #16325c;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-date-btn:hover {
+    background: #eaf0f9;
+    border-color: #0176d3;
+}
+
+.filter-date-btn--active {
+    background: linear-gradient(135deg, #0176d3 0%, #014f8e 100%);
+    color: #ffffff;
+    border-color: transparent;
+}
+
+.filter-date-month {
+    min-width: 140px;
+}
+
+/* Riga Totale Disponibilità: stile uguale alla total-row, ma con value
+   colorato in base al segno (positivo blu, negativo ocra). */
+.sheet-total-row--disp th {
+    color: #14365a;
+}
+
+.sheet-total-value--disp {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.95rem;
+}
+
+.sheet-total-value--positive { color: #014f8e; }
+.sheet-total-value--negative { color: #7d5400; }
