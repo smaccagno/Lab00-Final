@@ -651,8 +651,8 @@ export default class BudgetDesigner extends LightningElement {
 
     get totalDisponibilitaClass() {
         return this.totalDisponibilita >= 0
-            ? 'sheet-total-value sheet-total-value--disp sheet-total-value--positive'
-            : 'sheet-total-value sheet-total-value--disp sheet-total-value--negative';
+            ? 'col-amount sheet-total-value sheet-total-value--disp sheet-total-value--positive'
+            : 'col-amount sheet-total-value sheet-total-value--disp sheet-total-value--negative';
     }
 
     get totalDisponibilitaLabelText() {
