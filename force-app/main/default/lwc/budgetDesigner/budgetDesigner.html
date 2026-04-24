@@ -1183,5 +1183,15 @@
             </section>
             <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
         </template>
+
+        <!-- ── Overlay spinner: bulk Conferma in corso ── -->
+        <template if:true={bulkSaving}>
+            <div class="bulk-saving-overlay" role="status" aria-live="polite">
+                <div class="bulk-saving-box">
+                    <lightning-spinner alternative-text="Salvataggio in corso" size="medium" variant="brand"></lightning-spinner>
+                    <p class="bulk-saving-msg">{bulkSavingMessage}</p>
+                </div>
+            </div>
+        </template>
     </div>
 </template>

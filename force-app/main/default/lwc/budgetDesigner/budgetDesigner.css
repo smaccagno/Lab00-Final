@@ -1076,3 +1076,32 @@
 
 .sheet-total-value--positive { color: #014f8e; }
 .sheet-total-value--negative { color: #7d5400; }
+
+/* ── Bulk saving overlay ────────────────────────────────────────── */
+.bulk-saving-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(22, 50, 92, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(1px);
+}
+
+.bulk-saving-box {
+    position: relative;
+    min-width: 220px;
+    padding: 1.6rem 1.8rem 1.2rem;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    text-align: center;
+}
+
+.bulk-saving-msg {
+    margin: 2.5rem 0 0 0;
+    color: #16325c;
+    font-weight: 600;
+    font-size: 0.9rem;
+}

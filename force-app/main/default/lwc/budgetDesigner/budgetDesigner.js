@@ -109,6 +109,10 @@ export default class BudgetDesigner extends LightningElement {
     @track currentVersion = null;       // DTO header
     @track editingRowIds = new Set();   // ids Budget_Version_Item__c attualmente in Edit
     @track pendingRowEdits = new Map(); // Map<Id, {original, current}>
+    // Overlay spinner durante operazioni long-running (es. bulk confirm).
+    @track bulkSaving = false;
+    @track bulkSavingMessage = '';
+
     @track showCreateVersionDialog = false;
     @track showRenameVersionDialog = false;
     @track showTrashVersionDialog = false;
@@ -1419,6 +1423,8 @@ export default class BudgetDesigner extends LightningElement {
             });
         }
         if (payloads.length === 0) return;
+        this.bulkSaving = true;
+        this.bulkSavingMessage = `Salvataggio di ${payloads.length} riga${payloads.length === 1 ? '' : 'he'}…`;
         try {
             for (const p of payloads) {
                 // eslint-disable-next-line no-await-in-loop
@@ -1435,6 +1441,10 @@ export default class BudgetDesigner extends LightningElement {
             await refreshApex(this._wiredDetail);
             this._remapRowsFromCache();
         } catch (e) { this.showError(e); }
+        finally {
+            this.bulkSaving = false;
+            this.bulkSavingMessage = '';
+        }
     }
 
     // Al drag-drop cross-categoria persistiamo la nuova categoria sul server,
