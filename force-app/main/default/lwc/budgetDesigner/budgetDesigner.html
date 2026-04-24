@@ -182,15 +182,10 @@
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
                                         <td class="col-handle"></td>
-                                        <td class="col-prog sheet-group-name-cell">
-                                            <span class="sheet-group-name-float">
-                                                <span class="sheet-group-name">{grp.outerLabel}</span>
-                                                <span class="sheet-group-count">{grp.countLabel}</span>
-                                            </span>
+                                        <td colspan="4" class="sheet-group-name-cell">
+                                            <span class="sheet-group-name">{grp.outerLabel}</span>
+                                            <span class="sheet-group-count">{grp.countLabel}</span>
                                         </td>
-                                        <td class="col-cat"></td>
-                                        <td class="col-name"></td>
-                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--incassi">{grp.subtotalFormatted}</td>
                                         <td class="col-note"></td>
                                         <td class="col-actions">
@@ -222,15 +217,10 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--incassi">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td class="col-prog sheet-group-name-cell">
-                                            <span class="sheet-group-name-float">
-                                                <span class="sheet-group-name">{sub.innerLabel}</span>
-                                                <span class="sheet-subgroup-count">{sub.countLabel}</span>
-                                            </span>
+                                        <td colspan="4" class="sheet-group-name-cell sheet-subgroup-name-cell">
+                                            <span class="sheet-group-name">{sub.innerLabel}</span>
+                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
-                                        <td class="col-cat"></td>
-                                        <td class="col-name"></td>
-                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--incassi">{sub.subtotalFormatted}</td>
                                         <td class="col-note"></td>
                                         <td class="col-actions">
@@ -617,16 +607,10 @@
                                             <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" alternative-text="Trascina"></lightning-icon>
                                         </td>
                                         <td class="col-handle"></td>
-                                        <td class="col-prog sheet-group-name-cell">
-                                            <span class="sheet-group-name-float">
-                                                <span class="sheet-group-name">{grp.outerLabel}</span>
-                                                <span class="sheet-group-count">{grp.countLabel}</span>
-                                            </span>
+                                        <td colspan="5" class="sheet-group-name-cell">
+                                            <span class="sheet-group-name">{grp.outerLabel}</span>
+                                            <span class="sheet-group-count">{grp.countLabel}</span>
                                         </td>
-                                        <td class="col-cat"></td>
-                                        <td class="col-subcat"></td>
-                                        <td class="col-name"></td>
-                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-group-subtotal sheet-group-subtotal--spese">{grp.subtotalFormatted}</td>
                                         <td class="col-note"></td>
                                         <td class="col-actions">
@@ -658,16 +642,10 @@
                                     <tr key={sub.key} class="sheet-subgroup-header sheet-subgroup-header--spese">
                                         <td class="col-indent"></td>
                                         <td class="col-handle"></td>
-                                        <td class="col-prog sheet-group-name-cell">
-                                            <span class="sheet-group-name-float">
-                                                <span class="sheet-group-name">{sub.innerLabel}</span>
-                                                <span class="sheet-subgroup-count">{sub.countLabel}</span>
-                                            </span>
+                                        <td colspan="5" class="sheet-group-name-cell sheet-subgroup-name-cell">
+                                            <span class="sheet-group-name">{sub.innerLabel}</span>
+                                            <span class="sheet-subgroup-count">{sub.countLabel}</span>
                                         </td>
-                                        <td class="col-cat"></td>
-                                        <td class="col-subcat"></td>
-                                        <td class="col-name"></td>
-                                        <td class="col-date"></td>
                                         <td class="col-amount sheet-subgroup-subtotal sheet-subgroup-subtotal--spese">{sub.subtotalFormatted}</td>
                                         <td class="col-note"></td>
                                         <td class="col-actions">

@@ -331,24 +331,18 @@
     border-left: 3px solid #ea001e;
 }
 
-/* Cella che contiene il nome del gruppo: deve permettere al label di
-   sfondare orizzontalmente sopra le celle vuote successive. */
+/* Cella che contiene il nome del gruppo. È una cella fisica unica
+   (colspan) che copre Programma+Categoria+[Sottocategoria]+Titolo+Data:
+   lo spazio è sufficiente per nomi lunghi + badge conteggio senza
+   tagliare. Ammontare e Actions sono celle separate, allineate
+   pixel-perfect con le righe dati grazie al <colgroup>. */
 .sheet-group-name-cell {
-    position: relative;
-    overflow: visible;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.25;
 }
-.sheet-group-name-float {
-    position: absolute;
-    left: 0.65rem;
-    top: 50%;
-    transform: translateY(-50%);
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    pointer-events: none;
-    /* background inherited from the parent <tr> via the td it sits on;
-       the span itself is transparent and slides across adjacent cells. */
+.sheet-group-name-cell .sheet-group-name {
+    margin-right: 0.35rem;
 }
 
 .sheet-group-count {
@@ -852,7 +846,7 @@
     background: transparent !important;
     color: #1b5a30;
 }
-.sheet tbody tr.sheet-subgroup-header--incassi > td.col-prog {
+.sheet tbody tr.sheet-subgroup-header--incassi > td.sheet-subgroup-name-cell {
     border-left: 3px solid #91c8a0;
 }
 .sheet tbody tr.sheet-subgroup-header--spese {
@@ -862,7 +856,7 @@
     background: transparent !important;
     color: #a00015;
 }
-.sheet tbody tr.sheet-subgroup-header--spese > td.col-prog {
+.sheet tbody tr.sheet-subgroup-header--spese > td.sheet-subgroup-name-cell {
     border-left: 3px solid #f5a2ac;
 }
 .sheet-subgroup-name {
