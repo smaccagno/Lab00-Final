@@ -2690,21 +2690,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     async validateAllRowsHandler() {
         try {
-            console.log('Validazione completa richiesta dall\'utente');
-            // Attiva lo spinner immediatamente per garantire che venga mostrato
-            this.isValidating = true;
-            // Forza un piccolo delay per assicurarsi che lo spinner venga renderizzato
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            // Esegui la validazione completa (la funzione gestisce già lo spinner internamente)
             await this.validateAllRows();
-            
-            // Mostra messaggio di successo
             this.showSuccess('Validazione completa eseguita su tutte le righe.');
         } catch (error) {
             console.error('Errore durante la validazione completa:', error);
             this.showError(`Errore durante la validazione: ${error.message}`);
-            // Assicurati che lo spinner sia disattivato in caso di errore
             this.isValidating = false;
         }
     }
@@ -2741,10 +2731,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             percent: 0,
             phase: 'Inserimento dati'
         };
-        // Lascia al browser un frame per renderizzare il modal prima del lavoro sincrono
-        await new Promise(resolve => requestAnimationFrame(() => resolve()));
 
-        const PASTE_CHUNK_SIZE = 50;
+        // Se ci sono molte righe, cedi un frame per far comparire il modal prima del lavoro sincrono
+        if (totalLines > 100) {
+            await new Promise(resolve => requestAnimationFrame(() => resolve()));
+        }
 
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
@@ -2871,20 +2862,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
 
-            // Aggiorna progress a fine riga e cedi il controllo al browser ogni PASTE_CHUNK_SIZE righe
-            const processed = lineIndex + 1;
-            if (processed === totalLines || processed % PASTE_CHUNK_SIZE === 0) {
-                this.validationProgress = {
-                    current: processed,
-                    total: totalLines,
-                    percent: totalLines > 0 ? Math.round((processed / totalLines) * 100) : 100,
-                    phase: 'Inserimento dati'
-                };
-                if (processed < totalLines) {
-                    await new Promise(resolve => requestAnimationFrame(() => resolve()));
-                }
-            }
         }
+
+        // Aggiorna progress al completamento del loop sincrono
+        this.validationProgress = {
+            current: totalLines,
+            total: totalLines,
+            percent: 100,
+            phase: 'Inserimento dati'
+        };
 
         this.rows = updatedRows;
 
@@ -6599,13 +6585,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
             
             await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
-            console.log('Dati incollati automaticamente con successo');
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            console.log('Riesecuzione validazione completa...');
             await this.validateAllRows();
-            
             this.showSuccess(`Incollati automaticamente ${lines.length} righe da Google Sheets.`);
         } else {
             this.showError('Nessun dato valido trovato nei dati ricevuti.');
@@ -7762,16 +7742,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.organizedInvoices = [];
         this.saveResults = [];
         this.invoiceAttachmentsByNumber = {};
-        // Attiva lo spinner globale immediatamente
-        this.isValidating = true;
-        // Forza un re-render immediato per assicurarsi che la tabella sia visibile e lo spinner sia mostrato
-        this.rows = [...this.rows];
-        // Dopo il rerender della tabella, rifai il check di validazione completo con spinner
-        // Usa requestAnimationFrame per assicurarsi che il DOM sia completamente renderizzato
+        // Aspetta un frame per consentire alla tabella di tornare visibile, poi valida
         requestAnimationFrame(() => {
-            setTimeout(async () => {
-                await this.validateAllRows();
-            }, 150);
+            this.validateAllRows();
         });
     }
     
@@ -7784,82 +7757,58 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             return;
         }
 
-        // Attiva lo spinner globale all'inizio della validazione e inizializza progress
-        this.isValidating = true;
         const totalRows = this.rows.length;
+        this.isValidating = true;
         this.validationProgress = { current: 0, total: totalRows, percent: 0, phase: 'Validazione celle' };
-        // Lascia che il browser renderizzi lo spinner in un frame prima di bloccare con il lavoro sincrono
-        await new Promise(resolve => requestAnimationFrame(() => resolve()));
 
-        // Lista di tutti i campi validabili e cache O(1) costruite una sola volta
+        // Costruisci le cache O(1) una sola volta
         const validatableFields = this.getCurrentValidatableFields();
         const caches = this._buildLookupCaches();
 
-        // Attiva gli spinner per invoiceNumber (unica validazione asincrona)
+        // Identifica le righe con numero fattura per la validazione asincrona
         const rowsWithInvoiceNumber = [];
-        this.rows.forEach((row, rowIndex) => {
-            if (row.invoiceNumber) {
-                this.setCellValidating(rowIndex, 'invoiceNumber', true);
-                rowsWithInvoiceNumber.push(rowIndex);
-            }
-        });
-
-        // Valida tutti i campi sincroni a chunk, cedendo al browser tra i chunk per aggiornare la progress
-        const CHUNK_SIZE = 50;
-        for (let start = 0; start < totalRows; start += CHUNK_SIZE) {
-            const end = Math.min(start + CHUNK_SIZE, totalRows);
-            for (let i = start; i < end; i++) {
-                const row = this.rows[i];
-                validatableFields.forEach(field => {
-                    const value = row[field];
-                    if (value !== undefined && value !== null && value !== '') {
-                        if (field !== 'invoiceNumber') {
-                            this.validateField(row, field, value, caches);
-                        }
-                    }
-                });
-                row.hasErrors = this.hasRowErrors(row);
-            }
-            const processed = end;
-            this.validationProgress = {
-                current: processed,
-                total: totalRows,
-                percent: totalRows > 0 ? Math.round((processed / totalRows) * 100) : 100,
-                phase: 'Validazione celle'
-            };
-            // Cedi il controllo al browser per renderizzare la barra
-            if (end < totalRows) {
-                await new Promise(resolve => requestAnimationFrame(() => resolve()));
+        for (let i = 0; i < totalRows; i++) {
+            if (this.rows[i].invoiceNumber) {
+                this.setCellValidating(i, 'invoiceNumber', true);
+                rowsWithInvoiceNumber.push(i);
             }
         }
 
-        // Forza il re-render per aggiornare lo stato visivo
+        // Validazione sincrona in un unico passaggio — le Map rendono il lavoro O(N × M)
+        // senza scansioni lineari; nessun yield intermedio evita il cap a 60fps
+        for (let i = 0; i < totalRows; i++) {
+            const row = this.rows[i];
+            for (const field of validatableFields) {
+                if (field === 'invoiceNumber') continue;
+                const value = row[field];
+                if (value !== undefined && value !== null && value !== '') {
+                    this.validateField(row, field, value, caches);
+                }
+            }
+            row.hasErrors = this.hasRowErrors(row);
+        }
+
+        // Aggiorna progress al 100% e forza un unico re-render
+        this.validationProgress = { current: totalRows, total: totalRows, percent: 100, phase: 'Validazione celle' };
         this.rows = [...this.rows];
 
-        // Esegui validazione asincrona per invoiceNumber se presente
+        // Validazione asincrona dei numeri fattura (se presenti)
         if (rowsWithInvoiceNumber.length > 0) {
-            this.validationProgress = {
-                current: totalRows,
-                total: totalRows,
-                percent: 100,
-                phase: 'Verifica numeri fattura'
-            };
+            this.validationProgress = { current: totalRows, total: totalRows, percent: 100, phase: 'Verifica numeri fattura' };
             try {
                 await this.checkInvoiceNumbersUniqueness();
             } catch (error) {
                 console.error('Errore durante la validazione asincrona dei numeri fattura:', error);
             } finally {
-                rowsWithInvoiceNumber.forEach(rowIndex => {
+                for (const rowIndex of rowsWithInvoiceNumber) {
                     this.setCellValidating(rowIndex, 'invoiceNumber', false);
-                });
+                }
             }
         }
 
-        // Aspetta il prossimo frame per avere il DOM aggiornato, poi aggiorna i bordi
-        await new Promise(resolve => requestAnimationFrame(() => resolve()));
-
+        // Applica i bordi rossi alle celle non gestite dai template binding
+        // (non richiede un altro re-render né yield — LWC ha già renderizzato)
         this.refreshValidationBordersInTable();
-        this.rows = [...this.rows];
 
         this.isValidating = false;
         this.validationProgress = { current: 0, total: 0, percent: 0, phase: '' };
