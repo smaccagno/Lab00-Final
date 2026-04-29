@@ -2758,9 +2758,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         while (this.rows.length < neededRows) {
             this.addRow();
         }
-        
+
         const updatedRows = [...this.rows];
-        
+        // Precostruisci le cache O(1) per lookup/validazione — evita scansioni ripetute
+        const caches = this._buildLookupCaches();
+        // Precostruisci una map nome->ente per il fallback categoria (fast path per noProfit)
+        const nonProfitsByName = new Map();
+        if (!this.isSorrisoSospeso && this.nonProfits && this.nonProfits.length) {
+            for (const ente of this.nonProfits) {
+                if (ente && ente.Name) {
+                    nonProfitsByName.set(ente.Name.toLowerCase(), ente);
+                }
+            }
+        }
+
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
             const rowIndex = startRowIndex + lineIndex;
@@ -2804,59 +2815,46 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                         const currencyValue = this.parseCurrency(trimmedValue);
                         updatedRows[rowIndex][field] = currencyValue !== null ? currencyValue : trimmedValue;
                     } else {
-                        // Sostituisci con il valore esatto dal dataset se disponibile
-                        const exactValue = this.getExactValueFromDataset(field, trimmedValue);
+                        // Sostituisci con il valore esatto dal dataset se disponibile (fast path via cache)
+                        const exactValue = this.getExactValueFromDataset(field, trimmedValue, caches);
                         updatedRows[rowIndex][field] = exactValue;
-                        
+
                         if ((field === 'partner' || field === 'fornitore') && exactValue) {
-                            console.log('[pasteMultipleRows] Cercando partner per valore:', exactValue);
-                            console.log('[pasteMultipleRows] Numero partner disponibili:', this.partners ? this.partners.length : 0);
-                            if (this.partners && this.partners.length > 0) {
-                                console.log('[pasteMultipleRows] Primi 5 partner disponibili:', this.partners.slice(0, 5).map(p => p.Name));
-                                // Cerca partner che contiene "Sorgenia" per debug
-                                const sorgeniaPartners = this.partners.filter(p => p.Name && p.Name.toLowerCase().includes('sorgenia'));
-                                console.log('[pasteMultipleRows] Partner che contengono "Sorgenia":', sorgeniaPartners.map(p => ({ Name: p.Name, Id: p.Id })));
-                            }
-                            
                             this.syncLookupId(updatedRows[rowIndex], field, exactValue, trimmedValue);
                         }
                     }
-                    
-                    // Validazione campi specifici durante il paste
-                    this.validateField(updatedRows[rowIndex], field, updatedRows[rowIndex][field]);
+
+                    // Validazione campi specifici durante il paste (fast path via cache)
+                    this.validateField(updatedRows[rowIndex], field, updatedRows[rowIndex][field], caches);
                 }
             });
             
             // Dopo aver processato tutte le colonne della riga, popola automaticamente la categoria se necessario
             if (!this.isSorrisoSospeso && updatedRows[rowIndex].noProfit && updatedRows[rowIndex].noProfit.trim() !== '') {
-                const enteValue = updatedRows[rowIndex].noProfit.trim();
-                const matchingEnte = this.nonProfits && this.nonProfits.length > 0 
-                    ? this.nonProfits.find(ente => 
-                        ente.Name && ente.Name.toLowerCase() === enteValue.toLowerCase()
-                    )
-                    : null;
-                
+                const enteValue = updatedRows[rowIndex].noProfit.trim().toLowerCase();
+                const matchingEnte = nonProfitsByName.get(enteValue) || null;
+
                 if (matchingEnte) {
                     // Ente trovato: popola la categoria se presente
                     if (matchingEnte.Ente_Categoria__c) {
                         updatedRows[rowIndex].noProfitCategory = matchingEnte.Ente_Categoria__c;
                         // Valida anche la categoria appena popolata
-                        this.validateField(updatedRows[rowIndex], 'noProfitCategory', matchingEnte.Ente_Categoria__c);
+                        this.validateField(updatedRows[rowIndex], 'noProfitCategory', matchingEnte.Ente_Categoria__c, caches);
                     } else {
                         // Ente trovato ma senza categoria: segnala errore
                         updatedRows[rowIndex].noProfitCategory = '';
-                        this.validateField(updatedRows[rowIndex], 'noProfitCategory', '');
+                        this.validateField(updatedRows[rowIndex], 'noProfitCategory', '', caches);
                     }
                 } else {
                     // Ente non trovato: segnala errore sulla categoria
                     if (!updatedRows[rowIndex].noProfitCategory) {
                         updatedRows[rowIndex].noProfitCategory = '';
                     }
-                    this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory || '');
+                    this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory || '', caches);
                 }
             } else if (!this.isSorrisoSospeso && updatedRows[rowIndex].noProfitCategory && updatedRows[rowIndex].noProfitCategory.trim() !== '') {
                 // Se c'è una categoria ma non c'è ente, valida comunque
-                this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory);
+                this.validateField(updatedRows[rowIndex], 'noProfitCategory', updatedRows[rowIndex].noProfitCategory, caches);
             }
 
             // In Sorriso: se valore scontato è vuoto, usa il commerciale.
@@ -2901,11 +2899,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         }
         
         this.rows = updatedRows;
-        
-        // Aggiorna lo stato visivo delle celle dopo il paste e aggiorna i valori sostituiti
-        // Usa un timeout più lungo per assicurarsi che il DOM sia completamente aggiornato
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+
+        // Aspetta un solo frame per consentire al DOM di riflettere this.rows, senza timeout arbitrari
+        await new Promise(resolve => requestAnimationFrame(() => resolve()));
+
         updatedRows.forEach((row, rowIdx) => {
             const rowElement = this.template.querySelector(`tr[data-row-index="${rowIdx}"]`);
             if (rowElement) {
@@ -2979,9 +2976,6 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         
         // Verifica unicità numeri fattura dopo il paste
         await this.checkInvoiceNumbersUniqueness();
-        
-        // Formatta nuovamente tutte le date per assicurarsi che siano corrette
-        this.formatDatesInTable();
     }
 
     updateCellValue(rowIndex, colIndex, value) {
@@ -3979,6 +3973,77 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         return cleaned;
     }
 
+    /**
+     * Costruisce un set di Map lookup pre-normalizzate per accelerare
+     * `getExactValueFromDataset` e `validateField` durante operazioni batch
+     * (paste Excel, validazione massiva). Ogni chiave è `cleanValue(name).toLowerCase()`,
+     * il valore è il record/valore originale del dataset.
+     * Uso tipico: costruire una sola volta prima di processare N righe.
+     */
+    _buildLookupCaches() {
+        const buildMap = (items, getKey, getValue) => {
+            const map = new Map();
+            if (!Array.isArray(items)) return map;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const rawKey = getKey(item);
+                if (!rawKey) continue;
+                const cleanedKey = this.cleanValue(rawKey).toLowerCase();
+                if (cleanedKey && !map.has(cleanedKey)) {
+                    map.set(cleanedKey, getValue ? getValue(item) : item);
+                }
+            }
+            return map;
+        };
+
+        const partners = buildMap(this.partners, p => p && p.Name);
+        const suppliers = buildMap(this.structureSuppliers, s => s && s.Name);
+        const tipoVisite = buildMap(this.tipoVisite, t => t && t.Name);
+        const nonProfits = buildMap(this.nonProfits, e => e && e.Name);
+        const comuni = buildMap(this.comuni, c => c && c.Nome_Comune__c);
+        const medicalCenters = buildMap(this.medicalCenters, c => c, c => c);
+        const province = buildMap(this.provinceList, p => p, p => p);
+        const regioni = buildMap(this.regioniList, r => r, r => r);
+        const ticketTypes = buildMap(this.ticketTypeOptions, o => o && o.value, o => o.value);
+        const showTypes = buildMap(this.showTypeOptions, o => o && o.value, o => o.value);
+        const beneficiaries = buildMap(this.beneficiaryTypeOptions, o => o && o.value, o => o.value);
+        const categories = buildMap(this.categoryOptions, o => o && o.value, o => o.value);
+
+        // Set delle province per regione per validazione di coerenza
+        const provinceByRegione = new Map();
+        if (Array.isArray(this.comuni)) {
+            for (let i = 0; i < this.comuni.length; i++) {
+                const c = this.comuni[i];
+                if (!c || !c.Regione__c || !c.Provincia__c) continue;
+                const keyReg = this.cleanValue(c.Regione__c).toLowerCase();
+                const keyProv = this.cleanValue(c.Provincia__c).toLowerCase();
+                if (!keyReg || !keyProv) continue;
+                let set = provinceByRegione.get(keyReg);
+                if (!set) {
+                    set = new Set();
+                    provinceByRegione.set(keyReg, set);
+                }
+                set.add(keyProv);
+            }
+        }
+
+        return {
+            partners,
+            suppliers,
+            tipoVisite,
+            nonProfits,
+            comuni,
+            medicalCenters,
+            province,
+            regioni,
+            ticketTypes,
+            showTypes,
+            beneficiaries,
+            categories,
+            provinceByRegione
+        };
+    }
+
     getLookupConfig(field) {
         if (field === 'partner') {
             return { dataset: this.partners || [], labelField: 'Name', idField: 'partnerId' };
@@ -4015,7 +4080,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Trova il valore esatto nel dataset dato un valore inserito (case-insensitive)
      * Restituisce il valore esatto se trovato, altrimenti il valore originale
      */
-    getExactValueFromDataset(field, value) {
+    getExactValueFromDataset(field, value, caches = null) {
         if (!value || value.toString().trim() === '') {
             return value;
         }
@@ -4024,6 +4089,34 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         const cleanedValue = this.cleanValue(value.toString());
         const trimmedValue = cleanedValue;
         const lowerValue = trimmedValue.toLowerCase();
+
+        // Fast path: se abbiamo cache O(1), usale
+        if (caches) {
+            const lookupByField = {
+                partner: { map: caches.partners, getLabel: p => p && p.Name },
+                tipologia: { map: caches.ticketTypes, getLabel: v => v },
+                fornitore: { map: caches.suppliers, getLabel: s => s && s.Name },
+                tipologiaSpettacolo: { map: caches.showTypes, getLabel: v => v },
+                tipoVisita: { map: caches.tipoVisite, getLabel: t => t && t.Name },
+                beneficiaryType: { map: caches.beneficiaries, getLabel: v => v },
+                comune: { map: caches.comuni, getLabel: c => c && c.Nome_Comune__c },
+                provincia: { map: caches.province, getLabel: v => v },
+                regione: { map: caches.regioni, getLabel: v => v },
+                medicalCenter: { map: caches.medicalCenters, getLabel: v => v },
+                noProfit: { map: caches.nonProfits, getLabel: e => e && e.Name },
+                noProfitCategory: { map: caches.categories, getLabel: v => v }
+            };
+            const entry = lookupByField[field];
+            if (entry && entry.map) {
+                const found = entry.map.get(lowerValue);
+                if (found !== undefined) {
+                    const label = entry.getLabel(found);
+                    return label || trimmedValue;
+                }
+                return trimmedValue;
+            }
+            return trimmedValue;
+        }
 
         switch (field) {
             case 'partner':
@@ -4292,9 +4385,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     /**
-     * Valida un campo specifico e aggiorna lo stato di validazione
+     * Valida un campo specifico e aggiorna lo stato di validazione.
+     * Il parametro opzionale `caches` (vedi _buildLookupCaches) abilita un fast path
+     * basato su Map O(1) invece di scansioni lineari sui dataset.
      */
-    validateField(row, field, value) {
+    validateField(row, field, value, caches = null) {
         if (!row.validationErrors) {
             row.validationErrors = {
                 partner: false,
@@ -4314,18 +4409,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         // Pulisci il valore da caratteri nascosti prima della validazione
         const cleanedValue = value ? this.cleanValue(value.toString()) : '';
         const trimmedValue = cleanedValue;
+        const lowerValue = trimmedValue.toLowerCase();
 
         switch (field) {
             case 'partner':
                 if (trimmedValue === '') {
                     row.validationErrors.partner = false; // Vuoto è ok (non obbligatorio fino al salvataggio)
+                } else if (caches && caches.partners) {
+                    row.validationErrors.partner = !caches.partners.has(lowerValue);
                 } else {
                     // Verifica se il partner esiste nella lista (pulisci anche i valori del dataset)
                     const partnerValid = this.partners.some(
                         partner => {
                             if (!partner.Name) return false;
                             const cleanedPartnerName = this.cleanValue(partner.Name);
-                            return cleanedPartnerName.toLowerCase() === trimmedValue.toLowerCase();
+                            return cleanedPartnerName.toLowerCase() === lowerValue;
                         }
                     );
                     row.validationErrors.partner = !partnerValid;
@@ -4335,9 +4433,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'tipologia':
                 if (trimmedValue === '') {
                     row.validationErrors.tipologia = false;
+                } else if (caches && caches.ticketTypes) {
+                    row.validationErrors.tipologia = !caches.ticketTypes.has(lowerValue);
                 } else {
                     const tipologiaValid = this.ticketTypeOptions.some(
-                        option => option.value && this.cleanValue(option.value).toLowerCase() === trimmedValue.toLowerCase()
+                        option => option.value && this.cleanValue(option.value).toLowerCase() === lowerValue
                     );
                     row.validationErrors.tipologia = !tipologiaValid;
                 }
@@ -4346,9 +4446,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'fornitore':
                 if (trimmedValue === '') {
                     row.validationErrors.fornitore = false;
+                } else if (caches && caches.suppliers) {
+                    row.validationErrors.fornitore = !caches.suppliers.has(lowerValue);
                 } else {
                     const fornitoreValid = this.structureSuppliers.some(
-                        supplier => supplier.Name && this.cleanValue(supplier.Name).toLowerCase() === trimmedValue.toLowerCase()
+                        supplier => supplier.Name && this.cleanValue(supplier.Name).toLowerCase() === lowerValue
                     );
                     row.validationErrors.fornitore = !fornitoreValid;
                 }
@@ -4357,9 +4459,11 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'tipologiaSpettacolo':
                 if (trimmedValue === '') {
                     row.validationErrors.tipologiaSpettacolo = false;
+                } else if (caches && caches.showTypes) {
+                    row.validationErrors.tipologiaSpettacolo = !caches.showTypes.has(lowerValue);
                 } else {
                     const tipologiaSpettacoloValid = this.showTypeOptions.some(
-                        option => option.value && this.cleanValue(option.value).toLowerCase() === trimmedValue.toLowerCase()
+                        option => option.value && this.cleanValue(option.value).toLowerCase() === lowerValue
                     );
                     row.validationErrors.tipologiaSpettacolo = !tipologiaSpettacoloValid;
                 }
@@ -4370,13 +4474,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.tipoVisita = false; // Vuoto è ok (non obbligatorio fino al salvataggio)
                 } else if (row.tipoVisitaIsNew) {
                     row.validationErrors.tipoVisita = false; // Valore confermato
+                } else if (caches && caches.tipoVisite) {
+                    row.validationErrors.tipoVisita = !caches.tipoVisite.has(lowerValue);
                 } else {
                     // Verifica se il valore è nella lista dei tipi visita (pulisci anche i valori del dataset)
                     const tipoVisitaValid = this.tipoVisite.some(
                         tipo => {
                             if (!tipo.Name) return false;
                             const cleanedTipoName = this.cleanValue(tipo.Name);
-                            return cleanedTipoName.toLowerCase() === trimmedValue.toLowerCase();
+                            return cleanedTipoName.toLowerCase() === lowerValue;
                         }
                     );
                     row.validationErrors.tipoVisita = !tipoVisitaValid;
@@ -4386,13 +4492,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             case 'beneficiaryType':
                 if (trimmedValue === '') {
                     row.validationErrors.beneficiaryType = false; // Vuoto è ok
+                } else if (caches && caches.beneficiaries) {
+                    row.validationErrors.beneficiaryType = !caches.beneficiaries.has(lowerValue);
                 } else {
                     // Verifica se il valore è nella lista dei beneficiary types (pulisci anche i valori del dataset)
                     const beneficiaryValid = this.beneficiaryTypeOptions.some(
                         option => {
                             if (!option.value) return false;
                             const cleanedOptionValue = this.cleanValue(option.value);
-                            return cleanedOptionValue.toLowerCase() === trimmedValue.toLowerCase();
+                            return cleanedOptionValue.toLowerCase() === lowerValue;
                         }
                     );
                     row.validationErrors.beneficiaryType = !beneficiaryValid;
@@ -4405,44 +4513,42 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else if (row.comuneIsNew) {
                     row.validationErrors.comune = false; // Valore confermato
                 } else {
-                    // Verifica se il comune esiste nella lista (pulisci anche i valori del dataset)
-                    const comuneMatch = this.comuni.find(
-                        c => {
-                            if (!c.Nome_Comune__c) return false;
-                            const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
-                            return cleanedComuneName.toLowerCase() === trimmedValue.toLowerCase();
-                        }
-                    );
+                    // Verifica se il comune esiste nella lista
+                    const comuneMatch = (caches && caches.comuni)
+                        ? caches.comuni.get(lowerValue)
+                        : this.comuni.find(
+                            c => {
+                                if (!c.Nome_Comune__c) return false;
+                                const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
+                                return cleanedComuneName.toLowerCase() === lowerValue;
+                            }
+                        );
                     const comuneExists = !!comuneMatch;
-                    
+
                     if (!comuneExists) {
                         row.validationErrors.comune = true;
                     } else {
                         // Verifica coerenza con provincia e regione se presenti
                         let isCoherent = true;
-                        
-                        if (comuneMatch) {
-                            // Verifica coerenza con provincia (pulisci anche i valori)
-                            if (row.provincia && comuneMatch.Provincia__c) {
-                                const cleanedProvincia = this.cleanValue(comuneMatch.Provincia__c);
-                                const cleanedRowProvincia = this.cleanValue(row.provincia);
-                                const provinciaCoherent = cleanedProvincia.toLowerCase() === cleanedRowProvincia.toLowerCase();
-                                if (!provinciaCoherent) {
-                                    isCoherent = false;
-                                }
-                            }
-                            
-                            // Verifica coerenza con regione (pulisci anche i valori)
-                            if (row.regione && comuneMatch.Regione__c) {
-                                const cleanedRegione = this.cleanValue(comuneMatch.Regione__c);
-                                const cleanedRowRegione = this.cleanValue(row.regione);
-                                const regioneCoherent = cleanedRegione.toLowerCase() === cleanedRowRegione.toLowerCase();
-                                if (!regioneCoherent) {
-                                    isCoherent = false;
-                                }
+
+                        // Verifica coerenza con provincia (pulisci anche i valori)
+                        if (row.provincia && comuneMatch.Provincia__c) {
+                            const cleanedProvincia = this.cleanValue(comuneMatch.Provincia__c);
+                            const cleanedRowProvincia = this.cleanValue(row.provincia);
+                            if (cleanedProvincia.toLowerCase() !== cleanedRowProvincia.toLowerCase()) {
+                                isCoherent = false;
                             }
                         }
-                        
+
+                        // Verifica coerenza con regione (pulisci anche i valori)
+                        if (row.regione && comuneMatch.Regione__c) {
+                            const cleanedRegione = this.cleanValue(comuneMatch.Regione__c);
+                            const cleanedRowRegione = this.cleanValue(row.regione);
+                            if (cleanedRegione.toLowerCase() !== cleanedRowRegione.toLowerCase()) {
+                                isCoherent = false;
+                            }
+                        }
+
                         row.validationErrors.comune = !isCoherent;
                     }
                 }
@@ -4454,60 +4560,66 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else if (row.comuneIsNew) {
                     row.validationErrors.provincia = false; // Se il comune è nuovo, accettiamo la provincia
                 } else {
-                    // Verifica se la provincia esiste nella lista (pulisci anche i valori del Set)
-                    // Crea un Set pulito delle province per il confronto
-                    const cleanedProvinceSet = new Set();
-                    this.provinceList.forEach(p => {
-                        if (p) {
-                            const cleanedP = this.cleanValue(p);
-                            cleanedProvinceSet.add(cleanedP.toLowerCase());
-                        }
-                    });
-                    const provinciaExists = cleanedProvinceSet.has(trimmedValue.toLowerCase());
-                    
+                    // Verifica se la provincia esiste
+                    let provinciaExists;
+                    if (caches && caches.province) {
+                        provinciaExists = caches.province.has(lowerValue);
+                    } else {
+                        const cleanedProvinceSet = new Set();
+                        this.provinceList.forEach(p => {
+                            if (p) cleanedProvinceSet.add(this.cleanValue(p).toLowerCase());
+                        });
+                        provinciaExists = cleanedProvinceSet.has(lowerValue);
+                    }
+
                     if (!provinciaExists) {
                         row.validationErrors.provincia = true;
                     } else {
                         // Verifica coerenza con comune e regione se presenti
                         let isCoherent = true;
-                        
+
                         // Verifica coerenza con comune (pulisci anche i valori)
                         if (row.comune) {
-                            const cleanedRowComune = this.cleanValue(row.comune);
-                            const comuneMatch = this.comuni.find(
-                                c => {
-                                    if (!c.Nome_Comune__c) return false;
-                                    const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
-                                    return cleanedComuneName.toLowerCase() === cleanedRowComune.toLowerCase();
-                                }
-                            );
+                            const cleanedRowComune = this.cleanValue(row.comune).toLowerCase();
+                            const comuneMatch = (caches && caches.comuni)
+                                ? caches.comuni.get(cleanedRowComune)
+                                : this.comuni.find(
+                                    c => {
+                                        if (!c.Nome_Comune__c) return false;
+                                        const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
+                                        return cleanedComuneName.toLowerCase() === cleanedRowComune;
+                                    }
+                                );
                             if (comuneMatch && comuneMatch.Provincia__c) {
                                 const cleanedComuneProvincia = this.cleanValue(comuneMatch.Provincia__c);
-                                const comuneCoherent = cleanedComuneProvincia.toLowerCase() === trimmedValue.toLowerCase();
-                                if (!comuneCoherent) {
+                                if (cleanedComuneProvincia.toLowerCase() !== lowerValue) {
                                     isCoherent = false;
                                 }
                             }
                         }
-                        
+
                         // Verifica coerenza con regione (pulisci anche i valori)
                         if (row.regione) {
-                            const cleanedRowRegione = this.cleanValue(row.regione);
-                            const provinceInRegione = new Set();
-                            this.comuni.forEach(comune => {
-                                if (comune.Regione__c && comune.Provincia__c) {
-                                    const cleanedRegione = this.cleanValue(comune.Regione__c);
-                                    if (cleanedRegione.toLowerCase() === cleanedRowRegione.toLowerCase()) {
-                                        const cleanedProvincia = this.cleanValue(comune.Provincia__c);
-                                        provinceInRegione.add(cleanedProvincia.toLowerCase());
+                            const cleanedRowRegione = this.cleanValue(row.regione).toLowerCase();
+                            let provinceInRegione;
+                            if (caches && caches.provinceByRegione) {
+                                provinceInRegione = caches.provinceByRegione.get(cleanedRowRegione);
+                            } else {
+                                provinceInRegione = new Set();
+                                this.comuni.forEach(comune => {
+                                    if (comune.Regione__c && comune.Provincia__c) {
+                                        const cleanedRegione = this.cleanValue(comune.Regione__c).toLowerCase();
+                                        if (cleanedRegione === cleanedRowRegione) {
+                                            provinceInRegione.add(this.cleanValue(comune.Provincia__c).toLowerCase());
+                                        }
                                     }
-                                }
-                            });
-                            if (!provinceInRegione.has(trimmedValue.toLowerCase())) {
+                                });
+                            }
+                            if (!provinceInRegione || !provinceInRegione.has(lowerValue)) {
                                 isCoherent = false;
                             }
                         }
-                        
+
                         row.validationErrors.provincia = !isCoherent;
                     }
                 }
@@ -4519,60 +4631,66 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 } else if (row.comuneIsNew) {
                     row.validationErrors.regione = false; // Se il comune è nuovo, accettiamo la regione
                 } else {
-                    // Verifica se la regione esiste nella lista (pulisci anche i valori del Set)
-                    // Crea un Set pulito delle regioni per il confronto
-                    const cleanedRegioniSet = new Set();
-                    this.regioniList.forEach(r => {
-                        if (r) {
-                            const cleanedR = this.cleanValue(r);
-                            cleanedRegioniSet.add(cleanedR.toLowerCase());
-                        }
-                    });
-                    const regioneExists = cleanedRegioniSet.has(trimmedValue.toLowerCase());
-                    
+                    // Verifica se la regione esiste
+                    let regioneExists;
+                    if (caches && caches.regioni) {
+                        regioneExists = caches.regioni.has(lowerValue);
+                    } else {
+                        const cleanedRegioniSet = new Set();
+                        this.regioniList.forEach(r => {
+                            if (r) cleanedRegioniSet.add(this.cleanValue(r).toLowerCase());
+                        });
+                        regioneExists = cleanedRegioniSet.has(lowerValue);
+                    }
+
                     if (!regioneExists) {
                         row.validationErrors.regione = true;
                     } else {
                         // Verifica coerenza con comune e provincia se presenti
                         let isCoherent = true;
-                        
+
                         // Verifica coerenza con comune (pulisci anche i valori)
                         if (row.comune) {
-                            const cleanedRowComune = this.cleanValue(row.comune);
-                            const comuneMatch = this.comuni.find(
-                                c => {
-                                    if (!c.Nome_Comune__c) return false;
-                                    const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
-                                    return cleanedComuneName.toLowerCase() === cleanedRowComune.toLowerCase();
-                                }
-                            );
+                            const cleanedRowComune = this.cleanValue(row.comune).toLowerCase();
+                            const comuneMatch = (caches && caches.comuni)
+                                ? caches.comuni.get(cleanedRowComune)
+                                : this.comuni.find(
+                                    c => {
+                                        if (!c.Nome_Comune__c) return false;
+                                        const cleanedComuneName = this.cleanValue(c.Nome_Comune__c);
+                                        return cleanedComuneName.toLowerCase() === cleanedRowComune;
+                                    }
+                                );
                             if (comuneMatch && comuneMatch.Regione__c) {
                                 const cleanedComuneRegione = this.cleanValue(comuneMatch.Regione__c);
-                                const comuneCoherent = cleanedComuneRegione.toLowerCase() === trimmedValue.toLowerCase();
-                                if (!comuneCoherent) {
+                                if (cleanedComuneRegione.toLowerCase() !== lowerValue) {
                                     isCoherent = false;
                                 }
                             }
                         }
-                        
+
                         // Verifica coerenza con provincia (pulisci anche i valori)
                         if (row.provincia) {
-                            const cleanedRowProvincia = this.cleanValue(row.provincia);
-                            const provinceInRegione = new Set();
-                            this.comuni.forEach(comune => {
-                                if (comune.Regione__c && comune.Provincia__c) {
-                                    const cleanedRegione = this.cleanValue(comune.Regione__c);
-                                    if (cleanedRegione.toLowerCase() === trimmedValue.toLowerCase()) {
-                                        const cleanedProvincia = this.cleanValue(comune.Provincia__c);
-                                        provinceInRegione.add(cleanedProvincia.toLowerCase());
+                            const cleanedRowProvincia = this.cleanValue(row.provincia).toLowerCase();
+                            let provinceInRegione;
+                            if (caches && caches.provinceByRegione) {
+                                provinceInRegione = caches.provinceByRegione.get(lowerValue);
+                            } else {
+                                provinceInRegione = new Set();
+                                this.comuni.forEach(comune => {
+                                    if (comune.Regione__c && comune.Provincia__c) {
+                                        const cleanedRegione = this.cleanValue(comune.Regione__c).toLowerCase();
+                                        if (cleanedRegione === lowerValue) {
+                                            provinceInRegione.add(this.cleanValue(comune.Provincia__c).toLowerCase());
+                                        }
                                     }
-                                }
-                            });
-                            if (!provinceInRegione.has(cleanedRowProvincia.toLowerCase())) {
+                                });
+                            }
+                            if (!provinceInRegione || !provinceInRegione.has(cleanedRowProvincia)) {
                                 isCoherent = false;
                             }
                         }
-                        
+
                         row.validationErrors.regione = !isCoherent;
                     }
                 }
@@ -4583,13 +4701,15 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.medicalCenter = false; // Vuoto è ok
                 } else if (row.medicalCenterIsNew) {
                     row.validationErrors.medicalCenter = false; // Valore confermato
+                } else if (caches && caches.medicalCenters) {
+                    row.validationErrors.medicalCenter = !caches.medicalCenters.has(lowerValue);
                 } else {
                     // Verifica se il centro medico esiste nella lista (pulisci anche i valori del dataset)
                     const medicalCenterValid = this.medicalCenters.some(
                         center => {
                             if (!center) return false;
                             const cleanedCenter = this.cleanValue(center);
-                            return cleanedCenter.toLowerCase() === trimmedValue.toLowerCase();
+                            return cleanedCenter.toLowerCase() === lowerValue;
                         }
                     );
                     row.validationErrors.medicalCenter = !medicalCenterValid;
@@ -4601,20 +4721,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     row.validationErrors.noProfit = false; // Vuoto è ok
                 } else if (row.noProfitIsNew) {
                     row.validationErrors.noProfit = false; // Valore confermato
+                } else if (caches && caches.nonProfits) {
+                    row.validationErrors.noProfit = !caches.nonProfits.has(lowerValue);
                 } else {
                     // Verifica se l'ente no profit esiste nella lista (pulisci anche i valori del dataset)
                     const noProfitValid = this.nonProfits.some(
                         ente => {
                             if (!ente.Name) return false;
                             const cleanedEnteName = this.cleanValue(ente.Name);
-                            return cleanedEnteName.toLowerCase() === trimmedValue.toLowerCase();
+                            return cleanedEnteName.toLowerCase() === lowerValue;
                         }
                     );
                     row.validationErrors.noProfit = !noProfitValid;
                 }
                 // Se c'è un ente no profit, valida anche la categoria
                 if (trimmedValue && row.noProfitCategory !== undefined) {
-                    this.validateField(row, 'noProfitCategory', row.noProfitCategory || '');
+                    this.validateField(row, 'noProfitCategory', row.noProfitCategory || '', caches);
                 }
                 break;
 
@@ -4624,28 +4746,27 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 if (cleanedNoProfit && cleanedNoProfit.trim() !== '') {
                     if (trimmedValue === '') {
                         row.validationErrors.noProfitCategory = true; // Vuoto è errore se c'è un ente
+                    } else if (row.noProfitCategoryIsNew === true) {
+                        row.validationErrors.noProfitCategory = false;
+                    } else if (caches && caches.categories) {
+                        row.validationErrors.noProfitCategory = !caches.categories.has(lowerValue);
                     } else {
-                        // Se la categoria è stata confermata manualmente (noProfitCategoryIsNew), è valida
-                        if (row.noProfitCategoryIsNew === true) {
-                            row.validationErrors.noProfitCategory = false;
-                        } else {
-                            // Verifica se la categoria è valida nel dataset (pulisci anche i valori del dataset)
-                            const categoryValid = this.categoryOptions.some(
-                                opt => {
-                                    if (!opt.value) return false;
-                                    const cleanedCategoryValue = this.cleanValue(opt.value);
-                                    return cleanedCategoryValue.toLowerCase() === trimmedValue.toLowerCase();
-                                }
-                            );
-                            row.validationErrors.noProfitCategory = !categoryValid;
-                        }
+                        // Verifica se la categoria è valida nel dataset (pulisci anche i valori del dataset)
+                        const categoryValid = this.categoryOptions.some(
+                            opt => {
+                                if (!opt.value) return false;
+                                const cleanedCategoryValue = this.cleanValue(opt.value);
+                                return cleanedCategoryValue.toLowerCase() === lowerValue;
+                            }
+                        );
+                        row.validationErrors.noProfitCategory = !categoryValid;
                     }
                 } else {
                     row.validationErrors.noProfitCategory = false; // Se non c'è ente, categoria può essere vuota
                 }
                 break;
         }
-        
+
         // Aggiorna hasErrors dopo ogni validazione
         row.hasErrors = this.hasRowErrors(row);
     }
@@ -7660,74 +7781,62 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      */
     async validateAllRows() {
         if (!this.rows || this.rows.length === 0) {
-            console.log('[validateAllRows] Nessuna riga da validare');
             return;
         }
-        
-        console.log('[validateAllRows] Inizio validazione di', this.rows.length, 'righe');
-        
+
         // Attiva lo spinner globale all'inizio della validazione
         this.isValidating = true;
-        // Forza un piccolo delay per assicurarsi che lo spinner venga renderizzato prima di iniziare la validazione
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        // Lista di tutti i campi validabili
+        // Lascia che il browser renderizzi lo spinner in un frame prima di bloccare con il lavoro sincrono
+        await new Promise(resolve => requestAnimationFrame(() => resolve()));
+
+        // Lista di tutti i campi validabili e cache O(1) costruite una sola volta
         const validatableFields = this.getCurrentValidatableFields();
-        
+        const caches = this._buildLookupCaches();
+
         // Attiva gli spinner per invoiceNumber (unica validazione asincrona)
         const rowsWithInvoiceNumber = [];
         this.rows.forEach((row, rowIndex) => {
-            // Attiva spinner per invoiceNumber se presente (validazione asincrona)
             if (row.invoiceNumber) {
                 this.setCellValidating(rowIndex, 'invoiceNumber', true);
                 rowsWithInvoiceNumber.push(rowIndex);
             }
         });
-        
-        // Valida tutti i campi sincroni
-        this.rows.forEach((row, rowIndex) => {
+
+        // Valida tutti i campi sincroni (fast path via cache)
+        this.rows.forEach((row) => {
             validatableFields.forEach(field => {
                 const value = row[field];
                 if (value !== undefined && value !== null && value !== '') {
-                    // Valida solo i campi sincroni qui (invoiceNumber sarà validato dopo)
                     if (field !== 'invoiceNumber') {
-                        this.validateField(row, field, value);
+                        this.validateField(row, field, value, caches);
                     }
                 }
             });
-            
-            // Aggiorna lo stato hasErrors della riga (senza invoiceNumber per ora)
             row.hasErrors = this.hasRowErrors(row);
         });
-        
+
         // Forza il re-render per aggiornare lo stato visivo
         this.rows = [...this.rows];
-        
+
         // Esegui validazione asincrona per invoiceNumber se presente
         if (rowsWithInvoiceNumber.length > 0) {
-            console.log('[validateAllRows] Validazione asincrona per', rowsWithInvoiceNumber.length, 'numeri fattura');
             try {
                 await this.checkInvoiceNumbersUniqueness();
             } catch (error) {
                 console.error('Errore durante la validazione asincrona dei numeri fattura:', error);
             } finally {
-                // Disattiva gli spinner per invoiceNumber
                 rowsWithInvoiceNumber.forEach(rowIndex => {
                     this.setCellValidating(rowIndex, 'invoiceNumber', false);
                 });
             }
         }
-        
-        // Aggiorna i bordi rossi dopo tutte le validazioni
-        // Usa un delay maggiore per assicurarsi che il DOM sia completamente aggiornato
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        console.log('[validateAllRows] Aggiornamento bordi rossi');
+
+        // Aspetta il prossimo frame per avere il DOM aggiornato, poi aggiorna i bordi
+        await new Promise(resolve => requestAnimationFrame(() => resolve()));
+
         this.refreshValidationBordersInTable();
-        // Forza un altro re-render per assicurarsi che i bordi vengano mostrati
         this.rows = [...this.rows];
-        
-        // Disattiva lo spinner globale solo dopo che tutto è completato
+
         this.isValidating = false;
     }
     
