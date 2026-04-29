@@ -2624,40 +2624,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
      * Incolla i valori dalla clipboard a partire dalla prima riga vuota
      */
     async pasteFromClipboard() {
-        console.log('=== INIZIO pasteFromClipboard ===');
-        console.log('navigator.clipboard disponibile:', !!navigator.clipboard);
-        console.log('navigator.clipboard.readText disponibile:', typeof navigator.clipboard?.readText === 'function');
-        console.log('Numero righe attuali:', this.rows.length);
-        console.log('window.location.protocol:', window.location.protocol);
-        console.log('window.location.hostname:', window.location.hostname);
-        
-        // Attiva lo spinner all'inizio
+        // Attiva lo spinner (pasteMultipleRows aggiornerà progress e la fase)
         this.isValidating = true;
-        
+
         try {
-            // Verifica che l'API clipboard sia disponibile
-            if (!navigator.clipboard) {
-                console.error('ERRORE: navigator.clipboard non disponibile');
+            if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
                 throw new Error('API clipboard non disponibile. Il browser potrebbe non supportarla o la pagina non è servita via HTTPS.');
             }
-            
-            if (typeof navigator.clipboard.readText !== 'function') {
-                console.error('ERRORE: navigator.clipboard.readText non è una funzione');
-                throw new Error('Metodo readText non disponibile sull\'oggetto clipboard.');
-            }
-            
-            console.log('Tentativo di lettura dalla clipboard...');
-            
-            // Leggi il contenuto dalla clipboard
+
             const clipboardText = await navigator.clipboard.readText();
-            
-            console.log('Contenuto clipboard letto con successo');
-            console.log('Lunghezza contenuto:', clipboardText ? clipboardText.length : 0);
-            console.log('Primi 200 caratteri del contenuto:', clipboardText ? clipboardText.substring(0, 200) : 'null/undefined');
-            console.log('Tipo contenuto:', typeof clipboardText);
-            
+
             if (!clipboardText || !clipboardText.trim()) {
-                console.warn('Clipboard vuota o contiene solo spazi');
                 this.showError('Nessun contenuto trovato nella clipboard.');
                 this.isValidating = false;
                 return;
@@ -2671,78 +2648,40 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     break;
                 }
             }
-            
-            console.log('Prima riga vuota trovata all\'indice:', firstEmptyRowIndex);
-
-            // Se non ci sono righe vuote, aggiungi una nuova riga
             if (firstEmptyRowIndex === -1) {
-                console.log('Nessuna riga vuota trovata, aggiungo una nuova riga');
                 this.addRow();
                 firstEmptyRowIndex = this.rows.length - 1;
-                console.log('Nuova riga aggiunta all\'indice:', firstEmptyRowIndex);
             }
 
-            // Processa i dati dalla clipboard
-            console.log('Elaborazione delle righe dalla clipboard...');
-            const rawLines = clipboardText.split('\n');
-            console.log('Numero righe dopo split (\\n):', rawLines.length);
-            console.log('Prime 3 righe raw:', rawLines.slice(0, 3));
-            
-            const lines = rawLines
+            const lines = clipboardText
+                .split('\n')
                 .map(line => line.replace(/\r/g, ''))
                 .filter(line => line.trim() || line.includes('\t'));
-            
-            console.log('Numero righe dopo filtro:', lines.length);
-            console.log('Prime 3 righe dopo filtro:', lines.slice(0, 3));
 
             if (lines.length === 0) {
-                console.warn('Nessuna riga valida trovata dopo il processing');
-                console.warn('Contenuto originale completo:', clipboardText);
                 this.showError('Nessun dato valido trovato nella clipboard.');
                 this.isValidating = false;
                 return;
             }
 
-            console.log('Chiamata a pasteMultipleRows con', lines.length, 'righe, startRowIndex:', firstEmptyRowIndex, 'startColIndex: 0');
-            
-            // Incolla i dati a partire dalla prima riga vuota, colonna 0
             await this.pasteMultipleRows(lines, firstEmptyRowIndex, 0);
 
-            console.log('pasteMultipleRows completato con successo');
-
-            // Mostra messaggio di successo
             this.showSuccess(`Incollati ${lines.length} riga/e a partire dalla riga ${firstEmptyRowIndex + 1}.`);
-            
-            console.log('=== FINE pasteFromClipboard (successo) ===');
 
         } catch (error) {
-            console.error('=== ERRORE in pasteFromClipboard ===');
-            console.error('Tipo errore:', error?.constructor?.name || typeof error);
-            console.error('Messaggio errore:', error?.message);
-            console.error('Stack errore:', error?.stack);
-            console.error('Errore completo:', error);
-            console.error('Nome errore:', error?.name);
-            console.error('Codice errore (se presente):', error?.code);
-            console.error('toString():', error?.toString());
-            
-            // Verifica se è un errore di permessi
             if (error?.name === 'NotAllowedError' || error?.code === 403) {
-                console.error('ERRORE DI PERMESSI: Il browser ha negato l\'accesso alla clipboard');
                 this.showError('Permesso negato per accedere alla clipboard. Assicurati che la pagina sia servita via HTTPS e che tu abbia dato il permesso al browser.');
             } else if (error?.name === 'NotFoundError') {
-                console.error('ERRORE: Nessun dato nella clipboard');
                 this.showError('Nessun dato trovato nella clipboard. Assicurati di aver copiato i dati da Excel.');
             } else if (error?.name === 'SecurityError') {
-                console.error('ERRORE DI SICUREZZA: La pagina non è servita via HTTPS o il contesto non è sicuro');
                 this.showError('Errore di sicurezza: la pagina deve essere servita via HTTPS per accedere alla clipboard.');
             } else {
-                console.error('ERRORE GENERICO durante la lettura della clipboard');
+                console.error('Errore in pasteFromClipboard:', error);
                 this.showError(`Errore durante la lettura della clipboard: ${error?.message || 'Errore sconosciuto'}. Assicurati di aver copiato i dati da Excel.`);
             }
-            console.error('=== FINE ERRORE ===');
         } finally {
-            // Disattiva sempre lo spinner alla fine, sia in caso di successo che di errore
             this.isValidating = false;
+            this.validationProgress = { current: 0, total: 0, percent: 0, phase: '' };
         }
     }
 
@@ -2791,6 +2730,21 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
         }
+
+        // Inizializza progress e spinner (se non già attivo)
+        const wasValidating = this.isValidating;
+        this.isValidating = true;
+        const totalLines = lines.length;
+        this.validationProgress = {
+            current: 0,
+            total: totalLines,
+            percent: 0,
+            phase: 'Inserimento dati'
+        };
+        // Lascia al browser un frame per renderizzare il modal prima del lavoro sincrono
+        await new Promise(resolve => requestAnimationFrame(() => resolve()));
+
+        const PASTE_CHUNK_SIZE = 50;
 
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
@@ -2916,8 +2870,22 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     console.error('Errore nella generazione del numero fattura durante il paste:', error);
                 }
             }
+
+            // Aggiorna progress a fine riga e cedi il controllo al browser ogni PASTE_CHUNK_SIZE righe
+            const processed = lineIndex + 1;
+            if (processed === totalLines || processed % PASTE_CHUNK_SIZE === 0) {
+                this.validationProgress = {
+                    current: processed,
+                    total: totalLines,
+                    percent: totalLines > 0 ? Math.round((processed / totalLines) * 100) : 100,
+                    phase: 'Inserimento dati'
+                };
+                if (processed < totalLines) {
+                    await new Promise(resolve => requestAnimationFrame(() => resolve()));
+                }
+            }
         }
-        
+
         this.rows = updatedRows;
 
         // Aspetta un solo frame per consentire al DOM di riflettere this.rows, senza timeout arbitrari
@@ -2994,8 +2962,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         });
         
-        // Verifica unicità numeri fattura dopo il paste
+        // Fase finale: verifica unicità numeri fattura
+        this.validationProgress = {
+            current: totalLines,
+            total: totalLines,
+            percent: 100,
+            phase: 'Verifica numeri fattura'
+        };
         await this.checkInvoiceNumbersUniqueness();
+
+        // Reset progress; disattiva spinner solo se era stato acceso qui (il caller, se aveva già lo spinner, se ne occupa)
+        this.validationProgress = { current: 0, total: 0, percent: 0, phase: '' };
+        if (!wasValidating) {
+            this.isValidating = false;
+        }
     }
 
     updateCellValue(rowIndex, colIndex, value) {
