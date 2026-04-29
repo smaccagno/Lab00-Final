@@ -2212,6 +2212,18 @@
                     <div class="slds-m-top_medium">
                         <h2 class="slds-text-heading_medium">Validazione in corso...</h2>
                         <p class="slds-text-body_regular slds-m-top_small">Attendere prego mentre vengono validate le celle e vengono evidenziate quelle con errori.</p>
+                        <template if:true={hasValidationProgress}>
+                            <div class="validation-progress slds-m-top_medium">
+                                <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                    <span class="slds-text-body_small slds-text-color_weak">{validationProgress.phase}</span>
+                                    <span class="slds-text-body_small slds-text-color_weak">{validationProgressPercentLabel}</span>
+                                </div>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" style={validationProgressBarStyle}></div>
+                                </div>
+                                <p class="slds-text-body_small slds-m-top_xx-small">{validationProgressText}</p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>

@@ -90,6 +90,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     // Stato salvataggio e risultati
     @track isSaving = false;
     @track isValidating = false; // Spinner durante le validazioni
+    @track validationProgress = { current: 0, total: 0, percent: 0, phase: '' }; // Avanzamento validazione massiva
     @track validatingCells = {}; // Oggetto per tracciare le celle in validazione: { "rowIndex-field": true }
     @track showResults = false;
     @track saveResults = []; // Array di risultati per ogni fattura
@@ -132,6 +133,25 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             this.selectedProgramName &&
             this.selectedProgramName.toLowerCase().includes('sorriso sospeso')
         );
+    }
+
+    get hasValidationProgress() {
+        return this.validationProgress && this.validationProgress.total > 0;
+    }
+
+    get validationProgressText() {
+        const p = this.validationProgress || { current: 0, total: 0 };
+        return `${p.current} / ${p.total} righe`;
+    }
+
+    get validationProgressPercentLabel() {
+        const pct = this.validationProgress ? this.validationProgress.percent : 0;
+        return `${pct}%`;
+    }
+
+    get validationProgressBarStyle() {
+        const pct = this.validationProgress ? this.validationProgress.percent : 0;
+        return `width: ${pct}%;`;
     }
 
     get organizedSummaryTitle() {
@@ -7784,8 +7804,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             return;
         }
 
-        // Attiva lo spinner globale all'inizio della validazione
+        // Attiva lo spinner globale all'inizio della validazione e inizializza progress
         this.isValidating = true;
+        const totalRows = this.rows.length;
+        this.validationProgress = { current: 0, total: totalRows, percent: 0, phase: 'Validazione celle' };
         // Lascia che il browser renderizzi lo spinner in un frame prima di bloccare con il lavoro sincrono
         await new Promise(resolve => requestAnimationFrame(() => resolve()));
 
@@ -7802,24 +7824,46 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         });
 
-        // Valida tutti i campi sincroni (fast path via cache)
-        this.rows.forEach((row) => {
-            validatableFields.forEach(field => {
-                const value = row[field];
-                if (value !== undefined && value !== null && value !== '') {
-                    if (field !== 'invoiceNumber') {
-                        this.validateField(row, field, value, caches);
+        // Valida tutti i campi sincroni a chunk, cedendo al browser tra i chunk per aggiornare la progress
+        const CHUNK_SIZE = 50;
+        for (let start = 0; start < totalRows; start += CHUNK_SIZE) {
+            const end = Math.min(start + CHUNK_SIZE, totalRows);
+            for (let i = start; i < end; i++) {
+                const row = this.rows[i];
+                validatableFields.forEach(field => {
+                    const value = row[field];
+                    if (value !== undefined && value !== null && value !== '') {
+                        if (field !== 'invoiceNumber') {
+                            this.validateField(row, field, value, caches);
+                        }
                     }
-                }
-            });
-            row.hasErrors = this.hasRowErrors(row);
-        });
+                });
+                row.hasErrors = this.hasRowErrors(row);
+            }
+            const processed = end;
+            this.validationProgress = {
+                current: processed,
+                total: totalRows,
+                percent: totalRows > 0 ? Math.round((processed / totalRows) * 100) : 100,
+                phase: 'Validazione celle'
+            };
+            // Cedi il controllo al browser per renderizzare la barra
+            if (end < totalRows) {
+                await new Promise(resolve => requestAnimationFrame(() => resolve()));
+            }
+        }
 
         // Forza il re-render per aggiornare lo stato visivo
         this.rows = [...this.rows];
 
         // Esegui validazione asincrona per invoiceNumber se presente
         if (rowsWithInvoiceNumber.length > 0) {
+            this.validationProgress = {
+                current: totalRows,
+                total: totalRows,
+                percent: 100,
+                phase: 'Verifica numeri fattura'
+            };
             try {
                 await this.checkInvoiceNumbersUniqueness();
             } catch (error) {
@@ -7838,6 +7882,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         this.rows = [...this.rows];
 
         this.isValidating = false;
+        this.validationProgress = { current: 0, total: 0, percent: 0, phase: '' };
     }
     
     /**
