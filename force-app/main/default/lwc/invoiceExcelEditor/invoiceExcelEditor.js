@@ -175,6 +175,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     get hasMissingInvoiceAttachments() {
+        if (!this.isSorrisoSospeso) {
+            return false;
+        }
         if (!this.showOrganizedView || !this.organizedInvoices || this.organizedInvoices.length === 0) {
             return false;
         }
@@ -6812,8 +6815,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const parsedDiscounted = this.parseDecimal(row.valoreScontato);
             const effectiveDiscounted = parsedDiscounted !== null ? parsedDiscounted : parsedAmount;
             const invoiceNumberKey = String(row.invoiceNumber || '').trim();
-            const attachmentForInvoice = invoiceNumberKey ? this.invoiceAttachmentsByNumber[invoiceNumberKey] : null;
-            const includeAttachmentPayload = attachmentForInvoice && !attachmentAssignedByInvoiceNumber.has(invoiceNumberKey);
+            const attachmentForInvoice = (this.isSorrisoSospeso && invoiceNumberKey)
+                ? this.invoiceAttachmentsByNumber[invoiceNumberKey]
+                : null;
+            const includeAttachmentPayload = !!attachmentForInvoice && !attachmentAssignedByInvoiceNumber.has(invoiceNumberKey);
             if (includeAttachmentPayload) {
                 attachmentAssignedByInvoiceNumber.add(invoiceNumberKey);
             }
