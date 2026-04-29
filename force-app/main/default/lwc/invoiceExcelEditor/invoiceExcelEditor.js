@@ -3774,9 +3774,10 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     parseBoolean(value) {
         if (!value) return false;
         const lowerValue = value.toLowerCase().trim();
-        return lowerValue === 'true' || 
-               lowerValue === '1' || 
-               lowerValue === 'sì' || 
+        return lowerValue === 'true' ||
+               lowerValue === 'vero' ||
+               lowerValue === '1' ||
+               lowerValue === 'sì' ||
                lowerValue === 'si' ||
                lowerValue === 'yes' ||
                lowerValue === 'y' ||
