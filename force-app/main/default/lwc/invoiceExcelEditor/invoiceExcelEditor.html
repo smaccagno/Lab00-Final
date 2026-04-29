@@ -1484,9 +1484,6 @@
                                     <div class="slds-truncate" title="Totale Numero Visite">Totale Numero Visite</div>
                                 </th>
                                 <th scope="col">
-                                    <div class="slds-truncate" title="Allegato">Allegato</div>
-                                </th>
-                                <th scope="col">
                                     <div class="slds-truncate" title="Visite Associate">Visite Associate</div>
                                 </th>
                             </tr>
@@ -1603,35 +1600,6 @@
                                     </td>
                                     <td data-label="Totale Numero Visite">
                                         <div class="slds-truncate">{invoiceGroup.totalVisitsNumberFormatted}</div>
-                                    </td>
-                                    <td data-label="Allegato">
-                                        <div class="slds-grid slds-grid_vertical slds-grid_vertical-align-center">
-                                            <div class="slds-col">
-                                                <lightning-button-icon
-                                                    icon-name="utility:upload"
-                                                    variant="border-filled"
-                                                    alternative-text="Carica allegato"
-                                                    title="Carica allegato"
-                                                    data-row-index={invoiceIndex}
-                                                    onclick={triggerInvoiceAttachmentPicker}>
-                                                </lightning-button-icon>
-                                                <input
-                                                    type="file"
-                                                    class="invoice-attachment-input"
-                                                    style="display:none"
-                                                    data-row-index={invoiceIndex}
-                                                    data-invoice-number={invoiceGroup.invoice.invoiceNumber}
-                                                    onchange={handleInvoiceAttachmentSelected} />
-                                            </div>
-                                            <div class="slds-col slds-truncate slds-text-body_small slds-m-top_xx-small">
-                                                <template if:true={invoiceGroup.invoice.attachmentFileName}>
-                                                    {invoiceGroup.invoice.attachmentFileName}
-                                                </template>
-                                                <template if:false={invoiceGroup.invoice.attachmentFileName}>
-                                                    Nessun allegato
-                                                </template>
-                                            </div>
-                                        </div>
                                     </td>
                                     <td data-label="Visite Associate">
                                         <template if:true={invoiceGroup.visits.length}>
