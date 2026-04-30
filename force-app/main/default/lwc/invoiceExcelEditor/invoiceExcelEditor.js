@@ -2733,9 +2733,12 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
         };
 
         // Se ci sono molte righe, cedi un frame per far comparire il modal prima del lavoro sincrono
-        if (totalLines > 100) {
+        if (totalLines > 50) {
             await new Promise(resolve => requestAnimationFrame(() => resolve()));
         }
+
+        // Checkpoint di aggiornamento progress: ~20%, 40%, 60%, 80%
+        const pasteCheckpoint = Math.max(1, Math.floor(totalLines / 5));
 
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
@@ -2862,6 +2865,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
 
+            // Checkpoint: aggiorna progress e cedi un frame ogni ~20% così la barra avanza visibilmente
+            if ((lineIndex + 1) % pasteCheckpoint === 0 && lineIndex + 1 < totalLines) {
+                const done = lineIndex + 1;
+                this.validationProgress = {
+                    current: done,
+                    total: totalLines,
+                    percent: Math.floor((done / totalLines) * 100),
+                    phase: 'Inserimento dati'
+                };
+                await new Promise(resolve => requestAnimationFrame(() => resolve()));
+            }
         }
 
         // Aggiorna progress al completamento del loop sincrono
@@ -7774,8 +7788,14 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         }
 
-        // Validazione sincrona in un unico passaggio — le Map rendono il lavoro O(N × M)
-        // senza scansioni lineari; nessun yield intermedio evita il cap a 60fps
+        // Yield iniziale per far comparire il modal prima del lavoro pesante
+        if (totalRows > 50) {
+            await new Promise(resolve => requestAnimationFrame(() => resolve()));
+        }
+
+        // Validazione con 4 checkpoint (~20%, 40%, 60%, 80%) per far aggiornare
+        // visivamente la progress bar. Map O(1) mantengono il costo per-riga minimo.
+        const checkpoint = Math.max(1, Math.floor(totalRows / 5));
         for (let i = 0; i < totalRows; i++) {
             const row = this.rows[i];
             for (const field of validatableFields) {
@@ -7786,6 +7806,17 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                 }
             }
             row.hasErrors = this.hasRowErrors(row);
+
+            if ((i + 1) % checkpoint === 0 && i + 1 < totalRows) {
+                const done = i + 1;
+                this.validationProgress = {
+                    current: done,
+                    total: totalRows,
+                    percent: Math.floor((done / totalRows) * 100),
+                    phase: 'Validazione celle'
+                };
+                await new Promise(resolve => requestAnimationFrame(() => resolve()));
+            }
         }
 
         // Aggiorna progress al 100% e forza un unico re-render
