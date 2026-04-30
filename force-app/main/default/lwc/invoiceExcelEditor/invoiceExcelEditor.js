@@ -996,9 +996,23 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
     }
 
     addRow() {
+        const newRow = this._createEmptyRow(this.rows.length + 1);
+        this.rows = [...this.rows, newRow];
+
+        // Formatta le date dopo l'aggiunta della riga (con un timeout più lungo per assicurarsi che il DOM sia pronto)
+        setTimeout(() => {
+            this.formatDatesInTable();
+        }, 100);
+    }
+
+    /**
+     * Crea un oggetto riga vuoto senza modificare this.rows né pianificare timer.
+     * Utilizzato dal paste bulk per evitare N copie dell'array e N timer.
+     */
+    _createEmptyRow(rowNumber) {
         const newRow = {
             id: `row-${this.nextRowId++}`,
-            rowNumber: this.rows.length + 1,
+            rowNumber: rowNumber,
             partner: '', // Nome del partner (donatore)
             partnerId: '', // ID del partner (donatore)
             previousPartner: '', // Valore precedente del partner (prima dell'impostazione automatica per prestazione gratuita)
@@ -1100,14 +1114,9 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             enumerable: true,
             configurable: true
         });
-        this.rows = [...this.rows, newRow];
-        
-        // Formatta le date dopo l'aggiunta della riga (con un timeout più lungo per assicurarsi che il DOM sia pronto)
-        setTimeout(() => {
-            this.formatDatesInTable();
-        }, 100);
+        return newRow;
     }
-    
+
     /**
      * Formatta tutte le date nella tabella nel formato visualizzato "18 Nov 2025"
      */
@@ -2701,14 +2710,31 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
 
     async pasteMultipleRows(lines, startRowIndex, startColIndex) {
         const fieldOrder = this.getCurrentFieldOrder();
+        const totalLines = lines.length;
 
-        // Assicurati di avere abbastanza righe
-        const neededRows = startRowIndex + lines.length;
-        while (this.rows.length < neededRows) {
-            this.addRow();
+        // Attiva subito lo spinner/progress PRIMA del lavoro pesante di creazione righe,
+        // altrimenti il modal non compare durante la creazione bulk
+        const wasValidating = this.isValidating;
+        this.isValidating = true;
+        this.validationProgress = {
+            current: 0,
+            total: totalLines,
+            percent: 0,
+            phase: 'Preparazione righe'
+        };
+
+        // Cedi un frame per far comparire il modal prima del lavoro sincrono pesante
+        if (totalLines > 20) {
+            await new Promise(resolve => requestAnimationFrame(() => resolve()));
         }
 
+        // Crea tutte le righe mancanti in un'unica operazione (evita O(n²) e N setTimeout)
+        const neededRows = startRowIndex + totalLines;
         const updatedRows = [...this.rows];
+        while (updatedRows.length < neededRows) {
+            updatedRows.push(this._createEmptyRow(updatedRows.length + 1));
+        }
+
         // Precostruisci le cache O(1) per lookup/validazione — evita scansioni ripetute
         const caches = this._buildLookupCaches();
         // Precostruisci una map nome->ente per il fallback categoria (fast path per noProfit)
@@ -2721,10 +2747,7 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             }
         }
 
-        // Inizializza progress e spinner (se non già attivo)
-        const wasValidating = this.isValidating;
-        this.isValidating = true;
-        const totalLines = lines.length;
+        // Aggiorna la fase ora che siamo pronti per il loop principale
         this.validationProgress = {
             current: 0,
             total: totalLines,
@@ -2732,10 +2755,27 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             phase: 'Inserimento dati'
         };
 
-        // Se ci sono molte righe, cedi un frame per far comparire il modal prima del lavoro sincrono
-        if (totalLines > 50) {
-            await new Promise(resolve => requestAnimationFrame(() => resolve()));
+        // Pre-carica il Free Account UNA sola volta (evita N roundtrip Apex nel loop)
+        let cachedFreeAccount = null;
+        if (!this.isSorrisoSospeso) {
+            const hasAnyFreeFlag = lines.some(line => {
+                const values = line.split('\t');
+                return values.some(v => {
+                    const t = this.cleanValue(v).toLowerCase();
+                    return t === 'true' || t === 'si' || t === 'sì' || t === 'yes' || t === '1' || t === 'x';
+                });
+            });
+            if (hasAnyFreeFlag) {
+                try {
+                    cachedFreeAccount = await getFreeAccount();
+                } catch (error) {
+                    console.error('Errore nel pre-caricamento Free Account:', error);
+                }
+            }
         }
+
+        // Raccogli le righe che richiedono generateInvoiceNumber, da processare in parallelo dopo il loop
+        const pendingInvoiceNumberGenerations = [];
 
         // Checkpoint di aggiornamento progress: ~20%, 40%, 60%, 80%
         const pasteCheckpoint = Math.max(1, Math.floor(totalLines / 5));
@@ -2832,37 +2872,26 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             const isFree = !this.isSorrisoSospeso && !!updatedRows[rowIndex].isFree;
             const noInvoiceAvailable = !!updatedRows[rowIndex].noInvoiceAvailable;
             if (isFree || noInvoiceAvailable) {
-                // Override partner: quando isFree è true, imposta "Prestazioni Gratuite"
+                // Override partner: quando isFree è true, imposta "Prestazioni Gratuite" (usa cache pre-caricata)
                 if (isFree) {
                     if (!updatedRows[rowIndex].previousPartner && updatedRows[rowIndex].partner) {
                         updatedRows[rowIndex].previousPartner = updatedRows[rowIndex].partner;
                         updatedRows[rowIndex].previousPartnerId = updatedRows[rowIndex].partnerId || '';
                     }
-                    try {
-                        const freeAccount = await getFreeAccount();
-                        if (freeAccount && freeAccount.Id && freeAccount.Name) {
-                            updatedRows[rowIndex].partner = freeAccount.Name;
-                            updatedRows[rowIndex].partnerId = freeAccount.Id;
-                        }
-                    } catch (error) {
-                        console.error('Errore nel recupero del Free Account durante paste:', error);
+                    if (cachedFreeAccount && cachedFreeAccount.Id && cachedFreeAccount.Name) {
+                        updatedRows[rowIndex].partner = cachedFreeAccount.Name;
+                        updatedRows[rowIndex].partnerId = cachedFreeAccount.Id;
                     }
                 }
-                // Override numero fattura: salva il precedente se non è già GRATUITA- o NON DISPONIBILE-, poi genera il nuovo
+                // Override numero fattura: salva il precedente se non è già GRATUITA- o NON DISPONIBILE-
                 const invNum = updatedRows[rowIndex].invoiceNumber || '';
                 if (!invNum.startsWith('GRATUITA-') && !invNum.startsWith('NON DISPONIBILE-')) {
                     if (invNum.trim() && !updatedRows[rowIndex].previousInvoiceNumber) {
                         updatedRows[rowIndex].previousInvoiceNumber = invNum;
                     }
                 }
-                try {
-                    const invoiceNumber = await this.generateInvoiceNumberForRow(updatedRows[rowIndex], rowIndex);
-                    if (invoiceNumber) {
-                        updatedRows[rowIndex].invoiceNumber = invoiceNumber;
-                    }
-                } catch (error) {
-                    console.error('Errore nella generazione del numero fattura durante il paste:', error);
-                }
+                // Rimanda la generazione del numero fattura al parallelismo post-loop
+                pendingInvoiceNumberGenerations.push(rowIndex);
             }
 
             // Checkpoint: aggiorna progress e cedi un frame ogni ~20% così la barra avanza visibilmente
@@ -2886,12 +2915,49 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
             phase: 'Inserimento dati'
         };
 
+        // Genera in parallelo i numeri fattura per le righe Gratuita/Non disponibile
+        if (pendingInvoiceNumberGenerations.length > 0) {
+            this.validationProgress = {
+                current: 0,
+                total: pendingInvoiceNumberGenerations.length,
+                percent: 0,
+                phase: 'Generazione numeri fattura'
+            };
+            await Promise.all(pendingInvoiceNumberGenerations.map(async (rowIndex) => {
+                try {
+                    const row = updatedRows[rowIndex];
+                    const isFreeRow = !this.isSorrisoSospeso && !!row.isFree;
+                    const noInv = !!row.noInvoiceAvailable;
+                    const invoiceNumber = await generateInvoiceNumber({
+                        isFree: isFreeRow,
+                        noInvoiceAvailable: noInv && !isFreeRow,
+                        invoiceDate: row.invoiceDate || '',
+                        medicalCenter: row.medicalCenter || ''
+                    });
+                    if (invoiceNumber) {
+                        row.invoiceNumber = invoiceNumber;
+                    }
+                } catch (error) {
+                    console.error('Errore nella generazione del numero fattura durante il paste:', error);
+                }
+            }));
+        }
+
         this.rows = updatedRows;
 
         // Aspetta un solo frame per consentire al DOM di riflettere this.rows, senza timeout arbitrari
         await new Promise(resolve => requestAnimationFrame(() => resolve()));
 
-        updatedRows.forEach((row, rowIdx) => {
+        this.validationProgress = {
+            current: 0,
+            total: totalLines,
+            percent: 0,
+            phase: 'Aggiornamento tabella'
+        };
+        const domSyncCheckpoint = Math.max(50, Math.floor(totalLines / 5));
+
+        for (let rowIdx = 0; rowIdx < updatedRows.length; rowIdx++) {
+            const row = updatedRows[rowIdx];
             const rowElement = this.template.querySelector(`tr[data-row-index="${rowIdx}"]`);
             if (rowElement) {
                 // Aggiorna campi normali (inclusi partner e invoiceNumber per override da flag Gratuita/Non disponibile)
@@ -2960,8 +3026,20 @@ export default class InvoiceExcelEditor extends NavigationMixin(LightningElement
                     }
                 });
             }
-        });
-        
+
+            // Checkpoint sync DOM: cedi un frame periodicamente per non bloccare la UI
+            if ((rowIdx + 1) % domSyncCheckpoint === 0 && rowIdx + 1 < updatedRows.length) {
+                const done = rowIdx + 1;
+                this.validationProgress = {
+                    current: done,
+                    total: totalLines,
+                    percent: Math.floor((done / totalLines) * 100),
+                    phase: 'Aggiornamento tabella'
+                };
+                await new Promise(resolve => requestAnimationFrame(() => resolve()));
+            }
+        }
+
         // Fase finale: verifica unicità numeri fattura
         this.validationProgress = {
             current: totalLines,
