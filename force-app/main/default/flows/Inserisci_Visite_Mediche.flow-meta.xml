@@ -2,6 +2,22 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>62.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>Inizializza_Tipi_Accumulate</name>
+        <label>Inizializza Tipi Accumulate</label>
+        <locationX>50</locationX>
+        <locationY>620</locationY>
+        <assignmentItems>
+            <assignToReference>tipi_visita_accumulate</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>get_Tipi_Visita</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_su_Visite</targetReference>
+        </connector>
+    </assignments>
     <choices>
         <name>not_present</name>
         <choiceText>Non Presente</choiceText>
@@ -72,8 +88,8 @@
         </rules>
     </decisions>
     <decisions>
-        <name>Tipo_Visita_creato</name>
-        <label>Tipo Visita creato?</label>
+        <name>Tipo_Valido</name>
+        <label>Tipo Valido?</label>
         <locationX>270</locationX>
         <locationY>998</locationY>
         <defaultConnector>
@@ -81,10 +97,10 @@
         </defaultConnector>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
-            <name>Creato</name>
+            <name>Valido</name>
             <conditionLogic>and</conditionLogic>
             <conditions>
-                <leftValueReference>Recupera_Tipo_Visita_creato.Id</leftValueReference>
+                <leftValueReference>created_visit_type_id</leftValueReference>
                 <operator>IsNull</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
@@ -93,7 +109,7 @@
             <connector>
                 <targetReference>Aggiorna_Visita</targetReference>
             </connector>
-            <label>Creato</label>
+            <label>Valido</label>
         </rules>
     </decisions>
     <dynamicChoiceSets>
@@ -124,7 +140,7 @@
             </value>
         </filters>
         <filters>
-            <field>DEFAULT_PRG__c</field>
+            <field>IsDefault</field>
             <operator>EqualTo</operator>
             <value>
                 <booleanValue>false</booleanValue>
@@ -241,34 +257,13 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <recordLookups>
-        <name>Recupera_Tipo_Visita_creato</name>
-        <label>Recupera Tipo Visita creato</label>
-        <locationX>270</locationX>
-        <locationY>890</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Tipo_Visita_creato</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Id</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>created_visit_type_id</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>true</getFirstRecordOnly>
-        <object>Tipo_Visita__c</object>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <recordLookups>
         <name>Recupera_Visite</name>
         <label>Recupera Visite</label>
         <locationX>50</locationX>
         <locationY>566</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Loop_su_Visite</targetReference>
+            <targetReference>Inizializza_Tipi_Accumulate</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -301,13 +296,13 @@
         <inputAssignments>
             <field>Tipo_Visita__c</field>
             <value>
-                <elementReference>Recupera_Tipo_Visita_creato.Id</elementReference>
+                <elementReference>created_visit_type_id</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
             <field>Visit_Type__c</field>
             <value>
-                <elementReference>Recupera_Tipo_Visita_creato.Name</elementReference>
+                <elementReference>visit_type_name_final</elementReference>
             </value>
         </inputAssignments>
         <object>Visit__c</object>
@@ -462,31 +457,39 @@
             <targetReference>Recupera_Fattura</targetReference>
         </connector>
     </start>
-    <status>Obsolete</status>
+    <status>Active</status>
     <subflows>
         <name>Crea_Tipo_Visita</name>
-        <label>Crea Tipo Visita</label>
+        <label>Crea Tipo Visita (Bulk)</label>
         <locationX>270</locationX>
         <locationY>782</locationY>
         <connector>
-            <targetReference>Recupera_Tipo_Visita_creato</targetReference>
+            <targetReference>Tipo_Valido</targetReference>
         </connector>
-        <flowName>Crea_Tipo_Visita</flowName>
+        <flowName>Crea_Tipo_Visita_Bulk</flowName>
         <inputAssignments>
-            <name>recordId</name>
+            <name>visit_type_name</name>
             <value>
-                <elementReference>Loop_su_Visite.Id</elementReference>
+                <elementReference>Loop_su_Visite.Visit_Type__c</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
-            <name>show_Screen</name>
+            <name>tipi_visita_esistenti</name>
             <value>
-                <booleanValue>false</booleanValue>
+                <elementReference>tipi_visita_accumulate</elementReference>
             </value>
         </inputAssignments>
         <outputAssignments>
             <assignToReference>created_visit_type_id</assignToReference>
             <name>created_visit_type_id</name>
+        </outputAssignments>
+        <outputAssignments>
+            <assignToReference>visit_type_name_final</assignToReference>
+            <name>visit_type_name_final</name>
+        </outputAssignments>
+        <outputAssignments>
+            <assignToReference>tipi_visita_accumulate</assignToReference>
+            <name>tipi_visita_esistenti</name>
         </outputAssignments>
     </subflows>
     <variables>
@@ -652,6 +655,21 @@
         <value>
             <stringValue>Non Presente</stringValue>
         </value>
+    </variables>
+    <variables>
+        <name>tipi_visita_accumulate</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Tipo_Visita__c</objectType>
+    </variables>
+    <variables>
+        <name>visit_type_name_final</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
     </variables>
     <variables>
         <name>visit_created_list</name>
